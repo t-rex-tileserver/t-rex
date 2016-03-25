@@ -4,3 +4,8 @@ version = "0.1.0"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 
 [dependencies]
+postgis = "0.2.1"
+
+[dependencies.postgres]
+version = "0.11.4"
+features = ["unix_socket"]
