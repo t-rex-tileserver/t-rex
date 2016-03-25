@@ -1,0 +1,6 @@
+[package]
+name = "t-rex"
+version = "0.1.0"
+authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
+
+[dependencies]
