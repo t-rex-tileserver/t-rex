@@ -1,6 +1,4 @@
 use postgres::{Connection, SslMode};
-//https://github.com/andelf/rust-postgis
-//use postgis::{Point, LineString, WGS84};
 
 #[test]
 pub fn load() {
