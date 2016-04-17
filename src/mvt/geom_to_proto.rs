@@ -2,16 +2,7 @@
 //! https://github.com/mapbox/vector-tile-spec/tree/master/2.1
 
 use std::vec::Vec;
-//https://github.com/andelf/rust-postgis
-use postgis::{Point,SRID,WGS84};
-
-#[allow(missing_copy_implementations)]
-#[allow(non_camel_case_types)]
-pub enum EPSG_3857 {}
-
-impl SRID for EPSG_3857 {
-    fn as_srid() -> Option<i32> { Some(3857) }
-}
+use core::screen;
 
 /// Command to be executed and the number of times that the command will be executed
 /// https://github.com/mapbox/vector-tile-spec/tree/master/2.1#431-command-integers
@@ -83,14 +74,7 @@ impl CommandSequence {
     }
 }
 
-// Geometry types in screen coordinates
-#[derive(PartialEq,Debug)]
-struct PointScreen {
-    x: i32,
-    y: i32
-}
-
-impl PointScreen {
+impl screen::Point {
     pub fn encode(&self) -> CommandSequence {
         CommandSequence(vec![
             CommandInteger::new(Command::MoveTo, 1).0,
@@ -100,12 +84,7 @@ impl PointScreen {
     }
 }
 
-#[derive(PartialEq,Debug)]
-struct MultiPointScreen {
-    points: Vec<PointScreen>
-}
-
-impl MultiPointScreen {
+impl screen::MultiPoint {
     pub fn encode(&self) -> CommandSequence {
         let mut seq = CommandSequence::new();
         seq.push(CommandInteger::new(
@@ -121,12 +100,7 @@ impl MultiPointScreen {
     }
 }
 
-#[derive(PartialEq,Debug)]
-struct LinestringScreen {
-    points: Vec<PointScreen>
-}
-
-impl LinestringScreen {
+impl screen::Linestring {
     pub fn encode(&self) -> CommandSequence {
         let mut seq = CommandSequence::new();
         if self.points.len() > 0 {
@@ -146,53 +120,23 @@ impl LinestringScreen {
 
 #[test]
 fn test_geom_encoding() {
-    let point = PointScreen { x: 25, y: 17 };
+    let point = screen::Point { x: 25, y: 17 };
     assert_eq!(point.encode().0, &[9,50,34]);
 
-    let multipoint = MultiPointScreen {
+    let multipoint = screen::MultiPoint {
         points: vec![
-            PointScreen { x: 5, y: 7 },
-            PointScreen { x: 3, y: 2 }
+            screen::Point { x: 5, y: 7 },
+            screen::Point { x: 3, y: 2 }
             ]
         };
     assert_eq!(multipoint.encode().0, &[17,10,14,3,9]);
 
-    let linestring = LinestringScreen {
+    let linestring = screen::Linestring {
         points: vec![
-            PointScreen { x: 2, y: 2 },
-            PointScreen { x: 2, y: 10 },
-            PointScreen { x: 10, y: 10 }
+            screen::Point { x: 2, y: 2 },
+            screen::Point { x: 2, y: 10 },
+            screen::Point { x: 10, y: 10 }
             ]
         };
     assert_eq!(linestring.encode().0, &[9,4,4,18,0,16,16,0]);
-}
-
-
-#[derive(PartialEq,Debug)]
-struct Tilebound {
-    x0: f64,
-    y0: f64,
-    x_max: f64,
-    y_max: f64,
-}
-
-/// Convert geometry to tile relative coordinates
-fn geom_in_tile(tile_bounds: Tilebound, tile_size: u32, geom: Point<EPSG_3857>) -> PointScreen {
-    let x_span = tile_bounds.x_max - tile_bounds.x0;
-    let y_span = tile_bounds.y_max - tile_bounds.y0;
-    PointScreen {
-        x: ((geom.x-tile_bounds.x0) * tile_size as f64 / x_span) as i32,
-        y: ((geom.y-tile_bounds.y0) * tile_size as f64 / y_span) as i32 }
-}
-
-#[test]
-fn test_sfgeom_encoding() {
-    //let zh_mercator = Point::<EPSG_3857>::new(949398.0, 6002729.0);
-    let zh_mercator = Point::<EPSG_3857>::new(960000.0, 6002729.0);
-    //let zh_wgs84 = Point::<WGS84>::new(47.3703149, 8.5285874);
-    let screen_pt = geom_in_tile(
-        Tilebound {x0: 958826.08, y0: 5987771.04, x_max: 978393.96, y_max: 6007338.92},
-        4096, zh_mercator);
-    assert_eq!(screen_pt, PointScreen { x: 245, y: 3131 });
-    assert_eq!(screen_pt.encode().0, &[9,490,6262]);
 }
