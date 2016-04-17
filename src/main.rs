@@ -1,9 +1,4 @@
-extern crate postgres;
-extern crate postgis;
-extern crate protobuf;
-
-mod postgis_input;
-mod mvt;
+extern crate t_rex;
 
 fn main() {
     println!("Hello, world!");
