@@ -84,7 +84,7 @@ impl CommandSequence {
 }
 
 // Geometry types in screen coordinates
-
+#[derive(PartialEq,Debug)]
 struct PointScreen {
     x: i32,
     y: i32
@@ -100,6 +100,7 @@ impl PointScreen {
     }
 }
 
+#[derive(PartialEq,Debug)]
 struct MultiPointScreen {
     points: Vec<PointScreen>
 }
@@ -120,6 +121,7 @@ impl MultiPointScreen {
     }
 }
 
+#[derive(PartialEq,Debug)]
 struct LinestringScreen {
     points: Vec<PointScreen>
 }
@@ -166,6 +168,7 @@ fn test_geom_encoding() {
 }
 
 
+#[derive(PartialEq,Debug)]
 struct Tilebound {
     x0: f64,
     y0: f64,
@@ -190,8 +193,6 @@ fn test_sfgeom_encoding() {
     let screen_pt = geom_in_tile(
         Tilebound {x0: 958826.08, y0: 5987771.04, x_max: 978393.96, y_max: 6007338.92},
         4096, zh_mercator);
-    let ref_pt = PointScreen { x: 245, y: 3131 };
-    assert_eq!(screen_pt.x, ref_pt.x);
-    assert_eq!(screen_pt.y, ref_pt.y);
+    assert_eq!(screen_pt, PointScreen { x: 245, y: 3131 });
     assert_eq!(screen_pt.encode().0, &[9,490,6262]);
 }
