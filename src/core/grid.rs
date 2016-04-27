@@ -165,6 +165,9 @@ fn test_bbox() {
 
     let extent = grid.tile_extent_xyz(486, 332, 10);
     assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: 7005300.768279828, maxx: -978393.9620502591, maxy: 7044436.526761841});
+
+    let wgs84extent000 = WGS84_GRID.tile_extent(0, 0, 0);
+    assert_eq!(wgs84extent000, Extent { minx: -180.0, miny: -90.0, maxx: 0.0, maxy: 90.0 });
 }
 
 
@@ -172,6 +175,7 @@ fn test_bbox() {
 // Credits: Mercantile by Sean C. Gillies (https://github.com/mapbox/mercantile)
 
 /// Returns the upper left (lon, lat) of a tile
+#[allow(dead_code)]
 fn ul(xtile: u16, ytile: u16, zoom: u16) -> LngLat {
     let n = (zoom as f64).exp2();
     let lon_deg = xtile as f64 / n * 360.0 - 180.0;
@@ -181,6 +185,7 @@ fn ul(xtile: u16, ytile: u16, zoom: u16) -> LngLat {
 }
 
 /// Returns the Spherical Mercator (x, y) in meters
+#[allow(dead_code)]
 fn xy(lon: f64, lat: f64) -> (f64, f64) {
     //lng, lat = truncate_lnglat(lng, lat)
     let x = 6378137.0_f64 * lon.to_radians();
@@ -190,6 +195,7 @@ fn xy(lon: f64, lat: f64) -> (f64, f64) {
 }
 
 /// Returns the Spherical Mercator bounding box of a tile
+#[allow(dead_code)]
 fn tile_extent(xtile: u16, ytile: u16, zoom: u16) -> Extent {
     let a = ul(xtile, ytile, zoom);
     let (ax, ay) = xy(a.lon, a.lat);
@@ -199,6 +205,7 @@ fn tile_extent(xtile: u16, ytile: u16, zoom: u16) -> Extent {
 }
 
 /// Returns the (lon, lat) bounding box of a tile
+#[allow(dead_code)]
 fn tile_bounds(xtile: u16, ytile: u16, zoom: u16) -> Extent {
     let a = ul(xtile, ytile, zoom);
     let b = ul(xtile+1, ytile+1, zoom);
