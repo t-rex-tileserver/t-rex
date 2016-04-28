@@ -30,7 +30,7 @@ pub struct Extent {
 
 impl Extent {
     /// Convert geometry to tile relative coordinates
-    fn geom_in_tile_extent(&self, tile_size: u32, geom: geom::Point<EPSG_3857>) -> screen::Point {
+    pub fn geom_in_tile_extent(&self, tile_size: u32, geom: geom::Point<EPSG_3857>) -> screen::Point {
         let x_span = self.maxx - self.minx;
         let y_span = self.maxy - self.miny;
         screen::Point {

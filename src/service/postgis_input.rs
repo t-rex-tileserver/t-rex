@@ -1,4 +1,6 @@
 use postgres::{Connection, SslMode};
+use postgis as geom;
+use core::grid::{Extent,EPSG_3857};
 
 pub struct PostgisInput {
     pub connection_url: &'static str
@@ -15,6 +17,9 @@ impl PostgisInput {
         let rows = conn.query("SELECT * FROM geometry_columns LIMIT 1", &[]).unwrap();
         let table_name: String = rows.get(0).get("f_table_name");
         table_name
+    }
+    pub fn get_features(&self, layer: &str, extent: &Extent) -> geom::Point<EPSG_3857> {
+        geom::Point::<EPSG_3857>::new(960000.0, 6002729.0)
     }
 }
 
