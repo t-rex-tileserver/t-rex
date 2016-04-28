@@ -18,6 +18,7 @@ impl PostgisInput {
     }
 }
 
+#[cfg(feature = "dbtest")]
 #[test]
 pub fn test_detect_layers() {
     let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};

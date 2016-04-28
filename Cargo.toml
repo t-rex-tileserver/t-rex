@@ -3,6 +3,9 @@ name = "t-rex"
 version = "0.1.0"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 
+[features]
+dbtest = []
+
 [dependencies]
 postgis = "0.2.1"
 protobuf = "1.0.18"
