@@ -27,7 +27,7 @@ impl MvtService {
 #[test]
 pub fn test_tile_extent() {
     let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
-    let grid = Grid::gmercator();
+    let grid = Grid::web_mercator();
     let service = MvtService {input: pg, grid: grid};
 
     let extent = service.tile_extent(486, 332, 10);
@@ -40,7 +40,7 @@ pub fn test_tile_extent() {
 #[test]
 pub fn test_tile_query() {
     let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
-    let grid = Grid::gmercator();
+    let grid = Grid::web_mercator();
     let service = MvtService {input: pg, grid: grid};
 
     let mvt = service.tile("roads", 486, 332, 10);

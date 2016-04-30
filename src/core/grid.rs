@@ -100,8 +100,8 @@ impl Grid {
         }
     }
 
-    /// Google Spherical Mercator grid
-    pub fn gmercator() -> Grid {
+    /// Web Mercator grid (Google maps compatible)
+    pub fn web_mercator() -> Grid {
         static GOOGLE_RESOLUTIONS: [f64; 19] = [
             156543.0339280410,
             78271.51696402048,
@@ -162,7 +162,7 @@ impl Grid {
 
 #[test]
 fn test_bbox() {
-    let grid = Grid::gmercator();
+    let grid = Grid::web_mercator();
 
     let extent000 = grid.tile_extent(0, 0, 0);
     assert_eq!(extent000, Extent {minx: -20037508.342789248, miny: -20037508.342789248, maxx: 20037508.342789248, maxy: 20037508.342789248});
@@ -175,7 +175,7 @@ fn test_bbox() {
 }
 
 
-// --- Google Mercator calculations ---
+// --- Web Mercator calculations ---
 // Credits: Mercantile by Sean C. Gillies (https://github.com/mapbox/mercantile)
 
 /// Returns the upper left (lon, lat) of a tile
