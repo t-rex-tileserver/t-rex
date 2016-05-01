@@ -1,4 +1,4 @@
-use service::postgis_input::PostgisInput;
+use datasource::postgis::PostgisInput;
 use core::grid::{Extent,Grid};
 use mvt::vector_tile;
 

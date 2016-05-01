@@ -2,7 +2,7 @@ pub mod vector_tile; // protoc --rust_out . vector_tile.proto
 mod geom_to_proto;
 
 #[test]
-fn test_protobuf_structs() {
+fn test_tile_values() {
     let mut value = vector_tile::Tile_Value::new();
     assert_eq!(value, Default::default());
     assert!(!value.has_string_value());
