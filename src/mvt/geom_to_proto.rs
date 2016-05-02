@@ -6,24 +6,24 @@ use core::screen;
 
 /// Command to be executed and the number of times that the command will be executed
 /// https://github.com/mapbox/vector-tile-spec/tree/master/2.1#431-command-integers
-pub struct CommandInteger(u32);
+struct CommandInteger(u32);
 
-pub enum Command {
+enum Command {
     MoveTo    = 1,
     LineTo    = 2,
     ClosePath = 7,
 }
 
 impl CommandInteger {
-    pub fn new(id: Command, count: u32) -> CommandInteger {
+    fn new(id: Command, count: u32) -> CommandInteger {
         CommandInteger(((id as u32) & 0x7) | (count << 3))
     }
 
-    pub fn id(&self) -> u32 {
+    fn id(&self) -> u32 {
         self.0 & 0x7
     }
 
-    pub fn count(&self) -> u32 {
+    fn count(&self) -> u32 {
         self.0 >> 3
     }
 }
@@ -41,14 +41,14 @@ fn test_commands() {
 
 /// Commands requiring parameters are followed by a ParameterInteger for each parameter required by that command
 /// https://github.com/mapbox/vector-tile-spec/tree/master/2.1#432-parameter-integers
-pub struct ParameterInteger(u32);
+struct ParameterInteger(u32);
 
 impl ParameterInteger {
-    pub fn new(value: i32) -> ParameterInteger {
+    fn new(value: i32) -> ParameterInteger {
         ParameterInteger(((value << 1) ^ (value >> 31)) as u32)
     }
 
-    pub fn value(&self) -> i32 {
+    fn value(&self) -> i32 {
         ((self.0 >> 1) as i32) ^ (-((self.0 & 1) as i32))
     }
 }
@@ -63,19 +63,24 @@ fn test_paremeters() {
 pub struct CommandSequence(Vec<u32>);
 
 impl CommandSequence {
-    pub fn new() -> CommandSequence {
+    fn new() -> CommandSequence {
         CommandSequence(Vec::new())
     }
-    pub fn append(&mut self, other: &mut CommandSequence) {
+    fn append(&mut self, other: &mut CommandSequence) {
         self.0.append(&mut other.0);
     }
-    pub fn push(&mut self, value: u32) {
+    fn push(&mut self, value: u32) {
         self.0.push(value);
     }
 }
 
-impl screen::Point {
-    pub fn encode(&self) -> CommandSequence {
+
+pub trait EncodableGeom {
+    fn encode(&self) -> CommandSequence;
+}
+
+impl EncodableGeom for screen::Point {
+    fn encode(&self) -> CommandSequence {
         CommandSequence(vec![
             CommandInteger::new(Command::MoveTo, 1).0,
             ParameterInteger::new(self.x).0,
@@ -84,8 +89,8 @@ impl screen::Point {
     }
 }
 
-impl screen::MultiPoint {
-    pub fn encode(&self) -> CommandSequence {
+impl EncodableGeom for screen::MultiPoint {
+    fn encode(&self) -> CommandSequence {
         let mut seq = CommandSequence::new();
         seq.push(CommandInteger::new(
             Command::MoveTo, self.points.len() as u32).0);
@@ -100,8 +105,8 @@ impl screen::MultiPoint {
     }
 }
 
-impl screen::Linestring {
-    pub fn encode(&self) -> CommandSequence {
+impl EncodableGeom for screen::Linestring {
+    fn encode(&self) -> CommandSequence {
         let mut seq = CommandSequence::new();
         if self.points.len() > 0 {
             seq = self.points[0].encode();

@@ -1,5 +1,5 @@
 pub mod vector_tile; // protoc --rust_out . vector_tile.proto
-mod geom_to_proto;
+pub mod geom_to_proto;
 
 #[test]
 fn test_tile_values() {

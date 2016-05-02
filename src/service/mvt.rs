@@ -1,6 +1,7 @@
 use datasource::postgis::PostgisInput;
 use core::grid::{Extent,Grid};
 use mvt::vector_tile;
+use mvt::geom_to_proto::EncodableGeom;
 
 /// Mapbox Vector Tile Service
 pub struct MvtService {
