@@ -1,6 +1,23 @@
 use postgres::{Connection, SslMode};
-use postgis as geom;
-use core::grid::{Extent,EPSG_3857};
+use postgres::rows::Row;
+use core::geom::*;
+use core::grid::Extent;
+
+
+impl GeometryType {
+    fn from_geom_field(row: &Row, idx: &str, type_name: &str) -> GeometryType {
+        match type_name {
+            "POINT"              => GeometryType::Point(row.get::<_, Point>(idx)),
+            "LINESTRING"         => GeometryType::LineString(row.get::<_, LineString>(idx)),
+            "POLYGON"            => GeometryType::Polygon(row.get::<_, Polygon>(idx)),
+            "MULTIPOINT"         => GeometryType::MultiPoint(row.get::<_, MultiPoint>(idx)),
+            "MULTILINESTRING"    => GeometryType::MultiLineString(row.get::<_, MultiLineString>(idx)),
+            "MULTIPOLYGON"       => GeometryType::MultiPolygon(row.get::<_, MultiPolygon>(idx)),
+            "GEOMETRYCOLLECTION" => GeometryType::GeometryCollection(row.get::<_, GeometryCollection>(idx)),
+            _                    => panic!("Unknown geometry type")
+        }
+    }
+}
 
 pub struct PostgisInput {
     pub connection_url: &'static str
@@ -22,15 +39,16 @@ impl PostgisInput {
         let conn = Connection::connect(self.connection_url, SslMode::None).unwrap();
         let stmt = conn.prepare("SELECT geometry FROM osm_place_point LIMIT 2").unwrap();
         for row in &stmt.query(&[]).unwrap() {
-            println!(">>>>>> {}", row.get::<_, geom::Point<EPSG_3857>>("geometry"));
+            let geom = GeometryType::from_geom_field(&row, "geometry", "POINT");
+            println!(">>>>>> {}", row.get::<_, Point>("geometry"));
         }
         let stmt = conn.prepare("SELECT geometry FROM osm_water_linestring LIMIT 2").unwrap();
         for row in &stmt.query(&[]).unwrap() {
-            println!(">>>>>> {}", row.get::<_, geom::LineString<geom::Point<EPSG_3857>>>("geometry"));
+            println!(">>>>>> {}", row.get::<_, LineString>("geometry"));
         }
     }
-    pub fn get_features(&self, layer: &str, extent: &Extent) -> geom::Point<EPSG_3857> {
-        geom::Point::<EPSG_3857>::new(960000.0, 6002729.0)
+    pub fn get_features(&self, layer: &str, extent: &Extent) -> Point {
+        Point::new(960000.0, 6002729.0)
     }
 }
 
