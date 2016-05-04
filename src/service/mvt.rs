@@ -1,5 +1,6 @@
 use datasource::postgis::PostgisInput;
 use core::grid::{Extent,Grid};
+use mvt::tile::Tile;
 use mvt::vector_tile;
 use mvt::geom_to_proto::EncodableGeom;
 
@@ -10,32 +11,24 @@ pub struct MvtService {
 }
 
 impl MvtService {
-    /// Extent of a given tile in the grid given its x, y and z
-    fn tile_extent(&self, xtile: u16, ytile: u16, zoom: u16) -> Extent {
-        self.grid.tile_extent_xyz(xtile, ytile, zoom)
-    }
     /// Create vector tile from input at x, y, z
     pub fn tile(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16) -> vector_tile::Tile {
-        let extent = self.tile_extent(xtile, ytile, zoom);
-        let layer = topic;
-        let features = self.input.get_features(&layer, &extent);
-        let screen_geom = extent.geom_in_tile_extent(4096, features);
-        let mvt_geom = screen_geom.encode();
-        vector_tile::Tile::new()
+        let extent = self.grid.tile_extent_xyz(xtile, ytile, zoom);
+        let tile = Tile::new(&extent, 4096);
+        /*
+        for layer in topic.layers().iter() {
+            let mvt_layer = tile.new_layer(layer);
+            for feature in self.input.retrieve_features(&layer, &extent, zoom) {
+                let mvt_feature = tile.new_feature(feature);
+                let mvt_geom = tile.encode_geom(feature.geom());
+                mvt_feature.set_geometry(geom);
+                mvt_layer.mut_features().push(mvt_feature);
+            }
+            tile.add_layer(mvt_layer);
+        }
+        */
+        tile.mvt_tile
     }
-}
-
-#[test]
-pub fn test_tile_extent() {
-    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
-    let grid = Grid::web_mercator();
-    let service = MvtService {input: pg, grid: grid};
-
-    let extent = service.tile_extent(486, 332, 10);
-    assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: 7005300.768279828, maxx: -978393.9620502591, maxy: 7044436.526761841});
-    //http://localhost:8124/roads/11/1073/717.pbf
-    //let extent_ch = service.tile_extent(1073, 717, 11);
-    //assert_eq!(extent_ch, Extent { minx: 958826.0828092434, miny: 5987771.04774756, maxx: 978393.9620502479, maxy: 6007338.926988564 });
 }
 
 #[test]
@@ -45,5 +38,6 @@ pub fn test_tile_query() {
     let service = MvtService {input: pg, grid: grid};
 
     let mvt = service.tile("roads", 486, 332, 10);
+    //http://localhost:8124/roads/11/1073/717.pbf
     assert_eq!(mvt, vector_tile::Tile::new());
 }

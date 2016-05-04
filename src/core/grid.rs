@@ -1,13 +1,3 @@
-use core::geom;
-use core::screen;
-use std::f64::consts;
-
-
-#[derive(PartialEq,Debug)]
-pub struct LngLat {
-    pub lon: f64,
-    pub lat: f64,
-}
 
 #[derive(PartialEq,Debug)]
 pub struct Extent {
@@ -15,29 +5,6 @@ pub struct Extent {
     pub miny: f64,
     pub maxx: f64,
     pub maxy: f64,
-}
-
-impl Extent {
-    /// Convert geometry to tile relative coordinates
-    pub fn geom_in_tile_extent(&self, tile_size: u32, geom: geom::Point) -> screen::Point {
-        let x_span = self.maxx - self.minx;
-        let y_span = self.maxy - self.miny;
-        screen::Point {
-            x: ((geom.x-self.minx) * tile_size as f64 / x_span) as i32,
-            y: ((geom.y-self.miny) * tile_size as f64 / y_span) as i32 }
-    }
-}
-
-#[test]
-fn test_geom_in_tile_extent() {
-    //let zh_mercator = geom::Point::new(949398.0, 6002729.0);
-    let zh_mercator = geom::Point::new(960000.0, 6002729.0);
-    //let zh_wgs84 = postgis::Point::<WGS84>::new(47.3703149, 8.5285874);
-    let tile_extent = Extent {minx: 958826.08, miny: 5987771.04, maxx: 978393.96, maxy: 6007338.92};
-    let screen_pt = tile_extent.geom_in_tile_extent(
-        4096, zh_mercator);
-    assert_eq!(screen_pt, screen::Point { x: 245, y: 3131 });
-    //assert_eq!(screen_pt.encode().0, &[9,490,6262]);
 }
 
 
@@ -159,16 +126,29 @@ fn test_bbox() {
     let extent = grid.tile_extent_xyz(486, 332, 10);
     assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: 7005300.768279828, maxx: -978393.9620502591, maxy: 7044436.526761841});
 
+    //let extent_ch = service.tile_extent(1073, 717, 11);
+    //assert_eq!(extent_ch, Extent { minx: 958826.0828092434, miny: 5987771.04774756, maxx: 978393.9620502479, maxy: 6007338.926988564 });
+
     let wgs84extent000 = Grid::wgs84().tile_extent(0, 0, 0);
     assert_eq!(wgs84extent000, Extent { minx: -180.0, miny: -90.0, maxx: 0.0, maxy: 90.0 });
 }
 
 
+#[cfg(feature = "webmercator")]
+mod WebMercator {
+
 // --- Web Mercator calculations ---
 // Credits: Mercantile by Sean C. Gillies (https://github.com/mapbox/mercantile)
 
+use std::f64::consts;
+
+#[derive(PartialEq,Debug)]
+pub struct LngLat {
+    pub lon: f64,
+    pub lat: f64,
+}
+
 /// Returns the upper left (lon, lat) of a tile
-#[allow(dead_code)]
 fn ul(xtile: u16, ytile: u16, zoom: u16) -> LngLat {
     let n = (zoom as f64).exp2();
     let lon_deg = xtile as f64 / n * 360.0 - 180.0;
@@ -178,7 +158,6 @@ fn ul(xtile: u16, ytile: u16, zoom: u16) -> LngLat {
 }
 
 /// Returns the Spherical Mercator (x, y) in meters
-#[allow(dead_code)]
 fn xy(lon: f64, lat: f64) -> (f64, f64) {
     //lng, lat = truncate_lnglat(lng, lat)
     let x = 6378137.0_f64 * lon.to_radians();
@@ -188,7 +167,6 @@ fn xy(lon: f64, lat: f64) -> (f64, f64) {
 }
 
 /// Returns the Spherical Mercator bounding box of a tile
-#[allow(dead_code)]
 fn tile_extent(xtile: u16, ytile: u16, zoom: u16) -> Extent {
     let a = ul(xtile, ytile, zoom);
     let (ax, ay) = xy(a.lon, a.lat);
@@ -198,7 +176,6 @@ fn tile_extent(xtile: u16, ytile: u16, zoom: u16) -> Extent {
 }
 
 /// Returns the (lon, lat) bounding box of a tile
-#[allow(dead_code)]
 fn tile_bounds(xtile: u16, ytile: u16, zoom: u16) -> Extent {
     let a = ul(xtile, ytile, zoom);
     let b = ul(xtile+1, ytile+1, zoom);
@@ -229,4 +206,6 @@ fn test_merc_tile_extent() {
 fn test_merc_tile_bounds() {
     let bbox = tile_bounds(486, 332, 10);
     assert_eq!(bbox, Extent {minx: -9.140625, miny: 53.120405283106564, maxx: -8.7890625, maxy: 53.33087298301705});
+}
+
 }
