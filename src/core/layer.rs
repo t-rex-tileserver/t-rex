@@ -1,1 +1,3 @@
-pub enum Layer {}
+pub struct Layer {
+    pub name: String
+}

@@ -1,5 +1,5 @@
 use core::layer::Layer;
-use core::feature::Feature;
+use core::feature::{Feature,FeatureAttr,FeatureAttrValType};
 use core::grid::Extent;
 use core::geom::GeometryType;
 use core::geom;
@@ -12,7 +12,6 @@ pub struct Tile<'a> {
     pub mvt_tile: vector_tile::Tile,
     tile_size: u32,
     extent: &'a Extent,
-    feature_id: u64,
 }
 
 // --- conversion of geometries into screen coordinates
@@ -41,7 +40,7 @@ fn test_point_to_screen_coords() {
     let tile_extent = Extent {minx: 958826.08, miny: 5987771.04, maxx: 978393.96, maxy: 6007338.92};
     let screen_pt = screen::Point::from_geom(&tile_extent, 4096, zh_mercator);
     assert_eq!(screen_pt, screen::Point { x: 245, y: 3131 });
-    //assert_eq!(screen_pt.encode().0, &[9,490,6262]);
+    assert_eq!(screen_pt.encode().vec(), &[9,490,6262]);
 }
 
 
@@ -50,15 +49,15 @@ fn test_point_to_screen_coords() {
 impl<'a> Tile<'a> {
     pub fn new(extent: &Extent, tile_size: u32) -> Tile {
         let mvt_tile = vector_tile::Tile::new();
-        Tile {mvt_tile: mvt_tile, tile_size: tile_size, extent: extent, feature_id: 0 }
+        Tile {mvt_tile: mvt_tile, tile_size: tile_size, extent: extent }
     }
 
-    pub fn new_layer(&mut self, layer: Layer) -> vector_tile::Tile_Layer {
-        vector_tile::Tile_Layer::new()
-    }
-
-    pub fn new_feature(&self, feature: Feature) -> vector_tile::Tile_Feature {
-        vector_tile::Tile_Feature::new()
+    pub fn new_layer(&mut self, layer: &Layer) -> vector_tile::Tile_Layer {
+        let mut mvt_layer = vector_tile::Tile_Layer::new();
+        mvt_layer.set_version(2);
+        mvt_layer.set_name(layer.name.clone());
+        mvt_layer.set_extent(self.tile_size);
+        mvt_layer
     }
 
     pub fn encode_geom(&self, geom: geom::GeometryType) -> CommandSequence {
@@ -95,8 +94,30 @@ impl<'a> Tile<'a> {
         mvt_feature.mut_tags().push(validx as u32);
     }
 
-    pub fn add_layer(&mut self, mvt_layer: vector_tile::Tile_Layer) {
+    pub fn add_feature(&self, mut mvt_layer: &mut vector_tile::Tile_Layer, feature: Feature) {
+        let mut mvt_feature = vector_tile::Tile_Feature::new();
+        if let Some(fid) = feature.fid {
+            mvt_feature.set_id(fid);
+        }
+        for attr in feature.attributes {
+            let mut mvt_value = vector_tile::Tile_Value::new();
+            match attr.value {
+                FeatureAttrValType::String(v) => { mvt_value.set_string_value(v); }
+                FeatureAttrValType::Double(v) => { mvt_value.set_double_value(v); }
+                FeatureAttrValType::Int(v) => { mvt_value.set_int_value(v); }
+                _ => { panic!("Feature attribute type not implemented yet") }
+            }
+            Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
+                attr.key, mvt_value);
+        }
+        mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT); //FIXME
+        mvt_feature.set_geometry(self.encode_geom(feature.geometry).vec());
+        mvt_feature.set_geometry([9, 2410, 3080].to_vec()); //FIXME
+        mvt_layer.mut_features().push(mvt_feature);
+    }
 
+    pub fn add_layer(&mut self, mvt_layer: vector_tile::Tile_Layer) {
+        self.mvt_tile.mut_layers().push(mvt_layer);
     }
 }
 
@@ -132,55 +153,8 @@ fn test_read_pbf_file() {
 }
 
 
-#[test]
-fn test_create_pbf() {
-    // https://github.com/mapbox/vector-tile-spec/tree/master/2.1#45-example
-    let mut mvt_tile = vector_tile::Tile::new();
-
-    let mut mvt_layer = vector_tile::Tile_Layer::new();
-    mvt_layer.set_version(2);
-    mvt_layer.set_name(String::from("points"));
-    mvt_layer.set_extent(4096);
-
-    let mut mvt_feature = vector_tile::Tile_Feature::new();
-    mvt_feature.set_id(1);
-    mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT);
-    mvt_feature.set_geometry([9, 2410, 3080].to_vec());
-
-    let mut mvt_value = vector_tile::Tile_Value::new();
-    mvt_value.set_string_value(String::from("world"));
-    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
-        String::from("hello"), mvt_value);
-    let mut mvt_value = vector_tile::Tile_Value::new();
-    mvt_value.set_string_value(String::from("world"));
-    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
-        String::from("h"), mvt_value);
-    let mut mvt_value = vector_tile::Tile_Value::new();
-    mvt_value.set_double_value(1.23);
-    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
-        String::from("count"), mvt_value);
-
-    mvt_layer.mut_features().push(mvt_feature);
-
-    mvt_feature = vector_tile::Tile_Feature::new();
-    mvt_feature.set_id(2);
-    mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT);
-    mvt_feature.set_geometry([9, 2410, 3080].to_vec());
-
-    let mut mvt_value = vector_tile::Tile_Value::new();
-    mvt_value.set_string_value(String::from("again"));
-    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
-        String::from("hello"), mvt_value);
-    let mut mvt_value = vector_tile::Tile_Value::new();
-    mvt_value.set_int_value(2);
-    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
-        String::from("count"), mvt_value);
-
-    mvt_layer.mut_features().push(mvt_feature);
-
-    mvt_tile.mut_layers().push(mvt_layer);
-    println!("{:#?}", mvt_tile);
-    let expected = "Tile {
+// https://github.com/mapbox/vector-tile-spec/tree/master/2.1#45-example
+const tile_example: &'static str = "Tile {
     layers: [
         Tile_Layer {
             version: Some(
@@ -314,5 +288,89 @@ fn test_create_pbf() {
     },
     cached_size: Cell { value: 0 }
 }";
-    assert_eq!(expected, &*format!("{:#?}", mvt_tile));
+
+#[test]
+fn test_build_mvt() {
+    // https://github.com/mapbox/vector-tile-spec/tree/master/2.1#45-example
+    let mut mvt_tile = vector_tile::Tile::new();
+
+    let mut mvt_layer = vector_tile::Tile_Layer::new();
+    mvt_layer.set_version(2);
+    mvt_layer.set_name(String::from("points"));
+    mvt_layer.set_extent(4096);
+
+    let mut mvt_feature = vector_tile::Tile_Feature::new();
+    mvt_feature.set_id(1);
+    mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT);
+    mvt_feature.set_geometry([9, 2410, 3080].to_vec());
+
+    let mut mvt_value = vector_tile::Tile_Value::new();
+    mvt_value.set_string_value(String::from("world"));
+    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
+        String::from("hello"), mvt_value);
+    let mut mvt_value = vector_tile::Tile_Value::new();
+    mvt_value.set_string_value(String::from("world"));
+    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
+        String::from("h"), mvt_value);
+    let mut mvt_value = vector_tile::Tile_Value::new();
+    mvt_value.set_double_value(1.23);
+    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
+        String::from("count"), mvt_value);
+
+    mvt_layer.mut_features().push(mvt_feature);
+
+    mvt_feature = vector_tile::Tile_Feature::new();
+    mvt_feature.set_id(2);
+    mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT);
+    mvt_feature.set_geometry([9, 2410, 3080].to_vec());
+
+    let mut mvt_value = vector_tile::Tile_Value::new();
+    mvt_value.set_string_value(String::from("again"));
+    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
+        String::from("hello"), mvt_value);
+    let mut mvt_value = vector_tile::Tile_Value::new();
+    mvt_value.set_int_value(2);
+    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
+        String::from("count"), mvt_value);
+
+    mvt_layer.mut_features().push(mvt_feature);
+
+    mvt_tile.mut_layers().push(mvt_layer);
+    println!("{:#?}", mvt_tile);
+    assert_eq!(tile_example, &*format!("{:#?}", mvt_tile));
+}
+
+#[test]
+fn test_build_mvt_with_helpers() {
+    let extent = Extent {minx: 958826.08, miny: 5987771.04, maxx: 978393.96, maxy: 6007338.92};
+    let mut tile = Tile::new(&extent, 4096);
+    let layer = Layer { name: String::from("points") };
+    let mut mvt_layer = tile.new_layer(&layer);
+
+    let geom : GeometryType = GeometryType::Point(geom::Point::new(960000.0, 6002729.0));
+    let feature = Feature {
+        fid: Some(1),
+        attributes: vec![
+            FeatureAttr {key: String::from("hello"), value: FeatureAttrValType::String(String::from("world"))},
+            FeatureAttr {key: String::from("h"),     value: FeatureAttrValType::String(String::from("world"))},
+            FeatureAttr {key: String::from("count"), value: FeatureAttrValType::Double(1.23)}
+        ],
+        geometry: geom
+    };
+    let mut mvt_feature = tile.add_feature(&mut mvt_layer, feature);
+
+    let geom : GeometryType = GeometryType::Point(geom::Point::new(960000.0, 6002729.0));
+    let feature = Feature {
+        fid: Some(2),
+        attributes: vec![
+            FeatureAttr {key: String::from("hello"), value: FeatureAttrValType::String(String::from("again"))},
+            FeatureAttr {key: String::from("count"), value: FeatureAttrValType::Int(2)}
+        ],
+        geometry: geom
+    };
+    let mut mvt_feature = tile.add_feature(&mut mvt_layer, feature);
+
+    tile.add_layer(mvt_layer);
+    println!("{:#?}", tile.mvt_tile);
+    assert_eq!(tile_example, &*format!("{:#?}", tile.mvt_tile));
 }

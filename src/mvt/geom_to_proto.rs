@@ -66,6 +66,9 @@ impl CommandSequence {
     fn new() -> CommandSequence {
         CommandSequence(Vec::new())
     }
+    pub fn vec(&self) -> Vec<u32> {
+        self.0.clone() // FIXME: ref
+    }
     fn append(&mut self, other: &mut CommandSequence) {
         self.0.append(&mut other.0);
     }
