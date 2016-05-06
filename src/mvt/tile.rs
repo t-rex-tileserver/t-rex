@@ -71,24 +71,22 @@ impl<'a> Tile<'a> {
 
     fn add_feature_attribute(mvt_layer: &mut vector_tile::Tile_Layer,
                      mvt_feature: &mut vector_tile::Tile_Feature,
-                     key: String, value: String) {
+                     key: String, mvt_value: vector_tile::Tile_Value) {
         let keyentry = mvt_layer.get_keys().iter().position(|k| *k == key);
         // Optimization: maintain a hash table with key/index pairs
         let keyidx = match keyentry {
             None => {
-                mvt_layer.mut_keys().push(key.clone());
+                mvt_layer.mut_keys().push(key);
                 mvt_layer.get_keys().len()-1
             },
             Some(idx) => idx
         };
         mvt_feature.mut_tags().push(keyidx as u32);
 
-        let valentry = mvt_layer.get_values().iter().position(|v| v.get_string_value() == value);
+        let valentry = mvt_layer.get_values().iter().position(|v| *v == mvt_value);
         // Optimization: maintain a hash table with value/index pairs
         let validx = match valentry {
             None => {
-                let mut mvt_value = vector_tile::Tile_Value::new();
-                mvt_value.set_string_value(value.clone());
                 mvt_layer.mut_values().push(mvt_value);
                 mvt_layer.get_values().len()-1
             },
@@ -149,12 +147,18 @@ fn test_create_pbf() {
     mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT);
     mvt_feature.set_geometry([9, 2410, 3080].to_vec());
 
+    let mut mvt_value = vector_tile::Tile_Value::new();
+    mvt_value.set_string_value(String::from("world"));
     Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
-        String::from("hello"), String::from("world"));
+        String::from("hello"), mvt_value);
+    let mut mvt_value = vector_tile::Tile_Value::new();
+    mvt_value.set_string_value(String::from("world"));
     Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
-        String::from("h"), String::from("world"));
+        String::from("h"), mvt_value);
+    let mut mvt_value = vector_tile::Tile_Value::new();
+    mvt_value.set_double_value(1.23);
     Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
-        String::from("count"), String::from("1.23")); // FIXME: double_value
+        String::from("count"), mvt_value);
 
     mvt_layer.mut_features().push(mvt_feature);
 
@@ -163,10 +167,14 @@ fn test_create_pbf() {
     mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT);
     mvt_feature.set_geometry([9, 2410, 3080].to_vec());
 
+    let mut mvt_value = vector_tile::Tile_Value::new();
+    mvt_value.set_string_value(String::from("again"));
     Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
-        String::from("hello"), String::from("again"));
+        String::from("hello"), mvt_value);
+    let mut mvt_value = vector_tile::Tile_Value::new();
+    mvt_value.set_int_value(2);
     Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
-        String::from("count"), String::from("2")); // FIXME: int_value
+        String::from("count"), mvt_value);
 
     mvt_layer.mut_features().push(mvt_feature);
 
@@ -249,9 +257,11 @@ fn test_create_pbf() {
                     cached_size: Cell { value: 0 }
                 },
                 Tile_Value {
-                    string_value: Some(\"1.23\"),
+                    string_value: None,
                     float_value: None,
-                    double_value: None,
+                    double_value: Some(
+                        1.23
+                    ),
                     int_value: None,
                     uint_value: None,
                     sint_value: None,
@@ -275,10 +285,12 @@ fn test_create_pbf() {
                     cached_size: Cell { value: 0 }
                 },
                 Tile_Value {
-                    string_value: Some(\"2\"),
+                    string_value: None,
                     float_value: None,
                     double_value: None,
-                    int_value: None,
+                    int_value: Some(
+                        2
+                    ),
                     uint_value: None,
                     sint_value: None,
                     bool_value: None,
