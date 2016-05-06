@@ -69,6 +69,34 @@ impl<'a> Tile<'a> {
         screen_geom.encode()
     }
 
+    fn add_feature_attribute(mvt_layer: &mut vector_tile::Tile_Layer,
+                     mvt_feature: &mut vector_tile::Tile_Feature,
+                     key: String, value: String) {
+        let keyentry = mvt_layer.get_keys().iter().position(|k| *k == key);
+        // Optimization: maintain a hash table with key/index pairs
+        let keyidx = match keyentry {
+            None => {
+                mvt_layer.mut_keys().push(key.clone());
+                mvt_layer.get_keys().len()-1
+            },
+            Some(idx) => idx
+        };
+        mvt_feature.mut_tags().push(keyidx as u32);
+
+        let valentry = mvt_layer.get_values().iter().position(|v| v.get_string_value() == value);
+        // Optimization: maintain a hash table with value/index pairs
+        let validx = match valentry {
+            None => {
+                let mut mvt_value = vector_tile::Tile_Value::new();
+                mvt_value.set_string_value(value.clone());
+                mvt_layer.mut_values().push(mvt_value);
+                mvt_layer.get_values().len()-1
+            },
+            Some(idx) => idx
+        };
+        mvt_feature.mut_tags().push(validx as u32);
+    }
+
     pub fn add_layer(&mut self, mvt_layer: vector_tile::Tile_Layer) {
 
     }
@@ -106,96 +134,44 @@ fn test_read_pbf_file() {
 }
 
 
-struct FeatureAttributes {
-    keys: Vec<String>,
-    values: Vec<String>,
-}
-
-impl FeatureAttributes {
-    fn new() -> FeatureAttributes {
-        FeatureAttributes { keys: Vec::<String>::new(), values: Vec::<String>::new() }
-    }
-    fn add_attribute(&mut self, key: String, value: String) -> (u32, u32) {
-        let keyentry = self.keys.iter().position(|k| *k == key);
-        let keyidx = match keyentry {
-            None => {
-                self.keys.push(key);
-                self.keys.len()-1
-            },
-            Some(idx) => idx
-        };
-        let valentry = self.values.iter().position(|v| *v == value);
-        let validx = match valentry {
-            None => {
-                self.values.push(value);
-                self.values.len()-1
-            },
-            Some(idx) => idx
-        };
-        (keyidx as u32, validx as u32)
-    }
-}
-
 #[test]
 fn test_create_pbf() {
     // https://github.com/mapbox/vector-tile-spec/tree/master/2.1#45-example
-    let mut tile = vector_tile::Tile::new();
+    let mut mvt_tile = vector_tile::Tile::new();
 
-    let mut layer = vector_tile::Tile_Layer::new();
-    layer.set_version(2);
-    layer.set_name(String::from("points"));
-    layer.set_extent(4096);
+    let mut mvt_layer = vector_tile::Tile_Layer::new();
+    mvt_layer.set_version(2);
+    mvt_layer.set_name(String::from("points"));
+    mvt_layer.set_extent(4096);
 
-    let mut feature_id = 1;
-    let mut feature = vector_tile::Tile_Feature::new();
-    feature.set_id(feature_id);
-    feature.set_field_type(vector_tile::Tile_GeomType::POINT);
-    feature.set_geometry([9, 2410, 3080].to_vec());
+    let mut mvt_feature = vector_tile::Tile_Feature::new();
+    mvt_feature.set_id(1);
+    mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT);
+    mvt_feature.set_geometry([9, 2410, 3080].to_vec());
 
-    let mut attrs = FeatureAttributes::new();
-    let (keyidx, validx) = attrs.add_attribute(
+    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
         String::from("hello"), String::from("world"));
-    feature.mut_tags().push(keyidx);
-    feature.mut_tags().push(validx);
-    let (keyidx, validx) = attrs.add_attribute(
+    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
         String::from("h"), String::from("world"));
-    feature.mut_tags().push(keyidx);
-    feature.mut_tags().push(validx);
-    let (keyidx, validx) = attrs.add_attribute(
+    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
         String::from("count"), String::from("1.23")); // FIXME: double_value
-    feature.mut_tags().push(keyidx);
-    feature.mut_tags().push(validx);
 
-    layer.mut_features().push(feature);
+    mvt_layer.mut_features().push(mvt_feature);
 
-    feature_id += 1;
-    feature = vector_tile::Tile_Feature::new();
-    feature.set_id(feature_id);
-    feature.set_field_type(vector_tile::Tile_GeomType::POINT);
-    feature.set_geometry([9, 2410, 3080].to_vec());
+    mvt_feature = vector_tile::Tile_Feature::new();
+    mvt_feature.set_id(2);
+    mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT);
+    mvt_feature.set_geometry([9, 2410, 3080].to_vec());
 
-    let (keyidx, validx) = attrs.add_attribute(
+    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
         String::from("hello"), String::from("again"));
-    feature.mut_tags().push(keyidx);
-    feature.mut_tags().push(validx);
-    let (keyidx, validx) = attrs.add_attribute(
+    Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
         String::from("count"), String::from("2")); // FIXME: int_value
-    feature.mut_tags().push(keyidx);
-    feature.mut_tags().push(validx);
 
-    layer.mut_features().push(feature);
+    mvt_layer.mut_features().push(mvt_feature);
 
-    for key in attrs.keys.iter() {
-        layer.mut_keys().push(key.clone());
-    }
-    for val in attrs.values.iter() {
-        let mut value = vector_tile::Tile_Value::new();
-        value.set_string_value(val.clone());
-        layer.mut_values().push(value);
-    }
-
-    tile.mut_layers().push(layer);
-    println!("{:#?}", tile);
+    mvt_tile.mut_layers().push(mvt_layer);
+    println!("{:#?}", mvt_tile);
     let expected = "Tile {
     layers: [
         Tile_Layer {
@@ -326,5 +302,5 @@ fn test_create_pbf() {
     },
     cached_size: Cell { value: 0 }
 }";
-    assert_eq!(expected, &*format!("{:#?}", tile));
+    assert_eq!(expected, &*format!("{:#?}", mvt_tile));
 }
