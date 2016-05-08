@@ -1,3 +1,4 @@
+use datasource::datasource::Datasource;
 use datasource::postgis::PostgisInput;
 use core::grid::{Extent,Grid};
 use core::layer::Layer;
@@ -28,23 +29,25 @@ impl MvtService {
         let mut tile = Tile::new(&extent, 4096);
         let topic = self.get_topic(topic);
         for layer in topic.layers.iter() {
-            let mvt_layer = tile.new_layer(layer);
-        /*
-            for feature in self.input.retrieve_features(&layer, &extent, zoom) {
-                tile.add_feature(&mut mvt_layer, feature);
-            }
-        */
+            let mut mvt_layer = tile.new_layer(layer);
+            self.input.retrieve_features(&layer, &extent, zoom, |feat| {
+                tile.add_feature(&mut mvt_layer, feat);
+            });
             tile.add_layer(mvt_layer);
         }
         tile.mvt_tile
     }
 }
 
+#[cfg(feature = "dbtest")]
 #[test]
 pub fn test_tile_query() {
     let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
     let grid = Grid::web_mercator();
-    let layers = vec![Layer {name: String::from("points")}];
+    let layers = vec![Layer {
+        name: String::from("points"),
+        query: String::from("SELECT geometry FROM osm_place_point LIMIT 1")
+    }];
     let topics = vec![Topic {name: String::from("roads"), layers: layers}];
     let service = MvtService {input: pg, grid: grid, topics: topics};
 
@@ -58,7 +61,24 @@ pub fn test_tile_query() {
                 2
             ),
             name: Some(\"points\"),
-            features: [],
+            features: [
+                Tile_Feature {
+                    id: None,
+                    tags: [],
+                    field_type: Some(
+                        POINT
+                    ),
+                    geometry: [
+                        9,
+                        2410,
+                        3080
+                    ],
+                    unknown_fields: UnknownFields {
+                        fields: None
+                    },
+                    cached_size: Cell { value: 0 }
+                }
+            ],
             keys: [],
             values: [],
             extent: Some(

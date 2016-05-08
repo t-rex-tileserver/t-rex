@@ -20,6 +20,7 @@ pub type MultiPolygon = postgis::MultiPolygon<postgis::Point<EPSG_3857>>;
 pub type GeometryCollection = postgis::GeometryCollection<postgis::Point<EPSG_3857>>;
 
 /// Generic Geometry Data Type
+#[derive(Debug)]
 pub enum GeometryType {
     Point(Point),
     LineString(LineString),
@@ -28,6 +29,15 @@ pub enum GeometryType {
     MultiLineString(MultiLineString),
     MultiPolygon(MultiPolygon),
     GeometryCollection(GeometryCollection)
+}
+
+impl Clone for GeometryType {
+    fn clone(&self) -> Self {
+        match self {
+            &GeometryType::Point(ref p) => GeometryType::Point(Point::new(p.x, p.y)),
+            _ => panic!("Not implemented yet") // TODO: either implement other types or don't clone (FeatureStruct)...
+        }
+    }
 }
 
 #[cfg(test)]

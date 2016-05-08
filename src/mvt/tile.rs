@@ -1,5 +1,5 @@
 use core::layer::Layer;
-use core::feature::{Feature,FeatureAttr,FeatureAttrValType};
+use core::feature::{Feature,FeatureStruct,FeatureAttr,FeatureAttrValType};
 use core::grid::Extent;
 use core::geom::GeometryType;
 use core::geom;
@@ -94,24 +94,24 @@ impl<'a> Tile<'a> {
         mvt_feature.mut_tags().push(validx as u32);
     }
 
-    pub fn add_feature(&self, mut mvt_layer: &mut vector_tile::Tile_Layer, feature: Feature) {
+    pub fn add_feature(&self, mut mvt_layer: &mut vector_tile::Tile_Layer, feature: &Feature) {
         let mut mvt_feature = vector_tile::Tile_Feature::new();
-        if let Some(fid) = feature.fid {
+        if let Some(fid) = feature.fid() {
             mvt_feature.set_id(fid);
         }
-        for attr in feature.attributes {
+        for attr in feature.attributes() {
             let mut mvt_value = vector_tile::Tile_Value::new();
             match attr.value {
-                FeatureAttrValType::String(v) => { mvt_value.set_string_value(v); }
+                FeatureAttrValType::String(ref v) => { mvt_value.set_string_value(v.clone()); }
                 FeatureAttrValType::Double(v) => { mvt_value.set_double_value(v); }
                 FeatureAttrValType::Int(v) => { mvt_value.set_int_value(v); }
                 _ => { panic!("Feature attribute type not implemented yet") }
             }
             Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
-                attr.key, mvt_value);
+                attr.key.clone(), mvt_value);
         }
         mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT); //FIXME
-        mvt_feature.set_geometry(self.encode_geom(feature.geometry).vec());
+        mvt_feature.set_geometry(self.encode_geom(feature.geometry()).vec());
         mvt_feature.set_geometry([9, 2410, 3080].to_vec()); //FIXME
         mvt_layer.mut_features().push(mvt_feature);
     }
@@ -344,11 +344,11 @@ fn test_build_mvt() {
 fn test_build_mvt_with_helpers() {
     let extent = Extent {minx: 958826.08, miny: 5987771.04, maxx: 978393.96, maxy: 6007338.92};
     let mut tile = Tile::new(&extent, 4096);
-    let layer = Layer { name: String::from("points") };
+    let layer = Layer { name: String::from("points"), query: String::new() };
     let mut mvt_layer = tile.new_layer(&layer);
 
     let geom : GeometryType = GeometryType::Point(geom::Point::new(960000.0, 6002729.0));
-    let feature = Feature {
+    let feature = FeatureStruct {
         fid: Some(1),
         attributes: vec![
             FeatureAttr {key: String::from("hello"), value: FeatureAttrValType::String(String::from("world"))},
@@ -357,10 +357,10 @@ fn test_build_mvt_with_helpers() {
         ],
         geometry: geom
     };
-    let mut mvt_feature = tile.add_feature(&mut mvt_layer, feature);
+    let mut mvt_feature = tile.add_feature(&mut mvt_layer, &feature);
 
     let geom : GeometryType = GeometryType::Point(geom::Point::new(960000.0, 6002729.0));
-    let feature = Feature {
+    let feature = FeatureStruct {
         fid: Some(2),
         attributes: vec![
             FeatureAttr {key: String::from("hello"), value: FeatureAttrValType::String(String::from("again"))},
@@ -368,7 +368,7 @@ fn test_build_mvt_with_helpers() {
         ],
         geometry: geom
     };
-    let mut mvt_feature = tile.add_feature(&mut mvt_layer, feature);
+    let mut mvt_feature = tile.add_feature(&mut mvt_layer, &feature);
 
     tile.add_layer(mvt_layer);
     println!("{:#?}", tile.mvt_tile);
