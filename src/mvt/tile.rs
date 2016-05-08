@@ -14,6 +14,22 @@ pub struct Tile<'a> {
     extent: &'a Extent,
 }
 
+// --- GeometryType to MVT geom type
+
+impl GeometryType {
+    pub fn mvt_field_type(&self) -> vector_tile::Tile_GeomType {
+        match self {
+            &GeometryType::Point(_)              => vector_tile::Tile_GeomType::POINT,
+            &GeometryType::LineString(_)         => vector_tile::Tile_GeomType::LINESTRING,
+            &GeometryType::Polygon(_)            => vector_tile::Tile_GeomType::POLYGON,
+            &GeometryType::MultiPoint(_)         => vector_tile::Tile_GeomType::POINT,
+            &GeometryType::MultiLineString(_)    => vector_tile::Tile_GeomType::LINESTRING,
+            &GeometryType::MultiPolygon(_)       => vector_tile::Tile_GeomType::POLYGON,
+            &GeometryType::GeometryCollection(_) => vector_tile::Tile_GeomType::UNKNOWN
+        }
+    }
+}
+
 // --- conversion of geometries into screen coordinates
 
 trait ScreenGeom<T> {
@@ -110,9 +126,9 @@ impl<'a> Tile<'a> {
             Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
                 attr.key.clone(), mvt_value);
         }
-        mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT); //FIXME
-        mvt_feature.set_geometry(self.encode_geom(feature.geometry()).vec());
-        mvt_feature.set_geometry([9, 2410, 3080].to_vec()); //FIXME
+        let geom = feature.geometry();
+        mvt_feature.set_field_type(geom.mvt_field_type());
+        mvt_feature.set_geometry(self.encode_geom(geom).vec());
         mvt_layer.mut_features().push(mvt_feature);
     }
 
@@ -179,8 +195,8 @@ const tile_example: &'static str = "Tile {
                     ),
                     geometry: [
                         9,
-                        2410,
-                        3080
+                        490,
+                        6262
                     ],
                     unknown_fields: UnknownFields {
                         fields: None
@@ -202,8 +218,8 @@ const tile_example: &'static str = "Tile {
                     ),
                     geometry: [
                         9,
-                        2410,
-                        3080
+                        490,
+                        6262
                     ],
                     unknown_fields: UnknownFields {
                         fields: None
@@ -302,7 +318,7 @@ fn test_build_mvt() {
     let mut mvt_feature = vector_tile::Tile_Feature::new();
     mvt_feature.set_id(1);
     mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT);
-    mvt_feature.set_geometry([9, 2410, 3080].to_vec());
+    mvt_feature.set_geometry([9, 490, 6262].to_vec());
 
     let mut mvt_value = vector_tile::Tile_Value::new();
     mvt_value.set_string_value(String::from("world"));
@@ -322,7 +338,7 @@ fn test_build_mvt() {
     mvt_feature = vector_tile::Tile_Feature::new();
     mvt_feature.set_id(2);
     mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT);
-    mvt_feature.set_geometry([9, 2410, 3080].to_vec());
+    mvt_feature.set_geometry([9, 490, 6262].to_vec());
 
     let mut mvt_value = vector_tile::Tile_Value::new();
     mvt_value.set_string_value(String::from("again"));

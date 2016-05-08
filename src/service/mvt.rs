@@ -70,8 +70,8 @@ pub fn test_tile_query() {
                     ),
                     geometry: [
                         9,
-                        2410,
-                        3080
+                        405938,
+                        214313
                     ],
                     unknown_fields: UnknownFields {
                         fields: None
