@@ -9,6 +9,7 @@ dbtest = []
 [dependencies]
 postgis = "0.2.1"
 protobuf = "1.0.18"
+nickel = "*"
 
 [dependencies.postgres]
 version = "0.11.4"
