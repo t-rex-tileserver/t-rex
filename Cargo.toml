@@ -9,8 +9,12 @@ dbtest = []
 [dependencies]
 postgis = "0.2.1"
 protobuf = "1.0.18"
-nickel = "*"
+nickel = "0.8.0"
 
 [dependencies.postgres]
 version = "0.11.4"
 features = ["unix_socket"]
+
+[dependencies.hyper]
+version = "0.8.1"
+default-features = false

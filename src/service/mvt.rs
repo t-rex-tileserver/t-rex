@@ -14,9 +14,9 @@ pub struct Topic {
 
 /// Mapbox Vector Tile Service
 pub struct MvtService {
-    input: PostgisInput,
-    grid: Grid,
-    topics: Vec<Topic>
+    pub input: PostgisInput,
+    pub grid: Grid,
+    pub topics: Vec<Topic>
 }
 
 impl MvtService {

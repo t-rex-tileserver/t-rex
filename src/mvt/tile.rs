@@ -6,6 +6,9 @@ use core::geom;
 use core::screen;
 use mvt::vector_tile;
 use mvt::geom_to_proto::{EncodableGeom,CommandSequence};
+use protobuf::stream::CodedOutputStream;
+use protobuf::core::Message;
+use std::fs::File;
 
 
 pub struct Tile<'a> {
@@ -134,6 +137,23 @@ impl<'a> Tile<'a> {
 
     pub fn add_layer(&mut self, mvt_layer: vector_tile::Tile_Layer) {
         self.mvt_tile.mut_layers().push(mvt_layer);
+    }
+
+    pub fn binary_tile(mvt_tile: &vector_tile::Tile) -> Vec<u8> {
+        let mut v = Vec::new();
+        {
+            let mut os = CodedOutputStream::new(&mut v);
+            mvt_tile.write_to(&mut os);
+            os.flush().unwrap();
+        }
+        v
+    }
+
+    pub fn to_file(&self, fname: &str) {
+        let mut f = File::create(fname).unwrap();
+        let mut os = CodedOutputStream::new(&mut f);
+        self.mvt_tile.write_to(&mut os);
+        os.flush().unwrap();
     }
 }
 
@@ -389,4 +409,6 @@ fn test_build_mvt_with_helpers() {
     tile.add_layer(mvt_layer);
     println!("{:#?}", tile.mvt_tile);
     assert_eq!(tile_example, &*format!("{:#?}", tile.mvt_tile));
+
+    tile.to_file("/tmp/out.pbf");
 }
