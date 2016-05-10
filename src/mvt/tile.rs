@@ -190,7 +190,7 @@ fn test_read_pbf_file() {
 
 
 // https://github.com/mapbox/vector-tile-spec/tree/master/2.1#45-example
-const tile_example: &'static str = "Tile {
+const TILE_EXAMPLE: &'static str = "Tile {
     layers: [
         Tile_Layer {
             version: Some(
@@ -373,7 +373,7 @@ fn test_build_mvt() {
 
     mvt_tile.mut_layers().push(mvt_layer);
     println!("{:#?}", mvt_tile);
-    assert_eq!(tile_example, &*format!("{:#?}", mvt_tile));
+    assert_eq!(TILE_EXAMPLE, &*format!("{:#?}", mvt_tile));
 }
 
 #[test]
@@ -408,7 +408,7 @@ fn test_build_mvt_with_helpers() {
 
     tile.add_layer(mvt_layer);
     println!("{:#?}", tile.mvt_tile);
-    assert_eq!(tile_example, &*format!("{:#?}", tile.mvt_tile));
+    assert_eq!(TILE_EXAMPLE, &*format!("{:#?}", tile.mvt_tile));
 
     tile.to_file("/tmp/out.pbf");
 }

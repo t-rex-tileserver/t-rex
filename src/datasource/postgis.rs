@@ -56,14 +56,19 @@ impl PostgisInput {
         let table_name: String = rows.get(0).get("f_table_name");
         table_name
     }
+    fn query(&self, layer: &Layer, zoom: u16) -> String {
+        let sql = format!("{} WHERE ST_Intersects({},ST_MakeEnvelope($1,$2,$3,$4,3857))",
+            layer.query, layer.geometry_field());
+        sql
+    }
 }
 
 impl Datasource for PostgisInput {
     fn retrieve_features<F>(&self, layer: &Layer, extent: &Extent, zoom: u16, mut read: F)
         where F : FnMut(&Feature) {
         let conn = Connection::connect(self.connection_url, SslMode::None).unwrap();
-        let stmt = conn.prepare(&layer.query).unwrap();
-        for row in &stmt.query(&[]).unwrap() {
+        let stmt = conn.prepare(&self.query(&layer, zoom)).unwrap();
+        for row in &stmt.query(&[&extent.minx, &extent.miny, &extent.maxx, &extent.maxy]).unwrap() {
             let feature = FeatureRow { layer: layer, row: &row, attrs: vec![] };
             read(&feature)
         }
@@ -95,6 +100,17 @@ pub fn test_detect_layers() {
     //"postgresql://pi@localhost/osm2vectortiles";
     let table_name = pg.detect_layers();
     assert_eq!(table_name, "osm_admin_linestring");
+}
+
+#[test]
+pub fn test_feature_query() {
+    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
+    let layer = Layer {
+        name: String::from("points"),
+        query: String::from("SELECT geometry FROM osm_place_point")
+    };
+    assert_eq!(pg.query(&layer, 10),
+        "SELECT geometry FROM osm_place_point WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857))");
 }
 
 #[cfg(feature = "dbtest")]
