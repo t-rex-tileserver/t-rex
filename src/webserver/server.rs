@@ -8,6 +8,7 @@ use service::mvt::MvtService;
 
 use nickel::{Nickel, HttpRouter, MediaType, Responder, Response, MiddlewareResult };
 use hyper::header;
+use std::collections::HashMap;
 
 
 fn maybe_set_type<D>(res: &mut Response<D>, mime: MediaType) {
@@ -44,6 +45,12 @@ pub fn webserver() {
 
         mvt_tile
     });
-
+    server.get("/:topic/", middleware! { |req, res|
+        let topic = req.param("topic").unwrap();
+        let mut data = HashMap::<&str, &str>::new();
+        data.insert("baseurl", "http://127.0.0.1:6767");
+        data.insert("topic", topic);
+        return res.render("src/webserver/templates/olviewer.tpl", &data)
+    });
     server.listen("127.0.0.1:6767");
 }
