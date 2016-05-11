@@ -380,7 +380,7 @@ fn test_build_mvt() {
 fn test_build_mvt_with_helpers() {
     let extent = Extent {minx: 958826.08, miny: 5987771.04, maxx: 978393.96, maxy: 6007338.92};
     let mut tile = Tile::new(&extent, 4096);
-    let layer = Layer { name: String::from("points"), query: String::new() };
+    let layer = Layer::new("points");
     let mut mvt_layer = tile.new_layer(&layer);
 
     let geom : GeometryType = GeometryType::Point(geom::Point::new(960000.0, 6002729.0));

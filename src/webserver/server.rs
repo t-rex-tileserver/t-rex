@@ -28,10 +28,10 @@ pub fn webserver() {
 
     let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
     let grid = Grid::web_mercator();
-    let layers = vec![Layer {
-        name: String::from("points"),
-        query: String::from("SELECT geometry FROM osm_place_point")
-    }];
+    let mut layers = vec![Layer::new("points")];
+    layers[0].query = Some(String::from("SELECT geometry FROM osm_place_point"));
+    layers[0].geometry_field = Some(String::from("geometry"));
+    layers[0].geometry_type = Some(String::from("POINT"));
     let topics = vec![Topic {name: String::from("roads"), layers: layers}];
     let service = MvtService {input: pg, grid: grid, topics: topics};
 

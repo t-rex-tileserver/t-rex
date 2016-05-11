@@ -1,9 +1,15 @@
+#[derive(Default)]
 pub struct Layer {
     pub name: String,
-    pub query: String,
+    pub query:  Option<String>,
+    pub geometry_field: Option<String>,
+    pub geometry_type: Option<String>,
+    pub fid_field: Option<String>,
+    pub query_limit: Option<u32>,
 }
 
 impl Layer {
-    pub fn geometry_field(&self) -> String { String::from("geometry") } //TODO
-    pub fn geometry_type(&self) -> String { String::from("POINT") } //TODO
+    pub fn new(name: &str) -> Layer {
+        Layer { name: String::from(name), ..Default::default() }
+    }
 }

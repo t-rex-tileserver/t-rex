@@ -34,8 +34,8 @@ impl<'a> Feature for FeatureRow<'a> {
     fn geometry(&self) -> GeometryType {
         GeometryType::from_geom_field(
             &self.row,
-            &self.layer.geometry_field(),
-            &self.layer.geometry_type()
+            &self.layer.geometry_field.as_ref().unwrap(),
+            &self.layer.geometry_type.as_ref().unwrap()
         )
     }
 }
@@ -57,8 +57,11 @@ impl PostgisInput {
         table_name
     }
     fn query(&self, layer: &Layer, zoom: u16) -> String {
-        let sql = format!("{} WHERE ST_Intersects({},ST_MakeEnvelope($1,$2,$3,$4,3857))",
-            layer.query, layer.geometry_field());
+        let mut sql = format!("{} WHERE ST_Intersects({},ST_MakeEnvelope($1,$2,$3,$4,3857))",
+            layer.query.as_ref().unwrap(), layer.geometry_field.as_ref().unwrap());
+        if let Some(n) = layer.query_limit {
+            sql.push_str(&format!(" LIMIT {}", n));
+        }
         sql
     }
 }
@@ -105,25 +108,29 @@ pub fn test_detect_layers() {
 #[test]
 pub fn test_feature_query() {
     let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
-    let layer = Layer {
-        name: String::from("points"),
-        query: String::from("SELECT geometry FROM osm_place_point")
-    };
+    let mut layer = Layer::new("points");
+    layer.query = Some(String::from("SELECT geometry FROM osm_place_point"));
+    layer.geometry_field = Some(String::from("geometry"));
     assert_eq!(pg.query(&layer, 10),
         "SELECT geometry FROM osm_place_point WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857))");
+
+    layer.query_limit = Some(1);
+    assert_eq!(pg.query(&layer, 10),
+        "SELECT geometry FROM osm_place_point WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857)) LIMIT 1");
 }
 
 #[cfg(feature = "dbtest")]
 #[test]
 pub fn test_retrieve_features() {
     let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
-    let layer = Layer {
-        name: String::from("points"),
-        query: String::from("SELECT geometry FROM osm_place_point LIMIT 1")
-    };
+    let mut layer = Layer::new("points");
+    layer.query = Some(String::from("SELECT geometry FROM osm_place_point"));
+    layer.geometry_field = Some(String::from("geometry"));
+    layer.geometry_type = Some(String::from("POINT"));
+    layer.query_limit = Some(1);
     let extent = Extent {minx: 958826.08, miny: 5987771.04, maxx: 978393.96, maxy: 6007338.92};
     pg.retrieve_features(&layer, &extent, 10, |feat| {
-        assert_eq!("Point(\n    SRID=3857;POINT(921771.0175818551 5981453.77061269)\n)", &*format!("{:#?}", feat.geometry()));
+        assert_eq!("Point(\n    SRID=3857;POINT(960328.5530940875 6000593.929181342)\n)", &*format!("{:#?}", feat.geometry()));
         assert_eq!(0, feat.attributes().len());
         assert_eq!(None, feat.fid());
     });

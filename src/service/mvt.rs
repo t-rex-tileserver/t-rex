@@ -44,15 +44,15 @@ impl MvtService {
 pub fn test_tile_query() {
     let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
     let grid = Grid::web_mercator();
-    let layers = vec![Layer {
-        name: String::from("points"),
-        query: String::from("SELECT geometry FROM osm_place_point LIMIT 1")
-    }];
+    let mut layers = vec![Layer::new("points")];
+    layers[0].query = Some(String::from("SELECT geometry FROM osm_place_point"));
+    layers[0].geometry_field = Some(String::from("geometry"));
+    layers[0].geometry_type = Some(String::from("POINT"));
+    layers[0].query_limit = Some(1);
     let topics = vec![Topic {name: String::from("roads"), layers: layers}];
     let service = MvtService {input: pg, grid: grid, topics: topics};
 
-    let mvt_tile = service.tile("roads", 486, 332, 10);
-    //http://localhost:8124/roads/11/1073/717.pbf
+    let mvt_tile = service.tile("roads", 1073, 717, 11);
     println!("{:#?}", mvt_tile);
     let expected = "Tile {
     layers: [
@@ -70,8 +70,8 @@ pub fn test_tile_query() {
                     ),
                     geometry: [
                         9,
-                        405938,
-                        214313
+                        628,
+                        5368
                     ],
                     unknown_fields: UnknownFields {
                         fields: None
