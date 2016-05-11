@@ -7,28 +7,35 @@ use mvt::vector_tile;
 use mvt::geom_to_proto::EncodableGeom;
 
 
+/// Collection of layers in one MVT
 pub struct Topic {
     pub name: String,
-    pub layers: Vec<Layer>
+    pub layers: Vec<String>,
 }
 
 /// Mapbox Vector Tile Service
 pub struct MvtService {
     pub input: PostgisInput,
     pub grid: Grid,
-    pub topics: Vec<Topic>
+    pub layers: Vec<Layer>,
+    pub topics: Vec<Topic>,
 }
 
 impl MvtService {
-    fn get_topic(&self, name: &str) -> &Topic {
-        self.topics.iter().find(|t| t.name == name).unwrap()
+    fn get_layers(&self, name: &str) -> Vec<&Layer> {
+        let topic = self.topics.iter().find(|t| t.name == name);
+        match topic {
+            Some(t) => Vec::new(), //TODO: return corresponding layers
+            None => {
+                self.layers.iter().filter(|t| t.name == name).collect()
+            }
+        }
     }
     /// Create vector tile from input at x, y, z
     pub fn tile(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16) -> vector_tile::Tile {
         let extent = self.grid.tile_extent_xyz(xtile, ytile, zoom);
         let mut tile = Tile::new(&extent, 4096);
-        let topic = self.get_topic(topic);
-        for layer in topic.layers.iter() {
+        for layer in self.get_layers(topic).iter() {
             let mut mvt_layer = tile.new_layer(layer);
             self.input.retrieve_features(&layer, &extent, zoom, |feat| {
                 tile.add_feature(&mut mvt_layer, feat);
@@ -49,10 +56,9 @@ pub fn test_tile_query() {
     layers[0].geometry_field = Some(String::from("geometry"));
     layers[0].geometry_type = Some(String::from("POINT"));
     layers[0].query_limit = Some(1);
-    let topics = vec![Topic {name: String::from("roads"), layers: layers}];
-    let service = MvtService {input: pg, grid: grid, topics: topics};
+    let service = MvtService {input: pg, grid: grid, layers: layers, topics: Vec::new()};
 
-    let mvt_tile = service.tile("roads", 1073, 717, 11);
+    let mvt_tile = service.tile("points", 1073, 717, 11);
     println!("{:#?}", mvt_tile);
     let expected = "Tile {
     layers: [

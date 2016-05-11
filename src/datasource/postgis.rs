@@ -45,16 +45,22 @@ pub struct PostgisInput {
 }
 
 impl PostgisInput {
-    pub fn detect_layers(&self) -> String {
+    pub fn detect_layers(&self) -> Vec<Layer> {
+        let mut layers: Vec<Layer> = Vec::new();
         let conn = Connection::connect(self.connection_url, SslMode::None).unwrap();
         let stmt = conn.prepare("SELECT * FROM geometry_columns").unwrap();
         for row in &stmt.query(&[]).unwrap() {
             let table_name: String = row.get("f_table_name");
-            println!("{}", table_name);
+            let geometry_column: String = row.get("f_geometry_column");
+            let srid: i32 = row.get("srid");
+            let geomtype: String = row.get("type");
+            let mut layer = Layer::new(&table_name);
+            layer.geometry_field = Some(geometry_column.clone());
+            layer.geometry_type = Some(geomtype.clone());
+            layer.query = Some(format!("SELECT {} FROM {}", &geometry_column, &table_name));
+            layers.push(layer);
         }
-        let rows = conn.query("SELECT * FROM geometry_columns LIMIT 1", &[]).unwrap();
-        let table_name: String = rows.get(0).get("f_table_name");
-        table_name
+        layers
     }
     fn query(&self, layer: &Layer, zoom: u16) -> String {
         let mut sql = format!("{} WHERE ST_Intersects({},ST_MakeEnvelope($1,$2,$3,$4,3857))",
@@ -101,8 +107,8 @@ pub fn test_from_geom_fields() {
 pub fn test_detect_layers() {
     let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
     //"postgresql://pi@localhost/osm2vectortiles";
-    let table_name = pg.detect_layers();
-    assert_eq!(table_name, "osm_admin_linestring");
+    let layers = pg.detect_layers();
+    assert_eq!(layers[0].name, "osm_admin_linestring");
 }
 
 #[test]
