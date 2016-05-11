@@ -55,16 +55,22 @@ impl PostgisInput {
             let srid: i32 = row.get("srid");
             let geomtype: String = row.get("type");
             let mut layer = Layer::new(&table_name);
+            layer.table_name = Some(table_name.clone());
             layer.geometry_field = Some(geometry_column.clone());
             layer.geometry_type = Some(geomtype.clone());
-            layer.query = Some(format!("SELECT {} FROM {}", &geometry_column, &table_name));
             layers.push(layer);
         }
         layers
     }
     fn query(&self, layer: &Layer, zoom: u16) -> String {
-        let mut sql = format!("{} WHERE ST_Intersects({},ST_MakeEnvelope($1,$2,$3,$4,3857))",
-            layer.query.as_ref().unwrap(), layer.geometry_field.as_ref().unwrap());
+        let mut sql = match layer.query.as_ref() {
+            Some(q) => q.clone(),
+            None => format!("SELECT {} FROM {}",
+                layer.geometry_field.as_ref().unwrap(),
+                layer.table_name.as_ref().unwrap())
+        };
+        sql.push_str(&format!(" WHERE ST_Intersects({},ST_MakeEnvelope($1,$2,$3,$4,3857))",
+            layer.geometry_field.as_ref().unwrap()));
         if let Some(n) = layer.query_limit {
             sql.push_str(&format!(" LIMIT {}", n));
         }
@@ -115,7 +121,7 @@ pub fn test_detect_layers() {
 pub fn test_feature_query() {
     let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
     let mut layer = Layer::new("points");
-    layer.query = Some(String::from("SELECT geometry FROM osm_place_point"));
+    layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));
     assert_eq!(pg.query(&layer, 10),
         "SELECT geometry FROM osm_place_point WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857))");
@@ -123,6 +129,10 @@ pub fn test_feature_query() {
     layer.query_limit = Some(1);
     assert_eq!(pg.query(&layer, 10),
         "SELECT geometry FROM osm_place_point WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857)) LIMIT 1");
+
+    layer.query = Some(String::from("SELECT geometry AS geom FROM osm_place_point"));
+    assert_eq!(pg.query(&layer, 10),
+        "SELECT geometry AS geom FROM osm_place_point WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857)) LIMIT 1");
 }
 
 #[cfg(feature = "dbtest")]
@@ -130,7 +140,7 @@ pub fn test_feature_query() {
 pub fn test_retrieve_features() {
     let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
     let mut layer = Layer::new("points");
-    layer.query = Some(String::from("SELECT geometry FROM osm_place_point"));
+    layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));
     layer.geometry_type = Some(String::from("POINT"));
     layer.query_limit = Some(1);
