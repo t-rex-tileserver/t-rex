@@ -1,20 +1,20 @@
 [package]
 name = "t-rex"
-version = "0.1.0"
+version = "0.0.0"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 
 [features]
 dbtest = []
 
 [dependencies]
-postgis = "0.2.1"
-protobuf = "1.0.18"
-nickel_mustache = "0.1.0"
-nickel = "0.8.0"
-clap = "2.2.5"
+postgis = "*"
+protobuf = "*"
+nickel = "*"
+nickel_mustache = "*"
+clap = "*"
 
 [dependencies.postgres]
-version = "0.11.4"
+version = "*"
 features = ["unix_socket"]
 
 [dependencies.hyper]
