@@ -13,7 +13,8 @@ Usage
 
     t_rex serve --dbconn postgresql://pi@localhost/osm2vectortiles
 
-Tiles are then served at http://localhost:6767/<topic>/z/x/y.pbf
+Tiles are then served at http://localhost:6767/{layer}/{z}/{x}/{y}.pbf
+A list of all detected layers is available at http://localhost:6767/
 
 Additional commands (not implemented yet):
 

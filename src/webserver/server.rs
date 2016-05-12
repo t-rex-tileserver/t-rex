@@ -1,9 +1,7 @@
 use datasource::postgis::PostgisInput;
 use core::grid::Grid;
-use core::layer::Layer;
 use mvt::tile::Tile;
 use mvt::vector_tile;
-use service::mvt::Topic;
 use service::mvt::MvtService;
 
 use nickel::{Nickel, HttpRouter, MediaType, Responder, Response, MiddlewareResult };
@@ -31,6 +29,12 @@ pub fn webserver(args: &ArgMatches) {
     let pg = PostgisInput { connection_url: dbconn.to_string() };
     let grid = Grid::web_mercator();
     let layers = pg.detect_layers();
+    let layers_display: Vec<HashMap<&str,String>> = layers.iter().map(|l| {
+        let mut h = HashMap::new();
+        h.insert("name", l.name.clone());
+        h.insert("geomtype", l.geometry_type.as_ref().unwrap().clone());
+        h
+    }).collect();
     let service = MvtService {input: pg, grid: grid, layers: layers, topics: Vec::new()};
 
     server.get("/:topic/:z/:x/:y.pbf", middleware! { |req|
@@ -42,6 +46,11 @@ pub fn webserver(args: &ArgMatches) {
         let mvt_tile = service.tile(topic, x, y, z);
 
         mvt_tile
+    });
+    server.get("/", middleware! { |req, res|
+        let mut data = HashMap::new();
+        data.insert("layer", &layers_display);
+        return res.render("src/webserver/templates/index.tpl", &data)
     });
     server.get("/:topic/", middleware! { |req, res|
         let topic = req.param("topic").unwrap();
