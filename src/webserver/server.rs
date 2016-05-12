@@ -9,6 +9,7 @@ use service::mvt::MvtService;
 use nickel::{Nickel, HttpRouter, MediaType, Responder, Response, MiddlewareResult };
 use hyper::header;
 use std::collections::HashMap;
+use clap::ArgMatches;
 
 
 fn maybe_set_type<D>(res: &mut Response<D>, mime: MediaType) {
@@ -23,10 +24,10 @@ impl<D> Responder<D> for vector_tile::Tile {
     }
 }
 
-pub fn webserver() {
+pub fn webserver(args: &ArgMatches) {
     let mut server = Nickel::new();
-
-    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
+    let dbconn = args.value_of("dbconn").unwrap();
+    let pg = PostgisInput { connection_url: dbconn.to_string() };
     let grid = Grid::web_mercator();
     let layers = pg.detect_layers();
     let service = MvtService {input: pg, grid: grid, layers: layers, topics: Vec::new()};

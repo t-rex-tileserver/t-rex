@@ -11,15 +11,15 @@ JSON.
 Usage
 -----
 
-    t_rex serve --dbconnection=postgresql://pi@localhost/osm2vectortiles
+    t_rex serve --dbconn postgresql://pi@localhost/osm2vectortiles
 
 Tiles are then served at http://localhost:6767/<topic>/z/x/y.pbf
 
 Additional commands (not implemented yet):
 
-    t_rex genconfig --dbconnection=postgresql://pi@localhost/osm2vectortiles
+    t_rex genconfig --dbconn postgresql://pi@localhost/osm2vectortiles
 
-    t_rex seed --config=osm2vectortiles.cfg
+    t_rex seed --config osm2vectortiles.cfg
 
 
 For developers

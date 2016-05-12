@@ -41,13 +41,13 @@ impl<'a> Feature for FeatureRow<'a> {
 }
 
 pub struct PostgisInput {
-    pub connection_url: &'static str
+    pub connection_url: String
 }
 
 impl PostgisInput {
     pub fn detect_layers(&self) -> Vec<Layer> {
         let mut layers: Vec<Layer> = Vec::new();
-        let conn = Connection::connect(self.connection_url, SslMode::None).unwrap();
+        let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
         let stmt = conn.prepare("SELECT * FROM geometry_columns").unwrap();
         for row in &stmt.query(&[]).unwrap() {
             let table_name: String = row.get("f_table_name");
@@ -81,7 +81,7 @@ impl PostgisInput {
 impl Datasource for PostgisInput {
     fn retrieve_features<F>(&self, layer: &Layer, extent: &Extent, zoom: u16, mut read: F)
         where F : FnMut(&Feature) {
-        let conn = Connection::connect(self.connection_url, SslMode::None).unwrap();
+        let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
         let stmt = conn.prepare(&self.query(&layer, zoom)).unwrap();
         for row in &stmt.query(&[&extent.minx, &extent.miny, &extent.maxx, &extent.maxy]).unwrap() {
             let feature = FeatureRow { layer: layer, row: &row, attrs: vec![] };
@@ -111,7 +111,7 @@ pub fn test_from_geom_fields() {
 #[cfg(feature = "dbtest")]
 #[test]
 pub fn test_detect_layers() {
-    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
+    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles".to_string()};
     //"postgresql://pi@localhost/osm2vectortiles";
     let layers = pg.detect_layers();
     assert_eq!(layers[0].name, "osm_admin_linestring");
@@ -119,7 +119,7 @@ pub fn test_detect_layers() {
 
 #[test]
 pub fn test_feature_query() {
-    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
+    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles".to_string()};
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));
@@ -138,7 +138,7 @@ pub fn test_feature_query() {
 #[cfg(feature = "dbtest")]
 #[test]
 pub fn test_retrieve_features() {
-    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
+    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles".to_string()};
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));

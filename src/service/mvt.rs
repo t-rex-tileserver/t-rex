@@ -49,7 +49,7 @@ impl MvtService {
 #[cfg(feature = "dbtest")]
 #[test]
 pub fn test_tile_query() {
-    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles"};
+    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles".to_string()};
     let grid = Grid::web_mercator();
     let mut layers = vec![Layer::new("points")];
     layers[0].table_name = Some(String::from("osm_place_point"));
