@@ -7,6 +7,7 @@ use service::mvt::Topic;
 use service::mvt::MvtService;
 
 use nickel::{Nickel, HttpRouter, MediaType, Responder, Response, MiddlewareResult };
+use nickel_mustache::Render;
 use hyper::header;
 use std::collections::HashMap;
 use clap::ArgMatches;
@@ -44,7 +45,7 @@ pub fn webserver(args: &ArgMatches) {
     });
     server.get("/:topic/", middleware! { |req, res|
         let topic = req.param("topic").unwrap();
-        let mut data = HashMap::<&str, &str>::new();
+        let mut data = HashMap::new();
         data.insert("baseurl", "http://127.0.0.1:6767");
         data.insert("topic", topic);
         return res.render("src/webserver/templates/olviewer.tpl", &data)

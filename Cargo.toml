@@ -9,6 +9,7 @@ dbtest = []
 [dependencies]
 postgis = "0.2.1"
 protobuf = "1.0.18"
+nickel_mustache = "0.1.0"
 nickel = "0.8.0"
 clap = "2.2.5"
 
