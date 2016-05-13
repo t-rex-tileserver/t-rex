@@ -1,3 +1,8 @@
+//
+// Copyright (c) Pirmin Kalberer. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+//
+
 #[derive(Default)]
 pub struct Layer {
     pub name: String,
