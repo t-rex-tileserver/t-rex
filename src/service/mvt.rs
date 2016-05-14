@@ -51,10 +51,15 @@ impl MvtService {
     }
 }
 
-#[cfg(feature = "dbtest")]
+use std::io::{self,Write};
+use std::env;
+
 #[test]
 pub fn test_tile_query() {
-    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles".to_string()};
+    let pg: PostgisInput = match env::var("DBCONN") {
+        Result::Ok(val) => Some(PostgisInput {connection_url: val}),
+        Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
+    }.unwrap();
     let grid = Grid::web_mercator();
     let mut layers = vec![Layer::new("points")];
     layers[0].table_name = Some(String::from("osm_place_point"));

@@ -96,10 +96,15 @@ impl Datasource for PostgisInput {
 }
 
 
-#[cfg(feature = "dbtest")]
+use std::io::{self,Write};
+use std::env;
+
 #[test]
 pub fn test_from_geom_fields() {
-    let conn = Connection::connect("postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles", SslMode::None).unwrap();
+    let conn: Connection = match env::var("DBCONN") {
+        Result::Ok(val) => Connection::connect(&val as &str, SslMode::None),
+        Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
+    }.unwrap();
     let stmt = conn.prepare("SELECT geometry FROM osm_place_point LIMIT 1").unwrap();
     for row in &stmt.query(&[]).unwrap() {
         println!(">>>>>> {}", row.get::<_, Point>("geometry"));
@@ -113,18 +118,19 @@ pub fn test_from_geom_fields() {
     }*/
 }
 
-#[cfg(feature = "dbtest")]
 #[test]
 pub fn test_detect_layers() {
-    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles".to_string()};
-    //"postgresql://pi@localhost/osm2vectortiles";
+    let pg: PostgisInput = match env::var("DBCONN") {
+        Result::Ok(val) => Some(PostgisInput {connection_url: val}),
+        Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
+    }.unwrap();
     let layers = pg.detect_layers();
     assert_eq!(layers[0].name, "osm_admin_linestring");
 }
 
 #[test]
 pub fn test_feature_query() {
-    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles".to_string()};
+    let pg = PostgisInput {connection_url: "postgresql://pi@localhost/osm2vectortiles".to_string()};
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));
@@ -140,10 +146,12 @@ pub fn test_feature_query() {
         "SELECT geometry AS geom FROM osm_place_point WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857)) LIMIT 1");
 }
 
-#[cfg(feature = "dbtest")]
 #[test]
 pub fn test_retrieve_features() {
-    let pg = PostgisInput {connection_url: "postgresql://pi@%2Frun%2Fpostgresql/osm2vectortiles".to_string()};
+    let pg: PostgisInput = match env::var("DBCONN") {
+        Result::Ok(val) => Some(PostgisInput {connection_url: val}),
+        Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
+    }.unwrap();
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));

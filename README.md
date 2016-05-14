@@ -36,9 +36,9 @@ Run tests:
 
     cargo test
 
-With DB tests:
+To run DB tests you have to set an environment variable with the connection spec first. Example:
 
-    cargo test --features=dbtest
+     export DBCONN=postgresql://pi@localhost/osm2vectortiles
 
 
 License
