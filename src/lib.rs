@@ -3,6 +3,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
+#[macro_use]
+extern crate log;
 extern crate postgres;
 extern crate postgis;
 extern crate protobuf;

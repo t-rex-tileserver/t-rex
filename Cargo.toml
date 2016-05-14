@@ -12,6 +12,9 @@ protobuf = "*"
 nickel = "*"
 nickel_mustache = "*"
 clap = "*"
+log = "*"
+env_logger = "*"
+time = "*"
 
 [dependencies.postgres]
 version = "*"

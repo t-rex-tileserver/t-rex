@@ -3,14 +3,17 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 #[macro_use] extern crate nickel;
 extern crate nickel_mustache;
 extern crate hyper;
-
 extern crate postgres;
 extern crate postgis;
 extern crate protobuf;
 extern crate clap;
+extern crate time;
 
 mod core;
 mod datasource;
@@ -19,9 +22,37 @@ mod service;
 mod webserver;
 
 use clap::{App, SubCommand};
+use std::env;
+use log::{LogRecord, LogLevelFilter};
+use env_logger::LogBuilder;
 
+
+fn init_logger() {
+    let format = |record: &LogRecord| {
+        let t = time::now();
+        format!("{}.{:03} {} {}",
+            time::strftime("%Y-%m-%d %H:%M:%S", &t).unwrap(),
+            t.tm_nsec / 1000_000,
+            record.level(),
+            record.args()
+        )
+    };
+
+    let mut builder = LogBuilder::new();
+    builder.format(format);
+
+    match env::var("RUST_LOG") {
+        Result::Ok(val) => { builder.parse(&val); },
+        // Set log level for webserver to info by default
+        Result::Err(_) => { builder.filter(Some("t_rex::webserver::server"), LogLevelFilter::Info); }
+    }
+
+    builder.init().unwrap();
+}
 
 fn main() {
+    init_logger();
+
     // http://kbknapp.github.io/clap-rs/clap/
     let matches = App::new("t_rex")
                         .version("0.0.0")

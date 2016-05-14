@@ -9,12 +9,16 @@ use mvt::tile::Tile;
 use mvt::vector_tile;
 use service::mvt::MvtService;
 
-use nickel::{Nickel, Options, HttpRouter, MediaType, Responder, Response, MiddlewareResult };
+use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult };
 use nickel_mustache::Render;
 use hyper::header;
 use std::collections::HashMap;
 use clap::ArgMatches;
 
+fn log_request<'mw>(req: &mut Request, res: Response<'mw>) -> MiddlewareResult<'mw> {
+    info!("{} {}", req.origin.method, req.origin.uri);
+    res.next_middleware()
+}
 
 fn maybe_set_type<D>(res: &mut Response<D>, mime: MediaType) {
     res.set_header_fallback(|| header::ContentType(mime.into()));
@@ -32,6 +36,8 @@ pub fn webserver(args: &ArgMatches) {
     let mut server = Nickel::new();
     server.options = Options::default()
                      .thread_count(Some(1));
+    server.utilize(log_request);
+
     let dbconn = args.value_of("dbconn").unwrap();
     let pg = PostgisInput { connection_url: dbconn.to_string() };
     let grid = Grid::web_mercator();

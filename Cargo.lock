@@ -3,12 +3,15 @@ name = "t-rex"
 version = "0.0.0"
 dependencies = [
  "clap 2.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "env_logger 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "nickel 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nickel_mustache 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "postgis 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "postgres 0.11.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "time 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -78,6 +81,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "time 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "env_logger"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "regex 0.1.69 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
