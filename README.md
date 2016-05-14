@@ -4,8 +4,8 @@ t-rex
 t-rex is a vector tile server specialized on publishing [MVT tiles](https://github.com/mapbox/vector-tile-spec/tree/master/2.1)
 from a PostGIS database.
 
-An extensible design allows future support for additional data sources (e.g. OGR), custom tile
-grids with other reference systems than Spherical Mercator and addional outputs like
+An extensible design allows future support for more data sources (e.g. OGR), custom tile
+grids with other reference systems than Spherical Mercator and additional output formats like
 JSON.
 
 Usage

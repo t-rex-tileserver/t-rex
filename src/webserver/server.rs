@@ -9,7 +9,7 @@ use mvt::tile::Tile;
 use mvt::vector_tile;
 use service::mvt::MvtService;
 
-use nickel::{Nickel, HttpRouter, MediaType, Responder, Response, MiddlewareResult };
+use nickel::{Nickel, Options, HttpRouter, MediaType, Responder, Response, MiddlewareResult };
 use nickel_mustache::Render;
 use hyper::header;
 use std::collections::HashMap;
@@ -30,6 +30,8 @@ impl<D> Responder<D> for vector_tile::Tile {
 
 pub fn webserver(args: &ArgMatches) {
     let mut server = Nickel::new();
+    server.options = Options::default()
+                     .thread_count(Some(1));
     let dbconn = args.value_of("dbconn").unwrap();
     let pg = PostgisInput { connection_url: dbconn.to_string() };
     let grid = Grid::web_mercator();
