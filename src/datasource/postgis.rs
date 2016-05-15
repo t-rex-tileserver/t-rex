@@ -19,7 +19,7 @@ impl GeometryType {
             "LINESTRING"         => GeometryType::LineString(row.get::<_, LineString>(idx)),
             "POLYGON"            => GeometryType::Polygon(row.get::<_, Polygon>(idx)),
             "MULTIPOINT"         => GeometryType::MultiPoint(row.get::<_, MultiPoint>(idx)),
-            "MULTILINESTRING"    => GeometryType::MultiLineString(row.get::<_, MultiLineString>(idx)),
+            "MULTILINESTRING"    => GeometryType::MultiLineString(row.get::<_, MultiLineString>(idx)), //FIXME: panics!!??
             "MULTIPOLYGON"       => GeometryType::MultiPolygon(row.get::<_, MultiPolygon>(idx)),
             "GEOMETRYCOLLECTION" => GeometryType::GeometryCollection(row.get::<_, GeometryCollection>(idx)),
             _                    => panic!("Unknown geometry type")

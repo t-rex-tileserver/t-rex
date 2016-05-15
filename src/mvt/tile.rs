@@ -61,8 +61,28 @@ impl ScreenGeom<geom::Point> for screen::Point {
 impl ScreenGeom<geom::LineString> for screen::LineString {
     fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, line: &geom::LineString) -> Self {
         let mut screen_geom = screen::LineString { points: Vec::new() };
-        for point in line.points.iter() {
-            screen_geom.points.push(screen::Point::from_geom(extent, reverse_y, tile_size, &point));
+        for point in &line.points {
+            screen_geom.points.push(screen::Point::from_geom(extent, reverse_y, tile_size, point));
+        }
+        screen_geom
+    }
+}
+
+impl ScreenGeom<geom::MultiLineString> for screen::MultiLineString {
+    fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, multiline: &geom::MultiLineString) -> Self {
+        let mut screen_geom = screen::MultiLineString { lines: Vec::new() };
+        for line in &multiline.lines {
+            screen_geom.lines.push(screen::LineString::from_geom(extent, reverse_y, tile_size, line));
+        }
+        screen_geom
+    }
+}
+
+impl ScreenGeom<geom::Polygon> for screen::Polygon {
+    fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, polygon: &geom::Polygon) -> Self {
+        let mut screen_geom = screen::Polygon { rings: Vec::new() };
+        for line in &polygon.rings {
+            screen_geom.rings.push(screen::LineString::from_geom(extent, reverse_y, tile_size, line));
         }
         screen_geom
     }
@@ -103,6 +123,10 @@ impl<'a> Tile<'a> {
                 screen::Point::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode(),
             GeometryType::LineString(ref g) =>
                 screen::LineString::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode(),
+            GeometryType::MultiLineString(ref g) =>
+                screen::MultiLineString::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode(),
+            GeometryType::Polygon(ref g) =>
+                screen::Polygon::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode(),
             _ => unimplemented!()
         }
     }
