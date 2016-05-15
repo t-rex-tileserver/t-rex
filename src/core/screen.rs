@@ -20,6 +20,6 @@ pub struct MultiPoint {
 }
 
 #[derive(PartialEq,Debug)]
-pub struct Linestring {
+pub struct LineString {
     pub points: Vec<Point>
 }

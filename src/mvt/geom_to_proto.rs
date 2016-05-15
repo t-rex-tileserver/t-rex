@@ -113,7 +113,7 @@ impl EncodableGeom for screen::MultiPoint {
     }
 }
 
-impl EncodableGeom for screen::Linestring {
+impl EncodableGeom for screen::LineString {
     fn encode(&self) -> CommandSequence {
         let mut seq = CommandSequence::new();
         if self.points.len() > 0 {
@@ -144,7 +144,7 @@ fn test_geom_encoding() {
         };
     assert_eq!(multipoint.encode().0, &[17,10,14,3,9]);
 
-    let linestring = screen::Linestring {
+    let linestring = screen::LineString {
         points: vec![
             screen::Point { x: 2, y: 2 },
             screen::Point { x: 2, y: 10 },

@@ -42,19 +42,29 @@ impl GeometryType {
 // --- conversion of geometries into screen coordinates
 
 trait ScreenGeom<T> {
-    fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, geom: T) -> Self;
+    fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, geom: &T) -> Self;
 }
 
 impl ScreenGeom<geom::Point> for screen::Point {
-    fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, point: geom::Point) -> Self {
+    fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, point: &geom::Point) -> Self {
         let x_span = extent.maxx - extent.minx;
         let y_span = extent.maxy - extent.miny;
-        let mut point = screen::Point {
+        let mut screen_geom = screen::Point {
             x: ((point.x-extent.minx) * tile_size as f64 / x_span) as i32,
             y: ((point.y-extent.miny) * tile_size as f64 / y_span) as i32
         };
-        if reverse_y { point.y = tile_size as i32 - point.y };
-        point
+        if reverse_y { screen_geom.y = tile_size as i32 - screen_geom.y };
+        screen_geom
+    }
+}
+
+impl ScreenGeom<geom::LineString> for screen::LineString {
+    fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, line: &geom::LineString) -> Self {
+        let mut screen_geom = screen::LineString { points: Vec::new() };
+        for point in line.points.iter() {
+            screen_geom.points.push(screen::Point::from_geom(extent, reverse_y, tile_size, &point));
+        }
+        screen_geom
     }
 }
 
@@ -65,7 +75,7 @@ fn test_point_to_screen_coords() {
     let zh_mercator = geom::Point::new(960000.0, 6002729.0);
     //let zh_wgs84 = postgis::Point::<WGS84>::new(47.3703149, 8.5285874);
     let tile_extent = Extent {minx: 958826.08, miny: 5987771.04, maxx: 978393.96, maxy: 6007338.92};
-    let screen_pt = screen::Point::from_geom(&tile_extent, false, 4096, zh_mercator);
+    let screen_pt = screen::Point::from_geom(&tile_extent, false, 4096, &zh_mercator);
     assert_eq!(screen_pt, screen::Point { x: 245, y: 3131 });
     assert_eq!(screen_pt.encode().vec(), &[9,490,6262]);
 }
@@ -88,11 +98,13 @@ impl<'a> Tile<'a> {
     }
 
     pub fn encode_geom(&self, geom: geom::GeometryType) -> CommandSequence {
-        let screen_geom = match geom {
-            GeometryType::Point(p) => screen::Point::from_geom(&self.extent, self.reverse_y, self.tile_size, p),
-            _ => panic!("Geometry type not implemented yet")
-        };
-        screen_geom.encode()
+        match geom {
+            GeometryType::Point(ref g) =>
+                screen::Point::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode(),
+            GeometryType::LineString(ref g) =>
+                screen::LineString::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode(),
+            _ => unimplemented!()
+        }
     }
 
     fn add_feature_attribute(mvt_layer: &mut vector_tile::Tile_Layer,
