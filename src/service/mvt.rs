@@ -30,7 +30,7 @@ impl MvtService {
     fn get_layers(&self, name: &str) -> Vec<&Layer> {
         let topic = self.topics.iter().find(|t| t.name == name);
         match topic {
-            Some(t) => Vec::new(), //TODO: return corresponding layers
+            Some(_) => Vec::new(), //TODO: return corresponding layers
             None => {
                 self.layers.iter().filter(|t| t.name == name).collect()
             }
@@ -38,8 +38,8 @@ impl MvtService {
     }
     /// Create vector tile from input at x, y, z
     pub fn tile(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16) -> vector_tile::Tile {
-        let extent = self.grid.tile_extent_xyz(xtile, ytile, zoom);
-        let mut tile = Tile::new(&extent, 4096);
+        let extent = self.grid.tile_extent_reverse_y(xtile, ytile, zoom);
+        let mut tile = Tile::new(&extent, 4096, true);
         for layer in self.get_layers(topic).iter() {
             let mut mvt_layer = tile.new_layer(layer);
             self.input.retrieve_features(&layer, &extent, zoom, |feat| {
@@ -62,13 +62,13 @@ pub fn test_tile_query() {
     }.unwrap();
     let grid = Grid::web_mercator();
     let mut layers = vec![Layer::new("points")];
-    layers[0].table_name = Some(String::from("osm_place_point"));
-    layers[0].geometry_field = Some(String::from("geometry"));
+    layers[0].table_name = Some(String::from("ne_10m_populated_places"));
+    layers[0].geometry_field = Some(String::from("wkb_geometry"));
     layers[0].geometry_type = Some(String::from("POINT"));
     layers[0].query_limit = Some(1);
     let service = MvtService {input: pg, grid: grid, layers: layers, topics: Vec::new()};
 
-    let mvt_tile = service.tile("points", 1073, 717, 11);
+    let mvt_tile = service.tile("points", 33, 22, 6);
     println!("{:#?}", mvt_tile);
     let expected = "Tile {
     layers: [
@@ -86,8 +86,8 @@ pub fn test_tile_query() {
                     ),
                     geometry: [
                         9,
-                        628,
-                        5368
+                        2504,
+                        3390
                     ],
                     unknown_fields: UnknownFields {
                         fields: None

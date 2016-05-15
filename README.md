@@ -38,7 +38,13 @@ Run tests:
 
 To run DB tests you have to set an environment variable with the connection spec first. Example:
 
-     export DBCONN=postgresql://pi@localhost/osm2vectortiles
+     export DBCONN=postgresql://pi@localhost/natural_earth_vectors
+
+Creating test database:
+
+    # Set Postgresql environment variables when needed: PGHOST, PGPORT, PGUSER, PGPASSWORD
+    cd src/test
+    make
 
 
 License

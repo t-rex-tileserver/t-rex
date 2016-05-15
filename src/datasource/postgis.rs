@@ -105,16 +105,16 @@ pub fn test_from_geom_fields() {
         Result::Ok(val) => Connection::connect(&val as &str, SslMode::None),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
-    let stmt = conn.prepare("SELECT geometry FROM osm_place_point LIMIT 1").unwrap();
+    let stmt = conn.prepare("SELECT wkb_geometry FROM ne_10m_populated_places LIMIT 1").unwrap();
     for row in &stmt.query(&[]).unwrap() {
-        println!(">>>>>> {}", row.get::<_, Point>("geometry"));
-        let geom = GeometryType::from_geom_field(&row, "geometry", "POINT");
-        assert_eq!("Point(\n    SRID=3857;POINT(921771.0175818551 5981453.77061269)\n)", &*format!("{:#?}", geom));
+        println!(">>>>>> {}", row.get::<_, Point>("wkb_geometry"));
+        let geom = GeometryType::from_geom_field(&row, "wkb_geometry", "POINT");
+        assert_eq!("Point(\n    SRID=3857;POINT(-6438719.622820721 -4093437.7144101723)\n)", &*format!("{:#?}", geom));
     }
     /*
-    let stmt = conn.prepare("SELECT geometry FROM osm_water_linestring LIMIT 2").unwrap();
+    let stmt = conn.prepare("SELECT wkb_geometry FROM osm_water_linestring LIMIT 2").unwrap();
     for row in &stmt.query(&[]).unwrap() {
-        println!(">>>>>> {}", row.get::<_, LineString>("geometry"));
+        println!(">>>>>> {}", row.get::<_, LineString>("wkb_geometry"));
     }*/
 }
 
@@ -125,7 +125,7 @@ pub fn test_detect_layers() {
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
     let layers = pg.detect_layers();
-    assert_eq!(layers[0].name, "osm_admin_linestring");
+    assert_eq!(layers[0].name, "ne_10m_populated_places");
 }
 
 #[test]
@@ -153,8 +153,8 @@ pub fn test_retrieve_features() {
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
     let mut layer = Layer::new("points");
-    layer.table_name = Some(String::from("osm_place_point"));
-    layer.geometry_field = Some(String::from("geometry"));
+    layer.table_name = Some(String::from("ne_10m_populated_places"));
+    layer.geometry_field = Some(String::from("wkb_geometry"));
     layer.geometry_type = Some(String::from("POINT"));
     layer.query_limit = Some(1);
     let extent = Extent {minx: 958826.08, miny: 5987771.04, maxx: 978393.96, maxy: 6007338.92};

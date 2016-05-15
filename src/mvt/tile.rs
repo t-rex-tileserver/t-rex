@@ -20,6 +20,7 @@ pub struct Tile<'a> {
     pub mvt_tile: vector_tile::Tile,
     tile_size: u32,
     extent: &'a Extent,
+    reverse_y: bool,
 }
 
 // --- GeometryType to MVT geom type
@@ -41,17 +42,19 @@ impl GeometryType {
 // --- conversion of geometries into screen coordinates
 
 trait ScreenGeom<T> {
-    fn from_geom(extent: &Extent, tile_size: u32, geom: T) -> Self;
+    fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, geom: T) -> Self;
 }
 
 impl ScreenGeom<geom::Point> for screen::Point {
-    fn from_geom(extent: &Extent, tile_size: u32, point: geom::Point) -> Self {
+    fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, point: geom::Point) -> Self {
         let x_span = extent.maxx - extent.minx;
         let y_span = extent.maxy - extent.miny;
-        screen::Point {
+        let mut point = screen::Point {
             x: ((point.x-extent.minx) * tile_size as f64 / x_span) as i32,
             y: ((point.y-extent.miny) * tile_size as f64 / y_span) as i32
-        }
+        };
+        if reverse_y { point.y = tile_size as i32 - point.y };
+        point
     }
 }
 
@@ -62,7 +65,7 @@ fn test_point_to_screen_coords() {
     let zh_mercator = geom::Point::new(960000.0, 6002729.0);
     //let zh_wgs84 = postgis::Point::<WGS84>::new(47.3703149, 8.5285874);
     let tile_extent = Extent {minx: 958826.08, miny: 5987771.04, maxx: 978393.96, maxy: 6007338.92};
-    let screen_pt = screen::Point::from_geom(&tile_extent, 4096, zh_mercator);
+    let screen_pt = screen::Point::from_geom(&tile_extent, false, 4096, zh_mercator);
     assert_eq!(screen_pt, screen::Point { x: 245, y: 3131 });
     assert_eq!(screen_pt.encode().vec(), &[9,490,6262]);
 }
@@ -71,9 +74,9 @@ fn test_point_to_screen_coords() {
 // --- Tile creation functions
 
 impl<'a> Tile<'a> {
-    pub fn new(extent: &Extent, tile_size: u32) -> Tile {
+    pub fn new(extent: &Extent, tile_size: u32, reverse_y: bool) -> Tile {
         let mvt_tile = vector_tile::Tile::new();
-        Tile {mvt_tile: mvt_tile, tile_size: tile_size, extent: extent }
+        Tile {mvt_tile: mvt_tile, tile_size: tile_size, extent: extent, reverse_y: reverse_y }
     }
 
     pub fn new_layer(&mut self, layer: &Layer) -> vector_tile::Tile_Layer {
@@ -86,7 +89,7 @@ impl<'a> Tile<'a> {
 
     pub fn encode_geom(&self, geom: geom::GeometryType) -> CommandSequence {
         let screen_geom = match geom {
-            GeometryType::Point(p) => screen::Point::from_geom(&self.extent, self.tile_size, p),
+            GeometryType::Point(p) => screen::Point::from_geom(&self.extent, self.reverse_y, self.tile_size, p),
             _ => panic!("Geometry type not implemented yet")
         };
         screen_geom.encode()
@@ -384,7 +387,7 @@ fn test_build_mvt() {
 #[test]
 fn test_build_mvt_with_helpers() {
     let extent = Extent {minx: 958826.08, miny: 5987771.04, maxx: 978393.96, maxy: 6007338.92};
-    let mut tile = Tile::new(&extent, 4096);
+    let mut tile = Tile::new(&extent, 4096, false);
     let layer = Layer::new("points");
     let mut mvt_layer = tile.new_layer(&layer);
 

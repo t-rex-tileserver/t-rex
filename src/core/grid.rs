@@ -111,7 +111,7 @@ impl Grid {
         */
     }
     /// Extent of a given tile in GoogleMaps XYZ adressing scheme
-    pub fn tile_extent_xyz(&self, xtile: u16, ytile: u16, zoom: u16) -> Extent {
+    pub fn tile_extent_reverse_y(&self, xtile: u16, ytile: u16, zoom: u16) -> Extent {
         let res = self.resolutions[zoom as usize];
         let unitheight = self.height as f64 * res;
         let maxy = ((self.extent.maxy-self.extent.minx- 0.01* unitheight)/unitheight).ceil() as u16;
@@ -127,7 +127,7 @@ fn test_bbox() {
     let extent000 = grid.tile_extent(0, 0, 0);
     assert_eq!(extent000, Extent {minx: -20037508.342789248, miny: -20037508.342789248, maxx: 20037508.342789248, maxy: 20037508.342789248});
 
-    let extent = grid.tile_extent_xyz(486, 332, 10);
+    let extent = grid.tile_extent_reverse_y(486, 332, 10);
     assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: 7005300.768279828, maxx: -978393.9620502591, maxy: 7044436.526761841});
 
     //let extent_ch = service.tile_extent(1073, 717, 11);
