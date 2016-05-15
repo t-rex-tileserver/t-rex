@@ -67,9 +67,11 @@ pub fn webserver(args: &ArgMatches) {
     });
     server.get("/:topic/", middleware! { |req, res|
         let topic = req.param("topic").unwrap();
+        let host = req.origin.headers.get::<header::Host>().unwrap();
+        let baseurl = format!("http://{}:{}", host.hostname, host.port.unwrap_or(80));
         let mut data = HashMap::new();
-        data.insert("baseurl", "http://127.0.0.1:6767");
-        data.insert("topic", topic);
+        data.insert("baseurl", baseurl);
+        data.insert("topic", topic.to_string());
         return res.render("src/webserver/templates/olviewer.tpl", &data)
     });
     server.listen("127.0.0.1:6767");
