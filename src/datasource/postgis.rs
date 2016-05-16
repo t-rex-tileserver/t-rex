@@ -98,6 +98,7 @@ impl Datasource for PostgisInput {
 
 use std::io::{self,Write};
 use std::env;
+use postgis;
 
 #[test]
 pub fn test_from_geom_fields() {
@@ -107,14 +108,26 @@ pub fn test_from_geom_fields() {
     }.unwrap();
     let stmt = conn.prepare("SELECT wkb_geometry FROM ne_10m_populated_places LIMIT 1").unwrap();
     for row in &stmt.query(&[]).unwrap() {
-        println!(">>>>>> {}", row.get::<_, Point>("wkb_geometry"));
+        let geom = row.get::<_, Point>("wkb_geometry");
+        assert_eq!(&*format!("{:?}", geom),
+            "SRID=3857;POINT(-6438719.622820721 -4093437.7144101723)");
         let geom = GeometryType::from_geom_field(&row, "wkb_geometry", "POINT");
-        assert_eq!("Point(\n    SRID=3857;POINT(-6438719.622820721 -4093437.7144101723)\n)", &*format!("{:#?}", geom));
+        assert_eq!(&*format!("{:?}", geom),
+            "Point(SRID=3857;POINT(-6438719.622820721 -4093437.7144101723))");
     }
-    /*
-    let stmt = conn.prepare("SELECT wkb_geometry FROM osm_water_linestring LIMIT 2").unwrap();
+
+    let stmt = conn.prepare("SELECT wkb_geometry FROM rivers_lake_centerlines WHERE ST_NPoints(wkb_geometry)<10 LIMIT 1").unwrap();
     for row in &stmt.query(&[]).unwrap() {
-        println!(">>>>>> {}", row.get::<_, LineString>("wkb_geometry"));
+        let geom = GeometryType::from_geom_field(&row, "wkb_geometry", "LINESTRING");
+        assert_eq!(&*format!("{:?}", geom),
+            "LineString(LineString { points: [SRID=3857;POINT(18672061.098933436 -5690573.725394946), SRID=3857;POINT(18671798.382036217 -5692123.11701991), SRID=3857;POINT(18671707.790002696 -5693530.713572942), SRID=3857;POINT(18671789.322832868 -5694822.281317252), SRID=3857;POINT(18672061.098933436 -5695997.770001522), SRID=3857;POINT(18670620.68560042 -5698245.837796968), SRID=3857;POINT(18668283.41113552 -5700403.997584983), SRID=3857;POINT(18666082.024720907 -5701179.511527114), SRID=3857;POINT(18665148.926775623 -5699253.775757339)] })");
+    }
+    /* row.get panics for multi-geometries: https://github.com/andelf/rust-postgis/issues/6
+    let stmt = conn.prepare("SELECT wkb_geometry FROM ne_10m_rivers_lake_centerlines WHERE ST_NPoints(wkb_geometry)<10 LIMIT 1").unwrap();
+    for row in &stmt.query(&[]).unwrap() {
+        let geom = row.get::<_, postgis::MultiLineString<postgis::Point<EPSG_3857>>>("wkb_geometry");
+        assert_eq!(&*format!("{:#?}", geom),
+            "SRID=3857;MULTILINESTRING((5959308.21223679 7539958.36540974,5969998.07219252 7539958.36540974,5972498.41231776 7539118.00291568,5977308.84929784 7535385.96203562))");
     }*/
 }
 
