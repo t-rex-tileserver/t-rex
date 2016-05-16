@@ -172,9 +172,25 @@ impl EncodableGeom for screen::Polygon {
         let mut seq = CommandSequence::new();
         let mut pos = startpos;
         for line in &self.rings {
-            if line.points.len() > 0 {
+            if line.points.len() > 1 {
                 seq.append(&mut line.encode_ring_from(&pos));
-                pos = &line.points[line.points.len()-1];
+                pos = &line.points[line.points.len()-2];
+            }
+        }
+        seq
+    }
+}
+
+impl EncodableGeom for screen::MultiPolygon {
+    fn encode_from(&self, startpos: &screen::Point) -> CommandSequence {
+        let mut seq = CommandSequence::new();
+        let mut pos = startpos;
+        for polygon in &self.polygons {
+            for line in &polygon.rings {
+                if line.points.len() > 1 {
+                    seq.append(&mut line.encode_ring_from(&pos));
+                    pos = &line.points[line.points.len()-2];
+                }
             }
         }
         seq
@@ -235,4 +251,47 @@ fn test_geom_encoding() {
             ]
         };
     assert_eq!(polygon.encode().0, &[9,6,12,18,10,12,24,44,15]);
+
+    let multipolygon = screen::MultiPolygon {
+        polygons: vec![
+            screen::Polygon {
+                rings: vec![
+                    screen::LineString {
+                        points: vec![
+                            screen::Point { x: 0, y: 0 },
+                            screen::Point { x: 10, y: 0 },
+                            screen::Point { x: 10, y: 10 },
+                            screen::Point { x: 0, y: 10 },
+                            screen::Point { x: 0, y: 0 }
+                            ]
+                    }
+                    ]
+            },
+            screen::Polygon {
+                rings: vec![
+                    screen::LineString {
+                        points: vec![
+                            screen::Point { x: 11, y: 11 },
+                            screen::Point { x: 20, y: 11 },
+                            screen::Point { x: 20, y: 20 },
+                            screen::Point { x: 11, y: 20 },
+                            screen::Point { x: 11, y: 20 },
+                            screen::Point { x: 11, y: 11 }
+                            ]
+                    },
+                    screen::LineString {
+                        points: vec![
+                            screen::Point { x: 13, y: 13 },
+                            screen::Point { x: 13, y: 17 },
+                            screen::Point { x: 17, y: 17 },
+                            screen::Point { x: 17, y: 13 },
+                            screen::Point { x: 13, y: 13 }
+                            ]
+                    }
+                    ]
+            }
+            ]
+        };
+    let expected = [9,0,0,26,20,0,0,20,19,0,15,9,22,2,34,18,0,0,18,17,0,0,0,15,9,4,13,26,0,8,8,0,0,7,15];
+    assert_eq!(multipolygon.encode().0, &expected[0..35]);
 }

@@ -37,3 +37,8 @@ pub struct MultiLineString {
 pub struct Polygon {
     pub rings: Vec<LineString>
 }
+
+#[derive(PartialEq,Debug)]
+pub struct MultiPolygon {
+    pub polygons: Vec<Polygon>
+}

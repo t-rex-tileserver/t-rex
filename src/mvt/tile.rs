@@ -23,9 +23,9 @@ pub struct Tile<'a> {
     reverse_y: bool,
 }
 
-// --- GeometryType to MVT geom type
 
 impl GeometryType {
+    /// GeometryType to MVT geom type
     pub fn mvt_field_type(&self) -> vector_tile::Tile_GeomType {
         match self {
             &GeometryType::Point(_)              => vector_tile::Tile_GeomType::POINT,
@@ -39,9 +39,9 @@ impl GeometryType {
     }
 }
 
-// --- conversion of geometries into screen coordinates
 
 trait ScreenGeom<T> {
+    /// Convert geometry into screen coordinates
     fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, geom: &T) -> Self;
 }
 
@@ -54,6 +54,16 @@ impl ScreenGeom<geom::Point> for screen::Point {
             y: ((point.y-extent.miny) * tile_size as f64 / y_span) as i32
         };
         if reverse_y { screen_geom.y = tile_size as i32 - screen_geom.y };
+        screen_geom
+    }
+}
+
+impl ScreenGeom<geom::MultiPoint> for screen::MultiPoint {
+    fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, multipoint: &geom::MultiPoint) -> Self {
+        let mut screen_geom = screen::MultiPoint { points: Vec::new() };
+        for point in &multipoint.points {
+            screen_geom.points.push(screen::Point::from_geom(extent, reverse_y, tile_size, point));
+        }
         screen_geom
     }
 }
@@ -83,6 +93,16 @@ impl ScreenGeom<geom::Polygon> for screen::Polygon {
         let mut screen_geom = screen::Polygon { rings: Vec::new() };
         for line in &polygon.rings {
             screen_geom.rings.push(screen::LineString::from_geom(extent, reverse_y, tile_size, line));
+        }
+        screen_geom
+    }
+}
+
+impl ScreenGeom<geom::MultiPolygon> for screen::MultiPolygon {
+    fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, multipolygon: &geom::MultiPolygon) -> Self {
+        let mut screen_geom = screen::MultiPolygon { polygons: Vec::new() };
+        for polygon in &multipolygon.polygons {
+            screen_geom.polygons.push(screen::Polygon::from_geom(extent, reverse_y, tile_size, polygon));
         }
         screen_geom
     }
@@ -121,13 +141,17 @@ impl<'a> Tile<'a> {
         match geom {
             GeometryType::Point(ref g) =>
                 screen::Point::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode(),
+            GeometryType::MultiPoint(ref g) =>
+                screen::MultiPoint::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode(),
             GeometryType::LineString(ref g) =>
                 screen::LineString::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode(),
             GeometryType::MultiLineString(ref g) =>
                 screen::MultiLineString::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode(),
             GeometryType::Polygon(ref g) =>
                 screen::Polygon::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode(),
-            _ => unimplemented!()
+            GeometryType::MultiPolygon(ref g) =>
+                screen::MultiPolygon::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode(),
+            GeometryType::GeometryCollection(_) => panic!("GeometryCollection not supported")
         }
     }
 
@@ -437,7 +461,7 @@ fn test_build_mvt_with_helpers() {
         ],
         geometry: geom
     };
-    let mut mvt_feature = tile.add_feature(&mut mvt_layer, &feature);
+    tile.add_feature(&mut mvt_layer, &feature);
 
     let geom : GeometryType = GeometryType::Point(geom::Point::new(960000.0, 6002729.0));
     let feature = FeatureStruct {
@@ -448,7 +472,7 @@ fn test_build_mvt_with_helpers() {
         ],
         geometry: geom
     };
-    let mut mvt_feature = tile.add_feature(&mut mvt_layer, &feature);
+    tile.add_feature(&mut mvt_layer, &feature);
 
     tile.add_layer(mvt_layer);
     println!("{:#?}", tile.mvt_tile);
