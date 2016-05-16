@@ -10,7 +10,7 @@ use core::geom::GeometryType;
 use core::geom;
 use core::screen;
 use mvt::vector_tile;
-use mvt::geom_to_proto::{EncodableGeom,CommandSequence};
+use mvt::geom_encoder::{EncodableGeom,CommandSequence};
 use protobuf::stream::CodedOutputStream;
 use protobuf::core::Message;
 use std::fs::File;

@@ -9,7 +9,7 @@ use core::grid::{Extent,Grid};
 use core::layer::Layer;
 use mvt::tile::Tile;
 use mvt::vector_tile;
-use mvt::geom_to_proto::EncodableGeom;
+use mvt::geom_encoder::EncodableGeom;
 
 
 /// Collection of layers in one MVT
