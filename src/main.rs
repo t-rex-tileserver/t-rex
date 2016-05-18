@@ -6,6 +6,7 @@
 #[macro_use]
 extern crate log;
 extern crate env_logger;
+extern crate toml;
 #[macro_use] extern crate nickel;
 extern crate nickel_mustache;
 extern crate rustc_serialize;
@@ -21,6 +22,7 @@ mod datasource;
 mod mvt;
 mod service;
 mod webserver;
+mod config;
 
 use clap::{App, SubCommand};
 use std::env;

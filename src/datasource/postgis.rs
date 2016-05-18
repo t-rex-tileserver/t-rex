@@ -19,7 +19,7 @@ impl GeometryType {
             "LINESTRING"         => GeometryType::LineString(row.get::<_, LineString>(idx)),
             "POLYGON"            => GeometryType::Polygon(row.get::<_, Polygon>(idx)),
             "MULTIPOINT"         => GeometryType::MultiPoint(row.get::<_, MultiPoint>(idx)),
-            "MULTILINESTRING"    => GeometryType::MultiLineString(row.get::<_, MultiLineString>(idx)), //FIXME: panics!!??
+            "MULTILINESTRING"    => GeometryType::MultiLineString(row.get::<_, MultiLineString>(idx)),
             "MULTIPOLYGON"       => GeometryType::MultiPolygon(row.get::<_, MultiPolygon>(idx)),
             "GEOMETRYCOLLECTION" => GeometryType::GeometryCollection(row.get::<_, GeometryCollection>(idx)),
             _                    => panic!("Unknown geometry type")
@@ -96,9 +96,9 @@ impl Datasource for PostgisInput {
 }
 
 
-use std::io::{self,Write};
-use std::env;
-use postgis;
+#[cfg(test)] use std::io::{self,Write};
+#[cfg(test)] use std::env;
+#[cfg(test)] use postgis;
 
 #[test]
 pub fn test_from_geom_fields() {

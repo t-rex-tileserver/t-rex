@@ -5,6 +5,7 @@
 
 #[macro_use]
 extern crate log;
+extern crate toml;
 extern crate postgres;
 extern crate postgis;
 extern crate protobuf;
@@ -19,3 +20,4 @@ mod datasource;
 mod mvt;
 mod service;
 mod webserver;
+mod config;

@@ -258,13 +258,13 @@ fn test_read_pbf_file() {
 
 
 // https://github.com/mapbox/vector-tile-spec/tree/master/2.1#45-example
-const TILE_EXAMPLE: &'static str = "Tile {
+const TILE_EXAMPLE: &'static str = r#"Tile {
     layers: [
         Tile_Layer {
             version: Some(
                 2
             ),
-            name: Some(\"points\"),
+            name: Some("points"),
             features: [
                 Tile_Feature {
                     id: Some(
@@ -316,13 +316,13 @@ const TILE_EXAMPLE: &'static str = "Tile {
                 }
             ],
             keys: [
-                \"hello\",
-                \"h\",
-                \"count\"
+                "hello",
+                "h",
+                "count"
             ],
             values: [
                 Tile_Value {
-                    string_value: Some(\"world\"),
+                    string_value: Some("world"),
                     float_value: None,
                     double_value: None,
                     int_value: None,
@@ -350,7 +350,7 @@ const TILE_EXAMPLE: &'static str = "Tile {
                     cached_size: Cell { value: 0 }
                 },
                 Tile_Value {
-                    string_value: Some(\"again\"),
+                    string_value: Some("again"),
                     float_value: None,
                     double_value: None,
                     int_value: None,
@@ -391,7 +391,7 @@ const TILE_EXAMPLE: &'static str = "Tile {
         fields: None
     },
     cached_size: Cell { value: 0 }
-}";
+}"#;
 
 #[test]
 fn test_build_mvt() {
