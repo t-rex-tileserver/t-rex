@@ -52,8 +52,8 @@ impl MvtService {
     }
 }
 
-use std::io::{self,Write};
-use std::env;
+#[cfg(test)] use std::io::{self,Write};
+#[cfg(test)] use std::env;
 
 #[test]
 pub fn test_tile_query() {

@@ -37,7 +37,7 @@ Run tests:
 
     cargo test
 
-To run DB tests you have to set an environment variable with the connection spec first. Example:
+To run DB tests you have to set an environment variable with the [connection spec](https://github.com/sfackler/rust-postgres#connecting) first. Example:
 
      export DBCONN=postgresql://pi@localhost/natural_earth_vectors
 

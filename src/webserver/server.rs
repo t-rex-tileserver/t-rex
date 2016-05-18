@@ -8,6 +8,7 @@ use core::grid::Grid;
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use service::mvt::MvtService;
+use core::layer::Layer;
 
 use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult };
 use nickel_mustache::Render;
@@ -32,6 +33,24 @@ impl<D> Responder<D> for vector_tile::Tile {
     }
 }
 
+#[derive(RustcEncodable)]
+struct LayerInfo {
+    name: String,
+    geomtype: String,
+    hasviewer: bool,
+}
+
+impl LayerInfo {
+    fn from_layer(l: &Layer) -> LayerInfo {
+        LayerInfo {
+            name: l.name.clone(),
+            geomtype: l.geometry_type.as_ref().unwrap().clone(),
+            hasviewer: (["POINT","LINESTRING","POLYGON"].contains(
+                &(l.geometry_type.as_ref().unwrap() as &str)))
+        }
+    }
+}
+
 pub fn webserver(args: &ArgMatches) {
     let mut server = Nickel::new();
     server.options = Options::default()
@@ -42,12 +61,10 @@ pub fn webserver(args: &ArgMatches) {
     let pg = PostgisInput { connection_url: dbconn.to_string() };
     let grid = Grid::web_mercator();
     let layers = pg.detect_layers();
-    let layers_display: Vec<HashMap<&str,String>> = layers.iter().map(|l| {
-        let mut h = HashMap::new();
-        h.insert("name", l.name.clone());
-        h.insert("geomtype", l.geometry_type.as_ref().unwrap().clone());
-        h
+    let mut layers_display: Vec<LayerInfo> = layers.iter().map(|l| {
+        LayerInfo::from_layer(l)
     }).collect();
+    layers_display.sort_by_key(|li| li.name.clone());
     let service = MvtService {input: pg, grid: grid, layers: layers, topics: Vec::new()};
 
     server.get("/:topic/:z/:x/:y.pbf", middleware! { |req|

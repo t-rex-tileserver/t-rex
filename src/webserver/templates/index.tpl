@@ -6,9 +6,16 @@
   <body>
   <h1>T-Rex Vector Tile viewer</h1>
   <ul>
-    {{#layer}}
-    <li><a href="/{{name}}/">{{name}}</a> ({{geomtype}})</li>
-    {{/layer}}
+  {{#layer}}
+    <li>
+    {{#hasviewer}}
+      <a href="/{{name}}/">{{name}}</a>
+    {{/hasviewer}}
+    {{^hasviewer}}
+      {{name}}
+    {{/hasviewer}} ({{geomtype}})
+    </li>
+  {{/layer}}
   </ul>
   </body>
 </html>

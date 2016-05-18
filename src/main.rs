@@ -8,6 +8,7 @@ extern crate log;
 extern crate env_logger;
 #[macro_use] extern crate nickel;
 extern crate nickel_mustache;
+extern crate rustc_serialize;
 extern crate hyper;
 extern crate postgres;
 extern crate postgis;
