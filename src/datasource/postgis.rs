@@ -3,13 +3,15 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::datasource::Datasource;
+use datasource::datasource::DatasourceInput;
 use postgres::{Connection, SslMode};
 use postgres::rows::Row;
 use core::feature::{Feature,FeatureAttr};
 use core::geom::*;
 use core::grid::Extent;
 use core::layer::Layer;
+use config::Config;
+use toml;
 
 
 impl GeometryType {
@@ -83,7 +85,7 @@ impl PostgisInput {
     }
 }
 
-impl Datasource for PostgisInput {
+impl DatasourceInput for PostgisInput {
     fn retrieve_features<F>(&self, layer: &Layer, extent: &Extent, zoom: u16, mut read: F)
         where F : FnMut(&Feature) {
         let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
@@ -95,6 +97,13 @@ impl Datasource for PostgisInput {
     }
 }
 
+impl Config<PostgisInput> for PostgisInput {
+    fn from_config(config: &toml::Value) -> Option<Self> {
+        config.lookup("datasource.url")
+            .and_then(|val| val.as_str())
+            .and_then(|url| Some(PostgisInput { connection_url: url.to_string() }))
+    }
+}
 
 #[cfg(test)] use std::io::{self,Write};
 #[cfg(test)] use std::env;

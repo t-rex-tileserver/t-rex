@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::datasource::Datasource;
+use datasource::datasource::DatasourceInput;
 use datasource::postgis::PostgisInput;
 use core::grid::{Extent,Grid};
 use core::layer::Layer;

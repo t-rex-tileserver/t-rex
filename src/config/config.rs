@@ -7,6 +7,11 @@ use toml::{Value, Parser};
 use std::io::prelude::*;
 use std::fs::File;
 
+
+pub trait Config<T> {
+    fn from_config(config: &Value) -> Option<T>;
+}
+
 /// Load and parse the config file into Toml table structure.
 /// If a file cannot be found are cannot parsed, return None.
 pub fn read_config(path: &str) -> Option<Value> {
