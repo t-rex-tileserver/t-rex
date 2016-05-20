@@ -3,6 +3,10 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
+use config::Config;
+use toml;
+
+
 #[derive(PartialEq,Debug)]
 pub struct Extent {
     pub minx: f64,
@@ -120,6 +124,23 @@ impl Grid {
     }
 }
 
+impl Config<Grid> for Grid {
+    fn from_config(config: &toml::Value) -> Result<Self, String> {
+        config.lookup("grid")
+            .ok_or("Missing configuration entry [grid]".to_string())
+            .and_then(|val| val.lookup("predefined").ok_or("Missing configuration entry 'predefined'".to_string()))
+            .and_then(|val| val.as_str().ok_or("grid.predefined entry is not a string".to_string()))
+            .and_then(|gridname| {
+                match gridname {
+                    "wgs84" => Ok(Grid::wgs84()),
+                    "web_mercator" => Ok(Grid::web_mercator()),
+                    _ => Err(format!("Unkown grid '{}'", gridname))
+                }
+            })
+    }
+}
+
+
 #[test]
 fn test_bbox() {
     let grid = Grid::web_mercator();
@@ -135,6 +156,21 @@ fn test_bbox() {
 
     let wgs84extent000 = Grid::wgs84().tile_extent(0, 0, 0);
     assert_eq!(wgs84extent000, Extent { minx: -180.0, miny: -90.0, maxx: 0.0, maxy: 90.0 });
+}
+
+
+#[test]
+fn test_grid_from_config() {
+    use config::parse_config;
+
+    let toml = r#"
+        [grid]
+        predefined = "web_mercator"
+        "#;
+    let config = parse_config(toml.to_string(), "").unwrap();
+    let grid = Grid::from_config(&config).unwrap();
+    assert_eq!(grid.extent, Extent {minx: -20037508.3427892480, miny: -20037508.3427892480,
+                                    maxx: 20037508.3427892480, maxy: 20037508.3427892480});
 }
 
 

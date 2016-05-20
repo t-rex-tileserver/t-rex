@@ -31,9 +31,9 @@ impl Config<Datasource> for Datasource {
 
 #[cfg(test)]
 fn ds_from_config(toml: &str) -> Result<Datasource, String> {
-    use config::config;
+    use config::parse_config;
 
-    let config = config::parse_config(toml.to_string(), "").unwrap();
+    let config = parse_config(toml.to_string(), "").unwrap();
     Datasource::from_config(&config)
 }
 
