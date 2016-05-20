@@ -10,8 +10,6 @@ use std::fs::File;
 /// Load and parse the config file into Toml table structure.
 /// If a file cannot be found are cannot parsed, return None.
 pub fn read_config(path: &str) -> Option<Value> {
-    let mut config_toml = String::new();
-
     let mut file = match File::open(path) {
         Ok(file) => file,
         Err(_)  => {
@@ -19,13 +17,18 @@ pub fn read_config(path: &str) -> Option<Value> {
             return None;
         }
     };
+    let mut config_toml = String::new();
+    if let Err(err) = file.read_to_string(&mut config_toml) {
+        error!("Error while reading config: [{}]", err);
+        return None
+    };
 
-    file.read_to_string(&mut config_toml)
-            .unwrap_or_else(|err| panic!("Error while reading config: [{}]", err));
+    parse_config(config_toml, path)
+}
 
+pub fn parse_config(config_toml: String, path: &str) -> Option<Value> {
     let mut parser = Parser::new(&config_toml);
     let toml = parser.parse();
-
     if toml.is_none() {
         for err in &parser.errors {
             let (loline, locol) = parser.to_linecol(err.lo);
@@ -36,13 +39,6 @@ pub fn read_config(path: &str) -> Option<Value> {
         return None;
     }
 
-    /*
-    let config = Value::Table(toml.unwrap());
-    match toml::decode(config) {
-        Some(t) => t,
-        None => panic!("Error while deserializing config")
-    }
-    */
     Some(Value::Table(toml.unwrap()))
  }
 
