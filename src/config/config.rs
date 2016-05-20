@@ -9,42 +9,41 @@ use std::fs::File;
 
 
 pub trait Config<T> {
-    fn from_config(config: &Value) -> Option<T>;
+    fn from_config(config: &Value) -> Result<T, String>;
 }
 
 /// Load and parse the config file into Toml table structure.
 /// If a file cannot be found are cannot parsed, return None.
-pub fn read_config(path: &str) -> Option<Value> {
+pub fn read_config(path: &str) -> Result<Value, String> {
     let mut file = match File::open(path) {
         Ok(file) => file,
         Err(_)  => {
-            error!("Could not find config file!");
-            return None;
+            return Err("Could not find config file!".to_string());
         }
     };
     let mut config_toml = String::new();
     if let Err(err) = file.read_to_string(&mut config_toml) {
-        error!("Error while reading config: [{}]", err);
-        return None
+        return Err(format!("Error while reading config: [{}]", err));
     };
 
     parse_config(config_toml, path)
 }
 
-pub fn parse_config(config_toml: String, path: &str) -> Option<Value> {
+pub fn parse_config(config_toml: String, path: &str) -> Result<Value, String> {
     let mut parser = Parser::new(&config_toml);
     let toml = parser.parse();
     if toml.is_none() {
+        let mut errors = Vec::new();
         for err in &parser.errors {
             let (loline, locol) = parser.to_linecol(err.lo);
             let (hiline, hicol) = parser.to_linecol(err.hi);
-            println!("{}:{}:{}-{}:{} error: {}",
-                     path, loline, locol, hiline, hicol, err.desc);
+            errors.push(format!("{}:{}:{}-{}:{} error: {}",
+                     path, loline, locol, hiline, hicol, err.desc));
         }
-        return None;
+        return Err(errors.join("\n"));
     }
 
-    Some(Value::Table(toml.unwrap()))
+    Ok(Value::Table(toml.unwrap()))
  }
 
 #[test]
@@ -161,8 +160,8 @@ fn test_parse_config() {
 #[test]
 fn test_parse_error() {
     let config = read_config("src/config/mod.rs");
-    assert_eq!(None, config);
+    assert_eq!("src/config/mod.rs:0:0-0:0 error: expected a key but found an empty string", config.err().unwrap());
 
     let config = read_config("wrongfile");
-    assert_eq!(None, config);
+    assert_eq!("Could not find config file!", config.err().unwrap());
 }

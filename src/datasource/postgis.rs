@@ -98,10 +98,11 @@ impl DatasourceInput for PostgisInput {
 }
 
 impl Config<PostgisInput> for PostgisInput {
-    fn from_config(config: &toml::Value) -> Option<Self> {
+    fn from_config(config: &toml::Value) -> Result<Self, String> {
         config.lookup("datasource.url")
-            .and_then(|val| val.as_str())
-            .and_then(|url| Some(PostgisInput { connection_url: url.to_string() }))
+            .ok_or("Missing configuration entry 'datasource.url'".to_string())
+            .and_then(|val| val.as_str().ok_or("url entry is not a string".to_string()))
+            .and_then(|url| Ok(PostgisInput { connection_url: url.to_string() }))
     }
 }
 
