@@ -9,12 +9,15 @@ use mvt::tile::Tile;
 use mvt::vector_tile;
 use service::mvt::MvtService;
 use core::layer::Layer;
+use config::{Config,read_config};
 
 use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult };
 use nickel_mustache::Render;
 use hyper::header;
 use std::collections::HashMap;
 use clap::ArgMatches;
+use std::process;
+
 
 fn log_request<'mw>(req: &mut Request, res: Response<'mw>) -> MiddlewareResult<'mw> {
     info!("{} {}", req.origin.method, req.origin.uri);
@@ -57,15 +60,29 @@ pub fn webserver(args: &ArgMatches) {
                      .thread_count(Some(1));
     server.utilize(log_request);
 
-    let dbconn = args.value_of("dbconn").unwrap();
-    let pg = PostgisInput { connection_url: dbconn.to_string() };
-    let grid = Grid::web_mercator();
-    let layers = pg.detect_layers();
-    let mut layers_display: Vec<LayerInfo> = layers.iter().map(|l| {
+    let service = if let Some(cfgpath) = args.value_of("config") {
+        info!("Reading configuration from '{}'", cfgpath);
+        read_config(cfgpath)
+            .and_then(|config| MvtService::from_config(&config))
+            .unwrap_or_else(|err| {
+                println!("Error reading configuration - {} ", err);
+                process::exit(1)
+            })
+    } else {
+        if let Some(dbconn) = args.value_of("dbconn") {
+            let pg = PostgisInput { connection_url: dbconn.to_string() };
+            let grid = Grid::web_mercator();
+            let layers = pg.detect_layers();
+            MvtService {input: pg, grid: grid, layers: layers, topics: Vec::new()}
+        } else {
+            println!("Either 'config' or 'dbconn' is required");
+            process::exit(1)
+        }
+    };
+    let mut layers_display: Vec<LayerInfo> = service.layers.iter().map(|l| {
         LayerInfo::from_layer(l)
     }).collect();
     layers_display.sort_by_key(|li| li.name.clone());
-    let service = MvtService {input: pg, grid: grid, layers: layers, topics: Vec::new()};
 
     server.get("/:topic/:z/:x/:y.pbf", middleware! { |req|
         let topic = req.param("topic").unwrap();

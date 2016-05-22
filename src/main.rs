@@ -62,7 +62,8 @@ fn main() {
                         .author("Pirmin Kalberer <pka@sourcepole.ch>")
                         .about("vector tile server specialized on publishing MVT tiles from a PostGIS database")
                         .subcommand(SubCommand::with_name("serve")
-                            .args_from_usage("--dbconn=<SPEC> 'PostGIS connection postgresql://USER@HOST/DBNAME'")
+                            .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'
+                                              -c, --config=[FILE] 'Load from custom config file'")
                             .about("Start web server and serve MVT vector tiles"))
                         .get_matches();
 

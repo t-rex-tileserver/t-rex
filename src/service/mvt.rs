@@ -10,6 +10,8 @@ use core::layer::Layer;
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use mvt::geom_encoder::EncodableGeom;
+use config::Config;
+use toml;
 
 
 /// Collection of layers in one MVT
@@ -52,11 +54,28 @@ impl MvtService {
     }
 }
 
-#[cfg(test)] use std::io::{self,Write};
-#[cfg(test)] use std::env;
+
+impl Config<MvtService> for MvtService {
+    fn from_config(config: &toml::Value) -> Result<Self, String> {
+        let res_pg = PostgisInput::from_config(config);
+        let res_grid = Grid::from_config(config);
+        res_pg.and_then(|pg|
+            res_grid.and_then(|grid| {
+                let layers = pg.detect_layers(); //TODO
+                let topics = Vec::new(); //TODO
+                Ok(MvtService {input: pg, grid: grid,
+                            layers: layers, topics: topics})
+            })
+        )
+    }
+}
+
 
 #[test]
 pub fn test_tile_query() {
+    use std::io::{self,Write};
+    use std::env;
+
     let pg: PostgisInput = match env::var("DBCONN") {
         Result::Ok(val) => Some(PostgisInput {connection_url: val}),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
