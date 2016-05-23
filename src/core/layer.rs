@@ -3,6 +3,10 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
+use config::Config;
+use toml;
+
+
 #[derive(Default)]
 pub struct Layer {
     pub name: String,
@@ -18,4 +22,84 @@ impl Layer {
     pub fn new(name: &str) -> Layer {
         Layer { name: String::from(name), ..Default::default() }
     }
+    pub fn layers_from_config(config: &toml::Value) -> Result<Vec<Layer>, String> {
+        config.lookup("layer")
+              .ok_or("Missing configuration entry [[layer]]".to_string())
+              .and_then(|larr| larr.as_slice().ok_or("Array type for [[layer]] entry expected".to_string()))
+              .and_then(|layers| {
+                 Ok(layers.iter().map(|layer| Layer::from_config(layer).unwrap()).collect())
+               })
+    }
+}
+
+impl Config<Layer> for Layer {
+    fn from_config(layerval: &toml::Value) -> Result<Self, String> {
+        let name = layerval.lookup("name")
+                           .ok_or("Missing configuration entry name in [[layer]]".to_string())
+                           .and_then(|val| val.as_str().ok_or("layer.name entry is not a string".to_string()))
+                           .map(|v| v.to_string());
+        let table_name =     layerval.lookup("table_name")
+                                     .and_then(|val| val.as_str().map(|v| v.to_string()));
+        let geometry_field = layerval.lookup("geometry_field")
+                                     .and_then(|val| val.as_str().map(|v| v.to_string()));
+        let geometry_type =  layerval.lookup("geometry_type")
+                                     .and_then(|val| val.as_str().map(|v| v.to_string()));
+        let fid_field =      layerval.lookup("fid_field")
+                                     .and_then(|val| val.as_str().map(|v| v.to_string()));
+        let query_limit =    layerval.lookup("query_limit")
+                                     .and_then(|val| val.as_integer().map(|v| v as u32));
+        let query =          layerval.lookup("query")
+                                     .and_then(|val| val.as_str().map(|v| v.to_string()));
+        name.and_then(|n|
+            Ok(Layer { name:          n,
+                   table_name:     table_name,
+                   geometry_field: geometry_field,
+                   geometry_type:  geometry_type,
+                   fid_field:      fid_field,
+                   query_limit:    query_limit,
+                   query:          query,
+            }))
+    }
+}
+
+
+#[test]
+fn test_layers_from_config() {
+    use config::parse_config;
+    let toml = r#"
+        [[layer]]
+        name = "points"
+        table_name = "ne_10m_populated_places"
+        geometry_field = "wkb_geometry"
+        geometry_type = "POINT"
+        fid_field = "id"
+        query_limit = 100
+        query = "SELECT name,wkb_geometry FROM ne_10m_populated_places"
+
+        [[layer]]
+        name = "layer2"
+        "#;
+
+    let config = parse_config(toml.to_string(), "").unwrap();
+
+    // read array with toml API
+    let layers = config.lookup("layer").unwrap().as_slice().unwrap();
+    assert_eq!(layers[0].as_table().unwrap().get("name").unwrap().as_str(), Some("points"));
+    assert_eq!(layers[1].lookup("name").unwrap().as_str(), Some("layer2"));
+
+    // read single layer
+    let layer = Layer::from_config(&layers[0]).unwrap();
+    assert_eq!(layer.name, "points");
+
+    // read all layers
+    let layers = Layer::layers_from_config(&config).unwrap();
+    assert_eq!(layers.len(), 2);
+    assert_eq!(layers[0].name, "points");
+    assert_eq!(layers[0].table_name, Some("ne_10m_populated_places".to_string()));
+    assert_eq!(layers[1].table_name, None);
+
+    // errors
+    let emptyconfig = parse_config("".to_string(), "").unwrap();
+    let layers = Layer::layers_from_config(&emptyconfig);
+    assert_eq!(layers.err(), Some("Missing configuration entry [[layer]]".to_string()));
 }

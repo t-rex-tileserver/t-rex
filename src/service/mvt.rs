@@ -59,12 +59,17 @@ impl Config<MvtService> for MvtService {
     fn from_config(config: &toml::Value) -> Result<Self, String> {
         let res_pg = PostgisInput::from_config(config);
         let res_grid = Grid::from_config(config);
+        let res_layers = Layer::layers_from_config(config);
+        let topics = config.lookup("topics")
+                           .map_or_else(|| Vec::new(),
+                                        |_| vec![Topic{name: "TODO".to_string(), layers: Vec::new()}]);
+
         res_pg.and_then(|pg|
             res_grid.and_then(|grid| {
-                let layers = pg.detect_layers(); //TODO
-                let topics = Vec::new(); //TODO
-                Ok(MvtService {input: pg, grid: grid,
-                            layers: layers, topics: topics})
+                res_layers.and_then(|layers| {
+                    Ok(MvtService {input: pg, grid: grid,
+                                   layers: layers, topics: topics})
+                })
             })
         )
     }

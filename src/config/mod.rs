@@ -5,4 +5,4 @@
 
 pub mod config;
 
-pub use config::config::{Config,read_config,parse_config};
+pub use self::config::{Config,read_config,parse_config};

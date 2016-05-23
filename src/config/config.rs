@@ -48,11 +48,8 @@ pub fn parse_config(config_toml: String, path: &str) -> Result<Value, String> {
 
 #[test]
 fn test_parse_config() {
-    let config = match read_config("src/test/example.cfg").unwrap() {
-        Value::Table(table) => table,
-        _ => panic!("Unexpected Value type")
-    };
-    println!("{:#?}", config);
+    let config = read_config("src/test/example.cfg").unwrap();
+    println!("{:#?}", config.as_table().unwrap());
     let expected = r#"{
     "cache": Table(
         {
@@ -142,19 +139,9 @@ fn test_parse_config() {
         }
     )
 }"#;
-    assert_eq!(expected, &*format!("{:#?}", config));
+    assert_eq!(expected, &*format!("{:#?}", config.as_table().unwrap()));
 
-    for (key, value) in &config {
-        println!("{}: \"{}\"", key, value);
-    }
-
-    assert!(config.contains_key("datasource"));
-
-    let dsconfig = match config.get("datasource").unwrap() {
-        &Value::Table(ref table) => table,
-        _ => panic!("Unexpected Value type")
-    };
-    assert_eq!(format!("{}", dsconfig.get("type").unwrap()), "\"postgis\"");
+    assert_eq!(config.lookup("datasource.type").unwrap().as_str(), Some("postgis"));
 }
 
 #[test]
