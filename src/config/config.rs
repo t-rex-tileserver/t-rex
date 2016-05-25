@@ -9,11 +9,13 @@ use std::fs::File;
 
 
 pub trait Config<T> {
+    /// Read configuration
     fn from_config(config: &Value) -> Result<T, String>;
+    /// Generate configuration template
+    fn gen_config() -> String;
 }
 
 /// Load and parse the config file into Toml table structure.
-/// If a file cannot be found are cannot parsed, return None.
 pub fn read_config(path: &str) -> Result<Value, String> {
     let mut file = match File::open(path) {
         Ok(file) => file,
@@ -29,6 +31,7 @@ pub fn read_config(path: &str) -> Result<Value, String> {
     parse_config(config_toml, path)
 }
 
+/// Parse the configuration into Toml table structure.
 pub fn parse_config(config_toml: String, path: &str) -> Result<Value, String> {
     let mut parser = Parser::new(&config_toml);
     let toml = parser.parse();

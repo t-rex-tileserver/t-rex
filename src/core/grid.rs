@@ -138,6 +138,14 @@ impl Config<Grid> for Grid {
                 }
             })
     }
+    fn gen_config() -> String {
+        let toml = r#"
+[grid]
+# Predefined grids: web_mercator, wgs84
+predefined = "web_mercator"
+"#;
+        toml.to_string()
+    }
 }
 
 

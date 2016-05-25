@@ -110,3 +110,20 @@ pub fn webserver(args: &ArgMatches) {
     });
     server.listen("127.0.0.1:6767");
 }
+
+pub fn gen_config(args: &ArgMatches) {
+        let toml = r#"
+[webserver]
+# Bind address. Use 0.0.0.0 to listen on all adresses.
+bind = "127.0.0.1"
+port = 6767
+threads = 1
+mapviewer = true
+"#;
+    if let Some(dbconn) = args.value_of("dbconn") {
+        let pg = PostgisInput { connection_url: dbconn.to_string() };
+    }
+    let mut config = MvtService::gen_config();
+    config.push_str(toml);
+    println!("{}", config);
+}

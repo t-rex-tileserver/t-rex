@@ -3,8 +3,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::datasource::DatasourceInput;
-use datasource::postgis::PostgisInput;
+use datasource::{Datasource,DatasourceInput};
+use datasource::PostgisInput;
 use core::grid::{Extent,Grid};
 use core::layer::Layer;
 use mvt::tile::Tile;
@@ -73,6 +73,30 @@ impl Config<MvtService> for MvtService {
             })
         )
     }
+    fn gen_config() -> String {
+        let toml_services = r#"# t-rex configuration
+
+[services]
+mvt = true
+"#;
+        let toml_topics = r#"
+[topics]
+# Multiple layers in one vector tile
+#topicname = ["layer1","layer2"]
+"#;
+        let toml_cache = r#"
+[cache]
+strategy = "none"
+"#;
+        let mut config = String::new();
+        config.push_str(toml_services);
+        config.push_str(&Datasource::gen_config());
+        config.push_str(&Grid::gen_config());
+        config.push_str(&Layer::gen_config());
+        config.push_str(toml_topics);
+        config.push_str(toml_cache);
+        config
+    }
 }
 
 
@@ -95,13 +119,13 @@ pub fn test_tile_query() {
 
     let mvt_tile = service.tile("points", 33, 22, 6);
     println!("{:#?}", mvt_tile);
-    let expected = "Tile {
+    let expected = r#"Tile {
     layers: [
         Tile_Layer {
             version: Some(
                 2
             ),
-            name: Some(\"points\"),
+            name: Some("points"),
             features: [
                 Tile_Feature {
                     id: None,
@@ -135,6 +159,41 @@ pub fn test_tile_query() {
         fields: None
     },
     cached_size: Cell { value: 0 }
-}";
+}"#;
     assert_eq!(expected, &*format!("{:#?}", mvt_tile));
+}
+
+#[test]
+pub fn test_gen_config() {
+    let expected = r#"# t-rex configuration
+
+[services]
+mvt = true
+
+[datasource]
+type = "postgis"
+# Connection specification (https://github.com/sfackler/rust-postgres#connecting)
+url = "postgresql://user:pass@host:port/database"
+
+[grid]
+# Predefined grids: web_mercator, wgs84
+predefined = "web_mercator"
+
+[[layer]]
+name = "points"
+table_name = "mytable"
+geometry_field = "wkb_geometry"
+geometry_type = "POINT"
+fid_field = "id"
+query = "SELECT name,wkb_geometry FROM mytable"
+
+[topics]
+# Multiple layers in one vector tile
+#topicname = ["layer1","layer2"]
+
+[cache]
+strategy = "none"
+"#;
+    println!("{}", &MvtService::gen_config());
+    assert_eq!(expected, &MvtService::gen_config());
 }

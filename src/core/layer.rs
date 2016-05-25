@@ -60,6 +60,19 @@ impl Config<Layer> for Layer {
                    query:          query,
             }))
     }
+
+    fn gen_config() -> String {
+        let toml = r#"
+[[layer]]
+name = "points"
+table_name = "mytable"
+geometry_field = "wkb_geometry"
+geometry_type = "POINT"
+fid_field = "id"
+query = "SELECT name,wkb_geometry FROM mytable"
+"#;
+        toml.to_string()
+    }
 }
 
 

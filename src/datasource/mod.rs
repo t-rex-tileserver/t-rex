@@ -6,12 +6,15 @@
 pub mod datasource;
 pub mod postgis;
 
+pub use self::datasource::DatasourceInput;
+pub use self::postgis::PostgisInput;
+
 use config::Config;
 use toml;
 
 
 pub enum Datasource {
-    Postgis(postgis::PostgisInput),
+    Postgis(PostgisInput),
 }
 
 impl Config<Datasource> for Datasource {
@@ -21,10 +24,13 @@ impl Config<Datasource> for Datasource {
             .and_then(|val| val.as_str().ok_or("url entry is not a string".to_string()))
             .and_then(|tn| {
                 match tn {
-                    "postgis" => postgis::PostgisInput::from_config(config).and_then(|pg| Ok(Datasource::Postgis(pg))),
+                    "postgis" => PostgisInput::from_config(config).and_then(|pg| Ok(Datasource::Postgis(pg))),
                     _ => { Err(format!("Unsupported datasource '{}'", tn)) }
                 }
             })
+    }
+    fn gen_config() -> String {
+        PostgisInput::gen_config()
     }
 }
 

@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::datasource::DatasourceInput;
+use datasource::DatasourceInput;
 use postgres::{Connection, SslMode};
 use postgres::rows::Row;
 use core::feature::{Feature,FeatureAttr};
@@ -103,6 +103,16 @@ impl Config<PostgisInput> for PostgisInput {
             .ok_or("Missing configuration entry 'datasource.url'".to_string())
             .and_then(|val| val.as_str().ok_or("url entry is not a string".to_string()))
             .and_then(|url| Ok(PostgisInput { connection_url: url.to_string() }))
+    }
+
+    fn gen_config() -> String {
+        let toml = r#"
+[datasource]
+type = "postgis"
+# Connection specification (https://github.com/sfackler/rust-postgres#connecting)
+url = "postgresql://user:pass@host:port/database"
+"#;
+        toml.to_string()
     }
 }
 

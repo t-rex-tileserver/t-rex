@@ -57,7 +57,7 @@ fn main() {
     init_logger();
 
     // http://kbknapp.github.io/clap-rs/clap/
-    let matches = App::new("t_rex")
+    let mut app = App::new("t_rex")
                         .version("0.0.0")
                         .author("Pirmin Kalberer <pka@sourcepole.ch>")
                         .about("vector tile server specialized on publishing MVT tiles from a PostGIS database")
@@ -65,9 +65,13 @@ fn main() {
                             .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'
                                               -c, --config=[FILE] 'Load from custom config file'")
                             .about("Start web server and serve MVT vector tiles"))
-                        .get_matches();
-
-     if let Some(ref matches) = matches.subcommand_matches("serve") {
-        webserver::server::webserver(matches)
-     }
+                        .subcommand(SubCommand::with_name("genconfig")
+                            .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'")
+                            .about("Generate configuration template"));
+    let matches = app.get_matches_from_safe_borrow(env::args()).unwrap(); //app.get_matches() prohibits later call of app.print_help()
+    match matches.subcommand() {
+        ("serve", Some(sub_m))     => webserver::server::webserver(sub_m),
+        ("genconfig", Some(sub_m)) => webserver::server::gen_config(sub_m),
+        _                          => { app.print_help(); },
+    }
 }

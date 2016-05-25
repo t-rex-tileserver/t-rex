@@ -17,11 +17,13 @@ Tiles are then served at `http://localhost:6767/{layer}/{z}/{x}/{y}.pbf`
 
 A list of all detected layers is available at [http://localhost:6767/](http://localhost:6767/)
 
-Additional commands (not implemented yet):
+Generate a configuration template:
 
     t_rex genconfig --dbconn postgresql://pi@localhost/osm2vectortiles
 
-    t_rex seed --config osm2vectortiles.cfg
+Run server with configuration file:
+
+    t_rex serve --config osm2vectortiles.cfg
 
 
 For developers
