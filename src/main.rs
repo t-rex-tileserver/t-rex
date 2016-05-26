@@ -71,7 +71,7 @@ fn main() {
     let matches = app.get_matches_from_safe_borrow(env::args()).unwrap(); //app.get_matches() prohibits later call of app.print_help()
     match matches.subcommand() {
         ("serve", Some(sub_m))     => webserver::server::webserver(sub_m),
-        ("genconfig", Some(sub_m)) => webserver::server::gen_config(sub_m),
+        ("genconfig", Some(sub_m)) => println!("{}", webserver::server::gen_config(sub_m)),
         _                          => { app.print_help(); },
     }
 }

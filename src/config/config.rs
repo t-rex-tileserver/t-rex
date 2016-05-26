@@ -13,6 +13,10 @@ pub trait Config<T> {
     fn from_config(config: &Value) -> Result<T, String>;
     /// Generate configuration template
     fn gen_config() -> String;
+    /// Generate configuration template with runtime information
+    fn gen_runtime_config(&self) -> String {
+        Self::gen_config()
+    }
 }
 
 /// Load and parse the config file into Toml table structure.

@@ -68,10 +68,52 @@ name = "points"
 table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
-fid_field = "id"
-query = "SELECT name,wkb_geometry FROM mytable"
+#fid_field = "id"
+#query = "SELECT name,wkb_geometry FROM mytable"
 "#;
         toml.to_string()
+    }
+
+    fn gen_runtime_config(&self) -> String {
+        let mut lines = vec!["\n[[layer]]".to_string()];
+        lines.push(format!(r#"name = "{}""#, self.name));
+        match self.table_name {
+            Some(ref table_name)
+                => lines.push(format!(r#"table_name = "{}""#, table_name)),
+            _   => lines.push(r#"#table_name = "mytable""#.to_string())
+        }
+        match self.geometry_field {
+            Some(ref geometry_field)
+                => lines.push(format!("geometry_field = \"{}\"", geometry_field)),
+            _   => lines.push("#geometry_field = \"wkb_geometry\"".to_string())
+        }
+        match self.geometry_type {
+            Some(ref geometry_type)
+                => lines.push(format!("geometry_type = \"{}\"", geometry_type)),
+            _   => lines.push("#geometry_type = \"POINT\"".to_string())
+        }
+        match self.fid_field {
+            Some(ref fid_field)
+                => lines.push(format!("fid_field = \"{}\"", fid_field)),
+            _   => lines.push("#fid_field = \"id\"".to_string())
+        }
+        match self.query_limit {
+            Some(ref query_limit)
+                => lines.push(format!("query_limit = {}", query_limit)),
+            _   => {}
+        }
+        match self.query {
+            Some(ref query)
+                => lines.push(format!("query = \"{}\"", query)),
+            _   => {
+                let default_name = "mytable".to_string();
+                let ref table_name = self.table_name.as_ref().unwrap_or(&default_name);
+                let default_name = "wkb_geometry".to_string();
+                let ref geometry_field = self.geometry_field.as_ref().unwrap_or(&default_name);
+                lines.push(format!("#query = \"SELECT name,{} FROM {}\"", geometry_field, table_name))
+            }
+        }
+        lines.join("\n") + "\n"
     }
 }
 

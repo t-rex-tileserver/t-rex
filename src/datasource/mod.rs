@@ -32,6 +32,11 @@ impl Config<Datasource> for Datasource {
     fn gen_config() -> String {
         PostgisInput::gen_config()
     }
+    fn gen_runtime_config(&self) -> String {
+        match self {
+            &Datasource::Postgis(ref pg) => pg.gen_runtime_config()
+        }
+    }
 }
 
 

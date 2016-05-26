@@ -74,30 +74,46 @@ impl Config<MvtService> for MvtService {
         )
     }
     fn gen_config() -> String {
-        let toml_services = r#"# t-rex configuration
+        let mut config = String::new();
+        config.push_str(TOML_SERVICES);
+        config.push_str(&Datasource::gen_config());
+        config.push_str(&Grid::gen_config());
+        config.push_str(&Layer::gen_config());
+        config.push_str(TOML_TOPICS);
+        config.push_str(TOML_CACHE);
+        config
+    }
+    fn gen_runtime_config(&self) -> String {
+        let mut config = String::new();
+        config.push_str(TOML_SERVICES);
+        config.push_str(&self.input.gen_runtime_config());
+        config.push_str(&self.grid.gen_runtime_config());
+        for layer in &self.layers {
+            config.push_str(&layer.gen_runtime_config());
+        }
+        config.push_str(TOML_TOPICS);
+        config.push_str(TOML_CACHE);
+        config
+    }
+}
+
+
+const TOML_SERVICES: &'static str = r#"# t-rex configuration
 
 [services]
 mvt = true
 "#;
-        let toml_topics = r#"
+
+const TOML_TOPICS: &'static str = r#"
 [topics]
 # Multiple layers in one vector tile
 #topicname = ["layer1","layer2"]
 "#;
-        let toml_cache = r#"
+
+const TOML_CACHE: &'static str = r#"
 [cache]
 strategy = "none"
 "#;
-        let mut config = String::new();
-        config.push_str(toml_services);
-        config.push_str(&Datasource::gen_config());
-        config.push_str(&Grid::gen_config());
-        config.push_str(&Layer::gen_config());
-        config.push_str(toml_topics);
-        config.push_str(toml_cache);
-        config
-    }
-}
 
 
 #[test]
@@ -184,8 +200,8 @@ name = "points"
 table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
-fid_field = "id"
-query = "SELECT name,wkb_geometry FROM mytable"
+#fid_field = "id"
+#query = "SELECT name,wkb_geometry FROM mytable"
 
 [topics]
 # Multiple layers in one vector tile

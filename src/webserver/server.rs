@@ -54,13 +54,8 @@ impl LayerInfo {
     }
 }
 
-pub fn webserver(args: &ArgMatches) {
-    let mut server = Nickel::new();
-    server.options = Options::default()
-                     .thread_count(Some(1));
-    server.utilize(log_request);
-
-    let service = if let Some(cfgpath) = args.value_of("config") {
+fn service_from_args(args: &ArgMatches) -> MvtService {
+    if let Some(cfgpath) = args.value_of("config") {
         info!("Reading configuration from '{}'", cfgpath);
         read_config(cfgpath)
             .and_then(|config| MvtService::from_config(&config))
@@ -78,7 +73,17 @@ pub fn webserver(args: &ArgMatches) {
             println!("Either 'config' or 'dbconn' is required");
             process::exit(1)
         }
-    };
+    }
+}
+
+pub fn webserver(args: &ArgMatches) {
+    let mut server = Nickel::new();
+    server.options = Options::default()
+                     .thread_count(Some(1));
+    server.utilize(log_request);
+
+    let service = service_from_args(args);
+
     let mut layers_display: Vec<LayerInfo> = service.layers.iter().map(|l| {
         LayerInfo::from_layer(l)
     }).collect();
@@ -111,7 +116,7 @@ pub fn webserver(args: &ArgMatches) {
     server.listen("127.0.0.1:6767");
 }
 
-pub fn gen_config(args: &ArgMatches) {
+pub fn gen_config(args: &ArgMatches) -> String {
         let toml = r#"
 [webserver]
 # Bind address. Use 0.0.0.0 to listen on all adresses.
@@ -120,10 +125,51 @@ port = 6767
 threads = 1
 mapviewer = true
 "#;
+    let mut config = String::new();
     if let Some(dbconn) = args.value_of("dbconn") {
-        let pg = PostgisInput { connection_url: dbconn.to_string() };
+        let service = service_from_args(args);
+        config = service.gen_runtime_config();
+    } else {
+        config = MvtService::gen_config();
     }
-    let mut config = MvtService::gen_config();
     config.push_str(toml);
-    println!("{}", config);
+    config
+}
+
+
+#[test]
+fn test_gen_config() {
+    use config::parse_config;
+
+    let args = ArgMatches::new();
+    let toml = gen_config(&args);
+    println!("{}", toml);
+    assert_eq!(Some("# t-rex configuration"), toml.lines().next());
+
+    let config = parse_config(toml, "").unwrap();
+    let service = MvtService::from_config(&config).unwrap();
+    assert_eq!(service.input.connection_url, "postgresql://user:pass@host:port/database");
+}
+
+#[test]
+fn test_runtime_config() {
+    use std::io::{self,Write};
+    use std::env;
+    use clap::App;
+    use config::parse_config;
+
+    if env::var("DBCONN").is_err() {
+        write!(&mut io::stdout(), "skipped ").unwrap();
+        return;
+    }
+    let args = App::new("test")
+                .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'")
+                .get_matches_from(vec!["", "--dbconn", &env::var("DBCONN").unwrap()]);
+    let toml = gen_config(&args);
+    println!("{}", toml);
+    assert_eq!(Some("# t-rex configuration"), toml.lines().next());
+
+    let config = parse_config(toml, "").unwrap();
+    let service = MvtService::from_config(&config).unwrap();
+    assert_eq!(service.input.connection_url, env::var("DBCONN").unwrap());
 }

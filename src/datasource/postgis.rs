@@ -114,6 +114,13 @@ url = "postgresql://user:pass@host:port/database"
 "#;
         toml.to_string()
     }
+    fn gen_runtime_config(&self) -> String {
+        format!(r#"
+[datasource]
+type = "postgis"
+url = "{}"
+"#, self.connection_url)
+    }
 }
 
 #[cfg(test)] use std::io::{self,Write};

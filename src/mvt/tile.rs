@@ -258,6 +258,7 @@ fn test_read_pbf_file() {
 
 
 // https://github.com/mapbox/vector-tile-spec/tree/master/2.1#45-example
+#[cfg(test)]
 const TILE_EXAMPLE: &'static str = r#"Tile {
     layers: [
         Tile_Layer {
