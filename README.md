@@ -49,6 +49,10 @@ Creating test database:
     cd src/test
     make
 
+Run server:
+
+    cargo run -- serve --dbconn postgresql://pi@%2Frun%2Fpostgresql/natural_earth_vectors
+
 
 License
 -------
