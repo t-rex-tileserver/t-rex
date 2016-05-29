@@ -6,7 +6,10 @@
 use datasource::DatasourceInput;
 use postgres::{Connection, SslMode};
 use postgres::rows::Row;
-use postgres::types::Type;
+use postgres::types::{Type, FromSql, SessionInfo};
+use postgres;
+use std::io::Read;
+use std;
 use core::feature::{Feature,FeatureAttr,FeatureAttrValType};
 use core::geom::*;
 use core::grid::Extent;
@@ -30,6 +33,43 @@ impl GeometryType {
     }
 }
 
+// http://sfackler.github.io/rust-postgres/doc/v0.11.8/postgres/types/trait.FromSql.html#types
+// http://sfackler.github.io/rust-postgres/doc/v0.11.8/postgres/types/enum.Type.html
+impl FromSql for FeatureAttrValType {
+    fn accepts(ty: &Type) -> bool {
+        match ty {
+            &Type::Varchar | &Type::Text | &Type::CharArray |
+            &Type::Float4 | &Type::Float8 |
+            &Type::Int2 | &Type::Int4 | &Type::Int8 |
+            &Type::Bool
+              => true,
+            _ => false
+        }
+    }
+    fn from_sql<R: Read>(ty: &Type, raw: &mut R, _ctx: &SessionInfo) -> postgres::Result<FeatureAttrValType> {
+        match ty {
+            &Type::Varchar | &Type::Text | &Type::CharArray
+                => <String>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::String(v))),
+            &Type::Float4
+                => <f32>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::Float(v))),
+            &Type::Float8
+                => <f64>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::Double(v))),
+            &Type::Int2
+                => <i16>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::Int(v as i64))),
+            &Type::Int4
+                => <i32>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::Int(v as i64))),
+            &Type::Int8
+                => <i64>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::Int(v))),
+            &Type::Bool
+                => <bool>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::Bool(v))),
+            _ => {
+                let err: Box<std::error::Error + Sync + Send> = format!("cannot convert {} to FeatureAttrValType", ty).into();
+                Err(postgres::error::Error::Conversion(err))
+            }
+        }
+    }
+}
+
 struct FeatureRow<'a> {
     layer: &'a Layer,
     row: &'a Row<'a>,
@@ -38,37 +78,25 @@ struct FeatureRow<'a> {
 impl<'a> Feature for FeatureRow<'a> {
     fn fid(&self) -> Option<u64> {
         self.layer.fid_field.as_ref().and_then(|fid| {
-            let val: i32 = self.row.get(fid as &str); //TODO: could be also i16 or i64
-            Some(val as u64)
+            let val = self.row.get_opt::<_, FeatureAttrValType>(fid as &str);
+            match val {
+                Some(Ok(FeatureAttrValType::Int(fid))) => Some(fid as u64),
+                _ => None
+            }
         })
     }
     fn attributes(&self) -> Vec<FeatureAttr> {
         let mut attrs = Vec::new();
         for (i,col) in self.row.columns().into_iter().enumerate() {
             if col.name() != self.layer.geometry_field.as_ref().unwrap_or(&"".to_string()) {
-                let fattr = FeatureAttr {
-                    key: col.name().to_string(),
-                    value: match col.type_() {
-                        // http://sfackler.github.io/rust-postgres/doc/v0.11.8/postgres/types/enum.Type.html
-                        // http://sfackler.github.io/rust-postgres/doc/v0.11.8/postgres/types/trait.FromSql.html#types
-                        &Type::Varchar | &Type::Text | &Type::CharArray
-                            => FeatureAttrValType::String(self.row.get(i)),
-                        &Type::Float4
-                            => FeatureAttrValType::Float(self.row.get(i)),
-                        &Type::Float8
-                            => FeatureAttrValType::Double(self.row.get(i)),
-                        &Type::Int2
-                            => FeatureAttrValType::Int(self.row.get::<_, i16>(i) as i64),
-                        &Type::Int4
-                            => FeatureAttrValType::Int(self.row.get::<_, i32>(i) as i64),
-                        &Type::Int8
-                            => FeatureAttrValType::Int(self.row.get(i)),
-                        &Type::Bool
-                            => FeatureAttrValType::Bool(self.row.get(i)),
-                        _ => FeatureAttrValType::Int(0)
-                    }
-                };
-                attrs.push(fattr);
+                let val = self.row.get_opt::<_, FeatureAttrValType>(i);
+                if let Some(Ok(v)) = val {
+                    let fattr = FeatureAttr {
+                        key: col.name().to_string(),
+                        value: v
+                    };
+                    attrs.push(fattr);
+                }
             }
         }
         attrs
@@ -262,11 +290,11 @@ pub fn test_retrieve_features() {
     pg.retrieve_features(&layer, &extent, 10, |feat| {
         assert_eq!("Point(SRID=3857;POINT(831219.9062494118 5928485.165733484))", &*format!("{:?}", feat.geometry()));
         assert_eq!(feat.attributes()[0].key, "fid");
-        assert_eq!(feat.attributes()[1].key, "scalerank");
-        assert_eq!(feat.attributes()[2].key, "name");
-        assert_eq!(feat.attributes()[3].key, "pop_max");
+        //assert_eq!(feat.attributes()[1].key, "scalerank"); //Numeric
+        assert_eq!(feat.attributes()[1].key, "name");
+        //assert_eq!(feat.attributes()[3].key, "pop_max"); //Numeric
         assert_eq!(feat.attributes()[0].value, FeatureAttrValType::Int(6478));
-        assert_eq!(feat.attributes()[2].value, FeatureAttrValType::String("Bern".to_string()));
+        assert_eq!(feat.attributes()[1].value, FeatureAttrValType::String("Bern".to_string()));
         assert_eq!(feat.fid(), Some(6478));
     });
 
