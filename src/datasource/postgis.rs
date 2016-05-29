@@ -105,14 +105,14 @@ impl PostgisInput {
         layers
     }
     fn query(&self, layer: &Layer, zoom: u16) -> String {
-        let mut sql = match layer.query.as_ref() {
+        let subquery = match layer.query.as_ref() {
             Some(q) => q.clone(),
             None => format!("SELECT {} FROM {}",
                 layer.geometry_field.as_ref().unwrap(),
                 layer.table_name.as_ref().unwrap())
         };
-        sql.push_str(&format!(" WHERE ST_Intersects({},ST_MakeEnvelope($1,$2,$3,$4,3857))",
-            layer.geometry_field.as_ref().unwrap()));
+        let mut sql = format!("SELECT * FROM ({}) AS _q WHERE ST_Intersects({},ST_MakeEnvelope($1,$2,$3,$4,3857))",
+                subquery, layer.geometry_field.as_ref().unwrap());
         if let Some(n) = layer.query_limit {
             sql.push_str(&format!(" LIMIT {}", n));
         }
@@ -219,15 +219,20 @@ pub fn test_feature_query() {
     layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));
     assert_eq!(pg.query(&layer, 10),
-        "SELECT geometry FROM osm_place_point WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857))");
+        "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857))");
 
     layer.query_limit = Some(1);
     assert_eq!(pg.query(&layer, 10),
-        "SELECT geometry FROM osm_place_point WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857)) LIMIT 1");
+        "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857)) LIMIT 1");
 
     layer.query = Some(String::from("SELECT geometry AS geom FROM osm_place_point"));
     assert_eq!(pg.query(&layer, 10),
-        "SELECT geometry AS geom FROM osm_place_point WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857)) LIMIT 1");
+        "SELECT * FROM (SELECT geometry AS geom FROM osm_place_point) AS _q WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857)) LIMIT 1");
+
+    layer.query = Some(String::from("SELECT * FROM osm_place_point WHERE name='Bern'"));
+    layer.query_limit = None;
+    assert_eq!(pg.query(&layer, 10),
+        "SELECT * FROM (SELECT * FROM osm_place_point WHERE name='Bern') AS _q WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857))");
 }
 
 #[test]
