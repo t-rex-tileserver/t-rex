@@ -6,7 +6,8 @@
 use datasource::DatasourceInput;
 use postgres::{Connection, SslMode};
 use postgres::rows::Row;
-use core::feature::{Feature,FeatureAttr};
+use postgres::types::Type;
+use core::feature::{Feature,FeatureAttr,FeatureAttrValType};
 use core::geom::*;
 use core::grid::Extent;
 use core::layer::Layer;
@@ -32,12 +33,46 @@ impl GeometryType {
 struct FeatureRow<'a> {
     layer: &'a Layer,
     row: &'a Row<'a>,
-    attrs: Vec<FeatureAttr>,  // temporary
 }
 
 impl<'a> Feature for FeatureRow<'a> {
-    fn fid(&self) -> Option<u64> { None } //TODO
-    fn attributes(&self) -> &Vec<FeatureAttr> { &self.attrs } //TODO
+    fn fid(&self) -> Option<u64> {
+        self.layer.fid_field.as_ref().and_then(|fid| {
+            let val: i32 = self.row.get(fid as &str); //TODO: could be also i16 or i64
+            Some(val as u64)
+        })
+    }
+    fn attributes(&self) -> Vec<FeatureAttr> {
+        let mut attrs = Vec::new();
+        for (i,col) in self.row.columns().into_iter().enumerate() {
+            if col.name() != self.layer.geometry_field.as_ref().unwrap_or(&"".to_string()) {
+                let fattr = FeatureAttr {
+                    key: col.name().to_string(),
+                    value: match col.type_() {
+                        // http://sfackler.github.io/rust-postgres/doc/v0.11.8/postgres/types/enum.Type.html
+                        // http://sfackler.github.io/rust-postgres/doc/v0.11.8/postgres/types/trait.FromSql.html#types
+                        &Type::Varchar | &Type::Text | &Type::CharArray
+                            => FeatureAttrValType::String(self.row.get(i)),
+                        &Type::Float4
+                            => FeatureAttrValType::Float(self.row.get(i)),
+                        &Type::Float8
+                            => FeatureAttrValType::Double(self.row.get(i)),
+                        &Type::Int2
+                            => FeatureAttrValType::Int(self.row.get::<_, i16>(i) as i64),
+                        &Type::Int4
+                            => FeatureAttrValType::Int(self.row.get::<_, i32>(i) as i64),
+                        &Type::Int8
+                            => FeatureAttrValType::Int(self.row.get(i)),
+                        &Type::Bool
+                            => FeatureAttrValType::Bool(self.row.get(i)),
+                        _ => FeatureAttrValType::Int(0)
+                    }
+                };
+                attrs.push(fattr);
+            }
+        }
+        attrs
+    }
     fn geometry(&self) -> GeometryType {
         GeometryType::from_geom_field(
             &self.row,
@@ -91,7 +126,7 @@ impl DatasourceInput for PostgisInput {
         let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
         let stmt = conn.prepare(&self.query(&layer, zoom)).unwrap();
         for row in &stmt.query(&[&extent.minx, &extent.miny, &extent.maxx, &extent.maxy]).unwrap() {
-            let feature = FeatureRow { layer: layer, row: &row, attrs: vec![] };
+            let feature = FeatureRow { layer: layer, row: &row };
             read(&feature)
         }
     }
@@ -125,10 +160,12 @@ url = "{}"
 
 #[cfg(test)] use std::io::{self,Write};
 #[cfg(test)] use std::env;
-#[cfg(test)] use postgis;
 
 #[test]
 pub fn test_from_geom_fields() {
+    use postgis;
+    use postgres;
+
     let conn: Connection = match env::var("DBCONN") {
         Result::Ok(val) => Connection::connect(&val as &str, SslMode::None),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
@@ -156,6 +193,13 @@ pub fn test_from_geom_fields() {
         assert_eq!(&*format!("{:#?}", geom),
             "SRID=3857;MULTILINESTRING((5959308.21223679 7539958.36540974,5969998.07219252 7539958.36540974,5972498.41231776 7539118.00291568,5977308.84929784 7535385.96203562))");
     }*/
+
+    let stmt = conn.prepare("SELECT wkb_geometry, ST_AsBinary(wkb_geometry) FROM rivers_lake_centerlines LIMIT 1").unwrap();
+    let rows = &stmt.query(&[]).unwrap();
+    assert_eq!(rows.columns()[0].name(), "wkb_geometry");
+    assert_eq!(format!("{}", rows.columns()[0].type_()), "geometry");
+    assert_eq!(rows.columns()[1].name(), "st_asbinary");
+    assert_eq!(format!("{}", rows.columns()[1].type_()), "bytea");
 }
 
 #[test]
@@ -192,15 +236,33 @@ pub fn test_retrieve_features() {
         Result::Ok(val) => Some(PostgisInput {connection_url: val}),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
+
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("ne_10m_populated_places"));
     layer.geometry_field = Some(String::from("wkb_geometry"));
     layer.geometry_type = Some(String::from("POINT"));
-    layer.query_limit = Some(1);
-    let extent = Extent {minx: 958826.08, miny: 5987771.04, maxx: 978393.96, maxy: 6007338.92};
+    let extent = Extent { minx: 821850.9, miny: 5909499.5, maxx: 860986.7, maxy: 5948635.3 };
+
+    let mut reccnt = 0;
     pg.retrieve_features(&layer, &extent, 10, |feat| {
-        assert_eq!("Point(\n    SRID=3857;POINT(960328.5530940875 6000593.929181342)\n)", &*format!("{:#?}", feat.geometry()));
+        assert_eq!("Point(SRID=3857;POINT(831219.9062494118 5928485.165733484))", &*format!("{:?}", feat.geometry()));
         assert_eq!(0, feat.attributes().len());
         assert_eq!(None, feat.fid());
+        reccnt += 1;
     });
+    assert_eq!(1, reccnt);
+
+    layer.query = Some(String::from("SELECT * FROM ne_10m_populated_places"));
+    layer.fid_field = Some(String::from("fid"));
+    pg.retrieve_features(&layer, &extent, 10, |feat| {
+        assert_eq!("Point(SRID=3857;POINT(831219.9062494118 5928485.165733484))", &*format!("{:?}", feat.geometry()));
+        assert_eq!(feat.attributes()[0].key, "fid");
+        assert_eq!(feat.attributes()[1].key, "scalerank");
+        assert_eq!(feat.attributes()[2].key, "name");
+        assert_eq!(feat.attributes()[3].key, "pop_max");
+        assert_eq!(feat.attributes()[0].value, FeatureAttrValType::Int(6478));
+        assert_eq!(feat.attributes()[2].value, FeatureAttrValType::String("Bern".to_string()));
+        assert_eq!(feat.fid(), Some(6478));
+    });
+
 }
