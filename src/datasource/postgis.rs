@@ -6,7 +6,7 @@
 use datasource::DatasourceInput;
 use postgres::{Connection, SslMode};
 use postgres::rows::Row;
-use postgres::types::{Type, FromSql, SessionInfo};
+use postgres::types::{Type, FromSql, ToSql, SessionInfo};
 use postgres;
 use std::io::Read;
 use std;
@@ -114,6 +114,11 @@ pub struct PostgisInput {
     pub connection_url: String
 }
 
+struct SqlQuery<'a> {
+    sql: String,
+    params: Vec<&'a str>,
+}
+
 impl PostgisInput {
     pub fn detect_layers(&self) -> Vec<Layer> {
         let mut layers: Vec<Layer> = Vec::new();
@@ -132,19 +137,35 @@ impl PostgisInput {
         }
         layers
     }
-    fn query(&self, layer: &Layer, zoom: u16) -> String {
+    fn query(&self, layer: &Layer, zoom: u16) -> SqlQuery {
         let subquery = match layer.query.as_ref() {
             Some(q) => q.clone(),
             None => format!("SELECT {} FROM {}",
                 layer.geometry_field.as_ref().unwrap(),
                 layer.table_name.as_ref().unwrap())
         };
-        let mut sql = format!("SELECT * FROM ({}) AS _q WHERE ST_Intersects({},ST_MakeEnvelope($1,$2,$3,$4,3857))",
-                subquery, layer.geometry_field.as_ref().unwrap());
+
+        let mut sql = format!("SELECT * FROM ({}) AS _q", subquery);
+        if !subquery.contains("!bbox!") {
+            sql.push_str(&format!(" WHERE {} && !bbox!", layer.geometry_field.as_ref().unwrap()));
+        }
         if let Some(n) = layer.query_limit {
             sql.push_str(&format!(" LIMIT {}", n));
         }
-        sql
+
+        //Replace variables: !bbox!, !zoom!, !pixel_width!
+        let mut params = vec!["bbox"];
+        sql = sql.replace("!bbox!", "ST_MakeEnvelope($1,$2,$3,$4,3857)");
+        if sql.contains("!zoom!") {
+            params.push("zoom");
+            sql = sql.replace("!zoom!", &format!("${}", params.len()+3));
+        }
+        if sql.contains("!pixel_width!") {
+            params.push("pixel_width");
+            sql = sql.replace("!pixel_width!", &format!("${}", params.len()+3));
+        }
+
+        SqlQuery { sql: sql, params: params }
     }
 }
 
@@ -152,8 +173,16 @@ impl DatasourceInput for PostgisInput {
     fn retrieve_features<F>(&self, layer: &Layer, extent: &Extent, zoom: u16, mut read: F)
         where F : FnMut(&Feature) {
         let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
-        let stmt = conn.prepare(&self.query(&layer, zoom)).unwrap();
-        for row in &stmt.query(&[&extent.minx, &extent.miny, &extent.maxx, &extent.maxy]).unwrap() {
+        let query = self.query(&layer, zoom);
+        let stmt = conn.prepare(&query.sql).unwrap();
+
+        let zoom_param = zoom as i16;
+        let mut params: Vec<&ToSql> = vec![&extent.minx, &extent.miny, &extent.maxx, &extent.maxy];
+        if query.params.contains(&"zoom") {
+            params.push(&zoom_param);
+        }
+
+        for row in &stmt.query(&params.as_slice()).unwrap() {
             let feature = FeatureRow { layer: layer, row: &row };
             read(&feature)
         }
@@ -246,21 +275,46 @@ pub fn test_feature_query() {
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));
-    assert_eq!(pg.query(&layer, 10),
-        "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857))");
+    assert_eq!(pg.query(&layer, 10).sql,
+        "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
     layer.query_limit = Some(1);
-    assert_eq!(pg.query(&layer, 10),
-        "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857)) LIMIT 1");
+    assert_eq!(pg.query(&layer, 10).sql,
+        "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857) LIMIT 1");
 
     layer.query = Some(String::from("SELECT geometry AS geom FROM osm_place_point"));
-    assert_eq!(pg.query(&layer, 10),
-        "SELECT * FROM (SELECT geometry AS geom FROM osm_place_point) AS _q WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857)) LIMIT 1");
+    layer.query_limit = None;
+    assert_eq!(pg.query(&layer, 10).sql,
+        "SELECT * FROM (SELECT geometry AS geom FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
     layer.query = Some(String::from("SELECT * FROM osm_place_point WHERE name='Bern'"));
-    layer.query_limit = None;
-    assert_eq!(pg.query(&layer, 10),
-        "SELECT * FROM (SELECT * FROM osm_place_point WHERE name='Bern') AS _q WHERE ST_Intersects(geometry,ST_MakeEnvelope($1,$2,$3,$4,3857))");
+    assert_eq!(pg.query(&layer, 10).sql,
+        "SELECT * FROM (SELECT * FROM osm_place_point WHERE name='Bern') AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+}
+
+#[test]
+pub fn test_query_params() {
+    let pg = PostgisInput {connection_url: "postgresql://pi@localhost/osm2vectortiles".to_string()};
+    let mut layer = Layer::new("buildings");
+    layer.geometry_field = Some(String::from("way"));
+
+    layer.query = Some(String::from("SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way FROM osm_buildings_gen0 WHERE geometry && !bbox!"));
+    let query = pg.query(&layer, 10);
+    assert_eq!(query.sql,
+        "SELECT * FROM (SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way FROM osm_buildings_gen0 WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)) AS _q");
+    assert_eq!(query.params, ["bbox"]);
+
+    layer.query = Some(String::from("SELECT osm_id, geometry, typen FROM landuse_z13toz14n WHERE !zoom! BETWEEN 13 AND 14) AS landuse_z9toz14n"));
+    let query = pg.query(&layer, 10);
+    assert_eq!(query.sql,
+        "SELECT * FROM (SELECT osm_id, geometry, typen FROM landuse_z13toz14n WHERE $5 BETWEEN 13 AND 14) AS landuse_z9toz14n) AS _q WHERE way && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+    assert_eq!(query.params, ["bbox", "zoom"]);
+
+    layer.query = Some(String::from("SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),!pixel_width!/2) AS way FROM osm_buildings"));
+    let query = pg.query(&layer, 10);
+    assert_eq!(query.sql,
+        "SELECT * FROM (SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),$5/2) AS way FROM osm_buildings) AS _q WHERE way && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+    assert_eq!(query.params, ["bbox", "pixel_width"]);
 }
 
 #[test]

@@ -57,7 +57,7 @@ pub fn parse_config(config_toml: String, path: &str) -> Result<Value, String> {
 fn test_parse_config() {
     let config = read_config("src/test/example.cfg").unwrap();
     println!("{:#?}", config.as_table().unwrap());
-    let expected = r#"{
+    let expected_begin = r#"{
     "cache": Table(
         {
             "strategy": String(
@@ -98,19 +98,13 @@ fn test_parse_config() {
                     "name": String(
                         "points"
                     ),
-                    "query": String(
-                        "SELECT name,wkb_geometry FROM ne_10m_populated_places"
-                    ),
-                    "query_limit": Integer(
-                        100
-                    ),
                     "table_name": String(
                         "ne_10m_populated_places"
                     )
                 }
-            )
-        ]
-    ),
+            ),"#;
+
+    let expected_end = r#",
     "services": Table(
         {
             "mvt": Boolean(
@@ -120,10 +114,13 @@ fn test_parse_config() {
     ),
     "topics": Table(
         {
-            "places": Array(
+            "all": Array(
                 [
                     String(
                         "points"
+                    ),
+                    String(
+                        "buildings"
                     )
                 ]
             )
@@ -146,7 +143,8 @@ fn test_parse_config() {
         }
     )
 }"#;
-    assert_eq!(expected, &*format!("{:#?}", config.as_table().unwrap()));
+    assert!(format!("{:#?}", config.as_table().unwrap()).starts_with(expected_begin));
+    assert!(format!("{:#?}", config.as_table().unwrap()).ends_with(expected_end));
 
     assert_eq!(config.lookup("datasource.type").unwrap().as_str(), Some("postgis"));
 }
