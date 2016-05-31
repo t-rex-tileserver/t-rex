@@ -10,7 +10,7 @@ extern crate toml;
 #[macro_use] extern crate nickel;
 extern crate nickel_mustache;
 extern crate rustc_serialize;
-extern crate hyper;
+#[macro_use] extern crate hyper;
 extern crate postgres;
 extern crate postgis;
 extern crate protobuf;

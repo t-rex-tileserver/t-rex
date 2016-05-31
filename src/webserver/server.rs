@@ -13,6 +13,8 @@ use config::{Config,read_config};
 
 use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult };
 use nickel_mustache::Render;
+use hyper::header::{CacheControl, CacheDirective, AccessControlAllowOrigin, AccessControlAllowMethods};
+use hyper::method::Method;
 use hyper::header;
 use std::collections::HashMap;
 use clap::ArgMatches;
@@ -24,13 +26,22 @@ fn log_request<'mw>(req: &mut Request, res: Response<'mw>) -> MiddlewareResult<'
     res.next_middleware()
 }
 
-fn maybe_set_type<D>(res: &mut Response<D>, mime: MediaType) {
-    res.set_header_fallback(|| header::ContentType(mime.into()));
+fn enable_cors<'mw>(_req: &mut Request, mut res: Response<'mw>) -> MiddlewareResult<'mw> {
+  // access-control-allow-methods: GET
+  // access-control-allow-origin: *
+  res.set(AccessControlAllowMethods(vec![Method::Get]));
+  res.set(AccessControlAllowOrigin::Any);
+
+  res.next_middleware()
 }
+
+header! { (ContentType, "Content-Type") => [String] }
 
 impl<D> Responder<D> for vector_tile::Tile {
     fn respond<'a>(self, mut res: Response<'a, D>) -> MiddlewareResult<'a, D> {
-        maybe_set_type(&mut res, MediaType::Bin);
+        res.set_header_fallback(|| ContentType("application/x-protobuf".to_owned()));
+        res.set_header_fallback(|| CacheControl(vec![CacheDirective::MaxAge(43200u32)])); //TODO: from cache settings
+
         let vec = Tile::binary_tile(&self);
         res.send(vec)
     }
@@ -81,6 +92,7 @@ pub fn webserver(args: &ArgMatches) {
     server.options = Options::default()
                      .thread_count(Some(1));
     server.utilize(log_request);
+    server.utilize(enable_cors);
 
     let service = service_from_args(args);
 
