@@ -7,10 +7,10 @@ use datasource::{Datasource,DatasourceInput};
 use datasource::PostgisInput;
 use core::grid::{Extent,Grid};
 use core::layer::Layer;
+use core::Config;
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use mvt::geom_encoder::EncodableGeom;
-use config::Config;
 use toml;
 
 

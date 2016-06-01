@@ -151,8 +151,8 @@ fn test_parse_config() {
 
 #[test]
 fn test_parse_error() {
-    let config = read_config("src/config/mod.rs");
-    assert_eq!("src/config/mod.rs:0:0-0:0 error: expected a key but found an empty string", config.err().unwrap());
+    let config = read_config("src/core/mod.rs");
+    assert_eq!("src/core/mod.rs:0:0-0:0 error: expected a key but found an empty string", config.err().unwrap());
 
     let config = read_config("wrongfile");
     assert_eq!("Could not find config file!", config.err().unwrap());

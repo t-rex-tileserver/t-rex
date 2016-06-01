@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use config::Config;
+use core::Config;
 use toml;
 
 
@@ -169,7 +169,7 @@ fn test_bbox() {
 
 #[test]
 fn test_grid_from_config() {
-    use config::parse_config;
+    use core::parse_config;
 
     let toml = r#"
         [grid]

@@ -23,7 +23,6 @@ mod mvt;
 mod service;
 mod cache;
 mod webserver;
-mod config;
 
 use clap::{App, SubCommand};
 use std::env;

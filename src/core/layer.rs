@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use config::Config;
+use core::Config;
 use toml;
 
 
@@ -120,7 +120,7 @@ geometry_type = "POINT"
 
 #[test]
 fn test_layers_from_config() {
-    use config::parse_config;
+    use core::parse_config;
     let toml = r#"
         [[layer]]
         name = "points"

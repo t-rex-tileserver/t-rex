@@ -14,7 +14,7 @@ use core::feature::{Feature,FeatureAttr,FeatureAttrValType};
 use core::geom::*;
 use core::grid::Extent;
 use core::layer::Layer;
-use config::Config;
+use core::Config;
 use toml;
 
 

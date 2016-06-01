@@ -9,7 +9,7 @@ use mvt::tile::Tile;
 use mvt::vector_tile;
 use service::mvt::MvtService;
 use core::layer::Layer;
-use config::{Config,read_config};
+use core::{Config,read_config};
 
 use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult };
 use nickel_mustache::Render;
@@ -151,7 +151,7 @@ mapviewer = true
 
 #[test]
 fn test_gen_config() {
-    use config::parse_config;
+    use core::parse_config;
 
     let args = ArgMatches::new();
     let toml = gen_config(&args);
@@ -168,7 +168,7 @@ fn test_runtime_config() {
     use std::io::{self,Write};
     use std::env;
     use clap::App;
-    use config::parse_config;
+    use core::parse_config;
 
     if env::var("DBCONN").is_err() {
         write!(&mut io::stdout(), "skipped ").unwrap();
