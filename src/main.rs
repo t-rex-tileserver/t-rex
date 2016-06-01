@@ -21,6 +21,7 @@ mod core;
 mod datasource;
 mod mvt;
 mod service;
+mod cache;
 mod webserver;
 mod config;
 
