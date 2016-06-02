@@ -17,7 +17,7 @@ pub struct Filecache {
 
 impl Filecache {
     fn dir(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16) -> String {
-        format!("{}/{}/{}", self.basepath, zoom, xtile)
+        format!("{}/{}/{}/{}", self.basepath, tileset, zoom, xtile)
     }
     fn path(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16) -> String {
         format!("{}/{}.pbf", self.dir(tileset, xtile, ytile, zoom), ytile)
@@ -54,8 +54,8 @@ fn test_file() {
     fs::remove_dir_all(&basepath);
 
     let cache = Filecache { basepath: basepath };
-    assert_eq!(cache.dir("tileset", 1, 2, 0), format!("{}/{}", cache.basepath, "0/1"));
-    let pbf = format!("{}/{}", cache.basepath, "0/1/2.pbf");
+    assert_eq!(cache.dir("tileset", 1, 2, 0), format!("{}/{}", cache.basepath, "tileset/0/1"));
+    let pbf = format!("{}/{}", cache.basepath, "tileset/0/1/2.pbf");
     assert_eq!(cache.path("tileset", 1, 2, 0), pbf);
 
     // Cache miss
