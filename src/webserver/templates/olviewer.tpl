@@ -20,7 +20,7 @@
               format: new ol.format.MVT(),
               tileGrid: ol.tilegrid.createXYZ({maxZoom: 22}),
               tilePixelRatio: 16,
-              url: '{{ baseurl }}/{{ topic }}/{z}/{x}/{y}.pbf'
+              url: '{{ baseurl }}/{{ tileset }}/{z}/{x}/{y}.pbf'
             })
           })
         ],

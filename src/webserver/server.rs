@@ -85,7 +85,7 @@ fn service_from_args(args: &ArgMatches) -> MvtService {
             let grid = Grid::web_mercator();
             let layers = pg.detect_layers();
             MvtService {input: pg, grid: grid, layers: layers,
-                topics: Vec::new(), cache: cache}
+                tilesets: Vec::new(), cache: cache}
         } else {
             println!("Either 'config' or 'dbconn' is required");
             process::exit(1)
@@ -107,13 +107,13 @@ pub fn webserver(args: &ArgMatches) {
     }).collect();
     layers_display.sort_by_key(|li| li.name.clone());
 
-    server.get("/:topic/:z/:x/:y.pbf", middleware! { |req|
-        let topic = req.param("topic").unwrap();
+    server.get("/:tileset/:z/:x/:y.pbf", middleware! { |req|
+        let tileset = req.param("tileset").unwrap();
         let z = req.param("z").unwrap().parse::<u16>().unwrap();
         let x = req.param("x").unwrap().parse::<u16>().unwrap();
         let y = req.param("y").unwrap().parse::<u16>().unwrap();
 
-        let mvt_tile = service.tile(topic, x, y, z);
+        let mvt_tile = service.tile(tileset, x, y, z);
 
         mvt_tile
     });
@@ -122,13 +122,13 @@ pub fn webserver(args: &ArgMatches) {
         data.insert("layer", &layers_display);
         return res.render("src/webserver/templates/index.tpl", &data)
     });
-    server.get("/:topic/", middleware! { |req, res|
-        let topic = req.param("topic").unwrap();
+    server.get("/:tileset/", middleware! { |req, res|
+        let tileset = req.param("tileset").unwrap();
         let host = req.origin.headers.get::<header::Host>().unwrap();
         let baseurl = format!("http://{}:{}", host.hostname, host.port.unwrap_or(80));
         let mut data = HashMap::new();
         data.insert("baseurl", baseurl);
-        data.insert("topic", topic.to_string());
+        data.insert("tileset", tileset.to_string());
         return res.render("src/webserver/templates/olviewer.tpl", &data)
     });
     server.listen("127.0.0.1:6767");

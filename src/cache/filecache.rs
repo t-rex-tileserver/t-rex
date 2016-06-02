@@ -16,29 +16,29 @@ pub struct Filecache {
 }
 
 impl Filecache {
-    fn dir(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16) -> String {
+    fn dir(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16) -> String {
         format!("{}/{}/{}", self.basepath, zoom, xtile)
     }
-    fn path(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16) -> String {
-        format!("{}/{}.pbf", self.dir(topic, xtile, ytile, zoom), ytile)
+    fn path(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16) -> String {
+        format!("{}/{}.pbf", self.dir(tileset, xtile, ytile, zoom), ytile)
     }
 }
 
 impl Cache for Filecache {
-    fn lookup<F>(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16, mut read: F) -> Result<(), io::Error>
+    fn lookup<F>(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16, mut read: F) -> Result<(), io::Error>
         where F : FnMut(&mut Read) -> Result<(), io::Error>
     {
-        match File::open(&self.path(topic, xtile, ytile, zoom)) {
+        match File::open(&self.path(tileset, xtile, ytile, zoom)) {
             Ok(mut f) => read(&mut f),
             Err(e) => Err(e)
         }
     }
-    fn store<F>(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16, mut write: F) -> Result<(), io::Error>
+    fn store<F>(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16, mut write: F) -> Result<(), io::Error>
         where F : Fn(&mut Write) -> Result<(), io::Error>
     {
-        let dir = self.dir(topic, xtile, ytile, zoom);
+        let dir = self.dir(tileset, xtile, ytile, zoom);
         try!(fs::create_dir_all(Path::new(&dir as &str)));
-        let mut f = try!(File::create(self.path(topic, xtile, ytile, zoom)));
+        let mut f = try!(File::create(self.path(tileset, xtile, ytile, zoom)));
         write(&mut f)
     }
 }
@@ -54,26 +54,26 @@ fn test_file() {
     fs::remove_dir_all(&basepath);
 
     let cache = Filecache { basepath: basepath };
-    assert_eq!(cache.dir("topic", 1, 2, 0), format!("{}/{}", cache.basepath, "0/1"));
+    assert_eq!(cache.dir("tileset", 1, 2, 0), format!("{}/{}", cache.basepath, "0/1"));
     let pbf = format!("{}/{}", cache.basepath, "0/1/2.pbf");
-    assert_eq!(cache.path("topic", 1, 2, 0), pbf);
+    assert_eq!(cache.path("tileset", 1, 2, 0), pbf);
 
     // Cache miss
-    assert!(cache.lookup("topic", 1, 2, 0, |_| Ok(())).is_err());
+    assert!(cache.lookup("tileset", 1, 2, 0, |_| Ok(())).is_err());
 
     // Write into cache
-    let res = cache.store("topic", 1, 2, 0, |f| {
+    let res = cache.store("tileset", 1, 2, 0, |f| {
         f.write_all("0123456789".as_bytes())
     });
     assert_eq!(res.ok(), Some(()));
     assert!(Path::new(&pbf).exists());
 
     // Cache hit
-    assert!(cache.lookup("topic", 1, 2, 0, |_| Ok(())).is_ok());
+    assert!(cache.lookup("tileset", 1, 2, 0, |_| Ok(())).is_ok());
 
     // Read from cache
     let mut s = String::new();
-    cache.lookup("topic", 1, 2, 0, |f| {
+    cache.lookup("tileset", 1, 2, 0, |f| {
         f.read_to_string(&mut s).map(|_| ())
     });
     assert_eq!(&s, "0123456789");

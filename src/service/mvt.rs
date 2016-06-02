@@ -16,7 +16,7 @@ use toml;
 
 
 /// Collection of layers in one MVT
-pub struct Topic {
+pub struct Tileset {
     pub name: String,
     pub layers: Vec<String>,
 }
@@ -26,14 +26,14 @@ pub struct MvtService {
     pub input: PostgisInput,
     pub grid: Grid,
     pub layers: Vec<Layer>,
-    pub topics: Vec<Topic>,
+    pub tilesets: Vec<Tileset>,
     pub cache: Tilecache,
 }
 
 impl MvtService {
     fn get_layers(&self, name: &str) -> Vec<&Layer> {
-        let topic = self.topics.iter().find(|t| t.name == name);
-        match topic {
+        let tileset = self.tilesets.iter().find(|t| t.name == name);
+        match tileset {
             Some(_) => Vec::new(), //TODO: return corresponding layers
             None => {
                 self.layers.iter().filter(|t| t.name == name).collect()
@@ -41,9 +41,9 @@ impl MvtService {
         }
     }
     /// Create vector tile from input at x, y, z
-    pub fn tile(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16) -> vector_tile::Tile {
+    pub fn tile(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16) -> vector_tile::Tile {
         let mut tile: Option<vector_tile::Tile> = None;
-        self.cache.lookup(topic, xtile, ytile, zoom, |mut f| {
+        self.cache.lookup(tileset, xtile, ytile, zoom, |mut f| {
             tile = Tile::read_from(&mut f).ok();
             Ok(()) //result.map(|_| ()).map_err(|e| io::Error::new(io::ErrorKind::Other, e.description()))
         });
@@ -53,7 +53,7 @@ impl MvtService {
         let extent = self.grid.tile_extent_reverse_y(xtile, ytile, zoom);
         debug!("MVT tile request {:?}", extent);
         let mut tile = Tile::new(&extent, 4096, true);
-        for layer in self.get_layers(topic).iter() {
+        for layer in self.get_layers(tileset).iter() {
             let mut mvt_layer = tile.new_layer(layer);
             self.input.retrieve_features(&layer, &extent, zoom, |feat| {
                 tile.add_feature(&mut mvt_layer, feat);
@@ -61,7 +61,7 @@ impl MvtService {
             tile.add_layer(mvt_layer);
         }
         // Write into cache
-        let res = self.cache.store(topic, xtile, ytile, zoom, |mut f| {
+        let res = self.cache.store(tileset, xtile, ytile, zoom, |mut f| {
             Tile::write_to(&mut f, &tile.mvt_tile);
             Ok(())
         });
@@ -75,16 +75,16 @@ impl Config<MvtService> for MvtService {
         let res_pg = PostgisInput::from_config(config);
         let res_grid = Grid::from_config(config);
         let res_layers = Layer::layers_from_config(config);
-        let topics = config.lookup("topics")
+        let tilesets = config.lookup("tilesets")
                            .map_or_else(|| Vec::new(),
-                                        |_| vec![Topic{name: "TODO".to_string(), layers: Vec::new()}]);
+                                        |_| vec![Tileset{name: "TODO".to_string(), layers: Vec::new()}]);
         let cache = Tilecache::Nocache(Nocache);
 
         res_pg.and_then(|pg|
             res_grid.and_then(|grid| {
                 res_layers.and_then(|layers| {
                     Ok(MvtService {input: pg, grid: grid,
-                                   layers: layers, topics: topics, cache: cache})
+                                   layers: layers, tilesets: tilesets, cache: cache})
                 })
             })
         )
@@ -121,9 +121,9 @@ mvt = true
 "#;
 
 const TOML_TOPICS: &'static str = r#"
-[topics]
+[tilesets]
 # Multiple layers in one vector tile
-#topicname = ["layer1","layer2"]
+#tilesetname = ["layer1","layer2"]
 "#;
 
 const TOML_CACHE: &'static str = r#"
@@ -148,7 +148,7 @@ pub fn test_tile_query() {
     layers[0].geometry_type = Some(String::from("POINT"));
     layers[0].query_limit = Some(1);
     let service = MvtService {input: pg, grid: grid, layers: layers,
-                              topics: Vec::new(), cache: Tilecache::Nocache(Nocache)};
+                              tilesets: Vec::new(), cache: Tilecache::Nocache(Nocache)};
 
     let mvt_tile = service.tile("points", 33, 22, 6);
     println!("{:#?}", mvt_tile);
@@ -220,9 +220,9 @@ geometry_type = "POINT"
 #fid_field = "id"
 #query = "SELECT name,wkb_geometry FROM mytable"
 
-[topics]
+[tilesets]
 # Multiple layers in one vector tile
-#topicname = ["layer1","layer2"]
+#tilesetname = ["layer1","layer2"]
 
 [cache]
 strategy = "none"

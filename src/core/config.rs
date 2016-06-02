@@ -112,7 +112,7 @@ fn test_parse_config() {
             )
         }
     ),
-    "topics": Table(
+    "tilesets": Table(
         {
             "all": Array(
                 [
