@@ -11,6 +11,7 @@ use core::Config;
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use mvt::geom_encoder::EncodableGeom;
+use cache::{Cache,Tilecache,Nocache,Filecache};
 use toml;
 
 
@@ -26,6 +27,7 @@ pub struct MvtService {
     pub grid: Grid,
     pub layers: Vec<Layer>,
     pub topics: Vec<Topic>,
+    pub cache: Tilecache,
 }
 
 impl MvtService {
@@ -40,6 +42,14 @@ impl MvtService {
     }
     /// Create vector tile from input at x, y, z
     pub fn tile(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16) -> vector_tile::Tile {
+        let mut tile: Option<vector_tile::Tile> = None;
+        self.cache.lookup(topic, xtile, ytile, zoom, |mut f| {
+            tile = Tile::read_from(&mut f).ok();
+            Ok(()) //result.map(|_| ()).map_err(|e| io::Error::new(io::ErrorKind::Other, e.description()))
+        });
+        if tile.is_some() {
+            return tile.unwrap()
+        }
         let extent = self.grid.tile_extent_reverse_y(xtile, ytile, zoom);
         debug!("MVT tile request {:?}", extent);
         let mut tile = Tile::new(&extent, 4096, true);
@@ -50,6 +60,11 @@ impl MvtService {
             });
             tile.add_layer(mvt_layer);
         }
+        // Write into cache
+        let res = self.cache.store(topic, xtile, ytile, zoom, |mut f| {
+            Tile::write_to(&mut f, &tile.mvt_tile);
+            Ok(())
+        });
         tile.mvt_tile
     }
 }
@@ -63,12 +78,13 @@ impl Config<MvtService> for MvtService {
         let topics = config.lookup("topics")
                            .map_or_else(|| Vec::new(),
                                         |_| vec![Topic{name: "TODO".to_string(), layers: Vec::new()}]);
+        let cache = Tilecache::Nocache(Nocache);
 
         res_pg.and_then(|pg|
             res_grid.and_then(|grid| {
                 res_layers.and_then(|layers| {
                     Ok(MvtService {input: pg, grid: grid,
-                                   layers: layers, topics: topics})
+                                   layers: layers, topics: topics, cache: cache})
                 })
             })
         )
@@ -131,7 +147,8 @@ pub fn test_tile_query() {
     layers[0].geometry_field = Some(String::from("wkb_geometry"));
     layers[0].geometry_type = Some(String::from("POINT"));
     layers[0].query_limit = Some(1);
-    let service = MvtService {input: pg, grid: grid, layers: layers, topics: Vec::new()};
+    let service = MvtService {input: pg, grid: grid, layers: layers,
+                              topics: Vec::new(), cache: Tilecache::Nocache(Nocache)};
 
     let mvt_tile = service.tile("points", 33, 22, 6);
     println!("{:#?}", mvt_tile);

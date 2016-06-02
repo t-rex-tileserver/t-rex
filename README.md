@@ -17,6 +17,10 @@ Tiles are then served at `http://localhost:6767/{layer}/{z}/{x}/{y}.pbf`
 
 A list of all detected layers is available at [http://localhost:6767/](http://localhost:6767/)
 
+Use a tile cache:
+
+    t_rex serve --dbconn postgresql://pi@localhost/osm2vectortiles --cache /tmp/mvtcache
+
 Generate a configuration template:
 
     t_rex genconfig --dbconn postgresql://pi@localhost/osm2vectortiles

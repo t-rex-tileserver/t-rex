@@ -13,7 +13,10 @@ use mvt::vector_tile;
 use mvt::geom_encoder::{EncodableGeom,CommandSequence};
 use protobuf::stream::CodedOutputStream;
 use protobuf::core::Message;
+use protobuf::error::ProtobufError;
+use protobuf::parse_from_reader;
 use std::fs::File;
+use std::io::{BufReader,Read,Write};
 
 
 pub struct Tile<'a> {
@@ -207,21 +210,28 @@ impl<'a> Tile<'a> {
         self.mvt_tile.mut_layers().push(mvt_layer);
     }
 
+    pub fn write_to(mut out: &mut Write, mvt_tile: &vector_tile::Tile) {
+        let mut os = CodedOutputStream::new(&mut out);
+        mvt_tile.write_to(&mut os);
+        os.flush().unwrap();
+    }
+
+    pub fn read_from(fin: &mut Read) -> Result<vector_tile::Tile, ProtobufError> {
+        let mut reader = BufReader::new(fin);
+        parse_from_reader::<vector_tile::Tile>(&mut reader)
+    }
+
     pub fn binary_tile(mvt_tile: &vector_tile::Tile) -> Vec<u8> {
         let mut v = Vec::new();
         {
-            let mut os = CodedOutputStream::new(&mut v);
-            mvt_tile.write_to(&mut os);
-            os.flush().unwrap();
+            Self::write_to(&mut v, mvt_tile);
         }
         v
     }
 
     pub fn to_file(&self, fname: &str) {
         let mut f = File::create(fname).unwrap();
-        let mut os = CodedOutputStream::new(&mut f);
-        self.mvt_tile.write_to(&mut os);
-        os.flush().unwrap();
+        Self::write_to(&mut f, &self.mvt_tile);
     }
 }
 
@@ -237,16 +247,11 @@ fn test_tile_values() {
 }
 
 #[test]
-fn test_read_pbf_file() {
-    use std::fs::File;
-    use std::io::BufReader;
-    use protobuf::parse_from_reader;
-
-    let f = File::open("src/test/tile.pbf").unwrap();
+fn test_read_from_file() {
     // Command line decoding:
     // protoc --decode=vector_tile.Tile src/mvt/vector_tile.proto <src/test/tile.pbf
-    let mut reader = BufReader::new(f);
-    let tile = parse_from_reader::<vector_tile::Tile>(&mut reader).unwrap();
+    let mut f = File::open("src/test/tile.pbf").unwrap();
+    let tile = Tile::read_from(&mut f).unwrap();
     println!("{:#?}", tile);
     let ref layer = tile.get_layers()[0];
     assert_eq!(layer.get_name(), "roads");

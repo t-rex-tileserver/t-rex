@@ -63,6 +63,7 @@ fn main() {
                         .about("vector tile server specialized on publishing MVT tiles from a PostGIS database")
                         .subcommand(SubCommand::with_name("serve")
                             .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'
+                                              --cache=[DIR] 'Use tile cache in DIR'
                                               -c, --config=[FILE] 'Load from custom config file'")
                             .about("Start web server and serve MVT vector tiles"))
                         .subcommand(SubCommand::with_name("genconfig")

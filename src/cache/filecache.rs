@@ -11,11 +11,11 @@ use std::io;
 use std::path::Path;
 
 
-pub struct Filecache<'a> {
-    pub basepath: &'a str,
+pub struct Filecache {
+    pub basepath: String,
 }
 
-impl<'a> Filecache<'a> {
+impl Filecache {
     fn dir(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16) -> String {
         format!("{}/{}/{}", self.basepath, zoom, xtile)
     }
@@ -24,7 +24,7 @@ impl<'a> Filecache<'a> {
     }
 }
 
-impl<'a> Cache for Filecache<'a> {
+impl Cache for Filecache {
     fn lookup<F>(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16, mut read: F) -> Result<(), io::Error>
         where F : FnMut(&mut Read) -> Result<(), io::Error>
     {
@@ -53,12 +53,12 @@ fn test_file() {
     let basepath = format!("{}", &dir.display());
     fs::remove_dir_all(&basepath);
 
-    let cache = Filecache { basepath: &basepath };
+    let cache = Filecache { basepath: basepath };
     assert_eq!(cache.dir("topic", 1, 2, 0), format!("{}/{}", cache.basepath, "0/1"));
     let pbf = format!("{}/{}", cache.basepath, "0/1/2.pbf");
     assert_eq!(cache.path("topic", 1, 2, 0), pbf);
 
-    // Cache empty
+    // Cache miss
     assert!(cache.lookup("topic", 1, 2, 0, |_| Ok(())).is_err());
 
     // Write into cache
@@ -68,7 +68,7 @@ fn test_file() {
     assert_eq!(res.ok(), Some(()));
     assert!(Path::new(&pbf).exists());
 
-    // Cached
+    // Cache hit
     assert!(cache.lookup("topic", 1, 2, 0, |_| Ok(())).is_ok());
 
     // Read from cache

@@ -10,6 +10,7 @@ use mvt::vector_tile;
 use service::mvt::MvtService;
 use core::layer::Layer;
 use core::{Config,read_config};
+use cache::{Cache,Tilecache,Nocache,Filecache};
 
 use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult };
 use nickel_mustache::Render;
@@ -75,11 +76,16 @@ fn service_from_args(args: &ArgMatches) -> MvtService {
                 process::exit(1)
             })
     } else {
+        let cache = match args.value_of("cache") {
+            None => Tilecache::Nocache(Nocache),
+            Some(dir) => Tilecache::Filecache(Filecache { basepath: dir.to_string() })
+        };
         if let Some(dbconn) = args.value_of("dbconn") {
             let pg = PostgisInput { connection_url: dbconn.to_string() };
             let grid = Grid::web_mercator();
             let layers = pg.detect_layers();
-            MvtService {input: pg, grid: grid, layers: layers, topics: Vec::new()}
+            MvtService {input: pg, grid: grid, layers: layers,
+                topics: Vec::new(), cache: cache}
         } else {
             println!("Either 'config' or 'dbconn' is required");
             process::exit(1)

@@ -13,3 +13,19 @@ pub trait Cache {
     fn store<F>(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16, mut write: F) -> Result<(), io::Error>
         where F : Fn(&mut Write) -> Result<(), io::Error>;
 }
+
+
+pub struct Nocache;
+
+impl Cache for Nocache {
+    fn lookup<F>(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16, mut read: F) -> Result<(), io::Error>
+        where F : FnMut(&mut Read) -> Result<(), io::Error>
+    {
+        Ok(())
+    }
+    fn store<F>(&self, topic: &str, xtile: u16, ytile: u16, zoom: u16, mut write: F) -> Result<(), io::Error>
+        where F : Fn(&mut Write) -> Result<(), io::Error>
+    {
+        Ok(())
+    }
+}
