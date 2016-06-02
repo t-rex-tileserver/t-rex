@@ -31,14 +31,15 @@ pub struct MvtService {
 }
 
 impl MvtService {
-    fn get_layers(&self, name: &str) -> Vec<&Layer> {
+    fn get_tileset(&self, name: &str) -> Vec<&Layer> {
         let tileset = self.tilesets.iter().find(|t| t.name == name);
         match tileset {
-            Some(_) => Vec::new(), //TODO: return corresponding layers
-            None => {
-                self.layers.iter().filter(|t| t.name == name).collect()
-            }
+            Some(set) => set.layers.iter().map(|name| self.get_layer(name).unwrap()).collect(),
+            None => vec![self.get_layer(name).unwrap()]
         }
+    }
+    fn get_layer(&self, name: &str) -> Option<&Layer> {
+        self.layers.iter().find(|t| t.name == name)
     }
     /// Create vector tile from input at x, y, z
     pub fn tile(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16) -> vector_tile::Tile {
@@ -53,7 +54,7 @@ impl MvtService {
         let extent = self.grid.tile_extent_reverse_y(xtile, ytile, zoom);
         debug!("MVT tile request {:?}", extent);
         let mut tile = Tile::new(&extent, 4096, true);
-        for layer in self.get_layers(tileset).iter() {
+        for layer in self.get_tileset(tileset) {
             let mut mvt_layer = tile.new_layer(layer);
             self.input.retrieve_features(&layer, &extent, zoom, |feat| {
                 tile.add_feature(&mut mvt_layer, feat);
@@ -77,7 +78,15 @@ impl Config<MvtService> for MvtService {
         let layers = try!(Layer::layers_from_config(config));
         let tilesets = config.lookup("tilesets")
                            .map_or_else(|| Vec::new(),
-                                        |_| vec![Tileset{name: "TODO".to_string(), layers: Vec::new()}]);
+                                        |tilesets| {
+            let mut sets = Vec::new();
+            for (tileset, layerarray) in tilesets.as_table().unwrap() {
+                let layers: Vec<String> = layerarray.as_slice().unwrap().iter().map(|l| l.as_str().unwrap().to_string() ).collect();
+                debug!("Adding tileset {:?} {:?}", tileset, layers);
+                sets.push(Tileset{name: tileset.clone(), layers: layers});
+            }
+            sets
+        });
         let cache = try!(Tilecache::from_config(config));
         Ok(MvtService {input: pg, grid: grid,
                        layers: layers, tilesets: tilesets, cache: cache})

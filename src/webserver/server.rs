@@ -7,7 +7,7 @@ use datasource::postgis::PostgisInput;
 use core::grid::Grid;
 use mvt::tile::Tile;
 use mvt::vector_tile;
-use service::mvt::MvtService;
+use service::mvt::{MvtService,Tileset};
 use core::layer::Layer;
 use core::{Config,read_config};
 use cache::{Cache,Tilecache,Nocache,Filecache};
@@ -64,6 +64,13 @@ impl LayerInfo {
                 &(l.geometry_type.as_ref().unwrap() as &str)))
         }
     }
+    fn from_tileset(set: &Tileset) -> LayerInfo {
+        LayerInfo {
+            name: set.name.clone(),
+            geomtype: format!("Tileset: {}", set.layers.join(", ")),
+            hasviewer: true
+        }
+    }
 }
 
 fn service_from_args(args: &ArgMatches) -> MvtService {
@@ -108,6 +115,9 @@ pub fn webserver(args: &ArgMatches) {
     let mut layers_display: Vec<LayerInfo> = service.layers.iter().map(|l| {
         LayerInfo::from_layer(l)
     }).collect();
+    for set in &service.tilesets {
+        layers_display.push(LayerInfo::from_tileset(&set));
+    }
     layers_display.sort_by_key(|li| li.name.clone());
 
     server.get("/:tileset/:z/:x/:y.pbf", middleware! { |req|
