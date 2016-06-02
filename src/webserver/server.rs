@@ -101,6 +101,9 @@ pub fn webserver(args: &ArgMatches) {
     server.utilize(enable_cors);
 
     let service = service_from_args(args);
+    if let Tilecache::Filecache(ref fc) = service.cache {
+        info!("Tile cache directory: {}", fc.basepath);
+    }
 
     let mut layers_display: Vec<LayerInfo> = service.layers.iter().map(|l| {
         LayerInfo::from_layer(l)

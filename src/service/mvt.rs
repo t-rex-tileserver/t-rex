@@ -61,7 +61,7 @@ impl MvtService {
             tile.add_layer(mvt_layer);
         }
         // Write into cache
-        let res = self.cache.store(tileset, xtile, ytile, zoom, |mut f| {
+        self.cache.store(tileset, xtile, ytile, zoom, |mut f| {
             Tile::write_to(&mut f, &tile.mvt_tile);
             Ok(())
         });
@@ -72,22 +72,15 @@ impl MvtService {
 
 impl Config<MvtService> for MvtService {
     fn from_config(config: &toml::Value) -> Result<Self, String> {
-        let res_pg = PostgisInput::from_config(config);
-        let res_grid = Grid::from_config(config);
-        let res_layers = Layer::layers_from_config(config);
+        let pg = try!(PostgisInput::from_config(config));
+        let grid = try!(Grid::from_config(config));
+        let layers = try!(Layer::layers_from_config(config));
         let tilesets = config.lookup("tilesets")
                            .map_or_else(|| Vec::new(),
                                         |_| vec![Tileset{name: "TODO".to_string(), layers: Vec::new()}]);
-        let cache = Tilecache::Nocache(Nocache);
-
-        res_pg.and_then(|pg|
-            res_grid.and_then(|grid| {
-                res_layers.and_then(|layers| {
-                    Ok(MvtService {input: pg, grid: grid,
-                                   layers: layers, tilesets: tilesets, cache: cache})
-                })
-            })
-        )
+        let cache = try!(Tilecache::from_config(config));
+        Ok(MvtService {input: pg, grid: grid,
+                       layers: layers, tilesets: tilesets, cache: cache})
     }
     fn gen_config() -> String {
         let mut config = String::new();
@@ -95,8 +88,8 @@ impl Config<MvtService> for MvtService {
         config.push_str(&Datasource::gen_config());
         config.push_str(&Grid::gen_config());
         config.push_str(&Layer::gen_config());
-        config.push_str(TOML_TOPICS);
-        config.push_str(TOML_CACHE);
+        config.push_str(TOML_TILESETS);
+        config.push_str(&Tilecache::gen_config());
         config
     }
     fn gen_runtime_config(&self) -> String {
@@ -107,8 +100,8 @@ impl Config<MvtService> for MvtService {
         for layer in &self.layers {
             config.push_str(&layer.gen_runtime_config());
         }
-        config.push_str(TOML_TOPICS);
-        config.push_str(TOML_CACHE);
+        config.push_str(TOML_TILESETS);
+        config.push_str(&self.cache.gen_runtime_config());
         config
     }
 }
@@ -120,15 +113,10 @@ const TOML_SERVICES: &'static str = r#"# t-rex configuration
 mvt = true
 "#;
 
-const TOML_TOPICS: &'static str = r#"
+const TOML_TILESETS: &'static str = r#"
 [tilesets]
 # Multiple layers in one vector tile
 #tilesetname = ["layer1","layer2"]
-"#;
-
-const TOML_CACHE: &'static str = r#"
-[cache]
-strategy = "none"
 "#;
 
 
@@ -224,8 +212,8 @@ geometry_type = "POINT"
 # Multiple layers in one vector tile
 #tilesetname = ["layer1","layer2"]
 
-[cache]
-strategy = "none"
+#[cache.file]
+#base = "/tmp/mvtcache"
 "#;
     println!("{}", &MvtService::gen_config());
     assert_eq!(expected, &MvtService::gen_config());

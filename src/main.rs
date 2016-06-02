@@ -47,7 +47,7 @@ fn init_logger() {
     match env::var("RUST_LOG") {
         Result::Ok(val) => { builder.parse(&val); },
         // Set log level for webserver to info by default
-        Result::Err(_) => { builder.filter(None, LogLevelFilter::Error).filter(Some("t_rex::webserver::server"), LogLevelFilter::Info); }
+        Result::Err(_) => { builder.filter(None, LogLevelFilter::Warn).filter(Some("t_rex::webserver::server"), LogLevelFilter::Info); }
     }
 
     builder.init().unwrap();

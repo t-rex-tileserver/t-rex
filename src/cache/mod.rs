@@ -11,6 +11,8 @@ pub use self::cache::Nocache;
 pub use self::filecache::Filecache;
 use std::io::{Read,Write};
 use std::io;
+use core::Config;
+use toml;
 
 
 pub enum Tilecache {
@@ -34,5 +36,22 @@ impl Cache for Tilecache {
             &Tilecache::Nocache(ref cache)   => cache.store(tileset, xtile, ytile, zoom, write),
             &Tilecache::Filecache(ref cache) => cache.store(tileset, xtile, ytile, zoom, write),
         }
+    }
+}
+
+impl Config<Tilecache> for Tilecache {
+    fn from_config(config: &toml::Value) -> Result<Self, String> {
+        config.lookup("cache.file.base")
+            .and_then(|val| val.as_str().or(None))
+            .and_then(|basedir| Some(Tilecache::Filecache(Filecache {basepath: basedir.to_string() })))
+            .or( Some(Tilecache::Nocache(Nocache)) )
+            .ok_or("config error".to_string())
+    }
+    fn gen_config() -> String {
+        let toml = r#"
+#[cache.file]
+#base = "/tmp/mvtcache"
+"#;
+        toml.to_string()
     }
 }

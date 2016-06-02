@@ -28,7 +28,9 @@ impl Cache for Filecache {
     fn lookup<F>(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16, mut read: F) -> Result<(), io::Error>
         where F : FnMut(&mut Read) -> Result<(), io::Error>
     {
-        match File::open(&self.path(tileset, xtile, ytile, zoom)) {
+        let path = self.path(tileset, xtile, ytile, zoom);
+        debug!("Filecache.lookup {}", path);
+        match File::open(&path) {
             Ok(mut f) => read(&mut f),
             Err(e) => Err(e)
         }
@@ -36,9 +38,11 @@ impl Cache for Filecache {
     fn store<F>(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16, mut write: F) -> Result<(), io::Error>
         where F : Fn(&mut Write) -> Result<(), io::Error>
     {
+        let path = self.path(tileset, xtile, ytile, zoom);
+        debug!("Filecache.store {}", path);
         let dir = self.dir(tileset, xtile, ytile, zoom);
         try!(fs::create_dir_all(Path::new(&dir as &str)));
-        let mut f = try!(File::create(self.path(tileset, xtile, ytile, zoom)));
+        let mut f = try!(File::create(path));
         write(&mut f)
     }
 }
