@@ -13,6 +13,7 @@ use mvt::vector_tile;
 use mvt::geom_encoder::EncodableGeom;
 use cache::{Cache,Tilecache,Nocache,Filecache};
 use toml;
+use rustc_serialize::json::{self, Json, ToJson};
 
 
 /// Collection of layers in one MVT
@@ -40,6 +41,59 @@ impl MvtService {
     }
     fn get_layer(&self, name: &str) -> Option<&Layer> {
         self.layers.iter().find(|t| t.name == name)
+    }
+    pub fn get_metadata(&self, tileset: &str) -> String {
+        let mut metadata = Json::from_str(r#"
+        {
+            "attribution": "",
+            "description": "T-Rex cache",
+            "format": "pbf",
+            "filesize": "12345",
+            "basename": "t_rex.mbtiles",
+            "minzoom": "0",
+            "name": "t_rex",
+            "version": "2.0",
+            "bounds": "-180.0,-90.0,180.0,90.0",
+            "mtime": "1463000297761",
+            "maxzoom": "14",
+            "scheme": "tms",
+            "type": "baselayer",
+            "id": "t_rex",
+            "center": "0.0,0.0,10"
+        }"#).unwrap();
+        let metadata_vector_layers = Json::from_str(r#"
+        {
+          "Layer": [
+            {
+              "id": "ne_10m_populated_places",
+              "description": "",
+              "fields": {
+                "name": ""
+              },
+              "properties": {
+                "buffer-size": 256,
+                "minzoom": 0,
+                "maxzoom": 22
+              },
+              "srs": "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over",
+              "name": "ne_10m_populated_places"
+            }
+          ],
+          "vector_layers": [
+            {
+              "id": "ne_10m_populated_places",
+              "description": "",
+              "minzoom": 0,
+              "maxzoom": 22,
+              "fields": {
+                "name": ""
+              }
+            }
+          ]
+        }"#).unwrap();
+        let mut obj = metadata.as_object_mut().unwrap();
+        obj.insert("json".to_string(), metadata_vector_layers.to_string().to_json());
+        obj.to_json().to_string()
     }
     /// Create vector tile from input at x, y, z
     pub fn tile(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16) -> vector_tile::Tile {
@@ -77,12 +131,12 @@ impl Config<MvtService> for MvtService {
         let grid = try!(Grid::from_config(config));
         let layers = try!(Layer::layers_from_config(config));
         let tilesets = config.lookup("tilesets")
-                           .map_or_else(|| Vec::new(),
-                                        |tilesets| {
+                             .map_or_else(|| Vec::new(),
+                                          |tilesets| {
             let mut sets = Vec::new();
             for (tileset, layerarray) in tilesets.as_table().unwrap() {
                 let layers: Vec<String> = layerarray.as_slice().unwrap().iter().map(|l| l.as_str().unwrap().to_string() ).collect();
-                debug!("Adding tileset {:?} {:?}", tileset, layers);
+                debug!("Adding tileset {} {:?}", tileset, layers);
                 sets.push(Tileset{name: tileset.clone(), layers: layers});
             }
             sets
@@ -191,6 +245,20 @@ pub fn test_tile_query() {
     cached_size: Cell { value: 0 }
 }"#;
     assert_eq!(expected, &*format!("{:#?}", mvt_tile));
+}
+
+#[test]
+pub fn test_metadata() {
+    use core::read_config;
+
+    let config = read_config("src/test/example.cfg").unwrap();
+    let service = MvtService::from_config(&config).unwrap();
+    let metadata = service.get_metadata("admin_0_countries");
+    println!("{}", metadata);
+    let format = r#""format":"pbf""#;
+    assert!(metadata.contains(format));
+    let jsonmeta = r#"\"vector_layers\":"#;
+    assert!(metadata.contains(jsonmeta));
 }
 
 #[test]

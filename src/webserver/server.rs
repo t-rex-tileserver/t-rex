@@ -19,6 +19,9 @@ use hyper::method::Method;
 use hyper::header;
 use std::collections::HashMap;
 use clap::ArgMatches;
+use std::path::Path;
+use std::fs::{self,File};
+use std::io::Write;
 use std::process;
 
 
@@ -108,9 +111,6 @@ pub fn webserver(args: &ArgMatches) {
     server.utilize(enable_cors);
 
     let service = service_from_args(args);
-    if let Tilecache::Filecache(ref fc) = service.cache {
-        info!("Tile cache directory: {}", fc.basepath);
-    }
 
     let mut layers_display: Vec<LayerInfo> = service.layers.iter().map(|l| {
         LayerInfo::from_layer(l)
@@ -119,6 +119,17 @@ pub fn webserver(args: &ArgMatches) {
         layers_display.push(LayerInfo::from_tileset(&set));
     }
     layers_display.sort_by_key(|li| li.name.clone());
+
+    if let Tilecache::Filecache(ref fc) = service.cache {
+        info!("Tile cache directory: {}", fc.basepath);
+        // Write metadata.json for each layerset
+        for layer in &layers_display {
+            let path = Path::new(&fc.basepath).join(&layer.name);
+            fs::create_dir_all(&path).unwrap();
+            let mut f = File::create(&path.join("metadata.json")).unwrap();
+            f.write_all(service.get_metadata(&layer.name).as_bytes());
+        }
+    }
 
     server.get("/:tileset/:z/:x/:y.pbf", middleware! { |req|
         let tileset = req.param("tileset").unwrap();

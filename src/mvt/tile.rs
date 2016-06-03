@@ -223,9 +223,7 @@ impl<'a> Tile<'a> {
 
     pub fn binary_tile(mvt_tile: &vector_tile::Tile) -> Vec<u8> {
         let mut v = Vec::new();
-        {
-            Self::write_to(&mut v, mvt_tile);
-        }
+        Self::write_to(&mut v, mvt_tile);
         v
     }
 
