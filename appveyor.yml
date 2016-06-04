@@ -34,7 +34,7 @@ before_deploy:
   # Generate artifacts for release
   - cargo build --release
   - mkdir staging
-  - copy target\release\hello.exe staging
+  - copy target\release\t_rex.exe staging
   - cd staging
     # release zipfile will look like 'rust-everywhere-v1.2.3-x86_64-pc-windows-msvc'
   - 7z a ../%PROJECT_NAME%-%APPVEYOR_REPO_TAG_NAME%-%TARGET%.zip *

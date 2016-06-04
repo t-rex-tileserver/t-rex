@@ -3,6 +3,9 @@ name = "t-rex"
 version = "0.0.0"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 
+[[bin]]
+name = "t_rex"
+
 [features]
 dbtest = []
 
@@ -20,7 +23,8 @@ time = "*"
 
 [dependencies.postgres]
 version = "*"
-features = ["unix_socket"]
+#Breaks Windows build
+#features = ["unix_socket"]
 
 [dependencies.hyper]
 version = "0.8.1"

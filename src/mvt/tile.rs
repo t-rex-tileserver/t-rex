@@ -515,6 +515,8 @@ fn test_build_mvt() {
 
 #[test]
 fn test_build_mvt_with_helpers() {
+    use std::env;
+
     let extent = Extent {minx: 958826.08, miny: 5987771.04, maxx: 978393.96, maxy: 6007338.92};
     let mut tile = Tile::new(&extent, 4096, false);
     let layer = Layer::new("points");
@@ -547,5 +549,7 @@ fn test_build_mvt_with_helpers() {
     println!("{:#?}", tile.mvt_tile);
     assert_eq!(TILE_EXAMPLE, &*format!("{:#?}", tile.mvt_tile));
 
-    tile.to_file("/tmp/out.pbf");
+    let mut path = env::temp_dir();
+    path.push("out.pbf");
+    tile.to_file(&format!("{}", &path.display()));
 }
