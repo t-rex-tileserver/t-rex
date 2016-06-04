@@ -1,0 +1,49 @@
+language: rust
+cache: cargo
+
+env:
+  global:
+    # This will be part of the release tarball
+    - PROJECT_NAME=t-rex
+    - MAKE_DEB=yes
+    - DEB_MAINTAINER="Pirmin Kalberer <pi_deb@sourcepole.ch>"
+    - DEB_DESCRIPTION="t-rex vector tile server"
+
+matrix:
+  include:
+    - os: linux
+      rust: stable
+      env: TARGET=x86_64-unknown-linux-gnu
+
+services:
+  - postgresql
+
+before_install:
+  - psql -c 'create database natural_earth_vectors;' -U postgres
+  - export PATH="$PATH:$HOME/.cargo/bin"
+
+install:
+  - bash ci/install.sh
+
+script:
+  - bash ci/script.sh
+
+before_deploy:
+  - bash ci/before_deploy.sh
+
+deploy:
+  provider: releases
+  api_key:
+    secure: oGS/64zIyTD7P/frITtqvTmUPVdjHI6FF/fjDrOqBchET+JMkaRIVicjP657KY9V7XaI1JEj4fJ2ApKZJ//nztYAmhWsbcUqyutR4oOeM5pGvEeh+w5trWSE7CIP4IXzPGWgSUY/YODYxzbcXt5E3a7hKDlnKWuAMqtPcu58pEQJyO765XlbX7rXoATWTd33fDNUrOYvmWaFsh8wTPSSBEvL9tdx3+mBUeY17Nzk7lLIFZIucycbL/DN4P6pLjfmUxIueHI1/gvOUE3/JLdix8f8fxGgTvpcu99Axjdg2jiu8QZHIlbJrl2TFOA47ZZqt25vIpW7ip2VRhtejZsW27N0AStAmQO3BksMjbfQ9X94/thJqEBwCkswWfdFrU9l9vJlP5B2bl41AzPgJIdg5t1MS4HhkdBh06xgjDYP3acAuqsVQXIiUD47Yhq3erfLsEh6XQx3cHInNPAtxdK759XDHo+jJtY77j6ndmlEZR2wyXuv5lpe/EeheZoIPDzpcuoAltmkpaK6JSnItrABsjGETD+S+UMO+fx+fuGrSEz4ObYBVm/dx1nXlft/QpVEutU1wBVz4A6dUtQr8GGv7RhududHtRmVmn0PfqjSKhisSdOg4lg8VO45o27ol7sEiqLDm3ZMRf7qznoQMsDf0ZBnGRGYeY0SFWZTkAoKDpg=
+  file_glob: true
+  file: ${PROJECT_NAME}-${TRAVIS_TAG}-${TARGET}.*
+  skip_cleanup: true
+  on:
+    # channel to use to produce the release artifacts
+    # NOTE make sure you only release *once* per target
+    condition: $TRAVIS_RUST_VERSION = stable
+    tags: true
+
+notifications:
+  email:
+    on_success: never
