@@ -293,7 +293,9 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
                     unknown_fields: UnknownFields {
                         fields: None
                     },
-                    cached_size: Cell { value: 0 }
+                    cached_size: Cell {
+                        value: 0
+                    }
                 },
                 Tile_Feature {
                     id: Some(
@@ -316,7 +318,9 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
                     unknown_fields: UnknownFields {
                         fields: None
                     },
-                    cached_size: Cell { value: 0 }
+                    cached_size: Cell {
+                        value: 0
+                    }
                 }
             ],
             keys: [
@@ -336,7 +340,9 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
                     unknown_fields: UnknownFields {
                         fields: None
                     },
-                    cached_size: Cell { value: 0 }
+                    cached_size: Cell {
+                        value: 0
+                    }
                 },
                 Tile_Value {
                     string_value: None,
@@ -351,7 +357,9 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
                     unknown_fields: UnknownFields {
                         fields: None
                     },
-                    cached_size: Cell { value: 0 }
+                    cached_size: Cell {
+                        value: 0
+                    }
                 },
                 Tile_Value {
                     string_value: Some("again"),
@@ -364,7 +372,9 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
                     unknown_fields: UnknownFields {
                         fields: None
                     },
-                    cached_size: Cell { value: 0 }
+                    cached_size: Cell {
+                        value: 0
+                    }
                 },
                 Tile_Value {
                     string_value: None,
@@ -379,7 +389,9 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
                     unknown_fields: UnknownFields {
                         fields: None
                     },
-                    cached_size: Cell { value: 0 }
+                    cached_size: Cell {
+                        value: 0
+                    }
                 }
             ],
             extent: Some(
@@ -388,13 +400,66 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
             unknown_fields: UnknownFields {
                 fields: None
             },
-            cached_size: Cell { value: 0 }
+            cached_size: Cell {
+                value: 0
+            }
         }
     ],
     unknown_fields: UnknownFields {
         fields: None
     },
-    cached_size: Cell { value: 0 }
+    cached_size: Cell {
+        value: 0
+    }
+}"#;
+
+#[cfg(test)]
+const TILE_EXAMPLE2: &'static str = r#"Tile {
+    layers: [
+        Tile_Layer {
+            version: Some(
+                2
+            ),
+            name: Some("points"),
+            features: [
+                Tile_Feature {
+                    id: None,
+                    tags: [],
+                    field_type: Some(
+                        POINT
+                    ),
+                    geometry: [
+                        9,
+                        2504,
+                        3390
+                    ],
+                    unknown_fields: UnknownFields {
+                        fields: None
+                    },
+                    cached_size: Cell {
+                        value: 0
+                    }
+                }
+            ],
+            keys: [],
+            values: [],
+            extent: Some(
+                4096
+            ),
+            unknown_fields: UnknownFields {
+                fields: None
+            },
+            cached_size: Cell {
+                value: 0
+            }
+        }
+    ],
+    unknown_fields: UnknownFields {
+        fields: None
+    },
+    cached_size: Cell {
+        value: 0
+    }
 }"#;
 
 #[test]

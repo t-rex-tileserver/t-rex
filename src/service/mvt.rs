@@ -225,7 +225,9 @@ pub fn test_tile_query() {
                     unknown_fields: UnknownFields {
                         fields: None
                     },
-                    cached_size: Cell { value: 0 }
+                    cached_size: Cell {
+                        value: 0
+                    }
                 }
             ],
             keys: [],
@@ -236,13 +238,17 @@ pub fn test_tile_query() {
             unknown_fields: UnknownFields {
                 fields: None
             },
-            cached_size: Cell { value: 0 }
+            cached_size: Cell {
+                value: 0
+            }
         }
     ],
     unknown_fields: UnknownFields {
         fields: None
     },
-    cached_size: Cell { value: 0 }
+    cached_size: Cell {
+        value: 0
+    }
 }"#;
     assert_eq!(expected, &*format!("{:#?}", mvt_tile));
 }
