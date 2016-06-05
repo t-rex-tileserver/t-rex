@@ -17,6 +17,9 @@ use protobuf::error::ProtobufError;
 use protobuf::parse_from_reader;
 use std::fs::File;
 use std::io::{BufReader,Read,Write};
+use flate2::Compression;
+use flate2::write::GzEncoder;
+use flate2::read::GzDecoder;
 
 
 pub struct Tile<'a> {
@@ -216,8 +219,24 @@ impl<'a> Tile<'a> {
         os.flush().unwrap();
     }
 
+    pub fn write_gz_to(mut out: &mut Write, mvt_tile: &vector_tile::Tile) {
+        let mut gz = GzEncoder::new(out, Compression::Default);
+        {
+            let mut os = CodedOutputStream::new(&mut gz);
+            mvt_tile.write_to(&mut os);
+            os.flush().unwrap();
+        }
+        gz.finish();
+    }
+
     pub fn read_from(fin: &mut Read) -> Result<vector_tile::Tile, ProtobufError> {
         let mut reader = BufReader::new(fin);
+        parse_from_reader::<vector_tile::Tile>(&mut reader)
+    }
+
+    pub fn read_gz_from(fin: &mut Read) -> Result<vector_tile::Tile, ProtobufError> {
+        let mut gz = GzDecoder::new(fin).unwrap();
+        let mut reader = BufReader::new(gz);
         parse_from_reader::<vector_tile::Tile>(&mut reader)
     }
 

@@ -16,6 +16,7 @@ extern crate postgis;
 extern crate protobuf;
 extern crate clap;
 extern crate time;
+extern crate flate2;
 
 mod core;
 mod datasource;

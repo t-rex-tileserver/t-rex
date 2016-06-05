@@ -20,6 +20,7 @@ clap = "*"
 log = "*"
 env_logger = "*"
 time = "*"
+flate2 = "*"
 
 [dependencies.postgres]
 version = "*"

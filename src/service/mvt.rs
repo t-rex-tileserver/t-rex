@@ -99,7 +99,7 @@ impl MvtService {
     pub fn tile(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16) -> vector_tile::Tile {
         let mut tile: Option<vector_tile::Tile> = None;
         self.cache.lookup(tileset, xtile, ytile, zoom, |mut f| {
-            tile = Tile::read_from(&mut f).ok();
+            tile = Tile::read_gz_from(&mut f).ok();
             Ok(()) //result.map(|_| ()).map_err(|e| io::Error::new(io::ErrorKind::Other, e.description()))
         });
         if tile.is_some() {
@@ -117,7 +117,7 @@ impl MvtService {
         }
         // Write into cache
         self.cache.store(tileset, xtile, ytile, zoom, |mut f| {
-            Tile::write_to(&mut f, &tile.mvt_tile);
+            Tile::write_gz_to(&mut f, &tile.mvt_tile);
             Ok(())
         });
         tile.mvt_tile
