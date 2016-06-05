@@ -33,6 +33,12 @@ Run server with configuration file:
     t_rex serve --config osm2vectortiles.cfg
 
 
+Installation
+------------
+
+Binaries are available for 64 bit Linux and Windows. Download your binary from [github.com/pka/t-rex/releases](https://github.com/pka/t-rex/releases) and unpack it or install it with `dpkg -i`.
+If `vcruntime140.dll` is missing, get `vc_redist.x64.exe` from [Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-US/download/details.aspx?id=48145).
+
 For developers
 --------------
 

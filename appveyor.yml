@@ -1,3 +1,6 @@
+# Rust needs at least Visual Studio 2013 Appveyor OS for MSVC targets.
+os: Visual Studio 2013
+
 environment:
   global:
     # This will be used as part of the zipfile name
