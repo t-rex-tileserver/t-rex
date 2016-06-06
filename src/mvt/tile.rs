@@ -432,55 +432,6 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
     }
 }"#;
 
-#[cfg(test)]
-const TILE_EXAMPLE2: &'static str = r#"Tile {
-    layers: [
-        Tile_Layer {
-            version: Some(
-                2
-            ),
-            name: Some("points"),
-            features: [
-                Tile_Feature {
-                    id: None,
-                    tags: [],
-                    field_type: Some(
-                        POINT
-                    ),
-                    geometry: [
-                        9,
-                        2504,
-                        3390
-                    ],
-                    unknown_fields: UnknownFields {
-                        fields: None
-                    },
-                    cached_size: Cell {
-                        value: 0
-                    }
-                }
-            ],
-            keys: [],
-            values: [],
-            extent: Some(
-                4096
-            ),
-            unknown_fields: UnknownFields {
-                fields: None
-            },
-            cached_size: Cell {
-                value: 0
-            }
-        }
-    ],
-    unknown_fields: UnknownFields {
-        fields: None
-    },
-    cached_size: Cell {
-        value: 0
-    }
-}"#;
-
 #[test]
 fn test_build_mvt() {
     // https://github.com/mapbox/vector-tile-spec/tree/master/2.1#45-example
