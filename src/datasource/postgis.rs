@@ -137,6 +137,21 @@ impl PostgisInput {
         }
         layers
     }
+    pub fn detect_columns(&self, layer: &Layer, zoom: u16) -> Vec<String> {
+        let mut query = match layer.query.as_ref() {
+            Some(q) => q.clone(),
+            None => format!("SELECT * FROM {}",
+                layer.table_name.as_ref().unwrap_or(&layer.name))
+        };
+        query = query.replace("!bbox!", "ST_MakeEnvelope(0,0,0,0,3857)");
+        query = query.replace("!zoom!", "0");
+        query = query.replace("!pixel_width!", "0");
+        let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
+        let stmt = conn.prepare(&query).unwrap();
+        let cols: Vec<String> = stmt.columns().iter().map(|col| col.name().to_string() ).collect();
+        let filter_cols = vec![layer.geometry_field.as_ref().unwrap()];
+        cols.into_iter().filter(|col| !filter_cols.contains(&col) ).collect()
+    }
     fn query(&self, layer: &Layer, zoom: u16) -> SqlQuery {
         let subquery = match layer.query.as_ref() {
             Some(q) => q.clone(),
@@ -267,6 +282,17 @@ pub fn test_detect_layers() {
     }.unwrap();
     let layers = pg.detect_layers();
     assert_eq!(layers[0].name, "ne_10m_populated_places");
+}
+
+#[test]
+pub fn test_detect_columns() {
+    let pg: PostgisInput = match env::var("DBCONN") {
+        Result::Ok(val) => Some(PostgisInput {connection_url: val}),
+        Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
+    }.unwrap();
+    let layers = pg.detect_layers();
+    let cols = pg.detect_columns(&layers[0], 0);
+    assert_eq!(cols, vec!["fid", "scalerank", "name", "pop_max"]);
 }
 
 #[test]

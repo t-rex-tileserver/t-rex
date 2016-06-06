@@ -5,6 +5,7 @@
 
 use core::Config;
 use toml;
+use std::collections::HashMap;
 
 
 #[derive(Default)]
@@ -29,6 +30,19 @@ impl Layer {
               .and_then(|layers| {
                  Ok(layers.iter().map(|layer| Layer::from_config(layer).unwrap()).collect())
                })
+    }
+    /// Layer properties needed e.g. for metadata.json
+    pub fn metadata(&self) -> HashMap<&str, &str> {
+        //TODO: return Zoom-Level Array
+        let mut metadata: HashMap<&str, &str> = HashMap::new();
+        metadata.insert("id", &self.name);
+        metadata.insert("name", &self.name);
+        metadata.insert("description", "");
+        metadata.insert("buffer-size", "0");
+        metadata.insert("minzoom", "0");
+        metadata.insert("maxzoom", "22");
+        metadata.insert("srs", "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over");
+        metadata
     }
 }
 

@@ -43,54 +43,67 @@ impl MvtService {
         self.layers.iter().find(|t| t.name == name)
     }
     pub fn get_metadata(&self, tileset: &str) -> String {
+        let layers = self.get_tileset(tileset);
         let mut metadata = Json::from_str(r#"
         {
-            "attribution": "",
-            "description": "T-Rex cache",
-            "format": "pbf",
-            "filesize": "12345",
-            "basename": "t_rex.mbtiles",
-            "minzoom": "0",
-            "name": "t_rex",
-            "version": "2.0",
-            "bounds": "-180.0,-90.0,180.0,90.0",
-            "mtime": "1463000297761",
-            "maxzoom": "14",
-            "scheme": "tms",
-            "type": "baselayer",
             "id": "t_rex",
-            "center": "0.0,0.0,10"
+            "name": "t_rex",
+            "description": "T-Rex cache",
+            "attribution": "",
+            "type": "baselayer",
+            "format": "pbf",
+            "version": "2.0",
+            "scheme": "tms",
+            "bounds": "-180.0,-90.0,180.0,90.0",
+            "minzoom": "0",
+            "maxzoom": "14",
+            "center": "0.0,0.0,10",
+            "mtime": "1463000297761",
+            "basename": "t_rex.mbtiles",
+            "filesize": "0"
         }"#).unwrap();
-        let metadata_vector_layers = Json::from_str(r#"
-        {
-          "Layer": [
-            {
-              "id": "ne_10m_populated_places",
-              "description": "",
-              "fields": {
-                "name": ""
-              },
-              "properties": {
-                "buffer-size": 256,
-                "minzoom": 0,
-                "maxzoom": 22
-              },
-              "srs": "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over",
-              "name": "ne_10m_populated_places"
-            }
-          ],
-          "vector_layers": [
-            {
-              "id": "ne_10m_populated_places",
-              "description": "",
-              "minzoom": 0,
-              "maxzoom": 22,
-              "fields": {
-                "name": ""
-              }
-            }
-          ]
-        }"#).unwrap();
+        let layers_metadata: Vec<String> = layers.iter().map(|layer| {
+            let meta = layer.metadata();
+            let fields = self.input.detect_columns(&layer, 0);
+            let fields_json: Vec<String> = fields.iter().map(|f| format!("\"{}\": \"\"", f)).collect();
+            format!(r#"{{
+                "id": "{}",
+                "name": "{}",
+                "description": "{}",
+                "srs": "{}",
+                "properties": {{
+                    "minzoom": {},
+                    "maxzoom": {},
+                    "buffer-size": {}
+                }},
+                "fields": {{
+                    {}
+                }}
+                }}"#, meta.get("id").unwrap(), meta.get("name").unwrap(),  meta.get("description").unwrap(),
+                meta.get("srs").unwrap(), meta.get("minzoom").unwrap(), meta.get("maxzoom").unwrap(),
+                meta.get("buffer-size").unwrap(), fields_json.join(","))
+        }).collect();
+        let vector_layers_metadata: Vec<String> = layers.iter().map(|layer| {
+            let meta = layer.metadata();
+            let fields = self.input.detect_columns(&layer, 0);
+            let fields_json: Vec<String> = fields.iter().map(|f| format!("\"{}\": \"\"", f)).collect();
+            format!(r#"{{
+                "id": "{}",
+                "description": "{}",
+                "minzoom": {},
+                "maxzoom": {},
+                "fields": {{
+                    {}
+                }}
+                }}"#, meta.get("id").unwrap(), meta.get("description").unwrap(),
+                meta.get("minzoom").unwrap(), meta.get("maxzoom").unwrap(), fields_json.join(","))
+        }).collect();
+        let json_str = format!(r#"
+        {{
+          "Layer": [{}],
+          "vector_layers": [{}]
+        }}"#, layers_metadata.join(","), vector_layers_metadata.join(","));
+        let metadata_vector_layers = Json::from_str(&json_str).unwrap();
         let mut obj = metadata.as_object_mut().unwrap();
         obj.insert("json".to_string(), metadata_vector_layers.to_string().to_json());
         obj.to_json().to_string()
@@ -256,10 +269,17 @@ pub fn test_tile_query() {
 #[test]
 pub fn test_metadata() {
     use core::read_config;
+    use std::io::{self,Write};
+    use std::env;
+
+    if env::var("DBCONN").is_err() {
+        write!(&mut io::stdout(), "skipped ").unwrap();
+        return;
+    }
 
     let config = read_config("src/test/example.cfg").unwrap();
     let service = MvtService::from_config(&config).unwrap();
-    let metadata = service.get_metadata("admin_0_countries");
+    let metadata = service.get_metadata("points");
     println!("{}", metadata);
     let format = r#""format":"pbf""#;
     assert!(metadata.contains(format));
