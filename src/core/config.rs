@@ -58,13 +58,6 @@ fn test_parse_config() {
     let config = read_config("src/test/example.cfg").unwrap();
     println!("{:#?}", config.as_table().unwrap());
     let expected_begin = r#"{
-    "cache": Table(
-        {
-            "strategy": String(
-                "none"
-            )
-        }
-    ),
     "datasource": Table(
         {
             "type": String(
@@ -82,29 +75,6 @@ fn test_parse_config() {
             )
         }
     ),
-    "layer": Array(
-        [
-            Table(
-                {
-                    "fid_field": String(
-                        "id"
-                    ),
-                    "geometry_field": String(
-                        "wkb_geometry"
-                    ),
-                    "geometry_type": String(
-                        "POINT"
-                    ),
-                    "name": String(
-                        "points"
-                    ),
-                    "table_name": String(
-                        "ne_10m_populated_places"
-                    )
-                }
-            ),"#;
-
-    let expected_end = r#",
     "services": Table(
         {
             "mvt": Boolean(
@@ -112,20 +82,33 @@ fn test_parse_config() {
             )
         }
     ),
-    "tilesets": Table(
-        {
-            "all": Array(
-                [
-                    String(
-                        "points"
-                    ),
-                    String(
-                        "buildings"
-                    )
-                ]
-            )
-        }
-    ),
+    "tileset": Array(
+        [
+            Table(
+                {
+                    "layer": Array(
+                        [
+                            Table(
+                                {
+                                    "fid_field": String(
+                                        "id"
+                                    ),
+                                    "geometry_field": String(
+                                        "wkb_geometry"
+                                    ),
+                                    "geometry_type": String(
+                                        "POINT"
+                                    ),
+                                    "name": String(
+                                        "points"
+                                    ),
+                                    "table_name": String(
+                                        "ne_10m_populated_places"
+                                    )
+                                }
+                            ),"#;
+
+    let expected_end = r#",
     "webserver": Table(
         {
             "bind": String(

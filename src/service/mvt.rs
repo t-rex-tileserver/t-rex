@@ -19,14 +19,13 @@ use rustc_serialize::json::{self, Json, ToJson};
 /// Collection of layers in one MVT
 pub struct Tileset {
     pub name: String,
-    pub layers: Vec<String>,
+    pub layers: Vec<Layer>,
 }
 
 /// Mapbox Vector Tile Service
 pub struct MvtService {
     pub input: PostgisInput,
     pub grid: Grid,
-    pub layers: Vec<Layer>,
     pub tilesets: Vec<Tileset>,
     pub cache: Tilecache,
 }
@@ -35,12 +34,9 @@ impl MvtService {
     fn get_tileset(&self, name: &str) -> Vec<&Layer> {
         let tileset = self.tilesets.iter().find(|t| t.name == name);
         match tileset {
-            Some(set) => set.layers.iter().map(|name| self.get_layer(name).unwrap()).collect(),
-            None => vec![self.get_layer(name).unwrap()]
+            Some(set) => set.layers.iter().map(|l| l).collect(),
+            None => Vec::new()
         }
-    }
-    fn get_layer(&self, name: &str) -> Option<&Layer> {
-        self.layers.iter().find(|t| t.name == name)
     }
     fn get_tilejson_infos(&self, tileset: &str) -> (Json, Json, Json) {
         let layers = self.get_tileset(tileset);
@@ -150,33 +146,57 @@ impl MvtService {
 }
 
 
+impl Tileset {
+    pub fn tilesets_from_config(config: &toml::Value) -> Result<Vec<Self>, String> {
+        config.lookup("tileset")
+              .ok_or("Missing configuration entry [[tileset]]".to_string())
+              .and_then(|tarr| tarr.as_slice().ok_or("Array type for [[tileset]] entry expected".to_string()))
+              .and_then(|tilesets| {
+                  Ok(tilesets.iter().map(|tileset| Tileset::from_config(tileset).unwrap()).collect())
+              })
+    }
+}
+
+impl Config<Tileset> for Tileset {
+    fn from_config(config: &toml::Value) -> Result<Self, String> {
+        let name = config.lookup("name")
+                         .ok_or("Missing configuration entry name in [[tileset]]".to_string())
+                         .and_then(|val| val.as_str().ok_or("tileset.name entry is not a string".to_string()))
+                         .map(|v| v.to_string());
+        let layers = try!(Layer::layers_from_config(config));
+        name.and_then(|n|
+            Ok(Tileset{name: n, layers: layers})
+        )
+    }
+    fn gen_config() -> String {
+        let mut config = String::new();
+        config.push_str(&Layer::gen_config());
+        config
+    }
+    fn gen_runtime_config(&self) -> String {
+        let mut config = String::new();
+        for layer in &self.layers {
+            config.push_str(&layer.gen_runtime_config());
+        }
+        config
+    }
+}
+
 impl Config<MvtService> for MvtService {
     fn from_config(config: &toml::Value) -> Result<Self, String> {
         let pg = try!(PostgisInput::from_config(config));
         let grid = try!(Grid::from_config(config));
-        let layers = try!(Layer::layers_from_config(config));
-        let tilesets = config.lookup("tilesets")
-                             .map_or_else(|| Vec::new(),
-                                          |tilesets| {
-            let mut sets = Vec::new();
-            for (tileset, layerarray) in tilesets.as_table().unwrap() {
-                let layers: Vec<String> = layerarray.as_slice().unwrap().iter().map(|l| l.as_str().unwrap().to_string() ).collect();
-                debug!("Adding tileset {} {:?}", tileset, layers);
-                sets.push(Tileset{name: tileset.clone(), layers: layers});
-            }
-            sets
-        });
+        let tilesets = try!(Tileset::tilesets_from_config(config));
         let cache = try!(Tilecache::from_config(config));
         Ok(MvtService {input: pg, grid: grid,
-                       layers: layers, tilesets: tilesets, cache: cache})
+                       tilesets: tilesets, cache: cache})
     }
     fn gen_config() -> String {
         let mut config = String::new();
         config.push_str(TOML_SERVICES);
         config.push_str(&Datasource::gen_config());
         config.push_str(&Grid::gen_config());
-        config.push_str(&Layer::gen_config());
-        config.push_str(TOML_TILESETS);
+        config.push_str(&Tileset::gen_config());
         config.push_str(&Tilecache::gen_config());
         config
     }
@@ -185,10 +205,9 @@ impl Config<MvtService> for MvtService {
         config.push_str(TOML_SERVICES);
         config.push_str(&self.input.gen_runtime_config());
         config.push_str(&self.grid.gen_runtime_config());
-        for layer in &self.layers {
-            config.push_str(&layer.gen_runtime_config());
+        for tileset in &self.tilesets {
+            config.push_str(&tileset.gen_runtime_config());
         }
-        config.push_str(TOML_TILESETS);
         config.push_str(&self.cache.gen_runtime_config());
         config
     }
@@ -199,12 +218,6 @@ const TOML_SERVICES: &'static str = r#"# t-rex configuration
 
 [services]
 mvt = true
-"#;
-
-const TOML_TILESETS: &'static str = r#"
-[tilesets]
-# Multiple layers in one vector tile
-#tilesetname = ["layer1","layer2"]
 "#;
 
 
@@ -218,13 +231,14 @@ pub fn test_tile_query() {
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
     let grid = Grid::web_mercator();
-    let mut layers = vec![Layer::new("points")];
-    layers[0].table_name = Some(String::from("ne_10m_populated_places"));
-    layers[0].geometry_field = Some(String::from("wkb_geometry"));
-    layers[0].geometry_type = Some(String::from("POINT"));
-    layers[0].query_limit = Some(1);
-    let service = MvtService {input: pg, grid: grid, layers: layers,
-                              tilesets: Vec::new(), cache: Tilecache::Nocache(Nocache)};
+    let mut layer = Layer::new("points");
+    layer.table_name = Some(String::from("ne_10m_populated_places"));
+    layer.geometry_field = Some(String::from("wkb_geometry"));
+    layer.geometry_type = Some(String::from("POINT"));
+    layer.query_limit = Some(1);
+    let tileset = Tileset{name: "points".to_string(), layers: vec![layer]};
+    let service = MvtService {input: pg, grid: grid,
+                              tilesets: vec![tileset], cache: Tilecache::Nocache(Nocache)};
 
     let mvt_tile = service.tile("points", 33, 22, 6);
     println!("{:#?}", mvt_tile);
@@ -315,17 +329,16 @@ url = "postgresql://user:pass@host:port/database"
 # Predefined grids: web_mercator, wgs84
 predefined = "web_mercator"
 
-[[layer]]
+[[tileset]]
+name = "points"
+
+[[tileset.layer]]
 name = "points"
 table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
 #fid_field = "id"
 #query = "SELECT name,wkb_geometry FROM mytable"
-
-[tilesets]
-# Multiple layers in one vector tile
-#tilesetname = ["layer1","layer2"]
 
 #[cache.file]
 #base = "/tmp/mvtcache"

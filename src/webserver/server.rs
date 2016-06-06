@@ -60,20 +60,16 @@ struct LayerInfo {
 }
 
 impl LayerInfo {
-    fn from_layer(l: &Layer) -> LayerInfo {
-        LayerInfo {
-            name: l.name.clone(),
-            geomtype: l.geometry_type.as_ref().unwrap().clone(),
-            hasviewer: (["POINT","LINESTRING","POLYGON"].contains(
-                &(l.geometry_type.as_ref().unwrap() as &str)))
-        }
-    }
     fn from_tileset(set: &Tileset) -> LayerInfo {
+        let layers: Vec<String> = set.layers.iter().map(|l| l.name.clone()).collect();
         LayerInfo {
             name: set.name.clone(),
-            geomtype: format!("Tileset: {}", set.layers.join(", ")),
+            geomtype: format!("{}", layers.join(", ")),
             hasviewer: true
-        }
+/*            geomtype: l.geometry_type.as_ref().unwrap().clone(),
+            hasviewer: (["POINT","LINESTRING","POLYGON"].contains(
+                &(l.geometry_type.as_ref().unwrap() as &str)))
+*/        }
     }
 }
 
@@ -94,9 +90,14 @@ fn service_from_args(args: &ArgMatches) -> MvtService {
         if let Some(dbconn) = args.value_of("dbconn") {
             let pg = PostgisInput { connection_url: dbconn.to_string() };
             let grid = Grid::web_mercator();
-            let layers = pg.detect_layers();
-            MvtService {input: pg, grid: grid, layers: layers,
-                tilesets: Vec::new(), cache: cache}
+            let mut layers = pg.detect_layers();
+            let mut tilesets = Vec::new();
+            while let Some(l) = layers.pop() {
+                let tileset = Tileset{name: l.name.clone(), layers: vec![l]};
+                tilesets.push(tileset);
+            }
+            MvtService {input: pg, grid: grid,
+                tilesets: tilesets, cache: cache}
         } else {
             println!("Either 'config' or 'dbconn' is required");
             process::exit(1)
@@ -107,12 +108,9 @@ fn service_from_args(args: &ArgMatches) -> MvtService {
 pub fn webserver(args: &ArgMatches) {
     let service = service_from_args(args);
 
-    let mut layers_display: Vec<LayerInfo> = service.layers.iter().map(|l| {
-        LayerInfo::from_layer(l)
+    let mut layers_display: Vec<LayerInfo> = service.tilesets.iter().map(|set| {
+        LayerInfo::from_tileset(&set)
     }).collect();
-    for set in &service.tilesets {
-        layers_display.push(LayerInfo::from_tileset(&set));
-    }
     layers_display.sort_by_key(|li| li.name.clone());
 
     if let Tilecache::Filecache(ref fc) = service.cache {

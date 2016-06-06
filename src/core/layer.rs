@@ -23,10 +23,10 @@ impl Layer {
     pub fn new(name: &str) -> Layer {
         Layer { name: String::from(name), ..Default::default() }
     }
-    pub fn layers_from_config(config: &toml::Value) -> Result<Vec<Layer>, String> {
+    pub fn layers_from_config(config: &toml::Value) -> Result<Vec<Self>, String> {
         config.lookup("layer")
-              .ok_or("Missing configuration entry [[layer]]".to_string())
-              .and_then(|larr| larr.as_slice().ok_or("Array type for [[layer]] entry expected".to_string()))
+              .ok_or("Missing configuration entry [[tileset.layer]]".to_string())
+              .and_then(|larr| larr.as_slice().ok_or("Array type for [[tileset.layer]] entry expected".to_string()))
               .and_then(|layers| {
                  Ok(layers.iter().map(|layer| Layer::from_config(layer).unwrap()).collect())
                })
@@ -49,7 +49,7 @@ impl Layer {
 impl Config<Layer> for Layer {
     fn from_config(layerval: &toml::Value) -> Result<Self, String> {
         let name = layerval.lookup("name")
-                           .ok_or("Missing configuration entry name in [[layer]]".to_string())
+                           .ok_or("Missing configuration entry name in [[tileset.layer]]".to_string())
                            .and_then(|val| val.as_str().ok_or("layer.name entry is not a string".to_string()))
                            .map(|v| v.to_string());
         let table_name =     layerval.lookup("table_name")
@@ -77,7 +77,10 @@ impl Config<Layer> for Layer {
 
     fn gen_config() -> String {
         let toml = r#"
-[[layer]]
+[[tileset]]
+name = "points"
+
+[[tileset.layer]]
 name = "points"
 table_name = "mytable"
 geometry_field = "wkb_geometry"
@@ -89,7 +92,9 @@ geometry_type = "POINT"
     }
 
     fn gen_runtime_config(&self) -> String {
-        let mut lines = vec!["\n[[layer]]".to_string()];
+        let mut lines = vec!["\n[[tileset]]".to_string()];
+        lines.push(format!(r#"name = "{}""#, self.name));
+        lines.push("\n[[tileset.layer]]".to_string());
         lines.push(format!(r#"name = "{}""#, self.name));
         match self.table_name {
             Some(ref table_name)
@@ -136,7 +141,10 @@ geometry_type = "POINT"
 fn test_layers_from_config() {
     use core::parse_config;
     let toml = r#"
-        [[layer]]
+        [[tileset]]
+        name = "ne"
+
+        [[tileset.layer]]
         name = "points"
         table_name = "ne_10m_populated_places"
         geometry_field = "wkb_geometry"
@@ -145,23 +153,14 @@ fn test_layers_from_config() {
         query_limit = 100
         query = "SELECT name,wkb_geometry FROM ne_10m_populated_places"
 
-        [[layer]]
+        [[tileset.layer]]
         name = "layer2"
         "#;
 
     let config = parse_config(toml.to_string(), "").unwrap();
 
-    // read array with toml API
-    let layers = config.lookup("layer").unwrap().as_slice().unwrap();
-    assert_eq!(layers[0].as_table().unwrap().get("name").unwrap().as_str(), Some("points"));
-    assert_eq!(layers[1].lookup("name").unwrap().as_str(), Some("layer2"));
-
-    // read single layer
-    let layer = Layer::from_config(&layers[0]).unwrap();
-    assert_eq!(layer.name, "points");
-
-    // read all layers
-    let layers = Layer::layers_from_config(&config).unwrap();
+    let tilesets = config.lookup("tileset").unwrap().as_slice().unwrap();
+    let layers = Layer::layers_from_config(&tilesets[0]).unwrap();
     assert_eq!(layers.len(), 2);
     assert_eq!(layers[0].name, "points");
     assert_eq!(layers[0].table_name, Some("ne_10m_populated_places".to_string()));
@@ -170,5 +169,5 @@ fn test_layers_from_config() {
     // errors
     let emptyconfig = parse_config("".to_string(), "").unwrap();
     let layers = Layer::layers_from_config(&emptyconfig);
-    assert_eq!(layers.err(), Some("Missing configuration entry [[layer]]".to_string()));
+    assert_eq!(layers.err(), Some("Missing configuration entry [[tileset.layer]]".to_string()));
 }
