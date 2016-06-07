@@ -11,6 +11,12 @@ An extensible design allows future support for more data sources (e.g. OGR), cus
 grids with other reference systems than Spherical Mercator and additional output formats like
 JSON.
 
+Presentations
+-------------
+
+* Workshop "Vector Tiles", GEOSummit Bern 7.6.16: [slides](doc/t-rex_vector_tile_server.pdf)
+
+
 Usage
 -----
 
