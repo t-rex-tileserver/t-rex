@@ -8,12 +8,12 @@
   <ul>
   {{#layer}}
     <li>
+    {{#hasviewer}}<b>{{/hasviewer}}{{name}}{{#hasviewer}}</b>{{/hasviewer}} ({{geomtype}})
     {{#hasviewer}}
-      <a href="/{{name}}/">{{name}}</a>
+    | <a href="/{{name}}/">OpenLayers</a>
+    | <a href="/xray.html#/{{name}}.json">X-Ray</a>
+    | <a href="/tile-inspector.html#/{{name}}.json">Inspector</a>
     {{/hasviewer}}
-    {{^hasviewer}}
-      {{name}}
-    {{/hasviewer}} ({{geomtype}})
     </li>
   {{/layer}}
   </ul>

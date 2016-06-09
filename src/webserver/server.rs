@@ -25,7 +25,7 @@ use std::io::Write;
 use std::process;
 
 
-fn log_request<'mw>(req: &mut Request, res: Response<'mw>) -> MiddlewareResult<'mw> {
+fn log_request<'mw>(req: &mut Request<MvtService>, res: Response<'mw,MvtService>) -> MiddlewareResult<'mw,MvtService> {
     info!("{} {}", req.origin.method, req.origin.uri);
     res.next_middleware()
 }
@@ -105,11 +105,6 @@ fn service_from_args(args: &ArgMatches) -> MvtService {
 }
 
 pub fn webserver(args: &ArgMatches) {
-    let mut server = Nickel::new();
-    server.options = Options::default()
-                     .thread_count(Some(1));
-    server.utilize(log_request);
-
     let service = service_from_args(args);
 
     let mut layers_display: Vec<LayerInfo> = service.layers.iter().map(|l| {
@@ -131,7 +126,28 @@ pub fn webserver(args: &ArgMatches) {
         }
     }
 
+    let mut server = Nickel::with_data(service);
+    server.options = Options::default()
+                     .thread_count(Some(1));
+    server.utilize(log_request);
+
+    server.get("/:tileset.json", middleware! { |req, mut res|
+        let service: &MvtService = res.server_data();
+        let tileset = req.param("tileset").unwrap();
+        res.set(MediaType::Json);
+        service.get_tilejson(&tileset)
+    });
+
+    server.get("/:tileset/metadata.json", middleware! { |req, mut res|
+        let service: &MvtService = res.server_data();
+        let tileset = req.param("tileset").unwrap();
+        res.set(MediaType::Json);
+        service.get_metadata(&tileset)
+    });
+
     server.get("/:tileset/:z/:x/:y.pbf", middleware! { |req, mut res|
+        let service: &MvtService = res.server_data();
+
         res.set(AccessControlAllowMethods(vec![Method::Get]));
         res.set(AccessControlAllowOrigin::Any);
 
@@ -154,6 +170,8 @@ pub fn webserver(args: &ArgMatches) {
         data.insert("tileset", tileset.to_string());
         return res.render("src/webserver/templates/olviewer.tpl", &data)
     });
+
+    server.get("/**", StaticFilesHandler::new("src/webserver/static/"));
 
     server.get("/**", StaticFilesHandler::new("public/"));
 

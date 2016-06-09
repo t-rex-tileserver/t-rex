@@ -42,7 +42,7 @@ impl MvtService {
     fn get_layer(&self, name: &str) -> Option<&Layer> {
         self.layers.iter().find(|t| t.name == name)
     }
-    pub fn get_metadata(&self, tileset: &str) -> String {
+    fn get_tilejson_infos(&self, tileset: &str) -> (Json, Json, Json) {
         let layers = self.get_tileset(tileset);
         let mut metadata = Json::from_str(r#"
         {
@@ -57,16 +57,16 @@ impl MvtService {
             "bounds": "-180.0,-90.0,180.0,90.0",
             "minzoom": "0",
             "maxzoom": "14",
-            "center": "0.0,0.0,10",
+            "center": "0.0,0.0,2",
             "mtime": "1463000297761",
             "basename": "t_rex.mbtiles",
             "filesize": "0"
         }"#).unwrap();
-        let layers_metadata: Vec<String> = layers.iter().map(|layer| {
+        let layers_metadata: Vec<(String,String)> = layers.iter().map(|layer| {
             let meta = layer.metadata();
             let fields = self.input.detect_columns(&layer, 0);
             let fields_json: Vec<String> = fields.iter().map(|f| format!("\"{}\": \"\"", f)).collect();
-            format!(r#"{{
+            let layers = format!(r#"{{
                 "id": "{}",
                 "name": "{}",
                 "description": "{}",
@@ -81,13 +81,8 @@ impl MvtService {
                 }}
                 }}"#, meta.get("id").unwrap(), meta.get("name").unwrap(),  meta.get("description").unwrap(),
                 meta.get("srs").unwrap(), meta.get("minzoom").unwrap(), meta.get("maxzoom").unwrap(),
-                meta.get("buffer-size").unwrap(), fields_json.join(","))
-        }).collect();
-        let vector_layers_metadata: Vec<String> = layers.iter().map(|layer| {
-            let meta = layer.metadata();
-            let fields = self.input.detect_columns(&layer, 0);
-            let fields_json: Vec<String> = fields.iter().map(|f| format!("\"{}\": \"\"", f)).collect();
-            format!(r#"{{
+                meta.get("buffer-size").unwrap(), fields_json.join(","));
+            let vector_layers = format!(r#"{{
                 "id": "{}",
                 "description": "{}",
                 "minzoom": {},
@@ -96,13 +91,30 @@ impl MvtService {
                     {}
                 }}
                 }}"#, meta.get("id").unwrap(), meta.get("description").unwrap(),
-                meta.get("minzoom").unwrap(), meta.get("maxzoom").unwrap(), fields_json.join(","))
+                meta.get("minzoom").unwrap(), meta.get("maxzoom").unwrap(), fields_json.join(","));
+            (layers, vector_layers)
         }).collect();
+        let layers: Vec<String> = layers_metadata.iter().map(|&(ref l, _)| l.clone()).collect();
+        let layers_json = Json::from_str(&format!("[{}]", layers.join(","))).unwrap();
+        let vector_layers: Vec<String> = layers_metadata.iter().map(|&(_, ref l)| l.clone()).collect();
+        let vector_layers_json = Json::from_str(&format!("[{}]", vector_layers.join(","))).unwrap();
+        (metadata, layers_json, vector_layers_json)
+    }
+    pub fn get_tilejson(&self, tileset: &str) -> String {
+        let (mut metadata, layers, vector_layers) = self.get_tilejson_infos(tileset);
+        let mut obj = metadata.as_object_mut().unwrap();
+        let url = Json::from_str(&format!("[\"http://127.0.0.1:6767/{}/{{z}}/{{x}}/{{y}}.pbf\"]", tileset)).unwrap();
+        obj.insert("tiles".to_string(), url);
+        obj.insert("vector_layers".to_string(), vector_layers);
+        obj.to_json().to_string()
+    }
+    pub fn get_metadata(&self, tileset: &str) -> String {
+        let (mut metadata, layers, vector_layers) = self.get_tilejson_infos(tileset);
         let json_str = format!(r#"
         {{
-          "Layer": [{}],
-          "vector_layers": [{}]
-        }}"#, layers_metadata.join(","), vector_layers_metadata.join(","));
+          "Layer": {},
+          "vector_layers": {}
+        }}"#, layers.to_string(), vector_layers.to_string());
         let metadata_vector_layers = Json::from_str(&json_str).unwrap();
         let mut obj = metadata.as_object_mut().unwrap();
         obj.insert("json".to_string(), metadata_vector_layers.to_string().to_json());
