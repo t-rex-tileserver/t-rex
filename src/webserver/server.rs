@@ -12,7 +12,7 @@ use core::layer::Layer;
 use core::{Config,read_config};
 use cache::{Cache,Tilecache,Nocache,Filecache};
 
-use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult };
+use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult, StaticFilesHandler };
 use nickel_mustache::Render;
 use hyper::header::{CacheControl, CacheDirective, AccessControlAllowOrigin, AccessControlAllowMethods};
 use hyper::method::Method;
@@ -30,6 +30,7 @@ fn log_request<'mw>(req: &mut Request, res: Response<'mw>) -> MiddlewareResult<'
     res.next_middleware()
 }
 
+#[allow(dead_code)]
 fn enable_cors<'mw>(_req: &mut Request, mut res: Response<'mw>) -> MiddlewareResult<'mw> {
   // access-control-allow-methods: GET
   // access-control-allow-origin: *
@@ -108,7 +109,6 @@ pub fn webserver(args: &ArgMatches) {
     server.options = Options::default()
                      .thread_count(Some(1));
     server.utilize(log_request);
-    server.utilize(enable_cors);
 
     let service = service_from_args(args);
 
@@ -131,7 +131,10 @@ pub fn webserver(args: &ArgMatches) {
         }
     }
 
-    server.get("/:tileset/:z/:x/:y.pbf", middleware! { |req|
+    server.get("/:tileset/:z/:x/:y.pbf", middleware! { |req, mut res|
+        res.set(AccessControlAllowMethods(vec![Method::Get]));
+        res.set(AccessControlAllowOrigin::Any);
+
         let tileset = req.param("tileset").unwrap();
         let z = req.param("z").unwrap().parse::<u16>().unwrap();
         let x = req.param("x").unwrap().parse::<u16>().unwrap();
@@ -141,11 +144,7 @@ pub fn webserver(args: &ArgMatches) {
 
         mvt_tile
     });
-    server.get("/", middleware! { |req, res|
-        let mut data = HashMap::new();
-        data.insert("layer", &layers_display);
-        return res.render("src/webserver/templates/index.tpl", &data)
-    });
+
     server.get("/:tileset/", middleware! { |req, res|
         let tileset = req.param("tileset").unwrap();
         let host = req.origin.headers.get::<header::Host>().unwrap();
@@ -155,6 +154,15 @@ pub fn webserver(args: &ArgMatches) {
         data.insert("tileset", tileset.to_string());
         return res.render("src/webserver/templates/olviewer.tpl", &data)
     });
+
+    server.get("/**", StaticFilesHandler::new("public/"));
+
+    server.get("/", middleware! { |req, res|
+        let mut data = HashMap::new();
+        data.insert("layer", &layers_display);
+        return res.render("src/webserver/templates/index.tpl", &data)
+    });
+
     server.listen("127.0.0.1:6767");
 }
 

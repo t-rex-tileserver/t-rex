@@ -24,7 +24,7 @@ flate2 = "*"
 
 [dependencies.postgres]
 version = "*"
-#Breaks Windows build
+#Breaks Windows build (https://github.com/rust-lang/cargo/issues/2589#issuecomment-224697180)
 #features = ["unix_socket"]
 
 [dependencies.hyper]
