@@ -9,6 +9,7 @@ extern crate env_logger;
 extern crate toml;
 #[macro_use] extern crate nickel;
 extern crate nickel_mustache;
+extern crate mustache;
 extern crate rustc_serialize;
 #[macro_use] extern crate hyper;
 extern crate postgres;

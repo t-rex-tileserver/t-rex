@@ -7,6 +7,7 @@ dependencies = [
  "flate2 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mustache 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nickel 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nickel_mustache 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "postgis 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -263,6 +264,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "mustache"
 version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "mustache"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",

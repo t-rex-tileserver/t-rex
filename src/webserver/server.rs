@@ -12,13 +12,16 @@ use core::layer::Layer;
 use core::{Config,read_config};
 use cache::{Cache,Tilecache,Nocache,Filecache};
 
-use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult, StaticFilesHandler };
+use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult, Halt, StaticFilesHandler };
 use nickel_mustache::Render;
+use mustache;
+use rustc_serialize::Encodable;
 use hyper::header::{CacheControl, CacheDirective, AccessControlAllowOrigin, AccessControlAllowMethods};
 use hyper::method::Method;
 use hyper::header;
 use std::collections::HashMap;
 use clap::ArgMatches;
+use std::str;
 use std::path::Path;
 use std::fs::{self,File};
 use std::io::Write;
@@ -70,6 +73,40 @@ impl LayerInfo {
             hasviewer: (["POINT","LINESTRING","POLYGON"].contains(
                 &(l.geometry_type.as_ref().unwrap() as &str)))
 */        }
+    }
+}
+
+struct StaticFiles {
+    files: HashMap<&'static str, &'static str>,
+}
+
+impl StaticFiles {
+    fn new() -> StaticFiles {
+        let mut static_files = HashMap::new();
+        static_files.insert("tile-inspector", str::from_utf8(include_bytes!("static/tile-inspector.html")).unwrap());
+        static_files.insert("vector", str::from_utf8(include_bytes!("static/vector.js")).unwrap());
+        static_files.insert("xray", str::from_utf8(include_bytes!("static/xray.html")).unwrap());
+        StaticFiles { files: static_files }
+    }
+}
+
+struct InlineTemplate {
+    template: mustache::Template,
+}
+
+impl InlineTemplate {
+    fn new(template: &str) -> InlineTemplate {
+        let tpl = mustache::compile_str(template);
+        InlineTemplate { template: tpl }
+    }
+    // extracted from Nickel::Response#render
+    fn render<'a, D, T>(&self, res: Response<'a, D>, data: &T)
+            -> MiddlewareResult<'a, D> where T: Encodable {
+        let mut stream = try!(res.start());
+        match self.template.render(&mut stream, data) {
+            Ok(()) => Ok(Halt(stream)),
+            Err(e) => stream.bail(format!("Problem rendering template: {:?}", e))
+        }
     }
 }
 
@@ -159,6 +196,7 @@ pub fn webserver(args: &ArgMatches) {
         mvt_tile
     });
 
+    let tpl_olviewer = InlineTemplate::new(str::from_utf8(include_bytes!("templates/olviewer.tpl")).unwrap());
     server.get("/:tileset/", middleware! { |req, res|
         let tileset = req.param("tileset").unwrap();
         let host = req.origin.headers.get::<header::Host>().unwrap();
@@ -166,19 +204,25 @@ pub fn webserver(args: &ArgMatches) {
         let mut data = HashMap::new();
         data.insert("baseurl", baseurl);
         data.insert("tileset", tileset.to_string());
-        return res.render("src/webserver/templates/olviewer.tpl", &data)
+        return tpl_olviewer.render(res, &data);
     });
 
-    server.get("/**", StaticFilesHandler::new("src/webserver/static/"));
+    let static_files = StaticFiles::new();
+    server.get("/:static", middleware! { |req, res|
+        let name = req.param("static").unwrap();
+        if let Some(content) = static_files.files.get(name) {
+            return res.send(*content)
+        }
+    });
 
     server.get("/**", StaticFilesHandler::new("public/"));
 
-    server.get("/", middleware! { |req, res|
+    let tpl_index = InlineTemplate::new(str::from_utf8(include_bytes!("templates/index.tpl")).unwrap());
+    server.get("/", middleware! { |_req, res|
         let mut data = HashMap::new();
         data.insert("layer", &layers_display);
-        return res.render("src/webserver/templates/index.tpl", &data)
+        return tpl_index.render(res, &data);
     });
-
     server.listen("127.0.0.1:6767");
 }
 
