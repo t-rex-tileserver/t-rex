@@ -13,41 +13,30 @@ pub struct Filecache {
     pub basepath: String,
 }
 
-impl Filecache {
-    fn dir(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16) -> String {
-        format!("{}/{}/{}/{}", self.basepath, tileset, zoom, xtile)
-    }
-    fn path(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16) -> String {
-        format!("{}/{}.pbf", self.dir(tileset, xtile, ytile, zoom), ytile)
-    }
-}
-
 impl Cache for Filecache {
-    fn lookup<F>(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16, mut read: F) -> Result<(), io::Error>
-        where F : FnMut(&mut Read) -> Result<(), io::Error>
+    fn read<F>(&self, path: &str, mut read: F) -> bool
+        where F : FnMut(&mut Read)
     {
-        let path = self.path(tileset, xtile, ytile, zoom);
-        debug!("Filecache.lookup {}", path);
-        match File::open(&path) {
-            Ok(mut f) => read(&mut f),
-            Err(e) => Err(e)
+        let fullpath = format!("{}/{}", self.basepath, path);
+        debug!("Filecache.read {}", fullpath);
+        match File::open(&fullpath) {
+            Ok(mut f) => { read(&mut f); true },
+            Err(e) => false
         }
     }
-    fn store<F>(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16, write: F) -> Result<(), io::Error>
-        where F : Fn(&mut Write) -> Result<(), io::Error>
+    fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error>
     {
-        let path = self.path(tileset, xtile, ytile, zoom);
-        debug!("Filecache.store {}", path);
-        let dir = self.dir(tileset, xtile, ytile, zoom);
-        try!(fs::create_dir_all(Path::new(&dir as &str)));
-        let mut f = try!(File::create(path));
-        write(&mut f)
+        let fullpath = format!("{}/{}", self.basepath, path);
+        debug!("Filecache.write {}", fullpath);
+        let p = Path::new(&fullpath);
+        try!(fs::create_dir_all(p.parent().unwrap()));
+        let mut f = try!(File::create(&fullpath));
+        f.write_all(obj)
     }
 }
 
-
 #[test]
-fn test_file() {
+fn test_dircache() {
     use std::env;
 
     let mut dir = env::temp_dir();
@@ -56,27 +45,24 @@ fn test_file() {
     fs::remove_dir_all(&basepath);
 
     let cache = Filecache { basepath: basepath };
-    assert_eq!(cache.dir("tileset", 1, 2, 0), format!("{}/{}", cache.basepath, "tileset/0/1"));
-    let pbf = format!("{}/{}", cache.basepath, "tileset/0/1/2.pbf");
-    assert_eq!(cache.path("tileset", 1, 2, 0), pbf);
+    let path = "tileset/0/1/2.pbf";
+    let fullpath = format!("{}/{}", cache.basepath, path);
+    let obj = "0123456789";
 
     // Cache miss
-    assert!(cache.lookup("tileset", 1, 2, 0, |_| Ok(())).is_err());
+    assert_eq!(cache.read(path, |_| {}), false);
 
     // Write into cache
-    let res = cache.store("tileset", 1, 2, 0, |f| {
-        f.write_all("0123456789".as_bytes())
-    });
-    assert_eq!(res.ok(), Some(()));
-    assert!(Path::new(&pbf).exists());
+    cache.write(path, obj.as_bytes());
+    assert!(Path::new(&fullpath).exists());
 
     // Cache hit
-    assert!(cache.lookup("tileset", 1, 2, 0, |_| Ok(())).is_ok());
+    assert_eq!(cache.read(path, |_| {}), true);
 
     // Read from cache
     let mut s = String::new();
-    cache.lookup("tileset", 1, 2, 0, |f| {
-        f.read_to_string(&mut s).map(|_| ())
+    cache.read(path, |f| {
+        f.read_to_string(&mut s);
     });
     assert_eq!(&s, "0123456789");
 }

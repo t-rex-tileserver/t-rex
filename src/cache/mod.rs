@@ -21,20 +21,19 @@ pub enum Tilecache {
 }
 
 impl Cache for Tilecache {
-    fn lookup<F>(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16, read: F) -> Result<(), io::Error>
-        where F : FnMut(&mut Read) -> Result<(), io::Error>
+    fn read<F>(&self, path: &str, mut read: F) -> bool
+        where F : FnMut(&mut Read)
     {
         match self {
-            &Tilecache::Nocache(ref cache)   => cache.lookup(tileset, xtile, ytile, zoom, read),
-            &Tilecache::Filecache(ref cache) => cache.lookup(tileset, xtile, ytile, zoom, read),
+            &Tilecache::Nocache(ref cache)   => cache.read(path, read),
+            &Tilecache::Filecache(ref cache) => cache.read(path, read),
         }
     }
-    fn store<F>(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16, write: F) -> Result<(), io::Error>
-        where F : Fn(&mut Write) -> Result<(), io::Error>
+    fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error>
     {
         match self {
-            &Tilecache::Nocache(ref cache)   => cache.store(tileset, xtile, ytile, zoom, write),
-            &Tilecache::Filecache(ref cache) => cache.store(tileset, xtile, ytile, zoom, write),
+            &Tilecache::Nocache(ref cache)   => cache.write(path, obj),
+            &Tilecache::Filecache(ref cache) => cache.write(path, obj),
         }
     }
 }

@@ -74,6 +74,6 @@ fn main() {
     match matches.subcommand() {
         ("serve", Some(sub_m))     => webserver::server::webserver(sub_m),
         ("genconfig", Some(sub_m)) => println!("{}", webserver::server::gen_config(sub_m)),
-        _                          => { app.print_help(); },
+        _                          => { let _ = app.print_help(); },
     }
 }

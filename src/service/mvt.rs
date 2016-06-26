@@ -118,14 +118,6 @@ impl MvtService {
     }
     /// Create vector tile from input at x, y, z
     pub fn tile(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16) -> vector_tile::Tile {
-        let mut tile: Option<vector_tile::Tile> = None;
-        self.cache.lookup(tileset, xtile, ytile, zoom, |mut f| {
-            tile = Tile::read_gz_from(&mut f).ok();
-            Ok(()) //result.map(|_| ()).map_err(|e| io::Error::new(io::ErrorKind::Other, e.description()))
-        });
-        if tile.is_some() {
-            return tile.unwrap()
-        }
         let extent = self.grid.tile_extent_reverse_y(xtile, ytile, zoom);
         debug!("MVT tile request {:?}", extent);
         let mut tile = Tile::new(&extent, 4096, true);
@@ -136,12 +128,31 @@ impl MvtService {
             });
             tile.add_layer(mvt_layer);
         }
-        // Write into cache
-        self.cache.store(tileset, xtile, ytile, zoom, |mut f| {
-            Tile::write_gz_to(&mut f, &tile.mvt_tile);
-            Ok(())
-        });
         tile.mvt_tile
+    }
+    /// Fetch or create vector tile from input at x, y, z
+    pub fn tile_cached(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16, gzip: bool) -> Vec<u8> {
+        let path = format!("{}/{}/{}/{}.pbf", tileset, zoom, xtile, ytile);
+
+        let mut tile: Option<Vec<u8>> = None;
+        self.cache.read(&path, |mut f| {
+            let mut data = Vec::new();
+            f.read_to_end(&mut data);
+            tile = Some(data);
+        });
+        if tile.is_some() {
+            //TODO: unzip if gzip == false
+            return tile.unwrap()
+        }
+
+        let mvt_tile = self.tile(tileset, xtile, ytile, zoom);
+
+        let mut tilegz = Vec::new();
+        Tile::write_gz_to(&mut tilegz, &mvt_tile);
+        self.cache.write(&path, &tilegz);
+
+        //TODO: return unzipped if gzip == false
+        tilegz
     }
 }
 
