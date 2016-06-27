@@ -21,7 +21,7 @@ pub enum Tilecache {
 }
 
 impl Cache for Tilecache {
-    fn read<F>(&self, path: &str, mut read: F) -> bool
+    fn read<F>(&self, path: &str, read: F) -> bool
         where F : FnMut(&mut Read)
     {
         match self {

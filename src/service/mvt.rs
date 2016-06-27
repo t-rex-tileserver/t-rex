@@ -5,15 +5,14 @@
 
 use datasource::{Datasource,DatasourceInput};
 use datasource::PostgisInput;
-use core::grid::{Extent,Grid};
+use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
 use mvt::tile::Tile;
 use mvt::vector_tile;
-use mvt::geom_encoder::EncodableGeom;
-use cache::{Cache,Tilecache,Nocache,Filecache};
+use cache::{Cache,Tilecache,Nocache};
 use toml;
-use rustc_serialize::json::{self, Json, ToJson};
+use rustc_serialize::json::{Json, ToJson};
 
 
 /// Collection of layers in one MVT
@@ -40,7 +39,7 @@ impl MvtService {
     }
     fn get_tilejson_infos(&self, tileset: &str) -> (Json, Json, Json) {
         let layers = self.get_tileset(tileset);
-        let mut metadata = Json::from_str(r#"
+        let metadata = Json::from_str(r#"
         {
             "id": "t_rex",
             "name": "t_rex",
@@ -97,7 +96,7 @@ impl MvtService {
         (metadata, layers_json, vector_layers_json)
     }
     pub fn get_tilejson(&self, tileset: &str) -> String {
-        let (mut metadata, layers, vector_layers) = self.get_tilejson_infos(tileset);
+        let (mut metadata, _layers, vector_layers) = self.get_tilejson_infos(tileset);
         let mut obj = metadata.as_object_mut().unwrap();
         let url = Json::from_str(&format!("[\"http://127.0.0.1:6767/{}/{{z}}/{{x}}/{{y}}.pbf\"]", tileset)).unwrap();
         obj.insert("tiles".to_string(), url);
@@ -137,7 +136,7 @@ impl MvtService {
         let mut tile: Option<Vec<u8>> = None;
         self.cache.read(&path, |mut f| {
             let mut data = Vec::new();
-            f.read_to_end(&mut data);
+            let _ = f.read_to_end(&mut data);
             tile = Some(data);
         });
         if tile.is_some() {
@@ -149,7 +148,7 @@ impl MvtService {
 
         let mut tilegz = Vec::new();
         Tile::write_gz_to(&mut tilegz, &mvt_tile);
-        self.cache.write(&path, &tilegz);
+        let _ = self.cache.write(&path, &tilegz);
 
         //TODO: return unzipped if gzip == false
         tilegz

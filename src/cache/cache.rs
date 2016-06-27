@@ -8,7 +8,7 @@ use std::io;
 
 
 pub trait Cache {
-    fn read<F>(&self, path: &str, mut read: F) -> bool
+    fn read<F>(&self, path: &str, read: F) -> bool
         where F : FnMut(&mut Read);
     fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error>;
 }
@@ -18,7 +18,7 @@ pub struct Nocache;
 
 impl Cache for Nocache {
      #[allow(unused_variables)]
-    fn read<F>(&self, path: &str, mut read: F) -> bool
+    fn read<F>(&self, path: &str, read: F) -> bool
         where F : FnMut(&mut Read)
     {
         false

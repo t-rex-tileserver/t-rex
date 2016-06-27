@@ -235,9 +235,6 @@ url = "{}"
 
 #[test]
 pub fn test_from_geom_fields() {
-    use postgis;
-    use postgres;
-
     let conn: Connection = match env::var("DBCONN") {
         Result::Ok(val) => Connection::connect(&val as &str, SslMode::None),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }

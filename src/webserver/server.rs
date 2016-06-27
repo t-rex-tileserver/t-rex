@@ -8,7 +8,6 @@ use core::grid::Grid;
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use service::mvt::{MvtService,Tileset};
-use core::layer::Layer;
 use core::{Config,read_config};
 use cache::{Tilecache,Nocache,Filecache};
 
@@ -240,7 +239,7 @@ port = 6767
 threads = 1
 mapviewer = true
 "#;
-    let mut config = String::new();
+    let mut config;
     if let Some(_dbconn) = args.value_of("dbconn") {
         let service = service_from_args(args);
         config = service.gen_runtime_config();
