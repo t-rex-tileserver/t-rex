@@ -13,7 +13,6 @@ use core::{Config,read_config};
 use cache::{Cache,Tilecache,Nocache,Filecache};
 
 use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult, Halt, StaticFilesHandler };
-use nickel_mustache::Render;
 use mustache;
 use rustc_serialize::Encodable;
 use hyper::header::{CacheControl, CacheDirective, AccessControlAllowOrigin, AccessControlAllowMethods};

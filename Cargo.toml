@@ -14,8 +14,7 @@ toml = "*"
 postgis = "*"
 protobuf = "*"
 nickel = "*"
-nickel_mustache = "*"
-mustache = "*"
+mustache = "0.6.3" # Same version as nickel
 rustc-serialize = "*"
 clap = "*"
 log = "*"
@@ -29,5 +28,5 @@ version = "*"
 #features = ["unix_socket"]
 
 [dependencies.hyper]
-version = "0.8.1"
+version = "0.8.1" # Same version as nickel
 default-features = false
