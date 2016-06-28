@@ -5,6 +5,7 @@
 
 use core::Config;
 use toml;
+use rustc_serialize::Decodable;
 use std::collections::HashMap;
 
 
@@ -136,6 +137,82 @@ geometry_type = "POINT"
     }
 }
 
+
+#[cfg(test)]
+#[derive(RustcDecodable, Debug)]
+struct Layerlevel {
+    pub minzoom: u8,
+    pub maxzoom: u8,
+    pub sql: String,
+}
+
+#[cfg(test)]
+#[derive(RustcDecodable, Debug)]
+struct LayerConfig {
+    pub name: String,
+    pub table_name: Option<String>,
+    pub geometry_field: Option<String>,
+    pub geometry_type: Option<String>,
+    pub fid_field: Option<String>,
+    pub query_limit: Option<u32>,
+    pub query: Option<String>,
+    pub level: Vec<Layerlevel>,
+}
+
+#[test]
+fn test_toml_decode() {
+    use core::parse_config;
+    let toml = r#"
+        [[tileset.layer]]
+        name = "points"
+        table_name = "ne_10m_populated_places"
+        geometry_field = "wkb_geometry"
+        geometry_type = "POINT"
+        fid_field = "id"
+        query_limit = 100
+        query = "SELECT name,wkb_geometry FROM ne_10m_populated_places"
+        [[tileset.layer.level]]
+        minzoom = 10
+        maxzoom = 14
+        sql = "SELECT name,wkb_geometry FROM places_z10"
+
+        [[tileset.layer]]
+        name = "points2"
+
+        [[tileset.layer]]
+        table_name = "missing_name"
+        "#;
+
+    let tomlcfg = parse_config(toml.to_string(), "").unwrap();
+    let layers = tomlcfg.lookup("tileset.layer").unwrap().as_slice().unwrap();
+
+    // Layer config with zoom level dependent queries
+    let ref layer = layers[0];
+    let mut decoder = toml::Decoder::new(layer.clone());
+    let cfg = LayerConfig::decode(&mut decoder).unwrap();
+    println!("{:?}", cfg);
+    assert_eq!(cfg.name, "points");
+    assert_eq!(cfg.table_name, Some("ne_10m_populated_places".to_string()));
+    assert_eq!(cfg.level.len(), 1);
+    assert_eq!(cfg.level[0].minzoom, 10);
+    assert_eq!(cfg.level[0].sql, "SELECT name,wkb_geometry FROM places_z10");
+
+    // Minimal config
+    let ref layer = layers[1];
+    let mut decoder = toml::Decoder::new(layer.clone());
+    let cfg = LayerConfig::decode(&mut decoder).unwrap();
+    println!("{:?}", cfg);
+    assert_eq!(cfg.name, "points2");
+    assert_eq!(cfg.table_name, None);
+    assert_eq!(cfg.level.len(), 0);
+
+    // Invalid config
+    let ref layer = layers[2];
+    let mut decoder = toml::Decoder::new(layer.clone());
+    let cfg = LayerConfig::decode(&mut decoder);
+    assert_eq!(format!("{}", cfg.err().unwrap()),
+        "expected a value of type `string` for the key `name`");
+}
 
 #[test]
 fn test_layers_from_config() {
