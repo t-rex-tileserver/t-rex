@@ -39,24 +39,21 @@ impl MvtService {
     }
     fn get_tilejson_infos(&self, tileset: &str) -> (Json, Json, Json) {
         let layers = self.get_tileset(tileset);
-        let metadata = Json::from_str(r#"
-        {
-            "id": "t_rex",
-            "name": "t_rex",
-            "description": "T-Rex cache",
+        let metadata = Json::from_str(&format!(r#"
+        {{
+            "id": "{}",
+            "name": "{}",
+            "description": "{}",
             "attribution": "",
-            "type": "baselayer",
             "format": "pbf",
-            "version": "2.0",
-            "scheme": "tms",
-            "bounds": "-180.0,-90.0,180.0,90.0",
-            "minzoom": "0",
-            "maxzoom": "14",
+            "version": "2.0.0",
+            "scheme": "xyz",
+            "bounds": [-180.0,-90.0,180.0,90.0],
+            "minzoom": 0,
+            "maxzoom": 14,
             "center": "0.0,0.0,2",
-            "mtime": "1463000297761",
-            "basename": "t_rex.mbtiles",
-            "filesize": "0"
-        }"#).unwrap();
+            "basename": "{}"
+        }}"#, tileset, tileset, tileset, tileset)).unwrap();
         let layers_metadata: Vec<(String,String)> = layers.iter().map(|layer| {
             let meta = layer.metadata();
             let fields = self.input.detect_columns(&layer, 0);
