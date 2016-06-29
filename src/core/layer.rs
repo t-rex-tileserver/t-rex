@@ -9,7 +9,7 @@ use rustc_serialize::Decodable;
 use std::collections::HashMap;
 
 
-#[derive(Default)]
+#[derive(Default, RustcDecodable, Debug)]
 pub struct Layer {
     pub name: String,
     pub table_name: Option<String>,
@@ -49,31 +49,9 @@ impl Layer {
 
 impl Config<Layer> for Layer {
     fn from_config(layerval: &toml::Value) -> Result<Self, String> {
-        let name = layerval.lookup("name")
-                           .ok_or("Missing configuration entry name in [[tileset.layer]]".to_string())
-                           .and_then(|val| val.as_str().ok_or("layer.name entry is not a string".to_string()))
-                           .map(|v| v.to_string());
-        let table_name =     layerval.lookup("table_name")
-                                     .and_then(|val| val.as_str().map(|v| v.to_string()));
-        let geometry_field = layerval.lookup("geometry_field")
-                                     .and_then(|val| val.as_str().map(|v| v.to_string()));
-        let geometry_type =  layerval.lookup("geometry_type")
-                                     .and_then(|val| val.as_str().map(|v| v.to_string()));
-        let fid_field =      layerval.lookup("fid_field")
-                                     .and_then(|val| val.as_str().map(|v| v.to_string()));
-        let query_limit =    layerval.lookup("query_limit")
-                                     .and_then(|val| val.as_integer().map(|v| v as u32));
-        let query =          layerval.lookup("query")
-                                     .and_then(|val| val.as_str().map(|v| v.to_string()));
-        name.and_then(|n|
-            Ok(Layer { name:          n,
-                   table_name:     table_name,
-                   geometry_field: geometry_field,
-                   geometry_type:  geometry_type,
-                   fid_field:      fid_field,
-                   query_limit:    query_limit,
-                   query:          query,
-            }))
+        let mut decoder = toml::Decoder::new(layerval.clone());
+        let layer = Layer::decode(&mut decoder);
+        layer.map_err(|e| format!("Error reading configuration - {}", e))
     }
 
     fn gen_config() -> String {
@@ -181,6 +159,14 @@ fn test_toml_decode() {
 
         [[tileset.layer]]
         table_name = "missing_name"
+
+        [[tileset.layer]]
+        name = "points3"
+        tabel_name = "spelling error"
+
+        [[tileset.layer]]
+        name = "points4"
+        table_name = 0
         "#;
 
     let tomlcfg = parse_config(toml.to_string(), "").unwrap();
@@ -206,12 +192,29 @@ fn test_toml_decode() {
     assert_eq!(cfg.table_name, None);
     assert_eq!(cfg.level.len(), 0);
 
-    // Invalid config
+    // Invalid config: missing required field
     let ref layer = layers[2];
     let mut decoder = toml::Decoder::new(layer.clone());
     let cfg = LayerConfig::decode(&mut decoder);
+    println!("{:?}", cfg);
     assert_eq!(format!("{}", cfg.err().unwrap()),
         "expected a value of type `string` for the key `name`");
+
+    // Invalid config: wrong field name
+    let ref layer = layers[3];
+    let mut decoder = toml::Decoder::new(layer.clone());
+    let cfg = LayerConfig::decode(&mut decoder);
+    println!("{:?}", cfg);
+    // toml::Decoder ignores unknown keys!
+    assert_eq!(cfg.err(), None);
+
+    // Invalid config: wrong field type
+    let ref layer = layers[4];
+    let mut decoder = toml::Decoder::new(layer.clone());
+    let cfg = LayerConfig::decode(&mut decoder);
+    println!("{:?}", cfg);
+    assert_eq!(format!("{}", cfg.err().unwrap()),
+        "expected a value of type `string`, but found a value of type `integer` for the key `table_name`");
 }
 
 #[test]
