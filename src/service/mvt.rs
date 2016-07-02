@@ -113,7 +113,7 @@ impl MvtService {
         obj.to_json().to_string()
     }
     /// Create vector tile from input at x, y, z
-    pub fn tile(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16) -> vector_tile::Tile {
+    pub fn tile(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u8) -> vector_tile::Tile {
         let extent = self.grid.tile_extent_reverse_y(xtile, ytile, zoom);
         debug!("MVT tile request {:?}", extent);
         let mut tile = Tile::new(&extent, 4096, true);
@@ -127,7 +127,7 @@ impl MvtService {
         tile.mvt_tile
     }
     /// Fetch or create vector tile from input at x, y, z
-    pub fn tile_cached(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u16, gzip: bool) -> Vec<u8> {
+    pub fn tile_cached(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u8, gzip: bool) -> Vec<u8> {
         let path = format!("{}/{}/{}/{}.pbf", tileset, zoom, xtile, ytile);
 
         let mut tile: Option<Vec<u8>> = None;
@@ -345,7 +345,10 @@ table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
 #fid_field = "id"
-#query = "SELECT name,wkb_geometry FROM mytable"
+#[[tileset.layer.query]]
+#minzoom = 0
+#maxzoom = 22
+#sql = "SELECT name,wkb_geometry FROM mytable"
 
 #[cache.file]
 #base = "/tmp/mvtcache"

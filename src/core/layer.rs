@@ -9,15 +9,24 @@ use rustc_serialize::Decodable;
 use std::collections::HashMap;
 
 
+#[derive(RustcDecodable, Debug)]
+pub struct LayerQuery {
+    pub minzoom: Option<u8>,
+    pub maxzoom: Option<u8>,
+    pub sql: Option<String>,
+}
+
 #[derive(Default, RustcDecodable, Debug)]
 pub struct Layer {
     pub name: String,
-    pub table_name: Option<String>,
     pub geometry_field: Option<String>,
     pub geometry_type: Option<String>,
     pub fid_field: Option<String>,
+    // Input for derived queries
+    pub table_name: Option<String>,
     pub query_limit: Option<u32>,
-    pub query: Option<String>,
+    // Explicit queries
+    pub query: Vec<LayerQuery>,
 }
 
 impl Layer {
@@ -32,17 +41,28 @@ impl Layer {
                  Ok(layers.iter().map(|layer| Layer::from_config(layer).unwrap()).collect())
                })
     }
+    pub fn minzoom(&self) -> u8 {
+        0 // TODO: min(query[].minzoom)
+    }
+    pub fn maxzoom(&self) -> u8 {
+        22 // TODO: max(query[].maxzoom)
+    }
+    // SQL query for zoom level
+    pub fn query(&self, _level: u8) -> Option<&str> {
+        //TODO check minzoom/maxzoom
+        self.query.first().and_then(|ref q| q.sql.as_ref().and_then(|sql| Some(sql.as_str())))
+    }
     /// Layer properties needed e.g. for metadata.json
-    pub fn metadata(&self) -> HashMap<&str, &str> {
+    pub fn metadata(&self) -> HashMap<&str, String> {
         //TODO: return Zoom-Level Array
-        let mut metadata: HashMap<&str, &str> = HashMap::new();
-        metadata.insert("id", &self.name);
-        metadata.insert("name", &self.name);
-        metadata.insert("description", "");
-        metadata.insert("buffer-size", "0");
-        metadata.insert("minzoom", "0");
-        metadata.insert("maxzoom", "22");
-        metadata.insert("srs", "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over");
+        let mut metadata: HashMap<&str, String> = HashMap::new();
+        metadata.insert("id", self.name.clone());
+        metadata.insert("name", self.name.clone());
+        metadata.insert("description", "".to_string());
+        metadata.insert("buffer-size", "0".to_string());
+        metadata.insert("minzoom", self.minzoom().to_string());
+        metadata.insert("maxzoom", self.maxzoom().to_string());
+        metadata.insert("srs", "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over".to_string());
         metadata
     }
 }
@@ -65,7 +85,10 @@ table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
 #fid_field = "id"
-#query = "SELECT name,wkb_geometry FROM mytable"
+#[[tileset.layer.query]]
+#minzoom = 0
+#maxzoom = 22
+#sql = "SELECT name,wkb_geometry FROM mytable"
 "#;
         toml.to_string()
     }
@@ -100,42 +123,24 @@ geometry_type = "POINT"
                 => lines.push(format!("query_limit = {}", query_limit)),
             _   => {}
         }
-        match self.query {
-            Some(ref query)
-                => lines.push(format!("query = \"{}\"", query)),
+        match self.query(0) {
+            Some(ref query) => {
+                lines.push("[[tileset.layer.query]]".to_string());
+                lines.push(format!("sql = \"{}\"", query))
+            },
             _   => {
                 let default_name = "mytable".to_string();
                 let ref table_name = self.table_name.as_ref().unwrap_or(&default_name);
                 let default_name = "wkb_geometry".to_string();
                 let ref geometry_field = self.geometry_field.as_ref().unwrap_or(&default_name);
-                lines.push(format!("#query = \"SELECT name,{} FROM {}\"", geometry_field, table_name))
+                lines.push("#[[tileset.layer.query]]".to_string());
+                lines.push(format!("#sql = \"SELECT name,{} FROM {}\"", geometry_field, table_name))
             }
         }
         lines.join("\n") + "\n"
     }
 }
 
-
-#[cfg(test)]
-#[derive(RustcDecodable, Debug)]
-struct Layerlevel {
-    pub minzoom: u8,
-    pub maxzoom: u8,
-    pub sql: String,
-}
-
-#[cfg(test)]
-#[derive(RustcDecodable, Debug)]
-struct LayerConfig {
-    pub name: String,
-    pub table_name: Option<String>,
-    pub geometry_field: Option<String>,
-    pub geometry_type: Option<String>,
-    pub fid_field: Option<String>,
-    pub query_limit: Option<u32>,
-    pub query: Option<String>,
-    pub level: Vec<Layerlevel>,
-}
 
 #[test]
 fn test_toml_decode() {
@@ -148,8 +153,8 @@ fn test_toml_decode() {
         geometry_type = "POINT"
         fid_field = "id"
         query_limit = 100
-        query = "SELECT name,wkb_geometry FROM ne_10m_populated_places"
-        [[tileset.layer.level]]
+        #query = "SELECT name,wkb_geometry FROM ne_10m_populated_places"
+        [[tileset.layer.query]]
         minzoom = 10
         maxzoom = 14
         sql = "SELECT name,wkb_geometry FROM places_z10"
@@ -175,27 +180,27 @@ fn test_toml_decode() {
     // Layer config with zoom level dependent queries
     let ref layer = layers[0];
     let mut decoder = toml::Decoder::new(layer.clone());
-    let cfg = LayerConfig::decode(&mut decoder).unwrap();
+    let cfg = Layer::decode(&mut decoder).unwrap();
     println!("{:?}", cfg);
     assert_eq!(cfg.name, "points");
     assert_eq!(cfg.table_name, Some("ne_10m_populated_places".to_string()));
-    assert_eq!(cfg.level.len(), 1);
-    assert_eq!(cfg.level[0].minzoom, 10);
-    assert_eq!(cfg.level[0].sql, "SELECT name,wkb_geometry FROM places_z10");
+    assert_eq!(cfg.query.len(), 1);
+    assert_eq!(cfg.query[0].minzoom, Some(10));
+    assert_eq!(cfg.query[0].sql, Some("SELECT name,wkb_geometry FROM places_z10".to_string()));
 
     // Minimal config
     let ref layer = layers[1];
     let mut decoder = toml::Decoder::new(layer.clone());
-    let cfg = LayerConfig::decode(&mut decoder).unwrap();
+    let cfg = Layer::decode(&mut decoder).unwrap();
     println!("{:?}", cfg);
     assert_eq!(cfg.name, "points2");
     assert_eq!(cfg.table_name, None);
-    assert_eq!(cfg.level.len(), 0);
+    assert_eq!(cfg.query.len(), 0);
 
     // Invalid config: missing required field
     let ref layer = layers[2];
     let mut decoder = toml::Decoder::new(layer.clone());
-    let cfg = LayerConfig::decode(&mut decoder);
+    let cfg = Layer::decode(&mut decoder);
     println!("{:?}", cfg);
     assert_eq!(format!("{}", cfg.err().unwrap()),
         "expected a value of type `string` for the key `name`");
@@ -203,7 +208,7 @@ fn test_toml_decode() {
     // Invalid config: wrong field name
     let ref layer = layers[3];
     let mut decoder = toml::Decoder::new(layer.clone());
-    let cfg = LayerConfig::decode(&mut decoder);
+    let cfg = Layer::decode(&mut decoder);
     println!("{:?}", cfg);
     // toml::Decoder ignores unknown keys!
     assert_eq!(cfg.err(), None);
@@ -211,7 +216,7 @@ fn test_toml_decode() {
     // Invalid config: wrong field type
     let ref layer = layers[4];
     let mut decoder = toml::Decoder::new(layer.clone());
-    let cfg = LayerConfig::decode(&mut decoder);
+    let cfg = Layer::decode(&mut decoder);
     println!("{:?}", cfg);
     assert_eq!(format!("{}", cfg.err().unwrap()),
         "expected a value of type `string`, but found a value of type `integer` for the key `table_name`");
@@ -231,7 +236,8 @@ fn test_layers_from_config() {
         geometry_type = "POINT"
         fid_field = "id"
         query_limit = 100
-        query = "SELECT name,wkb_geometry FROM ne_10m_populated_places"
+        [[tileset.layer.query]]
+        sql = "SELECT name,wkb_geometry FROM ne_10m_populated_places"
 
         [[tileset.layer]]
         name = "layer2"

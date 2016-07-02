@@ -97,7 +97,7 @@ impl Grid {
     }
 
     /// Extent of a given tile in the grid given its x, y, and z
-    pub fn tile_extent(&self, xtile: u16, ytile: u16, zoom: u16) -> Extent {
+    pub fn tile_extent(&self, xtile: u16, ytile: u16, zoom: u8) -> Extent {
         let res = self.resolutions[zoom as usize];
         let tile_sx = self.width as f64;
         let tile_sy = self.height as f64;
@@ -115,7 +115,7 @@ impl Grid {
         */
     }
     /// Extent of a given tile in GoogleMaps XYZ adressing scheme
-    pub fn tile_extent_reverse_y(&self, xtile: u16, ytile: u16, zoom: u16) -> Extent {
+    pub fn tile_extent_reverse_y(&self, xtile: u16, ytile: u16, zoom: u8) -> Extent {
         let res = self.resolutions[zoom as usize];
         let unitheight = self.height as f64 * res;
         let maxy = ((self.extent.maxy-self.extent.minx- 0.01* unitheight)/unitheight).ceil() as u16;
@@ -197,7 +197,7 @@ pub struct LngLat {
 }
 
 /// Returns the upper left (lon, lat) of a tile
-fn ul(xtile: u16, ytile: u16, zoom: u16) -> LngLat {
+fn ul(xtile: u16, ytile: u16, zoom: u8) -> LngLat {
     let n = (zoom as f64).exp2();
     let lon_deg = xtile as f64 / n * 360.0 - 180.0;
     let lat_rad = (consts::PI * (1.0_f64 - 2.0_f64 * ytile as f64 / n)).sinh().atan();
@@ -215,7 +215,7 @@ fn xy(lon: f64, lat: f64) -> (f64, f64) {
 }
 
 /// Returns the Spherical Mercator bounding box of a tile
-fn tile_extent(xtile: u16, ytile: u16, zoom: u16) -> Extent {
+fn tile_extent(xtile: u16, ytile: u16, zoom: u8) -> Extent {
     let a = ul(xtile, ytile, zoom);
     let (ax, ay) = xy(a.lon, a.lat);
     let b = ul(xtile+1, ytile+1, zoom);
@@ -224,7 +224,7 @@ fn tile_extent(xtile: u16, ytile: u16, zoom: u16) -> Extent {
 }
 
 /// Returns the (lon, lat) bounding box of a tile
-fn tile_bounds(xtile: u16, ytile: u16, zoom: u16) -> Extent {
+fn tile_bounds(xtile: u16, ytile: u16, zoom: u8) -> Extent {
     let a = ul(xtile, ytile, zoom);
     let b = ul(xtile+1, ytile+1, zoom);
     Extent {minx: a.lon, miny: b.lat, maxx: b.lon, maxy: a.lat}
