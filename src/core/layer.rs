@@ -29,6 +29,15 @@ pub struct Layer {
     pub query: Vec<LayerQuery>,
 }
 
+impl LayerQuery {
+    pub fn minzoom(&self) -> u8 {
+        self.minzoom.unwrap_or(0)
+    }
+    pub fn maxzoom(&self) -> u8 {
+        self.maxzoom.unwrap_or(99)
+    }
+}
+
 impl Layer {
     pub fn new(name: &str) -> Layer {
         Layer { name: String::from(name), ..Default::default() }
@@ -42,15 +51,15 @@ impl Layer {
                })
     }
     pub fn minzoom(&self) -> u8 {
-        0 // TODO: min(query[].minzoom)
+        self.query.iter().map(|q| q.minzoom()).min().unwrap_or(0)
     }
     pub fn maxzoom(&self) -> u8 {
-        22 // TODO: max(query[].maxzoom)
+        self.query.iter().map(|q| q.maxzoom()).max().unwrap_or(99)
     }
     // SQL query for zoom level
-    pub fn query(&self, _level: u8) -> Option<&str> {
-        //TODO check minzoom/maxzoom
-        self.query.first().and_then(|ref q| q.sql.as_ref().and_then(|sql| Some(sql.as_str())))
+    pub fn query(&self, level: u8) -> Option<&str> {
+        let query = self.query.iter().find(|ref q| level >= q.minzoom() && level <= q.maxzoom());
+        query.and_then(|ref q| q.sql.as_ref().and_then(|sql| Some(sql.as_str())))
     }
     /// Layer properties needed e.g. for metadata.json
     pub fn metadata(&self) -> HashMap<&str, String> {
@@ -186,7 +195,15 @@ fn test_toml_decode() {
     assert_eq!(cfg.table_name, Some("ne_10m_populated_places".to_string()));
     assert_eq!(cfg.query.len(), 1);
     assert_eq!(cfg.query[0].minzoom, Some(10));
+    assert_eq!(cfg.query[0].minzoom(), 10);
+    assert_eq!(cfg.query[0].maxzoom(), 14);
     assert_eq!(cfg.query[0].sql, Some("SELECT name,wkb_geometry FROM places_z10".to_string()));
+    assert_eq!(cfg.minzoom(), 10);
+    assert_eq!(cfg.maxzoom(), 14);
+    assert_eq!(cfg.query(9), None);
+    assert_eq!(cfg.query(10), Some("SELECT name,wkb_geometry FROM places_z10"));
+    assert_eq!(cfg.query(14), Some("SELECT name,wkb_geometry FROM places_z10"));
+    assert_eq!(cfg.query(15), None);
 
     // Minimal config
     let ref layer = layers[1];
@@ -196,6 +213,8 @@ fn test_toml_decode() {
     assert_eq!(cfg.name, "points2");
     assert_eq!(cfg.table_name, None);
     assert_eq!(cfg.query.len(), 0);
+    assert_eq!(cfg.minzoom(), 0);
+    assert_eq!(cfg.maxzoom(), 99);
 
     // Invalid config: missing required field
     let ref layer = layers[2];

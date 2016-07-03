@@ -20,7 +20,7 @@ Presentations
 Usage
 -----
 
-    t_rex serve --dbconn postgresql://pi@localhost/osm2vectortiles
+    t_rex serve --dbconn postgresql://user:pass@localhost/osm2vectortiles
 
 Tiles are then served at `http://localhost:6767/{layer}/{z}/{x}/{y}.pbf`
 
@@ -28,15 +28,79 @@ A list of all detected layers is available at [http://localhost:6767/](http://lo
 
 Use a tile cache:
 
-    t_rex serve --dbconn postgresql://pi@localhost/osm2vectortiles --cache /tmp/mvtcache
+    t_rex serve --dbconn postgresql://user:pass@localhost/osm2vectortiles --cache /tmp/mvtcache
 
 Generate a configuration template:
 
-    t_rex genconfig --dbconn postgresql://pi@localhost/osm2vectortiles
+    t_rex genconfig --dbconn postgresql://user:pass@localhost/osm2vectortiles
 
 Run server with configuration file:
 
     t_rex serve --config osm2vectortiles.cfg
+
+
+Configuration
+-------------
+
+Configuration file example:
+
+    [services]
+    mvt = true
+
+    [datasource]
+    type = "postgis"
+    url = "postgresql://user:pass@localhost/natural_earth_vectors"
+
+    [grid]
+    predefined = "web_mercator"
+
+    [[tileset]]
+    name = "osm"
+
+    [[tileset.layer]]
+    name = "points"
+    table_name = "ne_10m_populated_places"
+    geometry_field = "wkb_geometry"
+    geometry_type = "POINT"
+    fid_field = "id"
+
+    [[tileset.layer]]
+    name = "buildings"
+    geometry_field = "way"
+    geometry_type = "POLYGON"
+    fid_field = "osm_id"
+      [[tileset.layer.query]]
+      sql = """
+        SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way
+        FROM osm_buildings_gen0
+        WHERE geometry && !bbox!
+        GROUP BY name, type
+        ORDER BY sum(area) DESC"""
+      [[tileset.layer.query]]
+      minzoom = 14
+      maxzoom = 16
+      sql = """
+        SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),!pixel_width!/2) AS way
+        FROM osm_buildings
+        WHERE geometry && !bbox!
+        GROUP BY name, type
+        ORDER BY sum(area) DESC"""
+      [[tileset.layer.query]]
+      minzoom = 17
+      maxzoom = 22
+      sql = """
+        SELECT name, type, osm_id, geometry AS way
+        FROM osm_buildings
+        ORDER BY area DESC"""
+
+    [cache.file]
+    base = "/var/cache/mvtcache"
+
+    [webserver]
+    bind = "0.0.0.0"
+    port = 8080
+    threads = 4
+    mapviewer = true
 
 
 Installation
@@ -72,7 +136,7 @@ Run tests:
 
 To run DB tests you have to set an environment variable with the [connection spec](https://github.com/sfackler/rust-postgres#connecting) first. Example:
 
-     export DBCONN=postgresql://pi@localhost/natural_earth_vectors
+     export DBCONN=postgresql://user:pass@localhost/natural_earth_vectors
 
 Creating test database:
 
