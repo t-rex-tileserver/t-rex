@@ -123,14 +123,19 @@ impl PostgisInput {
     pub fn detect_layers(&self) -> Vec<Layer> {
         let mut layers: Vec<Layer> = Vec::new();
         let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
-        let stmt = conn.prepare("SELECT * FROM geometry_columns").unwrap();
+        let stmt = conn.prepare("SELECT * FROM geometry_columns ORDER BY f_table_schema,f_table_name DESC").unwrap();
         for row in &stmt.query(&[]).unwrap() {
+            let schema: String = row.get("f_table_schema");
             let table_name: String = row.get("f_table_name");
             let geometry_column: String = row.get("f_geometry_column");
-            let srid: i32 = row.get("srid");
+            let _srid: i32 = row.get("srid");
             let geomtype: String = row.get("type");
             let mut layer = Layer::new(&table_name);
-            layer.table_name = Some(table_name.clone());
+            layer.table_name = if schema != "public" {
+                Some(format!("{}.{}", schema, table_name))
+            } else {
+                Some(table_name.clone())
+            };
             layer.geometry_field = Some(geometry_column.clone());
             layer.geometry_type = Some(geomtype.clone());
             layers.push(layer);
