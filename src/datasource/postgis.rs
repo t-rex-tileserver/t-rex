@@ -157,13 +157,16 @@ impl PostgisInput {
         let filter_cols = vec![layer.geometry_field.as_ref().unwrap()];
         cols.into_iter().filter(|col| !filter_cols.contains(&col) ).collect()
     }
-    fn query(&self, layer: &Layer, zoom: u8) -> SqlQuery {
+    fn query(&self, layer: &Layer, zoom: u8) -> Option<SqlQuery> {
         let subquery = match layer.query(zoom).as_ref() {
             Some(q) => String::from(*q),
-            None => format!("SELECT {} FROM {}",
-                layer.geometry_field.as_ref().unwrap(),
-                layer.table_name.as_ref().unwrap())
-        };
+            None => {
+                //TODO: check min-/maxzoom + handle overzoom
+                if layer.table_name.is_none() { return None }
+                format!("SELECT {} FROM {}",
+                    layer.geometry_field.as_ref().unwrap(),
+                    layer.table_name.as_ref().unwrap())
+            }};
 
         let mut sql = format!("SELECT * FROM ({}) AS _q", subquery);
         if !subquery.contains("!bbox!") {
@@ -185,7 +188,7 @@ impl PostgisInput {
             sql = sql.replace("!pixel_width!", &format!("${}", params.len()+3));
         }
 
-        SqlQuery { sql: sql, params: params }
+        Some(SqlQuery { sql: sql, params: params })
     }
 }
 
@@ -194,6 +197,8 @@ impl DatasourceInput for PostgisInput {
         where F : FnMut(&Feature) {
         let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
         let query = self.query(&layer, zoom);
+        if query.is_none() { return }
+        let query = query.unwrap();
         let stmt = conn.prepare(&query.sql).unwrap();
 
         let zoom_param = zoom as i16;
@@ -303,23 +308,29 @@ pub fn test_feature_query() {
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));
-    assert_eq!(pg.query(&layer, 10).sql,
+    assert_eq!(pg.query(&layer, 10).unwrap().sql,
         "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
     layer.query_limit = Some(1);
-    assert_eq!(pg.query(&layer, 10).sql,
+    assert_eq!(pg.query(&layer, 10).unwrap().sql,
         "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857) LIMIT 1");
 
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT geometry AS geom FROM osm_place_point"))}];
     layer.query_limit = None;
-    assert_eq!(pg.query(&layer, 10).sql,
+    assert_eq!(pg.query(&layer, 10).unwrap().sql,
         "SELECT * FROM (SELECT geometry AS geom FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT * FROM osm_place_point WHERE name='Bern'"))}];
-    assert_eq!(pg.query(&layer, 10).sql,
+    assert_eq!(pg.query(&layer, 10).unwrap().sql,
         "SELECT * FROM (SELECT * FROM osm_place_point WHERE name='Bern') AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+
+    // out of maxzoom
+    assert_eq!(pg.query(&layer, 23).unwrap().sql,
+        "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+    layer.table_name = None;
+    assert!(pg.query(&layer, 23).is_none());
 }
 
 #[test]
@@ -330,21 +341,21 @@ pub fn test_query_params() {
 
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way FROM osm_buildings_gen0 WHERE geometry && !bbox!"))}];
-    let query = pg.query(&layer, 10);
+    let query = pg.query(&layer, 10).unwrap();
     assert_eq!(query.sql,
         "SELECT * FROM (SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way FROM osm_buildings_gen0 WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)) AS _q");
     assert_eq!(query.params, ["bbox"]);
 
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT osm_id, geometry, typen FROM landuse_z13toz14n WHERE !zoom! BETWEEN 13 AND 14) AS landuse_z9toz14n"))}];
-    let query = pg.query(&layer, 10);
+    let query = pg.query(&layer, 10).unwrap();
     assert_eq!(query.sql,
         "SELECT * FROM (SELECT osm_id, geometry, typen FROM landuse_z13toz14n WHERE $5 BETWEEN 13 AND 14) AS landuse_z9toz14n) AS _q WHERE way && ST_MakeEnvelope($1,$2,$3,$4,3857)");
     assert_eq!(query.params, ["bbox", "zoom"]);
 
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),!pixel_width!/2) AS way FROM osm_buildings"))}];
-    let query = pg.query(&layer, 10);
+    let query = pg.query(&layer, 10).unwrap();
     assert_eq!(query.sql,
         "SELECT * FROM (SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),$5/2) AS way FROM osm_buildings) AS _q WHERE way && ST_MakeEnvelope($1,$2,$3,$4,3857)");
     assert_eq!(query.params, ["bbox", "pixel_width"]);
