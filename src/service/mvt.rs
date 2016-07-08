@@ -10,7 +10,7 @@ use core::layer::Layer;
 use core::Config;
 use mvt::tile::Tile;
 use mvt::vector_tile;
-use cache::{Cache,Tilecache,Nocache};
+use cache::{Cache,Tilecache};
 use toml;
 use rustc_serialize::json::{Json, ToJson};
 
@@ -127,7 +127,7 @@ impl MvtService {
         tile.mvt_tile
     }
     /// Fetch or create vector tile from input at x, y, z
-    pub fn tile_cached(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u8, gzip: bool) -> Vec<u8> {
+    pub fn tile_cached(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u8, _gzip: bool) -> Vec<u8> {
         let path = format!("{}/{}/{}/{}.pbf", tileset, zoom, xtile, ytile);
 
         let mut tile: Option<Vec<u8>> = None;
@@ -227,6 +227,8 @@ const TOML_SERVICES: &'static str = r#"# t-rex configuration
 mvt = true
 "#;
 
+
+#[cfg(test)] use cache::Nocache;
 
 #[test]
 pub fn test_tile_query() {

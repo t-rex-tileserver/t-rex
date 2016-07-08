@@ -4,7 +4,7 @@
 //
 
 use core::layer::Layer;
-use core::feature::{Feature,FeatureStruct,FeatureAttr,FeatureAttrValType};
+use core::feature::{Feature,FeatureAttrValType};
 use core::grid::Extent;
 use core::geom::GeometryType;
 use core::geom;
@@ -251,6 +251,9 @@ impl<'a> Tile<'a> {
         Self::write_to(&mut f, &self.mvt_tile);
     }
 }
+
+
+#[cfg(test)] use core::feature::{FeatureStruct,FeatureAttr};
 
 #[test]
 fn test_tile_values() {

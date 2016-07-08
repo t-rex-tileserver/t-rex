@@ -54,8 +54,8 @@ impl GeometryType {
 
 #[test]
 fn test_geom_creation() {
-    let g1 : GeometryType = GeometryType::Point(postgis::Point::<EPSG_3857>::new(960000.0, 6002729.0));
-    let g2 : GeometryType = GeometryType::Point(Point::new(960000.0, 6002729.0));
+    let _ : GeometryType = GeometryType::Point(postgis::Point::<EPSG_3857>::new(960000.0, 6002729.0));
+    let _ : GeometryType = GeometryType::Point(Point::new(960000.0, 6002729.0));
     let g3 = GeometryType::new_point(960000.0, 6002729.0);
     let p = match g3 { GeometryType::Point(p) => p, _ => panic!() };
     assert_eq!(p.x, 960000.0);

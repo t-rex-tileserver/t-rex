@@ -9,7 +9,7 @@ pub mod filecache;
 pub use self::cache::Cache;
 pub use self::cache::Nocache;
 pub use self::filecache::Filecache;
-use std::io::{Read,Write};
+use std::io::Read;
 use std::io;
 use core::Config;
 use toml;

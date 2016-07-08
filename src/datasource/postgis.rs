@@ -13,7 +13,7 @@ use std;
 use core::feature::{Feature,FeatureAttr,FeatureAttrValType};
 use core::geom::*;
 use core::grid::Extent;
-use core::layer::{Layer,LayerQuery};
+use core::layer::Layer;
 use core::Config;
 use toml;
 
@@ -242,6 +242,7 @@ url = "{}"
 
 #[cfg(test)] use std::io::{self,Write};
 #[cfg(test)] use std::env;
+#[cfg(test)] use core::layer::LayerQuery;
 
 #[test]
 pub fn test_from_geom_fields() {
