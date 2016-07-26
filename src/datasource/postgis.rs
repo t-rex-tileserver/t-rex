@@ -13,6 +13,7 @@ use std;
 use core::feature::{Feature,FeatureAttr,FeatureAttrValType};
 use core::geom::*;
 use core::grid::Extent;
+use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
 use toml;
@@ -125,15 +126,20 @@ impl<'a> SqlQuery<'a> {
     }
     /// Replace variables (!bbox!, !zoom!, etc.) in query
     fn replace_params(&mut self) {
-        self.params = vec!["bbox"];
-        self.sql = self.sql.replace("!bbox!", "ST_MakeEnvelope($1,$2,$3,$4,3857)");
-        if self.sql.contains("!zoom!") {
-            self.params.push("zoom");
-            self.sql = self.sql.replace("!zoom!", &format!("${}", self.params.len()+3));
+        let mut numvars = 0;
+        if self.sql.contains("!bbox!") {
+            self.params.push("bbox");
+            numvars += 4;
+            self.sql = self.sql.replace("!bbox!", "ST_MakeEnvelope($1,$2,$3,$4,3857)");
         }
-        if self.sql.contains("!pixel_width!") {
-            self.params.push("pixel_width");
-            self.sql = self.sql.replace("!pixel_width!", &format!("${}", self.params.len()+3));
+        // replace e.g. !zoom! with $5
+        for var in vec!["zoom", "pixel_width", "scale_denominator"] {
+            let sqlvar = format!("!{}!", var);
+            if self.sql.contains(&sqlvar) {
+                self.params.push(var);
+                numvars += 1;
+                self.sql = self.sql.replace(&sqlvar, &format!("${}", numvars));
+            }
         }
     }
     fn valid_sql_for_params(sql: &String) -> String {
@@ -141,6 +147,7 @@ impl<'a> SqlQuery<'a> {
         query = sql.replace("!bbox!", "ST_MakeEnvelope(0,0,0,0,3857)");
         query = query.replace("!zoom!", "0");
         query = query.replace("!pixel_width!", "0");
+        query = query.replace("!scale_denominator!", "0");
         query
     }
 }
@@ -207,7 +214,7 @@ impl PostgisInput {
 }
 
 impl DatasourceInput for PostgisInput {
-    fn retrieve_features<F>(&self, layer: &Layer, extent: &Extent, zoom: u8, mut read: F)
+    fn retrieve_features<F>(&self, layer: &Layer, extent: &Extent, zoom: u8, grid: &Grid, mut read: F)
         where F : FnMut(&Feature) {
         let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
         let query = self.query(&layer, zoom);
@@ -215,10 +222,21 @@ impl DatasourceInput for PostgisInput {
         let query = query.unwrap();
         let stmt = conn.prepare(&query.sql).unwrap();
 
+        // Add query params
         let zoom_param = zoom as i16;
+        let pixel_width;
+        let scale_denominator;
         let mut params: Vec<&ToSql> = vec![&extent.minx, &extent.miny, &extent.maxx, &extent.maxy];
         if query.has_param("zoom") {
             params.push(&zoom_param);
+        }
+        if query.has_param("pixel_width") {
+            pixel_width = grid.pixel_width(zoom);
+            params.push(&pixel_width);
+        }
+        if query.has_param("scale_denominator") {
+            scale_denominator = grid.scale_denominator(zoom);
+            params.push(&scale_denominator);
         }
 
         for row in &stmt.query(&params.as_slice()).unwrap() {
@@ -303,7 +321,7 @@ pub fn test_detect_layers() {
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
     let layers = pg.detect_layers();
-    assert_eq!(layers[0].name, "ne_10m_populated_places");
+    assert_eq!(layers[0].name, "rivers_lake_centerlines");
 }
 
 #[test]
@@ -313,8 +331,9 @@ pub fn test_detect_columns() {
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
     let layers = pg.detect_layers();
+    assert_eq!(layers[0].name, "rivers_lake_centerlines");
     let cols = pg.detect_columns(&layers[0], 0);
-    assert_eq!(cols, vec!["fid", "scalerank", "name", "pop_max"]);
+    assert_eq!(cols, vec!["fid", "scalerank", "name"]);
 }
 
 #[test]
@@ -387,10 +406,11 @@ pub fn test_retrieve_features() {
     layer.table_name = Some(String::from("ne_10m_populated_places"));
     layer.geometry_field = Some(String::from("wkb_geometry"));
     layer.geometry_type = Some(String::from("POINT"));
+    let grid = Grid::web_mercator();
     let extent = Extent { minx: 821850.9, miny: 5909499.5, maxx: 860986.7, maxy: 5948635.3 };
 
     let mut reccnt = 0;
-    pg.retrieve_features(&layer, &extent, 10, |feat| {
+    pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
         assert_eq!("Point(SRID=3857;POINT(831219.9062494118 5928485.165733484))", &*format!("{:?}", feat.geometry()));
         assert_eq!(0, feat.attributes().len());
         assert_eq!(None, feat.fid());
@@ -401,7 +421,7 @@ pub fn test_retrieve_features() {
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT * FROM ne_10m_populated_places"))}];
     layer.fid_field = Some(String::from("fid"));
-    pg.retrieve_features(&layer, &extent, 10, |feat| {
+    pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
         assert_eq!("Point(SRID=3857;POINT(831219.9062494118 5928485.165733484))", &*format!("{:?}", feat.geometry()));
         assert_eq!(feat.attributes()[0].key, "fid");
         //assert_eq!(feat.attributes()[1].key, "scalerank"); //Numeric

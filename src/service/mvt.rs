@@ -119,7 +119,7 @@ impl MvtService {
         let mut tile = Tile::new(&extent, 4096, true);
         for layer in self.get_tileset(tileset) {
             let mut mvt_layer = tile.new_layer(layer);
-            self.input.retrieve_features(&layer, &extent, zoom, |feat| {
+            self.input.retrieve_features(&layer, &extent, zoom, &self.grid, |feat| {
                 tile.add_feature(&mut mvt_layer, feat);
             });
             tile.add_layer(mvt_layer);

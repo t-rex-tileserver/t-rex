@@ -96,6 +96,13 @@ impl Grid {
         }
     }
 
+    pub fn pixel_width(&self, zoom: u8) -> f64 {
+        self.resolutions[zoom as usize]  //TODO: assumes grid unit 'm'
+    }
+    pub fn scale_denominator(&self, zoom: u8) -> f64 {
+        let pixel_screen_width = 0.0254 / 96.0; //FIXME: assumes 96dpi - check with mapnik
+        self.pixel_width(zoom) / pixel_screen_width
+    }
     /// Extent of a given tile in the grid given its x, y, and z
     pub fn tile_extent(&self, xtile: u16, ytile: u16, zoom: u8) -> Extent {
         let res = self.resolutions[zoom as usize];
@@ -166,6 +173,12 @@ fn test_bbox() {
     assert_eq!(wgs84extent000, Extent { minx: -180.0, miny: -90.0, maxx: 0.0, maxy: 90.0 });
 }
 
+#[test]
+fn test_grid_calculations() {
+    let grid = Grid::web_mercator();
+    assert_eq!(grid.pixel_width(10), 152.8740565703525);
+    assert_eq!(grid.scale_denominator(10), 577791.7098721985);
+}
 
 #[test]
 fn test_grid_from_config() {
