@@ -119,6 +119,32 @@ struct SqlQuery<'a> {
     params: Vec<&'a str>,
 }
 
+impl<'a> SqlQuery<'a> {
+    fn has_param(&self, name: &str) -> bool {
+       self.params.contains(&name)
+    }
+    /// Replace variables (!bbox!, !zoom!, etc.) in query
+    fn replace_params(&mut self) {
+        self.params = vec!["bbox"];
+        self.sql = self.sql.replace("!bbox!", "ST_MakeEnvelope($1,$2,$3,$4,3857)");
+        if self.sql.contains("!zoom!") {
+            self.params.push("zoom");
+            self.sql = self.sql.replace("!zoom!", &format!("${}", self.params.len()+3));
+        }
+        if self.sql.contains("!pixel_width!") {
+            self.params.push("pixel_width");
+            self.sql = self.sql.replace("!pixel_width!", &format!("${}", self.params.len()+3));
+        }
+    }
+    fn valid_sql_for_params(sql: &String) -> String {
+        let mut query: String;
+        query = sql.replace("!bbox!", "ST_MakeEnvelope(0,0,0,0,3857)");
+        query = query.replace("!zoom!", "0");
+        query = query.replace("!pixel_width!", "0");
+        query
+    }
+}
+
 impl PostgisInput {
     pub fn detect_layers(&self) -> Vec<Layer> {
         let mut layers: Vec<Layer> = Vec::new();
@@ -148,9 +174,7 @@ impl PostgisInput {
             None => format!("SELECT * FROM {}",
                 layer.table_name.as_ref().unwrap_or(&layer.name))
         };
-        query = query.replace("!bbox!", "ST_MakeEnvelope(0,0,0,0,3857)");
-        query = query.replace("!zoom!", "0");
-        query = query.replace("!pixel_width!", "0");
+        query = SqlQuery::valid_sql_for_params(&query);
         let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
         let stmt = conn.prepare(&query).unwrap();
         let cols: Vec<String> = stmt.columns().iter().map(|col| col.name().to_string() ).collect();
@@ -176,19 +200,9 @@ impl PostgisInput {
             sql.push_str(&format!(" LIMIT {}", n));
         }
 
-        //Replace variables: !bbox!, !zoom!, !pixel_width!
-        let mut params = vec!["bbox"];
-        sql = sql.replace("!bbox!", "ST_MakeEnvelope($1,$2,$3,$4,3857)");
-        if sql.contains("!zoom!") {
-            params.push("zoom");
-            sql = sql.replace("!zoom!", &format!("${}", params.len()+3));
-        }
-        if sql.contains("!pixel_width!") {
-            params.push("pixel_width");
-            sql = sql.replace("!pixel_width!", &format!("${}", params.len()+3));
-        }
-
-        Some(SqlQuery { sql: sql, params: params })
+        let mut query = SqlQuery { sql: sql, params: Vec::new() };
+        query.replace_params();
+        Some(query)
     }
 }
 
@@ -203,7 +217,7 @@ impl DatasourceInput for PostgisInput {
 
         let zoom_param = zoom as i16;
         let mut params: Vec<&ToSql> = vec![&extent.minx, &extent.miny, &extent.maxx, &extent.maxy];
-        if query.params.contains(&"zoom") {
+        if query.has_param("zoom") {
             params.push(&zoom_param);
         }
 
