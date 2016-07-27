@@ -153,7 +153,8 @@ impl<'a> SqlQuery<'a> {
 }
 
 impl PostgisInput {
-    pub fn detect_layers(&self) -> Vec<Layer> {
+    pub fn detect_layers(&self, detect_geometry_types: bool) -> Vec<Layer> {
+        info!("Detecting layers from geometry_columns");
         let mut layers: Vec<Layer> = Vec::new();
         let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
         let stmt = conn.prepare("SELECT * FROM geometry_columns ORDER BY f_table_schema,f_table_name DESC").unwrap();
@@ -170,10 +171,44 @@ impl PostgisInput {
                 Some(table_name.clone())
             };
             layer.geometry_field = Some(geometry_column.clone());
-            layer.geometry_type = Some(geomtype.clone());
+            layer.geometry_type = match &geomtype as &str {
+                "GEOMETRY" => {
+                    if detect_geometry_types {
+                        let field = layer.geometry_field.as_ref().unwrap();
+                        let table = layer.table_name.as_ref().unwrap();
+                        let types = self.detect_geometry_types(&layer);
+                        if types.len() == 1 {
+                            debug!("Detected unique geometry type in field '{}' of table '{}': {}", field, table, &types[0]);
+                            Some(types[0].clone())
+                        } else {
+                            let type_list = types.join(", ");
+                            info!("Multiple geometry types in field '{}' of table '{}': {}", field, table, type_list);
+                            Some("GEOMETRY".to_string())
+                        }
+                    } else {
+                        Some("GEOMETRY".to_string())
+                    }
+                }
+                _ => Some(geomtype.clone())
+            };
             layers.push(layer);
         }
         layers
+    }
+    pub fn detect_geometry_types(&self, layer: &Layer) -> Vec<String> {
+        let field = layer.geometry_field.as_ref().unwrap();
+        let table = layer.table_name.as_ref().unwrap();
+        debug!("Detecting geometry types for field '{}' in table '{}'", field, table);
+
+        let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
+        let sql = format!("SELECT DISTINCT GeometryType({}) AS geomtype FROM {}", field, table);
+        let stmt = conn.prepare(&sql).unwrap();
+
+        let mut types: Vec<String> = Vec::new();
+        for row in &stmt.query(&[]).unwrap() {
+            types.push(row.get("geomtype"));
+        }
+        types
     }
     pub fn detect_columns(&self, layer: &Layer, zoom: u8) -> Vec<String> {
         let mut query = match layer.query(zoom).as_ref() {
@@ -320,7 +355,7 @@ pub fn test_detect_layers() {
         Result::Ok(val) => Some(PostgisInput {connection_url: val}),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
-    let layers = pg.detect_layers();
+    let layers = pg.detect_layers(false);
     assert_eq!(layers[0].name, "rivers_lake_centerlines");
 }
 
@@ -330,7 +365,7 @@ pub fn test_detect_columns() {
         Result::Ok(val) => Some(PostgisInput {connection_url: val}),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
-    let layers = pg.detect_layers();
+    let layers = pg.detect_layers(false);
     assert_eq!(layers[0].name, "rivers_lake_centerlines");
     let cols = pg.detect_columns(&layers[0], 0);
     assert_eq!(cols, vec!["fid", "scalerank", "name"]);

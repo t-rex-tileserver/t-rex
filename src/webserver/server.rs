@@ -124,7 +124,8 @@ fn service_from_args(args: &ArgMatches) -> MvtService {
         if let Some(dbconn) = args.value_of("dbconn") {
             let pg = PostgisInput { connection_url: dbconn.to_string() };
             let grid = Grid::web_mercator();
-            let mut layers = pg.detect_layers();
+            let detect_geometry_types = true; //TODO: add option (maybe slow for many geometries)
+            let mut layers = pg.detect_layers(detect_geometry_types);
             let mut tilesets = Vec::new();
             while let Some(l) = layers.pop() {
                 let tileset = Tileset{name: l.name.clone(), layers: vec![l]};
