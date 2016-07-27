@@ -6,16 +6,16 @@
   <body>
   <h1>T-Rex Vector Tile viewer</h1>
   <ul>
-  {{#layer}}
+  {{#tileset}}
     <li>
-    {{#hasviewer}}<b>{{/hasviewer}}{{name}}{{#hasviewer}}</b>{{/hasviewer}} ({{geomtype}})
+    <b>{{name}}</b> ({{layerinfos}})
     {{#hasviewer}}
     | <a href="/{{name}}/">OpenLayers</a>
     | <a href="/xray.html#/{{name}}.json">X-Ray</a>
     | <a href="/tile-inspector.html#/{{name}}.json">Inspector</a>
     {{/hasviewer}}
     </li>
-  {{/layer}}
+  {{/tileset}}
   </ul>
   </body>
 </html>

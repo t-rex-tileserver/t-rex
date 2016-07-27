@@ -54,23 +54,25 @@ impl<D> Responder<D> for vector_tile::Tile {
 }
 
 #[derive(RustcEncodable)]
-struct LayerInfo {
+struct TilesetInfo {
     name: String,
-    geomtype: String,
+    layerinfos: String,
     hasviewer: bool,
 }
 
-impl LayerInfo {
-    fn from_tileset(set: &Tileset) -> LayerInfo {
-        let layers: Vec<String> = set.layers.iter().map(|l| l.name.clone()).collect();
-        LayerInfo {
+impl TilesetInfo {
+    fn from_tileset(set: &Tileset) -> TilesetInfo {
+        let mut hasviewer = true;
+        let layerinfos: Vec<String> = set.layers.iter().map(|l| {
+                let geom_type = l.geometry_type.clone().unwrap_or("UNKNOWN".to_string());
+                hasviewer = hasviewer && ["POINT","LINESTRING","POLYGON"].contains(&(&geom_type as &str));
+                format!("{} [{}]", &l.name, &geom_type)
+            }).collect();
+        TilesetInfo {
             name: set.name.clone(),
-            geomtype: format!("{}", layers.join(", ")),
-            hasviewer: true
-/*            geomtype: l.geometry_type.as_ref().unwrap().clone(),
-            hasviewer: (["POINT","LINESTRING","POLYGON"].contains(
-                &(l.geometry_type.as_ref().unwrap() as &str)))
-*/        }
+            layerinfos: format!("{}", layerinfos.join(", ")),
+            hasviewer: hasviewer
+        }
     }
 }
 
@@ -143,19 +145,19 @@ fn service_from_args(args: &ArgMatches) -> MvtService {
 pub fn webserver(args: &ArgMatches) {
     let service = service_from_args(args);
 
-    let mut layers_display: Vec<LayerInfo> = service.tilesets.iter().map(|set| {
-        LayerInfo::from_tileset(&set)
+    let mut tileset_infos: Vec<TilesetInfo> = service.tilesets.iter().map(|set| {
+        TilesetInfo::from_tileset(&set)
     }).collect();
-    layers_display.sort_by_key(|li| li.name.clone());
+    tileset_infos.sort_by_key(|ti| ti.name.clone());
 
     if let Tilecache::Filecache(ref fc) = service.cache {
         info!("Tile cache directory: {}", fc.basepath);
-        // Write metadata.json for each layerset
-        for layer in &layers_display {
-            let path = Path::new(&fc.basepath).join(&layer.name);
+        // Write metadata.json for each tileset
+        for tileset in &tileset_infos {
+            let path = Path::new(&fc.basepath).join(&tileset.name);
             fs::create_dir_all(&path).unwrap();
             let mut f = File::create(&path.join("metadata.json")).unwrap();
-            let _ = f.write_all(service.get_metadata(&layer.name).as_bytes());
+            let _ = f.write_all(service.get_metadata(&tileset.name).as_bytes());
         }
     }
 
@@ -224,7 +226,7 @@ pub fn webserver(args: &ArgMatches) {
     let tpl_index = InlineTemplate::new(str::from_utf8(include_bytes!("templates/index.tpl")).unwrap());
     server.get("/", middleware! { |_req, res|
         let mut data = HashMap::new();
-        data.insert("layer", &layers_display);
+        data.insert("tileset", &tileset_infos);
         return tpl_index.render(res, &data);
     });
     server.listen("127.0.0.1:6767");
