@@ -20,9 +20,6 @@ use hyper::header;
 use std::collections::HashMap;
 use clap::ArgMatches;
 use std::str;
-use std::path::Path;
-use std::fs::{self,File};
-use std::io::Write;
 use std::process;
 
 
@@ -144,22 +141,12 @@ fn service_from_args(args: &ArgMatches) -> MvtService {
 
 pub fn webserver(args: &ArgMatches) {
     let service = service_from_args(args);
+    service.init_cache();
 
     let mut tileset_infos: Vec<TilesetInfo> = service.tilesets.iter().map(|set| {
         TilesetInfo::from_tileset(&set)
     }).collect();
     tileset_infos.sort_by_key(|ti| ti.name.clone());
-
-    if let Tilecache::Filecache(ref fc) = service.cache {
-        info!("Tile cache directory: {}", fc.basepath);
-        // Write metadata.json for each tileset
-        for tileset in &tileset_infos {
-            let path = Path::new(&fc.basepath).join(&tileset.name);
-            fs::create_dir_all(&path).unwrap();
-            let mut f = File::create(&path.join("metadata.json")).unwrap();
-            let _ = f.write_all(service.get_metadata(&tileset.name).as_bytes());
-        }
-    }
 
     let mut server = Nickel::with_data(service);
     server.options = Options::default()

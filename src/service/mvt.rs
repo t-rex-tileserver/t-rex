@@ -11,6 +11,9 @@ use core::Config;
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use cache::{Cache,Tilecache};
+use std::path::Path;
+use std::fs::{self,File};
+use std::io::Write;
 use toml;
 use rustc_serialize::json::{Json, ToJson};
 
@@ -149,6 +152,18 @@ impl MvtService {
 
         //TODO: return unzipped if gzip == false
         tilegz
+    }
+    pub fn init_cache(&self) {
+        if let Tilecache::Filecache(ref fc) = self.cache {
+            info!("Tile cache directory: {}", fc.basepath);
+            // Write metadata.json for each tileset
+            for tileset in &self.tilesets {
+                let path = Path::new(&fc.basepath).join(&tileset.name);
+                fs::create_dir_all(&path).unwrap();
+                let mut f = File::create(&path.join("metadata.json")).unwrap();
+                let _ = f.write_all(self.get_metadata(&tileset.name).as_bytes());
+            }
+        }
     }
 }
 
