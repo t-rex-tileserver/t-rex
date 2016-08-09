@@ -125,6 +125,7 @@ impl<'a> SqlQuery<'a> {
        self.params.contains(&name)
     }
     /// Replace variables (!bbox!, !zoom!, etc.) in query
+    // https://github.com/mapnik/mapnik/wiki/PostGIS
     fn replace_params(&mut self) {
         let mut numvars = 0;
         if self.sql.contains("!bbox!") {
@@ -270,10 +271,14 @@ impl DatasourceInput for PostgisInput {
             params.push(&pixel_width);
         }
         if query.has_param("scale_denominator") {
+            //NOTE: function z() in osm2vectortiles takes numeric argument, which is not supported by rust postgresql
             scale_denominator = grid.scale_denominator(zoom);
             params.push(&scale_denominator);
         }
 
+        debug!("query: {}", query.sql); //TODO: always log SQL when query execution fails
+        debug!("query params: {:?}", query.params);
+        debug!("params: {:?}", params);
         for row in &stmt.query(&params.as_slice()).unwrap() {
             let feature = FeatureRow { layer: layer, row: &row };
             read(&feature)

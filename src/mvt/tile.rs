@@ -197,8 +197,11 @@ impl<'a> Tile<'a> {
             match attr.value {
                 FeatureAttrValType::String(ref v) => { mvt_value.set_string_value(v.clone()); }
                 FeatureAttrValType::Double(v) => { mvt_value.set_double_value(v); }
+                FeatureAttrValType::Float(v) => { mvt_value.set_float_value(v); }
                 FeatureAttrValType::Int(v) => { mvt_value.set_int_value(v); }
-                _ => { panic!("Feature attribute type not implemented yet") }
+                FeatureAttrValType::UInt(v) => { mvt_value.set_uint_value(v); }
+                FeatureAttrValType::SInt(v) => { mvt_value.set_sint_value(v); }
+                FeatureAttrValType::Bool(v) => { mvt_value.set_bool_value(v); }
             }
             Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
                 attr.key.clone(), mvt_value);
