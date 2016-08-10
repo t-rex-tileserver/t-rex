@@ -97,23 +97,37 @@ impl<'a> Feature for FeatureRow<'a> {
         for (i,col) in self.row.columns().into_iter().enumerate() {
             if col.name() != self.layer.geometry_field.as_ref().unwrap_or(&"".to_string()) {
                 let val = self.row.get_opt::<_, FeatureAttrValType>(i);
-                if let Some(Ok(v)) = val {
-                    let fattr = FeatureAttr {
-                        key: col.name().to_string(),
-                        value: v
-                    };
-                    attrs.push(fattr);
+                match val {
+                    Some(Ok(v)) => {
+                        let fattr = FeatureAttr {
+                            key: col.name().to_string(),
+                            value: v
+                        };
+                        attrs.push(fattr);
+                    }
+                    Some(Err(err)) => {
+                        warn!("Layer '{}' - skipping field '{}': {}", self.layer.name, col.name(), err);
+                        //warn!("{:?}", self.row);
+                    }
+                    None => {
+                        error!("Layer '{}': Column '{}' not found", self.layer.name, self.layer.name);
+                    }
                 }
             }
         }
         attrs
     }
     fn geometry(&self) -> Result<GeometryType, String> {
-        GeometryType::from_geom_field(
+        let geom = GeometryType::from_geom_field(
             &self.row,
             &self.layer.geometry_field.as_ref().unwrap(),
             &self.layer.geometry_type.as_ref().unwrap()
-        )
+        );
+        if let Err(ref err) = geom {
+            error!("Layer '{}': {}", self.layer.name, err);
+            error!("{:?}", self.row);
+        }
+        geom
     }
 }
 
@@ -264,7 +278,7 @@ impl DatasourceInput for PostgisInput {
         let query = query.unwrap();
         let stmt = conn.prepare(&query.sql);
         if let Err(err) = stmt {
-            error!("Layer {}: {}", layer.name, err);
+            error!("Layer '{}': {}", layer.name, err);
             error!("Query: {}", query.sql);
             return;
         };
@@ -290,7 +304,7 @@ impl DatasourceInput for PostgisInput {
         let stmt = stmt.unwrap();
         let rows = stmt.query(&params.as_slice());
         if let Err(err) = rows {
-            error!("Layer {}: {}", layer.name, err);
+            error!("Layer '{}': {}", layer.name, err);
             error!("Query: {}", query.sql);
             error!("Param types: {:?}", query.params);
             error!("Param values: {:?}", params);
