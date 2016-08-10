@@ -110,7 +110,7 @@ impl<'a> Feature for FeatureRow<'a> {
                         //warn!("{:?}", self.row);
                     }
                     None => {
-                        error!("Layer '{}': Column '{}' not found", self.layer.name, self.layer.name);
+                        error!("Layer '{}': Column '{}' not found", self.layer.name, col.name());
                     }
                 }
             }
