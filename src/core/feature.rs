@@ -20,7 +20,7 @@ pub enum FeatureAttrValType {
 pub trait Feature {
     fn fid(&self) -> Option<u64>;
     fn attributes(&self) -> Vec<FeatureAttr>; //TODO: return tuples
-    fn geometry(&self) -> GeometryType;
+    fn geometry(&self) -> Result<GeometryType, String>;
 }
 
 #[derive(Clone,Debug)]
@@ -40,5 +40,5 @@ pub struct FeatureStruct {
 impl Feature for FeatureStruct {
     fn fid(&self) -> Option<u64> { self.fid }
     fn attributes(&self) -> Vec<FeatureAttr> { self.attributes.clone() }
-    fn geometry(&self) -> GeometryType { self.geometry.clone() }
+    fn geometry(&self) -> Result<GeometryType, String> { Ok(self.geometry.clone()) }
 }

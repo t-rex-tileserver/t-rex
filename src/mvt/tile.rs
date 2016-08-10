@@ -206,10 +206,14 @@ impl<'a> Tile<'a> {
             Tile::add_feature_attribute(&mut mvt_layer, &mut mvt_feature,
                 attr.key.clone(), mvt_value);
         }
-        let geom = feature.geometry();
-        mvt_feature.set_field_type(geom.mvt_field_type());
-        mvt_feature.set_geometry(self.encode_geom(geom).vec());
-        mvt_layer.mut_features().push(mvt_feature);
+        match feature.geometry() {
+            Ok(geom) => {
+                mvt_feature.set_field_type(geom.mvt_field_type());
+                mvt_feature.set_geometry(self.encode_geom(geom).vec());
+                mvt_layer.mut_features().push(mvt_feature);
+            },
+            Err(err) => error!("Layer {}: {}", mvt_layer.get_name(), err)
+        }
     }
 
     pub fn add_layer(&mut self, mvt_layer: vector_tile::Tile_Layer) {

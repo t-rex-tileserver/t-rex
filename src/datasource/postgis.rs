@@ -20,17 +20,23 @@ use toml;
 
 
 impl GeometryType {
-    fn from_geom_field(row: &Row, idx: &str, type_name: &str) -> GeometryType {
-        match type_name {
-            "POINT"              => GeometryType::Point(row.get::<_, Point>(idx)),
-            "LINESTRING"         => GeometryType::LineString(row.get::<_, LineString>(idx)),
-            "POLYGON"            => GeometryType::Polygon(row.get::<_, Polygon>(idx)),
-            "MULTIPOINT"         => GeometryType::MultiPoint(row.get::<_, MultiPoint>(idx)),
-            "MULTILINESTRING"    => GeometryType::MultiLineString(row.get::<_, MultiLineString>(idx)),
-            "MULTIPOLYGON"       => GeometryType::MultiPolygon(row.get::<_, MultiPolygon>(idx)),
-            "GEOMETRYCOLLECTION" => GeometryType::GeometryCollection(row.get::<_, GeometryCollection>(idx)),
-            _                    => panic!("Unknown geometry type")
-        }
+    fn from_geom_field(row: &Row, idx: &str, type_name: &str) -> Result<GeometryType, String> {
+        let field = match type_name {
+            //Option<Result<T>> --> Option<Result<GeometryType>>
+            "POINT"              => row.get_opt::<_, Point>(idx).map(|opt| opt.map(|f| GeometryType::Point(f))),
+            "LINESTRING"         => row.get_opt::<_, LineString>(idx).map(|opt| opt.map(|f| GeometryType::LineString(f))),
+            "POLYGON"            => row.get_opt::<_, Polygon>(idx).map(|opt| opt.map(|f| GeometryType::Polygon(f))),
+            "MULTIPOINT"         => row.get_opt::<_, MultiPoint>(idx).map(|opt| opt.map(|f| GeometryType::MultiPoint(f))),
+            "MULTILINESTRING"    => row.get_opt::<_, MultiLineString>(idx).map(|opt| opt.map(|f| GeometryType::MultiLineString(f))),
+            "MULTIPOLYGON"       => row.get_opt::<_, MultiPolygon>(idx).map(|opt| opt.map(|f| GeometryType::MultiPolygon(f))),
+            "GEOMETRYCOLLECTION" => row.get_opt::<_, GeometryCollection>(idx).map(|opt| opt.map(|f| GeometryType::GeometryCollection(f))),
+            _                    => {
+                let err: Box<std::error::Error + Sync + Send> = format!("Unknown geometry type {}", type_name).into();
+                Some(Err(postgres::error::Error::Conversion(err)))
+            }
+        };
+        // Option<Result<GeometryType, _>> --> Result<GeometryType, String>
+        field.map_or_else(|| Err("Column not found".to_string()), |res| res.map_err(|err| format!("{}", err)))
     }
 }
 
@@ -102,7 +108,7 @@ impl<'a> Feature for FeatureRow<'a> {
         }
         attrs
     }
-    fn geometry(&self) -> GeometryType {
+    fn geometry(&self) -> Result<GeometryType, String> {
         GeometryType::from_geom_field(
             &self.row,
             &self.layer.geometry_field.as_ref().unwrap(),
@@ -276,12 +282,17 @@ impl DatasourceInput for PostgisInput {
             params.push(&scale_denominator);
         }
 
-        debug!("query: {}", query.sql); //TODO: always log SQL when query execution fails
-        debug!("query params: {:?}", query.params);
-        debug!("params: {:?}", params);
-        for row in &stmt.query(&params.as_slice()).unwrap() {
-            let feature = FeatureRow { layer: layer, row: &row };
-            read(&feature)
+        let rows = stmt.query(&params.as_slice());
+        if let Err(err) = rows {
+            error!("Layer {}: {}", layer.name, err);
+            error!("Query: {}", query.sql);
+            error!("Param types: {:?}", query.params);
+            error!("Param values: {:?}", params);
+        } else {
+            for row in &rows.unwrap() {
+                let feature = FeatureRow { layer: layer, row: &row };
+                read(&feature)
+            }
         }
     }
 }
