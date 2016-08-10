@@ -262,7 +262,12 @@ impl DatasourceInput for PostgisInput {
         let query = self.query(&layer, zoom);
         if query.is_none() { return }
         let query = query.unwrap();
-        let stmt = conn.prepare(&query.sql).unwrap();
+        let stmt = conn.prepare(&query.sql);
+        if let Err(err) = stmt {
+            error!("Layer {}: {}", layer.name, err);
+            error!("Query: {}", query.sql);
+            return;
+        };
 
         // Add query params
         let zoom_param = zoom as i16;
@@ -282,17 +287,18 @@ impl DatasourceInput for PostgisInput {
             params.push(&scale_denominator);
         }
 
+        let stmt = stmt.unwrap();
         let rows = stmt.query(&params.as_slice());
         if let Err(err) = rows {
             error!("Layer {}: {}", layer.name, err);
             error!("Query: {}", query.sql);
             error!("Param types: {:?}", query.params);
             error!("Param values: {:?}", params);
-        } else {
-            for row in &rows.unwrap() {
-                let feature = FeatureRow { layer: layer, row: &row };
-                read(&feature)
-            }
+            return;
+        };
+        for row in &rows.unwrap() {
+            let feature = FeatureRow { layer: layer, row: &row };
+            read(&feature)
         }
     }
 }
