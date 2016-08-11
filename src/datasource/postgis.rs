@@ -360,14 +360,14 @@ pub fn test_from_geom_fields() {
             "SRID=3857;POINT(-6438719.622820721 -4093437.7144101723)");
         let geom = GeometryType::from_geom_field(&row, "wkb_geometry", "POINT");
         assert_eq!(&*format!("{:?}", geom),
-            "Point(SRID=3857;POINT(-6438719.622820721 -4093437.7144101723))");
+            "Ok(Point(SRID=3857;POINT(-6438719.622820721 -4093437.7144101723)))");
     }
 
     let stmt = conn.prepare("SELECT wkb_geometry FROM rivers_lake_centerlines WHERE ST_NPoints(wkb_geometry)<10 LIMIT 1").unwrap();
     for row in &stmt.query(&[]).unwrap() {
         let geom = GeometryType::from_geom_field(&row, "wkb_geometry", "LINESTRING");
         assert_eq!(&*format!("{:?}", geom),
-            "LineString(LineString { points: [SRID=3857;POINT(18672061.098933436 -5690573.725394946), SRID=3857;POINT(18671798.382036217 -5692123.11701991), SRID=3857;POINT(18671707.790002696 -5693530.713572942), SRID=3857;POINT(18671789.322832868 -5694822.281317252), SRID=3857;POINT(18672061.098933436 -5695997.770001522), SRID=3857;POINT(18670620.68560042 -5698245.837796968), SRID=3857;POINT(18668283.41113552 -5700403.997584983), SRID=3857;POINT(18666082.024720907 -5701179.511527114), SRID=3857;POINT(18665148.926775623 -5699253.775757339)] })");
+            "Ok(LineString(LineString { points: [SRID=3857;POINT(18672061.098933436 -5690573.725394946), SRID=3857;POINT(18671798.382036217 -5692123.11701991), SRID=3857;POINT(18671707.790002696 -5693530.713572942), SRID=3857;POINT(18671789.322832868 -5694822.281317252), SRID=3857;POINT(18672061.098933436 -5695997.770001522), SRID=3857;POINT(18670620.68560042 -5698245.837796968), SRID=3857;POINT(18668283.41113552 -5700403.997584983), SRID=3857;POINT(18666082.024720907 -5701179.511527114), SRID=3857;POINT(18665148.926775623 -5699253.775757339)] }))");
     }
     /* row.get panics for multi-geometries: https://github.com/andelf/rust-postgis/issues/6
     let stmt = conn.prepare("SELECT wkb_geometry FROM ne_10m_rivers_lake_centerlines WHERE ST_NPoints(wkb_geometry)<10 LIMIT 1").unwrap();
@@ -482,7 +482,7 @@ pub fn test_retrieve_features() {
 
     let mut reccnt = 0;
     pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
-        assert_eq!("Point(SRID=3857;POINT(831219.9062494118 5928485.165733484))", &*format!("{:?}", feat.geometry()));
+        assert_eq!("Ok(Point(SRID=3857;POINT(831219.9062494118 5928485.165733484)))", &*format!("{:?}", feat.geometry()));
         assert_eq!(0, feat.attributes().len());
         assert_eq!(None, feat.fid());
         reccnt += 1;
@@ -493,7 +493,7 @@ pub fn test_retrieve_features() {
         sql: Some(String::from("SELECT * FROM ne_10m_populated_places"))}];
     layer.fid_field = Some(String::from("fid"));
     pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
-        assert_eq!("Point(SRID=3857;POINT(831219.9062494118 5928485.165733484))", &*format!("{:?}", feat.geometry()));
+        assert_eq!("Ok(Point(SRID=3857;POINT(831219.9062494118 5928485.165733484)))", &*format!("{:?}", feat.geometry()));
         assert_eq!(feat.attributes()[0].key, "fid");
         //assert_eq!(feat.attributes()[1].key, "scalerank"); //Numeric
         assert_eq!(feat.attributes()[1].key, "name");
