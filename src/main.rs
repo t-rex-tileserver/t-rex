@@ -11,6 +11,8 @@ extern crate toml;
 extern crate mustache;
 extern crate rustc_serialize;
 #[macro_use] extern crate hyper;
+extern crate r2d2;
+extern crate r2d2_postgres;
 extern crate postgres;
 extern crate postgis;
 extern crate protobuf;

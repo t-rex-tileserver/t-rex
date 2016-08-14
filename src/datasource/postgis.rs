@@ -4,10 +4,12 @@
 //
 
 use datasource::DatasourceInput;
-use postgres::{Connection, SslMode};
+use postgres::{Connection};
 use postgres::rows::Row;
 use postgres::types::{Type, FromSql, ToSql, SessionInfo};
 use postgres;
+use r2d2;
+use r2d2_postgres::{PostgresConnectionManager, SslMode};
 use std::io::Read;
 use std;
 use core::feature::{Feature,FeatureAttr,FeatureAttrValType};
@@ -132,6 +134,7 @@ impl<'a> Feature for FeatureRow<'a> {
 }
 
 pub struct PostgisInput {
+    conn_pool: r2d2::Pool<PostgresConnectionManager>,
     pub connection_url: String
 }
 
@@ -174,10 +177,19 @@ impl<'a> SqlQuery<'a> {
 }
 
 impl PostgisInput {
+    pub fn new(connection_url: &str) -> PostgisInput {
+        let manager = PostgresConnectionManager::new(connection_url,
+                                                 SslMode::None).unwrap();
+        let pool = r2d2::Pool::new(r2d2::Config::default(), manager).unwrap();
+        PostgisInput { conn_pool: pool, connection_url: connection_url.to_string() }
+    }
+    pub fn conn(&self) -> r2d2::PooledConnection<PostgresConnectionManager> {
+        self.conn_pool.get().unwrap()
+    }
     pub fn detect_layers(&self, detect_geometry_types: bool) -> Vec<Layer> {
         info!("Detecting layers from geometry_columns");
         let mut layers: Vec<Layer> = Vec::new();
-        let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
+        let conn = self.conn();
         let stmt = conn.prepare("SELECT * FROM geometry_columns ORDER BY f_table_schema,f_table_name DESC").unwrap();
         for row in &stmt.query(&[]).unwrap() {
             let schema: String = row.get("f_table_schema");
@@ -221,7 +233,7 @@ impl PostgisInput {
         let table = layer.table_name.as_ref().unwrap();
         debug!("Detecting geometry types for field '{}' in table '{}'", field, table);
 
-        let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
+        let conn = self.conn();
         let sql = format!("SELECT DISTINCT GeometryType({}) AS geomtype FROM {}", field, table);
         let stmt = conn.prepare(&sql).unwrap();
 
@@ -238,7 +250,7 @@ impl PostgisInput {
                 layer.table_name.as_ref().unwrap_or(&layer.name))
         };
         query = SqlQuery::valid_sql_for_params(&query);
-        let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
+        let conn = self.conn();
         let stmt = conn.prepare(&query).unwrap();
         let cols: Vec<String> = stmt.columns().iter().map(|col| col.name().to_string() ).collect();
         let filter_cols = vec![layer.geometry_field.as_ref().unwrap()];
@@ -272,7 +284,7 @@ impl PostgisInput {
 impl DatasourceInput for PostgisInput {
     fn retrieve_features<F>(&self, layer: &Layer, extent: &Extent, zoom: u8, grid: &Grid, mut read: F)
         where F : FnMut(&Feature) {
-        let conn = Connection::connect(&self.connection_url as &str, SslMode::None).unwrap();
+        let conn = self.conn();
         let query = self.query(&layer, zoom);
         if query.is_none() { return }
         let query = query.unwrap();
@@ -322,7 +334,7 @@ impl Config<PostgisInput> for PostgisInput {
         config.lookup("datasource.url")
             .ok_or("Missing configuration entry 'datasource.url'".to_string())
             .and_then(|val| val.as_str().ok_or("url entry is not a string".to_string()))
-            .and_then(|url| Ok(PostgisInput { connection_url: url.to_string() }))
+            .and_then(|url| Ok(PostgisInput::new(url)))
     }
 
     fn gen_config() -> String {
@@ -350,7 +362,7 @@ url = "{}"
 #[test]
 pub fn test_from_geom_fields() {
     let conn: Connection = match env::var("DBCONN") {
-        Result::Ok(val) => Connection::connect(&val as &str, SslMode::None),
+        Result::Ok(val) => Connection::connect(&val as &str, postgres::SslMode::None),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
     let stmt = conn.prepare("SELECT wkb_geometry FROM ne_10m_populated_places LIMIT 1").unwrap();
@@ -388,7 +400,7 @@ pub fn test_from_geom_fields() {
 #[test]
 pub fn test_detect_layers() {
     let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput {connection_url: val}),
+        Result::Ok(val) => Some(PostgisInput::new(&val)),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
     let layers = pg.detect_layers(false);
@@ -398,7 +410,7 @@ pub fn test_detect_layers() {
 #[test]
 pub fn test_detect_columns() {
     let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput {connection_url: val}),
+        Result::Ok(val) => Some(PostgisInput::new(&val)),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
     let layers = pg.detect_layers(false);
@@ -409,7 +421,7 @@ pub fn test_detect_columns() {
 
 #[test]
 pub fn test_feature_query() {
-    let pg = PostgisInput {connection_url: "postgresql://pi@localhost/osm2vectortiles".to_string()};
+    let pg = PostgisInput::new("postgresql://pi@localhost/osm2vectortiles");
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));
@@ -440,7 +452,7 @@ pub fn test_feature_query() {
 
 #[test]
 pub fn test_query_params() {
-    let pg = PostgisInput {connection_url: "postgresql://pi@localhost/osm2vectortiles".to_string()};
+    let pg = PostgisInput::new("postgresql://pi@localhost/osm2vectortiles");
     let mut layer = Layer::new("buildings");
     layer.geometry_field = Some(String::from("way"));
 
@@ -469,7 +481,7 @@ pub fn test_query_params() {
 #[test]
 pub fn test_retrieve_features() {
     let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput {connection_url: val}),
+        Result::Ok(val) => Some(PostgisInput::new(&val)),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
 

@@ -251,7 +251,7 @@ pub fn test_tile_query() {
     use std::env;
 
     let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput {connection_url: val}),
+        Result::Ok(val) => Some(PostgisInput::new(&val)),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
     let grid = Grid::web_mercator();
