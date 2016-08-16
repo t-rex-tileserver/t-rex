@@ -33,6 +33,9 @@ pub struct MvtService {
 }
 
 impl MvtService {
+    pub fn connect(&mut self) {
+        self.input = self.input.connected();
+    }
     fn get_tileset(&self, name: &str) -> Vec<&Layer> {
         let tileset = self.tilesets.iter().find(|t| t.name == name);
         match tileset {
@@ -251,7 +254,7 @@ pub fn test_tile_query() {
     use std::env;
 
     let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput::new(&val)),
+        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
     let grid = Grid::web_mercator();
@@ -347,7 +350,7 @@ mvt = true
 [datasource]
 type = "postgis"
 # Connection specification (https://github.com/sfackler/rust-postgres#connecting)
-url = "postgresql://user:pass@host:port/database"
+url = "postgresql://user:pass@host/database"
 
 [grid]
 # Predefined grids: web_mercator, wgs84

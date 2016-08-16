@@ -134,8 +134,8 @@ impl<'a> Feature for FeatureRow<'a> {
 }
 
 pub struct PostgisInput {
-    conn_pool: r2d2::Pool<PostgresConnectionManager>,
-    pub connection_url: String
+    pub connection_url: String,
+    conn_pool: Option<r2d2::Pool<PostgresConnectionManager>>,
 }
 
 struct SqlQuery<'a> {
@@ -178,13 +178,21 @@ impl<'a> SqlQuery<'a> {
 
 impl PostgisInput {
     pub fn new(connection_url: &str) -> PostgisInput {
-        let manager = PostgresConnectionManager::new(connection_url,
-                                                 SslMode::None).unwrap();
-        let pool = r2d2::Pool::new(r2d2::Config::default(), manager).unwrap();
-        PostgisInput { conn_pool: pool, connection_url: connection_url.to_string() }
+        PostgisInput { connection_url: connection_url.to_string(), conn_pool: None }
+    }
+    pub fn connected(&self) -> PostgisInput {
+        let manager = PostgresConnectionManager::new(
+            self.connection_url.as_ref(), SslMode::None).unwrap();
+        let config = r2d2::Config::builder()
+                .pool_size(10)
+                .build();
+        let pool = r2d2::Pool::new(config, manager).unwrap();
+        PostgisInput { connection_url: self.connection_url.clone(), conn_pool: Some(pool) }
     }
     pub fn conn(&self) -> r2d2::PooledConnection<PostgresConnectionManager> {
-        self.conn_pool.get().unwrap()
+        let pool = self.conn_pool.as_ref().unwrap();
+        //debug!("{:?}", pool);
+        pool.get().unwrap()
     }
     pub fn detect_layers(&self, detect_geometry_types: bool) -> Vec<Layer> {
         info!("Detecting layers from geometry_columns");
@@ -342,7 +350,7 @@ impl Config<PostgisInput> for PostgisInput {
 [datasource]
 type = "postgis"
 # Connection specification (https://github.com/sfackler/rust-postgres#connecting)
-url = "postgresql://user:pass@host:port/database"
+url = "postgresql://user:pass@host/database"
 "#;
         toml.to_string()
     }
@@ -400,7 +408,7 @@ pub fn test_from_geom_fields() {
 #[test]
 pub fn test_detect_layers() {
     let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput::new(&val)),
+        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
     let layers = pg.detect_layers(false);
@@ -410,7 +418,7 @@ pub fn test_detect_layers() {
 #[test]
 pub fn test_detect_columns() {
     let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput::new(&val)),
+        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
     let layers = pg.detect_layers(false);
@@ -481,7 +489,7 @@ pub fn test_query_params() {
 #[test]
 pub fn test_retrieve_features() {
     let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput::new(&val)),
+        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
 

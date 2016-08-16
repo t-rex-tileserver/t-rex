@@ -110,19 +110,21 @@ impl InlineTemplate {
 fn service_from_args(args: &ArgMatches) -> MvtService {
     if let Some(cfgpath) = args.value_of("config") {
         info!("Reading configuration from '{}'", cfgpath);
-        read_config(cfgpath)
+        let mut svc = read_config(cfgpath)
             .and_then(|config| MvtService::from_config(&config))
             .unwrap_or_else(|err| {
                 println!("Error reading configuration - {} ", err);
                 process::exit(1)
-            })
+            });
+        svc.connect();
+        svc
     } else {
         let cache = match args.value_of("cache") {
             None => Tilecache::Nocache(Nocache),
             Some(dir) => Tilecache::Filecache(Filecache { basepath: dir.to_string() })
         };
         if let Some(dbconn) = args.value_of("dbconn") {
-            let pg = PostgisInput::new(dbconn);
+            let pg = PostgisInput::new(dbconn).connected();
             let grid = Grid::web_mercator();
             let detect_geometry_types = true; //TODO: add option (maybe slow for many geometries)
             let mut layers = pg.detect_layers(detect_geometry_types);
@@ -151,7 +153,7 @@ pub fn webserver(args: &ArgMatches) {
 
     let mut server = Nickel::with_data(service);
     server.options = Options::default()
-                     .thread_count(Some(1));
+                     .thread_count(Some(4));
     server.utilize(log_request);
 
     server.get("/:tileset.json", middleware! { |req, mut res|
@@ -250,9 +252,9 @@ fn test_gen_config() {
     println!("{}", toml);
     assert_eq!(Some("# t-rex configuration"), toml.lines().next());
 
-    //let config = parse_config(toml, "").unwrap();
-    //MvtService::from_config fails because of invalid port in postgresql://user:pass@host:port/database
-    //let service = MvtService::from_config(&config).unwrap();
+    let config = parse_config(toml, "").unwrap();
+    let service = MvtService::from_config(&config).unwrap();
+    assert_eq!(service.input.connection_url, "postgresql://user:pass@host/database");
 }
 
 #[test]
