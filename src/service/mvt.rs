@@ -241,8 +241,8 @@ impl Config<MvtService> for MvtService {
 
 const TOML_SERVICES: &'static str = r#"# t-rex configuration
 
-[services]
-mvt = true
+[service.mvt]
+viewer = true
 "#;
 
 
@@ -344,8 +344,8 @@ pub fn test_metadata() {
 pub fn test_gen_config() {
     let expected = r#"# t-rex configuration
 
-[services]
-mvt = true
+[service.mvt]
+viewer = true
 
 [datasource]
 type = "postgis"

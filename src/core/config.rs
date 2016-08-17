@@ -75,10 +75,14 @@ fn test_parse_config() {
             )
         }
     ),
-    "services": Table(
+    "service": Table(
         {
-            "mvt": Boolean(
-                true
+            "mvt": Table(
+                {
+                    "viewer": Boolean(
+                        true
+                    )
+                }
             )
         }
     ),
@@ -113,9 +117,6 @@ fn test_parse_config() {
         {
             "bind": String(
                 "0.0.0.0"
-            ),
-            "mapviewer": Boolean(
-                true
             ),
             "port": Integer(
                 8080

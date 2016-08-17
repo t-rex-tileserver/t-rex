@@ -8,7 +8,8 @@ use core::grid::Grid;
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use service::mvt::{MvtService,Tileset};
-use core::{Config,read_config};
+use core::{Config,read_config,parse_config};
+use toml;
 use cache::{Tilecache,Nocache,Filecache};
 
 use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult, Halt, StaticFilesHandler};
@@ -107,18 +108,32 @@ impl InlineTemplate {
     }
 }
 
-fn service_from_args(args: &ArgMatches) -> MvtService {
+const DEFAULT_CONFIG: &'static str = r#"
+[service.mvt]
+viewer = true
+
+[webserver]
+bind = "127.0.0.1"
+port = 6767
+threads = 4
+"#;
+
+fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
     if let Some(cfgpath) = args.value_of("config") {
         info!("Reading configuration from '{}'", cfgpath);
-        let mut svc = read_config(cfgpath)
-            .and_then(|config| MvtService::from_config(&config))
+        let config = read_config(cfgpath).unwrap_or_else(|err| {
+                println!("Error reading configuration - {} ", err);
+                process::exit(1)
+            });
+        let mut svc = MvtService::from_config(&config)
             .unwrap_or_else(|err| {
                 println!("Error reading configuration - {} ", err);
                 process::exit(1)
             });
         svc.connect();
-        svc
+        (svc, config)
     } else {
+        let config = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
         let cache = match args.value_of("cache") {
             None => Tilecache::Nocache(Nocache),
             Some(dir) => Tilecache::Filecache(Filecache { basepath: dir.to_string() })
@@ -133,8 +148,9 @@ fn service_from_args(args: &ArgMatches) -> MvtService {
                 let tileset = Tileset{name: l.name.clone(), layers: vec![l]};
                 tilesets.push(tileset);
             }
-            MvtService {input: pg, grid: grid,
-                tilesets: tilesets, cache: cache}
+            let svc = MvtService {input: pg, grid: grid,
+                tilesets: tilesets, cache: cache};
+            (svc, config)
         } else {
             println!("Either 'config' or 'dbconn' is required");
             process::exit(1)
@@ -143,7 +159,29 @@ fn service_from_args(args: &ArgMatches) -> MvtService {
 }
 
 pub fn webserver(args: &ArgMatches) {
-    let service = service_from_args(args);
+    let (service, config) = service_from_args(args);
+
+    let mvt_config = config.lookup("service.mvt")
+        .ok_or("Missing configuration entry [service.mvt]".to_string())
+        .unwrap_or_else(|err| {
+            println!("Error reading configuration - {} ", err);
+            process::exit(1)
+        });
+    let mvt_viewer = mvt_config.lookup("viewer")
+        .map_or(true, |val| val.as_bool().unwrap_or(true));
+    let http_config = config.lookup("webserver")
+        .ok_or("Missing configuration entry [webserver]".to_string())
+        .unwrap_or_else(|err| {
+            println!("Error reading configuration - {} ", err);
+            process::exit(1)
+        });
+    let bind = http_config.lookup("bind")
+        .map_or("127.0.0.1", |val| val.as_str().unwrap_or("127.0.0.1"));
+    let port = http_config.lookup("port")
+        .map_or(6767, |val| val.as_integer().unwrap_or(6767)) as u16;
+    let threads = http_config.lookup("threads")
+        .map_or(4, |val| val.as_integer().unwrap_or(4)) as usize;
+
     service.init_cache();
 
     let mut tileset_infos: Vec<TilesetInfo> = service.tilesets.iter().map(|set| {
@@ -153,7 +191,7 @@ pub fn webserver(args: &ArgMatches) {
 
     let mut server = Nickel::with_data(service);
     server.options = Options::default()
-                     .thread_count(Some(4));
+                     .thread_count(Some(threads));
     server.utilize(log_request);
 
     server.get("/:tileset.json", middleware! { |req, mut res|
@@ -192,34 +230,37 @@ pub fn webserver(args: &ArgMatches) {
         tile
     });
 
-    let tpl_olviewer = InlineTemplate::new(str::from_utf8(include_bytes!("templates/olviewer.tpl")).unwrap());
-    server.get("/:tileset/", middleware! { |req, res|
-        let tileset = req.param("tileset").unwrap();
-        let host = req.origin.headers.get::<header::Host>().unwrap();
-        let baseurl = format!("http://{}:{}", host.hostname, host.port.unwrap_or(80));
-        let mut data = HashMap::new();
-        data.insert("baseurl", baseurl);
-        data.insert("tileset", tileset.to_string());
-        return tpl_olviewer.render(res, &data);
-    });
+    if mvt_viewer {
+        let tpl_olviewer = InlineTemplate::new(str::from_utf8(include_bytes!("templates/olviewer.tpl")).unwrap());
+        server.get("/:tileset/", middleware! { |req, res|
+            let tileset = req.param("tileset").unwrap();
+            let host = req.origin.headers.get::<header::Host>().unwrap();
+            let baseurl = format!("http://{}:{}", host.hostname, host.port.unwrap_or(80));
+            let mut data = HashMap::new();
+            data.insert("baseurl", baseurl);
+            data.insert("tileset", tileset.to_string());
+            return tpl_olviewer.render(res, &data);
+        });
 
-    let static_files = StaticFiles::new();
-    server.get("/:static", middleware! { |req, res|
-        let name = req.param("static").unwrap();
-        if let Some(content) = static_files.files.get(name) {
-            return res.send(*content)
-        }
-    });
+        let static_files = StaticFiles::new();
+        server.get("/:static", middleware! { |req, res|
+            let name = req.param("static").unwrap();
+            if let Some(content) = static_files.files.get(name) {
+                return res.send(*content)
+            }
+        });
+
+        let tpl_index = InlineTemplate::new(str::from_utf8(include_bytes!("templates/index.tpl")).unwrap());
+        server.get("/", middleware! { |_req, res|
+            let mut data = HashMap::new();
+            data.insert("tileset", &tileset_infos);
+            return tpl_index.render(res, &data);
+        });
+    }
 
     server.get("/**", StaticFilesHandler::new("public/"));
 
-    let tpl_index = InlineTemplate::new(str::from_utf8(include_bytes!("templates/index.tpl")).unwrap());
-    server.get("/", middleware! { |_req, res|
-        let mut data = HashMap::new();
-        data.insert("tileset", &tileset_infos);
-        return tpl_index.render(res, &data);
-    });
-    server.listen("127.0.0.1:6767");
+    server.listen((bind, port));
 }
 
 pub fn gen_config(args: &ArgMatches) -> String {
@@ -228,12 +269,11 @@ pub fn gen_config(args: &ArgMatches) -> String {
 # Bind address. Use 0.0.0.0 to listen on all adresses.
 bind = "127.0.0.1"
 port = 6767
-threads = 1
-mapviewer = true
+threads = 4
 "#;
     let mut config;
     if let Some(_dbconn) = args.value_of("dbconn") {
-        let service = service_from_args(args);
+        let (service, _) = service_from_args(args);
         config = service.gen_runtime_config();
     } else {
         config = MvtService::gen_config();

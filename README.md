@@ -45,8 +45,8 @@ Configuration
 Configuration file example:
 
 ```toml
-[services]
-mvt = true
+[service.mvt]
+viewer = true
 
 [datasource]
 type = "postgis"
@@ -101,7 +101,6 @@ base = "/var/cache/mvtcache"
 bind = "0.0.0.0"
 port = 8080
 threads = 4
-mapviewer = true
 ```
 
 Installation
