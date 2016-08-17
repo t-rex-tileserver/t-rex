@@ -203,7 +203,7 @@ impl PostgisInput {
             let schema: String = row.get("f_table_schema");
             let table_name: String = row.get("f_table_name");
             let geometry_column: String = row.get("f_geometry_column");
-            let _srid: i32 = row.get("srid");
+            let srid: i32 = row.get("srid");
             let geomtype: String = row.get("type");
             let mut layer = Layer::new(&table_name);
             layer.table_name = if schema != "public" {
@@ -219,19 +219,23 @@ impl PostgisInput {
                         let table = layer.table_name.as_ref().unwrap();
                         let types = self.detect_geometry_types(&layer);
                         if types.len() == 1 {
-                            debug!("Detected unique geometry type in field '{}' of table '{}': {}", field, table, &types[0]);
+                            debug!("Detected unique geometry type in '{}.{}': {}", table, field, &types[0]);
                             Some(types[0].clone())
                         } else {
                             let type_list = types.join(", ");
-                            info!("Multiple geometry types in field '{}' of table '{}': {}", field, table, type_list);
+                            warn!("Multiple geometry types in '{}.{}': {}", table, field, type_list);
                             Some("GEOMETRY".to_string())
                         }
                     } else {
+                        warn!("Unknwon geometry type of '{}.{}'", table_name, geometry_column);
                         Some("GEOMETRY".to_string())
                     }
                 }
                 _ => Some(geomtype.clone())
             };
+            if srid != 3857 {
+                warn!("Unsupported SRID {} of '{}.{}'", srid, table_name, geometry_column);
+            }
             layers.push(layer);
         }
         layers

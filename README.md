@@ -44,64 +44,65 @@ Configuration
 
 Configuration file example:
 
-    [services]
-    mvt = true
+```toml
+[services]
+mvt = true
 
-    [datasource]
-    type = "postgis"
-    url = "postgresql://user:pass@localhost/natural_earth_vectors"
+[datasource]
+type = "postgis"
+url = "postgresql://user:pass@localhost/natural_earth_vectors"
 
-    [grid]
-    predefined = "web_mercator"
+[grid]
+predefined = "web_mercator"
 
-    [[tileset]]
-    name = "osm"
+[[tileset]]
+name = "osm"
 
-    [[tileset.layer]]
-    name = "points"
-    table_name = "ne_10m_populated_places"
-    geometry_field = "wkb_geometry"
-    geometry_type = "POINT"
-    fid_field = "id"
+[[tileset.layer]]
+name = "points"
+table_name = "ne_10m_populated_places"
+geometry_field = "wkb_geometry"
+geometry_type = "POINT"
+fid_field = "id"
 
-    [[tileset.layer]]
-    name = "buildings"
-    geometry_field = "way"
-    geometry_type = "POLYGON"
-    fid_field = "osm_id"
-      [[tileset.layer.query]]
-      sql = """
-        SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way
-        FROM osm_buildings_gen0
-        WHERE geometry && !bbox!
-        GROUP BY name, type
-        ORDER BY sum(area) DESC"""
-      [[tileset.layer.query]]
-      minzoom = 14
-      maxzoom = 16
-      sql = """
-        SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),!pixel_width!/2) AS way
-        FROM osm_buildings
-        WHERE geometry && !bbox!
-        GROUP BY name, type
-        ORDER BY sum(area) DESC"""
-      [[tileset.layer.query]]
-      minzoom = 17
-      maxzoom = 22
-      sql = """
-        SELECT name, type, osm_id, geometry AS way
-        FROM osm_buildings
-        ORDER BY area DESC"""
+[[tileset.layer]]
+name = "buildings"
+geometry_field = "way"
+geometry_type = "POLYGON"
+fid_field = "osm_id"
+  [[tileset.layer.query]]
+  sql = """
+    SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way
+    FROM osm_buildings_gen0
+    WHERE geometry && !bbox!
+    GROUP BY name, type
+    ORDER BY sum(area) DESC"""
+  [[tileset.layer.query]]
+  minzoom = 14
+  maxzoom = 16
+  sql = """
+    SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),!pixel_width!/2) AS way
+    FROM osm_buildings
+    WHERE geometry && !bbox!
+    GROUP BY name, type
+    ORDER BY sum(area) DESC"""
+  [[tileset.layer.query]]
+  minzoom = 17
+  maxzoom = 22
+  sql = """
+    SELECT name, type, osm_id, geometry AS way
+    FROM osm_buildings
+    ORDER BY area DESC"""
 
-    [cache.file]
-    base = "/var/cache/mvtcache"
+[cache.file]
+base = "/var/cache/mvtcache"
 
-    [webserver]
-    bind = "0.0.0.0"
-    port = 8080
-    threads = 4
-    mapviewer = true
-
+[webserver]
+bind = "0.0.0.0"
+port = 8080
+threads = 4
+mapviewer = true
+```
 
 Installation
 ------------
