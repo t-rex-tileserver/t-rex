@@ -98,21 +98,21 @@ impl<'a> Feature for FeatureRow<'a> {
         let mut attrs = Vec::new();
         for (i,col) in self.row.columns().into_iter().enumerate() {
             if col.name() != self.layer.geometry_field.as_ref().unwrap_or(&"".to_string()) {
-                let val = self.row.get_opt::<_, FeatureAttrValType>(i);
-                match val {
-                    Some(Ok(v)) => {
+                let val = self.row.get_opt::<_, Option<FeatureAttrValType>>(i);
+                match val.unwrap() {
+                    Ok(Some(v)) => {
                         let fattr = FeatureAttr {
                             key: col.name().to_string(),
                             value: v
                         };
                         attrs.push(fattr);
                     }
-                    Some(Err(err)) => {
+                    Ok(None) => {
+                        // Skip NULL values
+                    }
+                    Err(err) => {
                         warn!("Layer '{}' - skipping field '{}': {}", self.layer.name, col.name(), err);
                         //warn!("{:?}", self.row);
-                    }
-                    None => {
-                        error!("Layer '{}': Column '{}' not found", self.layer.name, col.name());
                     }
                 }
             }
