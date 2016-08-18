@@ -21,6 +21,8 @@ pub struct Layer {
     pub name: String,
     pub geometry_field: Option<String>,
     pub geometry_type: Option<String>,
+    /// Spatial reference system (PostGIS SRID)
+    pub srid: Option<i32>,
     pub fid_field: Option<String>,
     // Input for derived queries
     pub table_name: Option<String>,

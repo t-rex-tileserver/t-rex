@@ -25,7 +25,8 @@ pub struct Grid {
     /// The (minx,miny) point defines the origin of the grid, i.e. the pixel at the bottom left of the bottom-left most tile is always placed on the (minx,miny) geographical point.
     /// The (maxx,maxy) point is used to determine how many tiles there are for each zoom level.
     extent: Extent,
-    //srs: SRID,
+    /// Spatial reference system (PostGIS SRID).
+    pub srid: i32,
     //units: m/dd/ft
     /// This is a list of resolutions for each of the zoom levels defined by the grid. This must be supplied as a list of positive floating point values, ordered from largest to smallest.
     /// The largest value will correspond to the grid’s zoom level 0. Resolutions are expressed in “units-per-pixel”, depending on the unit used by the grid (e.g. resolutions are in meters per pixel for most grids used in webmapping).
@@ -60,6 +61,7 @@ impl Grid {
         Grid {
             width: 256, height: 256,
             extent: Extent {minx: -180.0, miny: -90.0, maxx: 180.0, maxy: 90.0},
+            srid: 4236,
             resolutions: &WGS84_RESOLUTIONS
         }
     }
@@ -92,6 +94,7 @@ impl Grid {
             width: 256, height: 256,
             extent: Extent {minx: -20037508.3427892480, miny: -20037508.3427892480,
                             maxx: 20037508.3427892480, maxy: 20037508.3427892480},
+            srid: 3857,
             resolutions: &GOOGLE_RESOLUTIONS
         }
     }

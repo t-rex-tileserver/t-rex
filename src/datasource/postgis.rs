@@ -19,6 +19,7 @@ use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
 use toml;
+use std::collections::BTreeMap;
 
 
 impl GeometryType {
@@ -133,36 +134,46 @@ impl<'a> Feature for FeatureRow<'a> {
     }
 }
 
+#[derive(PartialEq,Clone,Debug)]
+enum QueryParam {
+    Bbox,
+    Zoom,
+    PixelWidth,
+    ScaleDenominator,
+}
+
+#[derive(Clone,Debug)]
+struct SqlQuery {
+    sql: String,
+    params: Vec<QueryParam>,
+}
+
 pub struct PostgisInput {
     pub connection_url: String,
     conn_pool: Option<r2d2::Pool<PostgresConnectionManager>>,
+    // Queries for all layers and zoom levels
+    queries: BTreeMap<String, BTreeMap<u8, SqlQuery>>,
 }
 
-struct SqlQuery<'a> {
-    sql: String,
-    params: Vec<&'a str>,
-}
-
-impl<'a> SqlQuery<'a> {
-    fn has_param(&self, name: &str) -> bool {
-       self.params.contains(&name)
-    }
+impl SqlQuery {
     /// Replace variables (!bbox!, !zoom!, etc.) in query
     // https://github.com/mapnik/mapnik/wiki/PostGIS
     fn replace_params(&mut self) {
         let mut numvars = 0;
         if self.sql.contains("!bbox!") {
-            self.params.push("bbox");
+            self.params.push(QueryParam::Bbox);
             numvars += 4;
             self.sql = self.sql.replace("!bbox!", "ST_MakeEnvelope($1,$2,$3,$4,3857)");
         }
         // replace e.g. !zoom! with $5
-        for var in vec!["zoom", "pixel_width", "scale_denominator"] {
-            let sqlvar = format!("!{}!", var);
-            if self.sql.contains(&sqlvar) {
-                self.params.push(var);
+        for (var, par) in vec![
+                ("!zoom!", QueryParam::Zoom),
+                ("!pixel_width!", QueryParam::PixelWidth),
+                ("!scale_denominator!", QueryParam::ScaleDenominator) ] {
+            if self.sql.contains(var) {
+                self.params.push(par);
                 numvars += 1;
-                self.sql = self.sql.replace(&sqlvar, &format!("${}", numvars));
+                self.sql = self.sql.replace(var, &format!("${}", numvars));
             }
         }
     }
@@ -178,8 +189,9 @@ impl<'a> SqlQuery<'a> {
 
 impl PostgisInput {
     pub fn new(connection_url: &str) -> PostgisInput {
-        PostgisInput { connection_url: connection_url.to_string(), conn_pool: None }
+        PostgisInput { connection_url: connection_url.to_string(), conn_pool: None, queries: BTreeMap::new() }
     }
+    /// New instance with connected pool
     pub fn connected(&self) -> PostgisInput {
         let manager = PostgresConnectionManager::new(
             self.connection_url.as_ref(), SslMode::None).unwrap();
@@ -187,7 +199,7 @@ impl PostgisInput {
                 .pool_size(10)
                 .build();
         let pool = r2d2::Pool::new(config, manager).unwrap();
-        PostgisInput { connection_url: self.connection_url.clone(), conn_pool: Some(pool) }
+        PostgisInput { connection_url: self.connection_url.clone(), conn_pool: Some(pool), queries: BTreeMap::new() }
     }
     pub fn conn(&self) -> r2d2::PooledConnection<PostgresConnectionManager> {
         let pool = self.conn_pool.as_ref().unwrap();
@@ -233,6 +245,7 @@ impl PostgisInput {
                 }
                 _ => Some(geomtype.clone())
             };
+            layer.srid = Some(srid);
             if srid != 3857 {
                 warn!("Unsupported SRID {} of '{}.{}'", srid, table_name, geometry_column);
             }
@@ -268,9 +281,9 @@ impl PostgisInput {
         let filter_cols = vec![layer.geometry_field.as_ref().unwrap()];
         cols.into_iter().filter(|col| !filter_cols.contains(&col) ).collect()
     }
-    fn query(&self, layer: &Layer, zoom: u8) -> Option<SqlQuery> {
-        let subquery = match layer.query(zoom).as_ref() {
-            Some(q) => String::from(*q),
+    fn build_query(&self, layer: &Layer, grid_srid: i32, sql: Option<&String>) -> Option<SqlQuery> {
+        let subquery = match sql {
+            Some(& ref q) => q.clone(),
             None => {
                 //TODO: check min-/maxzoom + handle overzoom
                 if layer.table_name.is_none() { return None }
@@ -291,6 +304,31 @@ impl PostgisInput {
         query.replace_params();
         Some(query)
     }
+    pub fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
+        let mut queries = BTreeMap::new();
+
+        if let Some(query) = self.build_query(layer, grid_srid, None) {
+            debug!("Query for layer '{}': {}", layer.name, query.sql);
+            for zoom in layer.minzoom()..layer.maxzoom() {
+                queries.insert(zoom, query.clone());
+            }
+        }
+
+        for layer_query in &layer.query {
+            if let Some(query) = self.build_query(layer, grid_srid, layer_query.sql.as_ref()) {
+                debug!("Query for layer '{}': {}", layer.name, query.sql);
+                for zoom in layer_query.minzoom()..layer_query.maxzoom() {
+                    queries.insert(zoom, query.clone());
+                }
+            }
+        }
+
+        self.queries.insert(layer.name.clone(), queries);
+    }
+    fn query(&self, layer: &Layer, zoom: u8) -> Option<&SqlQuery> {
+        let ref queries = self.queries[&layer.name];
+        Some(&queries[&zoom])
+    }
 }
 
 impl DatasourceInput for PostgisInput {
@@ -309,20 +347,22 @@ impl DatasourceInput for PostgisInput {
 
         // Add query params
         let zoom_param = zoom as i16;
-        let pixel_width;
-        let scale_denominator;
-        let mut params: Vec<&ToSql> = vec![&extent.minx, &extent.miny, &extent.maxx, &extent.maxy];
-        if query.has_param("zoom") {
-            params.push(&zoom_param);
-        }
-        if query.has_param("pixel_width") {
-            pixel_width = grid.pixel_width(zoom);
-            params.push(&pixel_width);
-        }
-        if query.has_param("scale_denominator") {
-            //NOTE: function z() in osm2vectortiles takes numeric argument, which is not supported by rust postgresql
-            scale_denominator = grid.scale_denominator(zoom);
-            params.push(&scale_denominator);
+        let pixel_width = grid.pixel_width(zoom); //TODO: calculate only if needed
+        let scale_denominator = grid.scale_denominator(zoom);
+        let mut params = Vec::new();
+        for param in &query.params {
+            match param {
+                &QueryParam::Bbox => {
+                    let mut bbox: Vec<&ToSql> = vec![&extent.minx, &extent.miny, &extent.maxx, &extent.maxy];
+                    params.append(&mut bbox);
+                },
+                &QueryParam::Zoom => params.push(&zoom_param),
+                &QueryParam::PixelWidth => params.push(&pixel_width),
+                &QueryParam::ScaleDenominator =>  {
+                    //NOTE: function z() in osm2vectortiles takes numeric argument, which is not supported by rust postgresql
+                    params.push(&scale_denominator);
+                },
+            }
         }
 
         let stmt = stmt.unwrap();
@@ -437,29 +477,29 @@ pub fn test_feature_query() {
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));
-    assert_eq!(pg.query(&layer, 10).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
         "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
     layer.query_limit = Some(1);
-    assert_eq!(pg.query(&layer, 10).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
         "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857) LIMIT 1");
 
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT geometry AS geom FROM osm_place_point"))}];
     layer.query_limit = None;
-    assert_eq!(pg.query(&layer, 10).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, layer.query[0].sql.as_ref()).unwrap().sql,
         "SELECT * FROM (SELECT geometry AS geom FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT * FROM osm_place_point WHERE name='Bern'"))}];
-    assert_eq!(pg.query(&layer, 10).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, layer.query[0].sql.as_ref()).unwrap().sql,
         "SELECT * FROM (SELECT * FROM osm_place_point WHERE name='Bern') AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
     // out of maxzoom
-    assert_eq!(pg.query(&layer, 23).unwrap().sql,
-        "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
-    layer.table_name = None;
-    assert!(pg.query(&layer, 23).is_none());
+    //assert_eq!(pg.query(&layer, 23).unwrap().sql,
+    //    "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+    //layer.table_name = None;
+    //assert!(pg.query(&layer, 23).is_none());
 }
 
 #[test]
@@ -470,29 +510,29 @@ pub fn test_query_params() {
 
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way FROM osm_buildings_gen0 WHERE geometry && !bbox!"))}];
-    let query = pg.query(&layer, 10).unwrap();
+    let query = pg.build_query(&layer, 3857, layer.query[0].sql.as_ref()).unwrap();
     assert_eq!(query.sql,
         "SELECT * FROM (SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way FROM osm_buildings_gen0 WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)) AS _q");
-    assert_eq!(query.params, ["bbox"]);
+    assert_eq!(query.params, [QueryParam::Bbox]);
 
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT osm_id, geometry, typen FROM landuse_z13toz14n WHERE !zoom! BETWEEN 13 AND 14) AS landuse_z9toz14n"))}];
-    let query = pg.query(&layer, 10).unwrap();
+    let query = pg.build_query(&layer, 3857, layer.query[0].sql.as_ref()).unwrap();
     assert_eq!(query.sql,
         "SELECT * FROM (SELECT osm_id, geometry, typen FROM landuse_z13toz14n WHERE $5 BETWEEN 13 AND 14) AS landuse_z9toz14n) AS _q WHERE way && ST_MakeEnvelope($1,$2,$3,$4,3857)");
-    assert_eq!(query.params, ["bbox", "zoom"]);
+    assert_eq!(query.params, [QueryParam::Bbox, QueryParam::Zoom]);
 
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),!pixel_width!/2) AS way FROM osm_buildings"))}];
-    let query = pg.query(&layer, 10).unwrap();
+    let query = pg.build_query(&layer, 3857, layer.query[0].sql.as_ref()).unwrap();
     assert_eq!(query.sql,
         "SELECT * FROM (SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),$5/2) AS way FROM osm_buildings) AS _q WHERE way && ST_MakeEnvelope($1,$2,$3,$4,3857)");
-    assert_eq!(query.params, ["bbox", "pixel_width"]);
+    assert_eq!(query.params, [QueryParam::Bbox, QueryParam::PixelWidth]);
 }
 
 #[test]
 pub fn test_retrieve_features() {
-    let pg: PostgisInput = match env::var("DBCONN") {
+    let mut pg: PostgisInput = match env::var("DBCONN") {
         Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
         Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
     }.unwrap();
@@ -505,6 +545,7 @@ pub fn test_retrieve_features() {
     let extent = Extent { minx: 821850.9, miny: 5909499.5, maxx: 860986.7, maxy: 5948635.3 };
 
     let mut reccnt = 0;
+    pg.prepare_queries(&layer, 3857);
     pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
         assert_eq!("Ok(Point(SRID=3857;POINT(831219.9062494118 5928485.165733484)))", &*format!("{:?}", feat.geometry()));
         assert_eq!(0, feat.attributes().len());
@@ -516,6 +557,7 @@ pub fn test_retrieve_features() {
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT * FROM ne_10m_populated_places"))}];
     layer.fid_field = Some(String::from("fid"));
+    pg.prepare_queries(&layer, 3857);
     pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
         assert_eq!("Ok(Point(SRID=3857;POINT(831219.9062494118 5928485.165733484)))", &*format!("{:?}", feat.geometry()));
         assert_eq!(feat.attributes()[0].key, "fid");

@@ -118,6 +118,14 @@ impl MvtService {
         obj.insert("json".to_string(), metadata_vector_layers.to_string().to_json());
         obj.to_json().to_string()
     }
+    /// Prepare datasource queries. Must be called before requesting tiles.
+    pub fn prepare_feature_queries(&mut self) {
+        for tileset in &self.tilesets {
+            for layer in &tileset.layers {
+                self.input.prepare_queries(&layer, self.grid.srid);
+            }
+        }
+    }
     /// Create vector tile from input at x, y, z
     pub fn tile(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u8) -> vector_tile::Tile {
         let extent = self.grid.tile_extent_reverse_y(xtile, ytile, zoom);
@@ -264,8 +272,9 @@ pub fn test_tile_query() {
     layer.geometry_type = Some(String::from("POINT"));
     layer.query_limit = Some(1);
     let tileset = Tileset{name: "points".to_string(), layers: vec![layer]};
-    let service = MvtService {input: pg, grid: grid,
+    let mut service = MvtService {input: pg, grid: grid,
                               tilesets: vec![tileset], cache: Tilecache::Nocache(Nocache)};
+    service.prepare_feature_queries();
 
     let mvt_tile = service.tile("points", 33, 22, 6);
     println!("{:#?}", mvt_tile);

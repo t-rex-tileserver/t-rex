@@ -159,7 +159,7 @@ fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
 }
 
 pub fn webserver(args: &ArgMatches) {
-    let (service, config) = service_from_args(args);
+    let (mut service, config) = service_from_args(args);
 
     let mvt_config = config.lookup("service.mvt")
         .ok_or("Missing configuration entry [service.mvt]".to_string())
@@ -182,6 +182,7 @@ pub fn webserver(args: &ArgMatches) {
     let threads = http_config.lookup("threads")
         .map_or(4, |val| val.as_integer().unwrap_or(4)) as usize;
 
+    service.prepare_feature_queries();
     service.init_cache();
 
     let mut tileset_infos: Vec<TilesetInfo> = service.tilesets.iter().map(|set| {
