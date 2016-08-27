@@ -4,7 +4,6 @@
 //
 
 use datasource::DatasourceInput;
-use postgres::{Connection};
 use postgres::rows::Row;
 use postgres::types::{Type, FromSql, ToSql, SessionInfo};
 use postgres;
@@ -447,6 +446,7 @@ url = "{}"
     }
 }
 
+#[cfg(test)] use postgres::Connection;
 #[cfg(test)] use std::io::{self,Write};
 #[cfg(test)] use std::env;
 #[cfg(test)] use core::layer::LayerQuery;

@@ -20,9 +20,9 @@ extern crate clap;
 extern crate time;
 extern crate flate2;
 
-mod core;
+pub mod core;
 mod datasource;
-mod mvt;
+pub mod mvt;
 mod service;
 mod cache;
 mod webserver;

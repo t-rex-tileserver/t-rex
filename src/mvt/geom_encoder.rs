@@ -23,11 +23,11 @@ impl CommandInteger {
     fn new(id: Command, count: u32) -> CommandInteger {
         CommandInteger(((id as u32) & 0x7) | (count << 3))
     }
-
+    #[cfg(test)]
     fn id(&self) -> u32 {
         self.0 & 0x7
     }
-
+    #[cfg(test)]
     fn count(&self) -> u32 {
         self.0 >> 3
     }
@@ -52,7 +52,7 @@ impl ParameterInteger {
     fn new(value: i32) -> ParameterInteger {
         ParameterInteger(((value << 1) ^ (value >> 31)) as u32)
     }
-
+    #[cfg(test)]
     fn value(&self) -> i32 {
         ((self.0 >> 1) as i32) ^ (-((self.0 & 1) as i32))
     }
@@ -74,6 +74,7 @@ impl CommandSequence {
     pub fn vec(&self) -> Vec<u32> {
         self.0.clone() // FIXME: ref
     }
+    #[cfg(test)]
     fn append(&mut self, other: &mut CommandSequence) {
         self.0.append(&mut other.0);
     }
@@ -82,6 +83,21 @@ impl CommandSequence {
     }
 }
 
+#[test]
+fn test_sequence() {
+    let mut seq = CommandSequence::new();
+    seq.push(CommandInteger::new(
+        Command::MoveTo, 1).0);
+    seq.push(ParameterInteger::new(25).0);
+    seq.push(ParameterInteger::new(17).0);
+    assert_eq!(seq.0, &[9,50,34]);
+
+    let mut seq2 = CommandSequence::new();
+    seq2.push(CommandInteger::new(
+        Command::MoveTo, 1).0);
+    seq.append(&mut seq2);
+    assert_eq!(seq.0, &[9,50,34,9]);
+}
 
 pub trait EncodableGeom {
     fn encode(&self) -> CommandSequence {
