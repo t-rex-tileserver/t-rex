@@ -188,6 +188,13 @@ impl Tileset {
                   Ok(tilesets.iter().map(|tileset| Tileset::from_config(tileset).unwrap()).collect())
               })
     }
+    pub fn gen_runtime_config_from_input(&self, input: &PostgisInput) -> String {
+        let mut config = String::new();
+        for layer in &self.layers {
+            config.push_str(&layer.gen_runtime_config_from_input(input));
+        }
+        config
+    }
 }
 
 impl Config<Tileset> for Tileset {
@@ -239,7 +246,7 @@ impl Config<MvtService> for MvtService {
         config.push_str(&self.input.gen_runtime_config());
         config.push_str(&self.grid.gen_runtime_config());
         for tileset in &self.tilesets {
-            config.push_str(&tileset.gen_runtime_config());
+            config.push_str(&tileset.gen_runtime_config_from_input(&self.input));
         }
         config.push_str(&self.cache.gen_runtime_config());
         config

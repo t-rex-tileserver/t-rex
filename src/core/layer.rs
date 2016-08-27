@@ -7,6 +7,7 @@ use core::Config;
 use toml;
 use rustc_serialize::Decodable;
 use std::collections::HashMap;
+use datasource::PostgisInput;
 
 
 #[derive(RustcDecodable, Debug)]
@@ -76,6 +77,14 @@ impl Layer {
         metadata.insert("srs", "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over".to_string());
         metadata
     }
+    pub fn gen_runtime_config_from_input(&self, input: &PostgisInput) -> String {
+        let mut cfg = self.gen_runtime_config();
+        if self.query(0).is_none() {
+            let query = input.build_query_sql(self, 3857, None).unwrap();
+            cfg.push_str(&format!("#sql = \"{}\"\n", query))
+        }
+        cfg
+    }
 }
 
 impl Config<Layer> for Layer {
@@ -124,6 +133,11 @@ geometry_type = "POINT"
                 => lines.push(format!("geometry_type = \"{}\"", geometry_type)),
             _   => lines.push("#geometry_type = \"POINT\"".to_string())
         }
+        match self.srid {
+            Some(ref srid)
+                => lines.push(format!("srid = {}", srid)),
+            _   => lines.push("#srid = 3857".to_string())
+        }
         match self.fid_field {
             Some(ref fid_field)
                 => lines.push(format!("fid_field = \"{}\"", fid_field)),
@@ -140,12 +154,7 @@ geometry_type = "POINT"
                 lines.push(format!("sql = \"{}\"", query))
             },
             _   => {
-                let default_name = "mytable".to_string();
-                let ref table_name = self.table_name.as_ref().unwrap_or(&default_name);
-                let default_name = "wkb_geometry".to_string();
-                let ref geometry_field = self.geometry_field.as_ref().unwrap_or(&default_name);
                 lines.push("#[[tileset.layer.query]]".to_string());
-                lines.push(format!("#sql = \"SELECT name,{} FROM {}\"", geometry_field, table_name))
             }
         }
         lines.join("\n") + "\n"

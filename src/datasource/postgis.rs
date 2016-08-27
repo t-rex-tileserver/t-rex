@@ -158,12 +158,12 @@ pub struct PostgisInput {
 impl SqlQuery {
     /// Replace variables (!bbox!, !zoom!, etc.) in query
     // https://github.com/mapnik/mapnik/wiki/PostGIS
-    fn replace_params(&mut self) {
+    fn replace_params(&mut self, bbox_expr: String) {
         let mut numvars = 0;
         if self.sql.contains("!bbox!") {
             self.params.push(QueryParam::Bbox);
             numvars += 4;
-            self.sql = self.sql.replace("!bbox!", "ST_MakeEnvelope($1,$2,$3,$4,3857)");
+            self.sql = self.sql.replace("!bbox!", &bbox_expr);
         }
         // replace e.g. !zoom! with $5
         for (var, par) in vec![
@@ -246,9 +246,6 @@ impl PostgisInput {
                 _ => Some(geomtype.clone())
             };
             layer.srid = Some(srid);
-            if srid != 3857 {
-                warn!("Unsupported SRID {} of '{}.{}'", srid, table_name, geometry_column);
-            }
             layers.push(layer);
         }
         layers
@@ -281,27 +278,70 @@ impl PostgisInput {
         let filter_cols = vec![layer.geometry_field.as_ref().unwrap()];
         cols.into_iter().filter(|col| !filter_cols.contains(&col) ).collect()
     }
-    fn build_query(&self, layer: &Layer, grid_srid: i32, sql: Option<&String>) -> Option<SqlQuery> {
-        let subquery = match sql {
-            Some(& ref q) => q.clone(),
-            None => {
-                //TODO: check min-/maxzoom + handle overzoom
-                if layer.table_name.is_none() { return None }
-                format!("SELECT {} FROM {}",
-                    layer.geometry_field.as_ref().unwrap(),
-                    layer.table_name.as_ref().unwrap())
-            }};
-
-        let mut sql = format!("SELECT * FROM ({}) AS _q", subquery);
-        if !subquery.contains("!bbox!") {
-            sql.push_str(&format!(" WHERE {} && !bbox!", layer.geometry_field.as_ref().unwrap()));
+    /// Build select list expressions for feature query.
+    fn build_select_list(&self, layer: &Layer, grid_srid: i32) -> String {
+        let ref geom_name = layer.geometry_field.as_ref().unwrap();
+        let layer_srid = layer.srid.unwrap_or(0);
+        if layer_srid <= 0 { // Unknown SRID
+            warn!("Layer '{}' - Casting geometry '{}' to SRID {}", layer.name,
+                geom_name, grid_srid);
+            format!("ST_SetSRID({},{}) AS {}", geom_name, grid_srid, geom_name)
+        } else {
+            if layer_srid == grid_srid {
+                String::from(geom_name as &str)
+            } else {
+                warn!("Layer '{}' - Reprojecting geometry '{}' to SRID {}", layer.name,
+                    geom_name, grid_srid);
+                format!("ST_Transform({},{}) AS {}", geom_name, grid_srid, geom_name)
+            }
         }
+    }
+    /// Build !bbox! replacement expression for feature query.
+    fn build_bbox_expr(&self, layer: &Layer, grid_srid: i32) -> String {
+        let layer_srid = layer.srid.unwrap_or(grid_srid); // we assume grid srid as default 
+        let mut expr;
+        if layer_srid <= 0 { // Explicitely unknown SRID
+            expr = format!("ST_MakeEnvelope($1,$2,$3,$4,{})", layer_srid);
+        } else {
+            expr = format!("ST_MakeEnvelope($1,$2,$3,$4,{})", grid_srid);
+            if layer_srid != grid_srid {
+                expr = format!("ST_Transform({},{})", expr, layer_srid);
+            }
+        };
+        expr
+    }
+    /// Build feature query SQL.
+    pub fn build_query_sql(&self, layer: &Layer, grid_srid: i32, sql: Option<&String>) -> Option<String> {
+        let mut query;
+        let intersect_clause = format!(" WHERE {} && !bbox!", layer.geometry_field.as_ref().unwrap());
+
+        if let Some(&ref userquery) = sql {
+            // user query
+            query = format!("SELECT * FROM ({}) AS _q", userquery);
+            if !userquery.contains("!bbox!") {
+                query.push_str(&intersect_clause);
+            }
+        } else {
+            // automatic query
+            //TODO: check min-/maxzoom + handle overzoom
+            if layer.table_name.is_none() { return None }
+            let select_list = self.build_select_list(layer, grid_srid);
+            query = format!("SELECT {} FROM {}", select_list,
+                layer.table_name.as_ref().unwrap());
+            query.push_str(&intersect_clause);
+        };
+
         if let Some(n) = layer.query_limit {
-            sql.push_str(&format!(" LIMIT {}", n));
+            query.push_str(&format!(" LIMIT {}", n));
         }
-
-        let mut query = SqlQuery { sql: sql, params: Vec::new() };
-        query.replace_params();
+        Some(query)
+    }
+    fn build_query(&self, layer: &Layer, grid_srid: i32, sql: Option<&String>) -> Option<SqlQuery> {
+        let sqlquery = self.build_query_sql(layer, grid_srid, sql);
+        if sqlquery.is_none() { return None }
+        let bbox_expr = self.build_bbox_expr(layer, grid_srid);
+        let mut query = SqlQuery { sql: sqlquery.unwrap(), params: Vec::new() };
+        query.replace_params(bbox_expr);
         Some(query)
     }
     pub fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
@@ -478,11 +518,18 @@ pub fn test_feature_query() {
     layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
-        "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+        "SELECT ST_SetSRID(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+
+    layer.srid = Some(2056);
+    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+        "SELECT ST_Transform(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_Transform(ST_MakeEnvelope($1,$2,$3,$4,3857),2056)");
+    layer.srid = Some(3857);
+    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+        "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
     layer.query_limit = Some(1);
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
-        "SELECT * FROM (SELECT geometry FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857) LIMIT 1");
+        "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857) LIMIT 1");
 
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT geometry AS geom FROM osm_place_point"))}];
