@@ -263,25 +263,66 @@ impl PostgisInput {
         }
         types
     }
-    pub fn detect_columns(&self, layer: &Layer, zoom: u8) -> Vec<String> {
-        let mut query = match layer.query(zoom).as_ref() {
-            Some(q) => String::from(*q),
+    // Return column field names and Rust compatible type conversion
+    pub fn detect_columns(&self, layer: &Layer, sql: Option<&String>) -> Vec<(String, String)> {
+        let mut query = match sql {
+            Some(&ref userquery) => userquery.clone(),
             None => format!("SELECT * FROM {}",
                 layer.table_name.as_ref().unwrap_or(&layer.name))
         };
         query = SqlQuery::valid_sql_for_params(&query);
         let conn = self.conn();
-        let stmt = conn.prepare(&query).unwrap();
-        let cols: Vec<String> = stmt.columns().iter().map(|col| col.name().to_string() ).collect();
-        let _ = stmt.finish();
+        let stmt = conn.prepare(&query);
+        match stmt {
+            Err(e) => {
+                error!("Layer '{}': {}", layer.name, e);
+                vec![]
+            },
+            Ok(stmt) => {
+                let cols: Vec<(String, String)> = stmt.columns().iter().map(|col|{
+                    let name = col.name().to_string();
+                    let cast = match col.type_() {
+                        &Type::Varchar | &Type::Text | &Type::CharArray |
+                        &Type::Float4 | &Type::Float8 |
+                        &Type::Int2 | &Type::Int4 | &Type::Int8 |
+                        &Type::Bool => "".to_string(),
+                        &Type::Numeric => {
+                            warn!("Layer '{}': Converting field '{}' of type {} to FLOAT8", layer.name, name, col.type_().name());
+                            "FLOAT8".to_string()
+                        }
+                        &Type::Other(ref other) => {
+                            match other.name() {
+                                "geometry" => "".to_string(),
+                                _ => {
+                                    warn!("Layer '{}': Converting field '{}' of type {} to TEXT", layer.name, name, col.type_().name());
+                                    "TEXT".to_string()
+                                }
+                            }
+                        }
+                        _ => {
+                            warn!("Layer '{}': Converting field '{}' of type {} to TEXT", layer.name, name, col.type_().name());
+                            "TEXT".to_string()
+                        }
+                    };
+                    (name, cast)
+                }).collect();
+                let _ = stmt.finish();
+                cols
+            }
+        }
+    }
+    // Return column field names and Rust compatible type conversion - without geometry column
+    pub fn detect_data_columns(&self, layer: &Layer, sql: Option<&String>) -> Vec<(String, String)> {
+        let cols = self.detect_columns(layer, sql);
         let filter_cols = vec![layer.geometry_field.as_ref().unwrap()];
-        cols.into_iter().filter(|col| !filter_cols.contains(&col) ).collect()
+        cols.into_iter().filter(|&(ref col, _)| !filter_cols.contains(&&col) ).collect()
     }
     /// Build select list expressions for feature query.
-    fn build_select_list(&self, layer: &Layer, grid_srid: i32) -> String {
+    fn build_select_list(&self, layer: &Layer, grid_srid: i32, sql: Option<&String>) -> String {
         let ref geom_name = layer.geometry_field.as_ref().unwrap();
         let layer_srid = layer.srid.unwrap_or(0);
-        if layer_srid <= 0 { // Unknown SRID
+
+        let geom_expr = if layer_srid <= 0 { // Unknown SRID
             warn!("Layer '{}' - Casting geometry '{}' to SRID {}", layer.name,
                 geom_name, grid_srid);
             format!("ST_SetSRID({},{}) AS {}", geom_name, grid_srid, geom_name)
@@ -293,6 +334,21 @@ impl PostgisInput {
                     geom_name, grid_srid);
                 format!("ST_Transform({},{}) AS {}", geom_name, grid_srid, geom_name)
             }
+        };
+
+        let offline = self.conn_pool.is_none();
+        if offline {
+            geom_expr
+        } else {
+            let mut cols: Vec<String> = self.detect_data_columns(layer, sql).iter().map(|&(ref name, ref casttype)| {
+                if casttype == "" {
+                    name.clone()
+                } else {
+                    format!("{}::{}", &name, &casttype)
+                }
+            }).collect();
+            cols.insert(0, geom_expr);
+            cols.join(",")
         }
     }
     /// Build !bbox! replacement expression for feature query.
@@ -312,11 +368,14 @@ impl PostgisInput {
     /// Build feature query SQL.
     pub fn build_query_sql(&self, layer: &Layer, grid_srid: i32, sql: Option<&String>) -> Option<String> {
         let mut query;
+        let offline = self.conn_pool.is_none();
+        let select_list = self.build_select_list(layer, grid_srid, sql);
         let intersect_clause = format!(" WHERE {} && !bbox!", layer.geometry_field.as_ref().unwrap());
 
         if let Some(&ref userquery) = sql {
             // user query
-            query = format!("SELECT * FROM ({}) AS _q", userquery);
+            let ref select = if offline { "*".to_string() } else { select_list };
+            query = format!("SELECT {} FROM ({}) AS _q", select, userquery);
             if !userquery.contains("!bbox!") {
                 query.push_str(&intersect_clause);
             }
@@ -324,7 +383,6 @@ impl PostgisInput {
             // automatic query
             //TODO: check min-/maxzoom + handle overzoom
             if layer.table_name.is_none() { return None }
-            let select_list = self.build_select_list(layer, grid_srid);
             query = format!("SELECT {} FROM {}", select_list,
                 layer.table_name.as_ref().unwrap());
             query.push_str(&intersect_clause);
@@ -507,8 +565,12 @@ pub fn test_detect_columns() {
     }.unwrap();
     let layers = pg.detect_layers(false);
     assert_eq!(layers[0].name, "rivers_lake_centerlines");
-    let cols = pg.detect_columns(&layers[0], 0);
-    assert_eq!(cols, vec!["fid", "scalerank", "name"]);
+    let cols = pg.detect_data_columns(&layers[0], None);
+    assert_eq!(cols, vec![
+        ("fid".to_string(), "".to_string()),
+        ("scalerank".to_string(), "FLOAT8".to_string()),
+        ("name".to_string(), "".to_string())
+    ]);
 }
 
 #[test]
@@ -595,7 +657,7 @@ pub fn test_retrieve_features() {
     pg.prepare_queries(&layer, 3857);
     pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
         assert_eq!("Ok(Point(SRID=3857;POINT(831219.9062494118 5928485.165733484)))", &*format!("{:?}", feat.geometry()));
-        assert_eq!(0, feat.attributes().len());
+        assert_eq!(4, feat.attributes().len());
         assert_eq!(None, feat.fid());
         reccnt += 1;
     });
@@ -608,11 +670,12 @@ pub fn test_retrieve_features() {
     pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
         assert_eq!("Ok(Point(SRID=3857;POINT(831219.9062494118 5928485.165733484)))", &*format!("{:?}", feat.geometry()));
         assert_eq!(feat.attributes()[0].key, "fid");
-        //assert_eq!(feat.attributes()[1].key, "scalerank"); //Numeric
-        assert_eq!(feat.attributes()[1].key, "name");
-        //assert_eq!(feat.attributes()[3].key, "pop_max"); //Numeric
+        assert_eq!(feat.attributes()[1].key, "scalerank"); //Numeric
+        assert_eq!(feat.attributes()[2].key, "name");
+        assert_eq!(feat.attributes()[3].key, "pop_max"); //Numeric
         assert_eq!(feat.attributes()[0].value, FeatureAttrValType::Int(6478));
-        assert_eq!(feat.attributes()[1].value, FeatureAttrValType::String("Bern".to_string()));
+        assert_eq!(feat.attributes()[1].value, FeatureAttrValType::Double(4.0));
+        assert_eq!(feat.attributes()[2].value, FeatureAttrValType::String("Bern".to_string()));
         assert_eq!(feat.fid(), Some(6478));
     });
 

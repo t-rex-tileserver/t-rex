@@ -62,8 +62,8 @@ impl MvtService {
         }}"#, tileset, tileset, tileset, tileset)).unwrap();
         let layers_metadata: Vec<(String,String)> = layers.iter().map(|layer| {
             let meta = layer.metadata();
-            let fields = self.input.detect_columns(&layer, 0);
-            let fields_json: Vec<String> = fields.iter().map(|f| format!("\"{}\": \"\"", f)).collect();
+            let fields = self.input.detect_data_columns(&layer, None);
+            let fields_json: Vec<String> = fields.iter().map(|&(ref f, _)| format!("\"{}\": \"\"", f)).collect();
             let layers = format!(r#"{{
                 "id": "{}",
                 "name": "{}",
@@ -295,7 +295,16 @@ pub fn test_tile_query() {
             features: [
                 Tile_Feature {
                     id: None,
-                    tags: [],
+                    tags: [
+                        0,
+                        0,
+                        1,
+                        1,
+                        2,
+                        2,
+                        3,
+                        3
+                    ],
                     field_type: Some(
                         POINT
                     ),
@@ -312,8 +321,80 @@ pub fn test_tile_query() {
                     }
                 }
             ],
-            keys: [],
-            values: [],
+            keys: [
+                "fid",
+                "scalerank",
+                "name",
+                "pop_max"
+            ],
+            values: [
+                Tile_Value {
+                    string_value: None,
+                    float_value: None,
+                    double_value: None,
+                    int_value: Some(
+                        106
+                    ),
+                    uint_value: None,
+                    sint_value: None,
+                    bool_value: None,
+                    unknown_fields: UnknownFields {
+                        fields: None
+                    },
+                    cached_size: Cell {
+                        value: 0
+                    }
+                },
+                Tile_Value {
+                    string_value: None,
+                    float_value: None,
+                    double_value: Some(
+                        10
+                    ),
+                    int_value: None,
+                    uint_value: None,
+                    sint_value: None,
+                    bool_value: None,
+                    unknown_fields: UnknownFields {
+                        fields: None
+                    },
+                    cached_size: Cell {
+                        value: 0
+                    }
+                },
+                Tile_Value {
+                    string_value: Some("Delemont"),
+                    float_value: None,
+                    double_value: None,
+                    int_value: None,
+                    uint_value: None,
+                    sint_value: None,
+                    bool_value: None,
+                    unknown_fields: UnknownFields {
+                        fields: None
+                    },
+                    cached_size: Cell {
+                        value: 0
+                    }
+                },
+                Tile_Value {
+                    string_value: None,
+                    float_value: None,
+                    double_value: Some(
+                        11315
+                    ),
+                    int_value: None,
+                    uint_value: None,
+                    sint_value: None,
+                    bool_value: None,
+                    unknown_fields: UnknownFields {
+                        fields: None
+                    },
+                    cached_size: Cell {
+                        value: 0
+                    }
+                }
+            ],
             extent: Some(
                 4096
             ),
