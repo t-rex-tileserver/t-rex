@@ -1,6 +1,6 @@
 [package]
 name = "t-rex"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 
 [[bin]]
