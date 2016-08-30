@@ -285,25 +285,21 @@ impl PostgisInput {
                         &Type::Varchar | &Type::Text | &Type::CharArray |
                         &Type::Float4 | &Type::Float8 |
                         &Type::Int2 | &Type::Int4 | &Type::Int8 |
-                        &Type::Bool => "".to_string(),
-                        &Type::Numeric => {
-                            warn!("Layer '{}': Converting field '{}' of type {} to FLOAT8", layer.name, name, col.type_().name());
-                            "FLOAT8".to_string()
-                        }
+                        &Type::Bool =>
+                            String::new(),
+                        &Type::Numeric => "FLOAT8".to_string(),
                         &Type::Other(ref other) => {
                             match other.name() {
-                                "geometry" => "".to_string(),
-                                _ => {
-                                    warn!("Layer '{}': Converting field '{}' of type {} to TEXT", layer.name, name, col.type_().name());
-                                    "TEXT".to_string()
-                                }
+                                "geometry" => String::new(),
+                                _ => "TEXT".to_string()
                             }
                         }
-                        _ => {
-                            warn!("Layer '{}': Converting field '{}' of type {} to TEXT", layer.name, name, col.type_().name());
-                            "TEXT".to_string()
-                        }
+                        _ => "TEXT".to_string(),
                     };
+                    if !cast.is_empty() {
+                        warn!("Layer '{}': Converting field '{}' of type {} to {}",
+                            layer.name, name, col.type_().name(), cast);
+                    }
                     (name, cast)
                 }).collect();
                 let _ = stmt.finish();
@@ -341,7 +337,7 @@ impl PostgisInput {
             geom_expr
         } else {
             let mut cols: Vec<String> = self.detect_data_columns(layer, sql).iter().map(|&(ref name, ref casttype)| {
-                if casttype == "" {
+                if casttype.is_empty() {
                     name.clone()
                 } else {
                     format!("{}::{}", &name, &casttype)
