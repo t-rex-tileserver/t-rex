@@ -30,6 +30,8 @@ pub struct Layer {
     pub query_limit: Option<u32>,
     // Explicit queries
     pub query: Vec<LayerQuery>,
+    /// Simplify geometry (lines and polygons)
+    pub simplify: Option<bool>,
 }
 
 impl LayerQuery {
@@ -105,6 +107,7 @@ table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
 #fid_field = "id"
+#simplify = true
 #[[tileset.layer.query]]
 #minzoom = 0
 #maxzoom = 22
@@ -147,6 +150,11 @@ geometry_type = "POINT"
             Some(ref query_limit)
                 => lines.push(format!("query_limit = {}", query_limit)),
             _   => {}
+        }
+        match self.simplify {
+            Some(ref simplify)
+                => lines.push(format!("simplify = {}", simplify)),
+            _   => lines.push(format!("#simplify = true")),
         }
         match self.query(0) {
             Some(ref query) => {

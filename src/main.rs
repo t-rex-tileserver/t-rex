@@ -66,16 +66,23 @@ fn main() {
                         .about("vector tile server specialized on publishing MVT tiles from a PostGIS database")
                         .subcommand(SubCommand::with_name("serve")
                             .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'
+                                              --simplify=[true|false] 'Simplify geometries'
                                               --cache=[DIR] 'Use tile cache in DIR'
                                               -c, --config=[FILE] 'Load from custom config file'")
                             .about("Start web server and serve MVT vector tiles"))
                         .subcommand(SubCommand::with_name("genconfig")
-                            .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'")
+                            .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'
+                                              --simplify=[true|false] 'Simplify geometries'")
                             .about("Generate configuration template"));
-    let matches = app.get_matches_from_safe_borrow(env::args()).unwrap(); //app.get_matches() prohibits later call of app.print_help()
-    match matches.subcommand() {
-        ("serve", Some(sub_m))     => webserver::server::webserver(sub_m),
-        ("genconfig", Some(sub_m)) => println!("{}", webserver::server::gen_config(sub_m)),
-        _                          => { let _ = app.print_help(); },
+
+    match app.get_matches_from_safe_borrow(env::args()) { //app.get_matches() prohibits later call of app.print_help()
+        Result::Err(e) => { println!("{}", e); },
+        Result::Ok(matches) => {
+            match matches.subcommand() {
+                ("serve", Some(sub_m))     => webserver::server::webserver(sub_m),
+                ("genconfig", Some(sub_m)) => println!("{}", webserver::server::gen_config(sub_m)),
+                _                          => { let _ = app.print_help(); println!(""); },
+            }
+        }
     }
 }

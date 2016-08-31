@@ -462,6 +462,7 @@ table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
 #fid_field = "id"
+#simplify = true
 #[[tileset.layer.query]]
 #minzoom = 0
 #maxzoom = 22

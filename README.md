@@ -60,9 +60,11 @@ name = "osm"
 
 [[tileset.layer]]
 name = "points"
+# Select all attributes of table:
 table_name = "ne_10m_populated_places"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
+simplify = true
 fid_field = "id"
 
 [[tileset.layer]]
@@ -70,6 +72,7 @@ name = "buildings"
 geometry_field = "way"
 geometry_type = "POLYGON"
 fid_field = "osm_id"
+  # Queries for different zoom levels:
   [[tileset.layer.query]]
   sql = """
     SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way

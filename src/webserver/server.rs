@@ -19,6 +19,7 @@ use hyper::header::{CacheControl, CacheDirective, AccessControlAllowOrigin, Acce
 use hyper::method::Method;
 use hyper::header;
 use std::collections::HashMap;
+use std::str::FromStr;
 use clap::ArgMatches;
 use std::str;
 use std::process;
@@ -144,7 +145,8 @@ fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
             let detect_geometry_types = true; //TODO: add option (maybe slow for many geometries)
             let mut layers = pg.detect_layers(detect_geometry_types);
             let mut tilesets = Vec::new();
-            while let Some(l) = layers.pop() {
+            while let Some(mut l) = layers.pop() {
+                l.simplify = Some(bool::from_str(args.value_of("simplify").unwrap_or("true")).unwrap_or(false));
                 let tileset = Tileset{name: l.name.clone(), layers: vec![l]};
                 tilesets.push(tileset);
             }

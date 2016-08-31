@@ -165,14 +165,18 @@ impl SqlQuery {
             self.sql = self.sql.replace("!bbox!", &bbox_expr);
         }
         // replace e.g. !zoom! with $5
-        for (var, par) in vec![
-                ("!zoom!", QueryParam::Zoom),
-                ("!pixel_width!", QueryParam::PixelWidth),
-                ("!scale_denominator!", QueryParam::ScaleDenominator) ] {
+        for (var, par, cast) in vec![
+                ("!zoom!",              QueryParam::Zoom,             ""),
+                ("!pixel_width!",       QueryParam::PixelWidth,       "FLOAT8"),
+                ("!scale_denominator!", QueryParam::ScaleDenominator, "FLOAT8") ] {
             if self.sql.contains(var) {
                 self.params.push(par);
                 numvars += 1;
-                self.sql = self.sql.replace(var, &format!("${}", numvars));
+                if cast != "" {
+                    self.sql = self.sql.replace(var, &format!("${}::{}", numvars, cast));
+                } else {
+                    self.sql = self.sql.replace(var, &format!("${}", numvars));
+                }
             }
         }
     }
@@ -313,25 +317,40 @@ impl PostgisInput {
         let filter_cols = vec![layer.geometry_field.as_ref().unwrap()];
         cols.into_iter().filter(|&(ref col, _)| !filter_cols.contains(&&col) ).collect()
     }
-    /// Build select list expressions for feature query.
-    fn build_select_list(&self, layer: &Layer, grid_srid: i32, sql: Option<&String>) -> String {
+    /// Build geometry selection expression for feature query.
+    fn build_geom_expr(&self, layer: &Layer, grid_srid: i32) -> String {
         let ref geom_name = layer.geometry_field.as_ref().unwrap();
         let layer_srid = layer.srid.unwrap_or(0);
 
-        let geom_expr = if layer_srid <= 0 { // Unknown SRID
+        let mut geom_expr = if layer_srid <= 0 { // Unknown SRID
             warn!("Layer '{}' - Casting geometry '{}' to SRID {}", layer.name,
                 geom_name, grid_srid);
-            format!("ST_SetSRID({},{}) AS {}", geom_name, grid_srid, geom_name)
+            format!("ST_SetSRID({},{})", geom_name, grid_srid)
         } else {
             if layer_srid == grid_srid {
                 String::from(geom_name as &str)
             } else {
                 warn!("Layer '{}' - Reprojecting geometry '{}' to SRID {}", layer.name,
                     geom_name, grid_srid);
-                format!("ST_Transform({},{}) AS {}", geom_name, grid_srid, geom_name)
+                format!("ST_Transform({},{})", geom_name, grid_srid)
             }
         };
 
+        if layer.simplify.unwrap_or(false) {
+            if layer.geometry_type.as_ref().unwrap_or(&"GEOMETRY".to_string()) != "POINT" {
+                geom_expr = format!("ST_SimplifyPreserveTopology({},!pixel_width!/2)", geom_expr);
+            }
+        }
+
+        if geom_expr.starts_with("ST_") {
+            geom_expr = format!("{} AS {}", geom_expr, geom_name)
+        }
+
+        geom_expr
+    }
+    /// Build select list expressions for feature query.
+    fn build_select_list(&self, layer: &Layer, grid_srid: i32, sql: Option<&String>) -> String {
+        let geom_expr = self.build_geom_expr(layer, grid_srid);
         let offline = self.conn_pool.is_none();
         if offline {
             geom_expr
@@ -585,6 +604,11 @@ pub fn test_feature_query() {
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
         "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
+    layer.simplify = Some(true);
+    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+        "SELECT ST_SimplifyPreserveTopology(geometry,$5::FLOAT8/2) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+
+    layer.simplify = Some(false);
     layer.query_limit = Some(1);
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
         "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857) LIMIT 1");
@@ -631,7 +655,7 @@ pub fn test_query_params() {
         sql: Some(String::from("SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),!pixel_width!/2) AS way FROM osm_buildings"))}];
     let query = pg.build_query(&layer, 3857, layer.query[0].sql.as_ref()).unwrap();
     assert_eq!(query.sql,
-        "SELECT * FROM (SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),$5/2) AS way FROM osm_buildings) AS _q WHERE way && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+        "SELECT * FROM (SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),$5::FLOAT8/2) AS way FROM osm_buildings) AS _q WHERE way && ST_MakeEnvelope($1,$2,$3,$4,3857)");
     assert_eq!(query.params, [QueryParam::Bbox, QueryParam::PixelWidth]);
 }
 
