@@ -336,13 +336,23 @@ impl PostgisInput {
             }
         };
 
+        if let Some(_) = layer.buffer_size {
+            //Buffer is added to !bbox! when replaced
+            geom_expr = format!("ST_Intersection(ST_MakeValid({}),!bbox!)", geom_expr);
+            //Workaround (FIXME): convert multi- to single-geometries
+            if let Some(ref geom_type) = layer.geometry_type {
+                let empty_geom = format!("ST_GeomFromText('{} EMPTY',{})", geom_type, grid_srid);
+                geom_expr = format!("COALESCE(ST_GeometryN({},1),{})::geometry({},{})", geom_expr, empty_geom, geom_type, grid_srid);
+            }
+        }
+
         if layer.simplify.unwrap_or(false) {
             if layer.geometry_type.as_ref().unwrap_or(&"GEOMETRY".to_string()) != "POINT" {
                 geom_expr = format!("ST_SimplifyPreserveTopology({},!pixel_width!/2)", geom_expr);
             }
         }
 
-        if geom_expr.starts_with("ST_") {
+        if geom_expr.starts_with("ST_") || geom_expr.starts_with("COALESCE") {
             geom_expr = format!("{} AS {}", geom_expr, geom_name)
         }
 
@@ -369,14 +379,14 @@ impl PostgisInput {
     /// Build !bbox! replacement expression for feature query.
     fn build_bbox_expr(&self, layer: &Layer, grid_srid: i32) -> String {
         let layer_srid = layer.srid.unwrap_or(grid_srid); // we assume grid srid as default 
+        let env_srid = if layer_srid <= 0 { layer_srid } else { grid_srid };
         let mut expr;
-        if layer_srid <= 0 { // Explicitely unknown SRID
-            expr = format!("ST_MakeEnvelope($1,$2,$3,$4,{})", layer_srid);
-        } else {
-            expr = format!("ST_MakeEnvelope($1,$2,$3,$4,{})", grid_srid);
-            if layer_srid != grid_srid {
-                expr = format!("ST_Transform({},{})", expr, layer_srid);
-            }
+        expr = format!("ST_MakeEnvelope($1,$2,$3,$4,{})", env_srid);
+        if let Some(pixels) = layer.buffer_size {
+            expr = format!("ST_Buffer({},{}*!pixel_width!)", expr, pixels);
+        }
+        if layer_srid > 0 && layer_srid != grid_srid {
+            expr = format!("ST_Transform({},{})", expr, layer_srid);
         };
         expr
     }
@@ -603,6 +613,11 @@ pub fn test_feature_query() {
     layer.srid = Some(3857);
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
         "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+
+    layer.buffer_size = Some(10);
+    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+        "SELECT ST_Intersection(ST_MakeValid(geometry),ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)) AS geometry FROM osm_place_point WHERE geometry && ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)");
+    layer.buffer_size = None;
 
     layer.simplify = Some(true);
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,

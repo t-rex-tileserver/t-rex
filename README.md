@@ -72,6 +72,8 @@ name = "buildings"
 geometry_field = "way"
 geometry_type = "POLYGON"
 fid_field = "osm_id"
+# Clip polygons with a buffer
+buffer-size = 10
   # Queries for different zoom levels:
   [[tileset.layer.query]]
   sql = """

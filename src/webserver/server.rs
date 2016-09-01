@@ -139,6 +139,8 @@ fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
             None => Tilecache::Nocache(Nocache),
             Some(dir) => Tilecache::Filecache(Filecache { basepath: dir.to_string() })
         };
+        let simplify = bool::from_str(args.value_of("simplify").unwrap_or("true")).unwrap_or(false);
+        let clip = bool::from_str(args.value_of("clip").unwrap_or("true")).unwrap_or(false);
         if let Some(dbconn) = args.value_of("dbconn") {
             let pg = PostgisInput::new(dbconn).connected();
             let grid = Grid::web_mercator();
@@ -146,7 +148,14 @@ fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
             let mut layers = pg.detect_layers(detect_geometry_types);
             let mut tilesets = Vec::new();
             while let Some(mut l) = layers.pop() {
-                l.simplify = Some(bool::from_str(args.value_of("simplify").unwrap_or("true")).unwrap_or(false));
+                l.simplify = Some(simplify);
+                l.buffer_size = match l.geometry_type {
+                    Some(ref geom) => {
+                        let types = vec!["LINESTRING", "MULTILINESTRING", "POLYGON", "MULTIPOLYGON"];
+                        if clip && types.contains(&(geom as &str)) { Some(1) } else { None }
+                    }
+                    None => None,
+                };
                 let tileset = Tileset{name: l.name.clone(), layers: vec![l]};
                 tilesets.push(tileset);
             }

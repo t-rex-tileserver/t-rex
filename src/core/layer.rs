@@ -32,6 +32,8 @@ pub struct Layer {
     pub query: Vec<LayerQuery>,
     /// Simplify geometry (lines and polygons)
     pub simplify: Option<bool>,
+    /// Tile buffer size in pixels
+    pub buffer_size: Option<u32>,
 }
 
 impl LayerQuery {
@@ -108,6 +110,7 @@ geometry_field = "wkb_geometry"
 geometry_type = "POINT"
 #fid_field = "id"
 #simplify = true
+#buffer-size = 10
 #[[tileset.layer.query]]
 #minzoom = 0
 #maxzoom = 22
@@ -150,6 +153,11 @@ geometry_type = "POINT"
             Some(ref query_limit)
                 => lines.push(format!("query_limit = {}", query_limit)),
             _   => {}
+        }
+        match self.buffer_size {
+            Some(ref buffer_size)
+                => lines.push(format!("buffer-size = {}", buffer_size)),
+            _   => lines.push(format!("#buffer-size = 10")),
         }
         match self.simplify {
             Some(ref simplify)
@@ -274,6 +282,7 @@ fn test_layers_from_config() {
         geometry_type = "POINT"
         fid_field = "id"
         query_limit = 100
+        buffer-size = 10
         [[tileset.layer.query]]
         sql = "SELECT name,wkb_geometry FROM ne_10m_populated_places"
 
@@ -288,6 +297,7 @@ fn test_layers_from_config() {
     assert_eq!(layers.len(), 2);
     assert_eq!(layers[0].name, "points");
     assert_eq!(layers[0].table_name, Some("ne_10m_populated_places".to_string()));
+    assert_eq!(layers[0].buffer_size, Some(10));
     assert_eq!(layers[1].table_name, None);
 
     // errors

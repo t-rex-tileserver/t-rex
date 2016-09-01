@@ -463,6 +463,7 @@ geometry_field = "wkb_geometry"
 geometry_type = "POINT"
 #fid_field = "id"
 #simplify = true
+#buffer-size = 10
 #[[tileset.layer.query]]
 #minzoom = 0
 #maxzoom = 22
