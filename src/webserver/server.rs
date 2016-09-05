@@ -206,18 +206,26 @@ pub fn webserver(args: &ArgMatches) {
                      .thread_count(Some(threads));
     server.utilize(log_request);
 
+    server.get("/index.json", middleware! { |_req, mut res|
+        let service: &MvtService = res.server_data();
+        res.set(MediaType::Json);
+        service.get_mvt_metadata()
+    });
+
     server.get("/:tileset.json", middleware! { |req, mut res|
         let service: &MvtService = res.server_data();
         let tileset = req.param("tileset").unwrap();
         res.set(MediaType::Json);
-        service.get_tilejson(&tileset)
+        let host = req.origin.headers.get::<header::Host>().unwrap();
+        let baseurl = format!("http://{}:{}", host.hostname, host.port.unwrap_or(80));
+        service.get_tilejson(&baseurl, &tileset)
     });
 
     server.get("/:tileset/metadata.json", middleware! { |req, mut res|
         let service: &MvtService = res.server_data();
         let tileset = req.param("tileset").unwrap();
         res.set(MediaType::Json);
-        service.get_metadata(&tileset)
+        service.get_mbtiles_metadata(&tileset)
     });
 
     server.get("/:tileset/:z/:x/:y.pbf", middleware! { |req, mut res|

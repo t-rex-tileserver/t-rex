@@ -15,7 +15,7 @@ use std::path::Path;
 use std::fs::{self,File};
 use std::io::Write;
 use toml;
-use rustc_serialize::json::{Json, ToJson};
+use rustc_serialize::json::{self, Json, ToJson};
 
 
 /// Collection of layers in one MVT
@@ -42,6 +42,41 @@ impl MvtService {
             Some(set) => set.layers.iter().map(|l| l).collect(),
             None => Vec::new()
         }
+    }
+    /// Service metadata for backend web application
+    pub fn get_mvt_metadata(&self) -> Json {
+        #[derive(RustcEncodable)]
+        struct MvtInfo {
+            tilesets: Vec<TilesetInfo>,
+        }
+        #[derive(RustcEncodable)]
+        struct TilesetInfo {
+            name: String,
+            tilejson: String,
+            tileurl: String,
+            layers: Vec<LayerInfo>,
+        }
+        #[derive(RustcEncodable)]
+        struct LayerInfo {
+            name: String,
+            geometry_type: Option<String>,
+        }
+
+        let mut tileset_infos: Vec<TilesetInfo> = self.tilesets.iter().map(|set| {
+            let layerinfos = set.layers.iter().map(|l| {
+                LayerInfo { name: l.name.clone(), geometry_type: l.geometry_type.clone() }
+                }).collect();
+            TilesetInfo {
+                name: set.name.clone(),
+                tilejson: format!("{}.json", set.name),
+                tileurl: format!("/{}/{{z}}/{{x}}/{{y}}.pbf", set.name),
+                layers: layerinfos,
+            }
+        }).collect();
+        tileset_infos.sort_by_key(|ti| ti.name.clone());
+        let mvt_info = MvtInfo { tilesets: tileset_infos };
+        let encoded = json::encode(&mvt_info).unwrap();
+        Json::from_str(&encoded).unwrap()
     }
     fn get_tilejson_infos(&self, tileset: &str) -> (Json, Json, Json) {
         let layers = self.get_tileset(tileset);
@@ -98,15 +133,17 @@ impl MvtService {
         let vector_layers_json = Json::from_str(&format!("[{}]", vector_layers.join(","))).unwrap();
         (metadata, layers_json, vector_layers_json)
     }
-    pub fn get_tilejson(&self, tileset: &str) -> String {
+    /// TileJSON metadata (https://github.com/mapbox/tilejson-spec)
+    pub fn get_tilejson(&self, baseurl: &str, tileset: &str) -> String {
         let (mut metadata, _layers, vector_layers) = self.get_tilejson_infos(tileset);
         let mut obj = metadata.as_object_mut().unwrap();
-        let url = Json::from_str(&format!("[\"http://127.0.0.1:6767/{}/{{z}}/{{x}}/{{y}}.pbf\"]", tileset)).unwrap();
+        let url = Json::from_str(&format!("[\"{}/{}/{{z}}/{{x}}/{{y}}.pbf\"]", baseurl, tileset)).unwrap();
         obj.insert("tiles".to_string(), url);
         obj.insert("vector_layers".to_string(), vector_layers);
         obj.to_json().to_string()
     }
-    pub fn get_metadata(&self, tileset: &str) -> String {
+    /// MBTiles metadata.json
+    pub fn get_mbtiles_metadata(&self, tileset: &str) -> String {
         let (mut metadata, layers, vector_layers) = self.get_tilejson_infos(tileset);
         let json_str = format!(r#"
         {{
@@ -172,7 +209,7 @@ impl MvtService {
                 let path = Path::new(&fc.basepath).join(&tileset.name);
                 fs::create_dir_all(&path).unwrap();
                 let mut f = File::create(&path.join("metadata.json")).unwrap();
-                let _ = f.write_all(self.get_metadata(&tileset.name).as_bytes());
+                let _ = f.write_all(self.get_mbtiles_metadata(&tileset.name).as_bytes());
             }
         }
     }
@@ -417,7 +454,64 @@ pub fn test_tile_query() {
 }
 
 #[test]
-pub fn test_metadata() {
+pub fn test_mvt_metadata() {
+    use core::read_config;
+
+    let config = read_config("src/test/example.cfg").unwrap();
+    let service = MvtService::from_config(&config).unwrap();
+
+    let metadata = format!("{}", service.get_mvt_metadata().pretty());
+    let expected = r#"{
+  "tilesets": [
+    {
+      "layers": [
+        {
+          "geometry_type": "POINT",
+          "name": "points"
+        },
+        {
+          "geometry_type": "POLYGON",
+          "name": "buildings"
+        }
+      ],
+      "name": "osm",
+      "tilejson": "osm.json",
+      "tileurl": "/osm/{z}/{x}/{y}.pbf"
+    }
+  ]
+}"#;
+    println!("{}", metadata);
+    assert_eq!(metadata, expected);
+}
+
+#[test]
+pub fn test_tilejson() {
+    use std::io::{self,Write};
+    use std::env;
+
+    let pg: PostgisInput = match env::var("DBCONN") {
+        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+        Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
+    }.unwrap();
+    let grid = Grid::web_mercator();
+    let mut layer = Layer::new("points");
+    layer.table_name = Some(String::from("ne_10m_populated_places"));
+    layer.geometry_field = Some(String::from("wkb_geometry"));
+    layer.geometry_type = Some(String::from("POINT"));
+    layer.query_limit = Some(1);
+    let tileset = Tileset{name: "points".to_string(), layers: vec![layer]};
+    let mut service = MvtService {input: pg, grid: grid,
+                              tilesets: vec![tileset], cache: Tilecache::Nocache(Nocache)};
+    service.prepare_feature_queries();
+
+    let metadata = service.get_tilejson("http://127.0.0.1", "points");
+    let expected = r#"{"attribution":"","basename":"points","bounds":[-180.0,-90.0,180.0,90.0],"center":"0.0,0.0,2","description":"points","format":"pbf","id":"points","maxzoom":14,"minzoom":0,"name":"points","scheme":"xyz","tiles":["http://127.0.0.1/points/{z}/{x}/{y}.pbf"],"vector_layers":[{"description":"","fields":{"fid":"","name":"","pop_max":"","scalerank":""},"id":"points","maxzoom":99,"minzoom":0}],"version":"2.0.0"}"#;
+    println!("{}", metadata);
+    assert_eq!(metadata, expected);
+}
+
+#[test]
+pub fn test_mbtiles_metadata() {
     use core::read_config;
     use std::io::{self,Write};
     use std::env;
@@ -429,7 +523,7 @@ pub fn test_metadata() {
 
     let config = read_config("src/test/example.cfg").unwrap();
     let service = MvtService::from_config(&config).unwrap();
-    let metadata = service.get_metadata("points");
+    let metadata = service.get_mbtiles_metadata("points");
     println!("{}", metadata);
     let format = r#""format":"pbf""#;
     assert!(metadata.contains(format));
