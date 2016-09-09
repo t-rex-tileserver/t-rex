@@ -367,7 +367,8 @@ impl PostgisInput {
         } else {
             let mut cols: Vec<String> = self.detect_data_columns(layer, sql).iter().map(|&(ref name, ref casttype)| {
                 if casttype.is_empty() {
-                    name.clone()
+                    // Wrap in double quotes to guarantee validity. Columns might have colons
+                    format!("\"{}\"", name)
                 } else {
                     format!("{}::{}", &name, &casttype)
                 }
