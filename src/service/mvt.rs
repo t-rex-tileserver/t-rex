@@ -5,7 +5,7 @@
 
 use datasource::{Datasource,DatasourceInput};
 use datasource::PostgisInput;
-use core::grid::Grid;
+use core::grid::{Grid, Extent};
 use core::layer::Layer;
 use core::Config;
 use mvt::tile::Tile;
@@ -200,6 +200,33 @@ impl MvtService {
 
         //TODO: return unzipped if gzip == false
         tilegz
+    }
+    /// Populate tile cache
+    pub fn generate(&self, tileset_name: Option<&str>, minzoom: Option<u8>, maxzoom: Option<u8>, extent: Option<Extent>) {
+        self.init_cache();
+        let minzoom = minzoom.unwrap_or(0);
+        let maxzoom = maxzoom.unwrap_or(self.grid.nlevels());
+        let extent = extent.unwrap_or(self.grid.tile_extent(0, 0, 0));
+        let limits = self.grid.tile_limits(extent, 0);
+        for tileset in &self.tilesets {
+            if tileset_name.is_some() &&
+               tileset_name.unwrap() != &tileset.name {
+                continue;
+            }
+            for zoom in minzoom..maxzoom {
+                let ref limit = limits[zoom as usize];
+                for xtile in limit.minx..limit.maxx {
+                    for ytile in limit.miny..limit.maxy {
+                        let mvt_tile = self.tile(&tileset.name, xtile, ytile, zoom);
+
+                        let mut tilegz = Vec::new();
+                        Tile::write_gz_to(&mut tilegz, &mvt_tile);
+                        let path = format!("{}/{}/{}/{}.pbf", &tileset.name, zoom, xtile, ytile);
+                        let _ = self.cache.write(&path, &tilegz);
+                    }
+                }
+            }
+        }
     }
     pub fn init_cache(&self) {
         if let Tilecache::Filecache(ref fc) = self.cache {

@@ -15,10 +15,26 @@ pub struct Extent {
     pub maxy: f64,
 }
 
+/// Min and max grid cell numbers
+#[derive(PartialEq,Debug)]
+pub struct ExtentInt {
+    pub minx: u16,
+    pub miny: u16,
+    pub maxx: u16,
+    pub maxy: u16,
+}
+
+enum Origin {
+    TopLeft, BottomLeft //TopRight, BottomRight
+}
+
+enum Unit {
+    M, DD, Ft
+}
 
 // Credits: MapCache by Thomas Bonfort (http://mapserver.org/mapcache/)
 pub struct Grid {
-    /// The width and height of an individual tile, in pixels. Must be specified as positive integers separated by a space character.
+    /// The width and height of an individual tile, in pixels.
     width: u16,
     height: u16,
     /// The geographical extent covered by the grid, in ground units (e.g. meters, degrees, feet, etc.). Must be specified as 4 floating point numbers ordered as minx, miny, maxx, maxy.
@@ -27,11 +43,13 @@ pub struct Grid {
     extent: Extent,
     /// Spatial reference system (PostGIS SRID).
     pub srid: i32,
-    //units: m/dd/ft
+    /// Grid units
+    units: Unit,
     /// This is a list of resolutions for each of the zoom levels defined by the grid. This must be supplied as a list of positive floating point values, ordered from largest to smallest.
     /// The largest value will correspond to the grid’s zoom level 0. Resolutions are expressed in “units-per-pixel”, depending on the unit used by the grid (e.g. resolutions are in meters per pixel for most grids used in webmapping).
     resolutions: &'static[f64],
-    //origin: top-left, bottom-left, top-right and bottom-right
+    /// Grid origin
+    origin: Origin,
 }
 
 impl Grid {
@@ -62,7 +80,9 @@ impl Grid {
             width: 256, height: 256,
             extent: Extent {minx: -180.0, miny: -90.0, maxx: 180.0, maxy: 90.0},
             srid: 4236,
-            resolutions: &WGS84_RESOLUTIONS
+            units: Unit::M,
+            resolutions: &WGS84_RESOLUTIONS,
+            origin: Origin::BottomLeft
         }
     }
 
@@ -95,10 +115,15 @@ impl Grid {
             extent: Extent {minx: -20037508.3427892480, miny: -20037508.3427892480,
                             maxx: 20037508.3427892480, maxy: 20037508.3427892480},
             srid: 3857,
-            resolutions: &GOOGLE_RESOLUTIONS
+            units: Unit::DD,
+            resolutions: &GOOGLE_RESOLUTIONS,
+            origin: Origin::BottomLeft
         }
     }
 
+    pub fn nlevels(&self) -> u8 {
+        self.resolutions.len() as u8
+    }
     pub fn pixel_width(&self, zoom: u8) -> f64 {
         self.resolutions[zoom as usize]  //TODO: assumes grid unit 'm'
     }
@@ -108,21 +133,26 @@ impl Grid {
     }
     /// Extent of a given tile in the grid given its x, y, and z
     pub fn tile_extent(&self, xtile: u16, ytile: u16, zoom: u8) -> Extent {
+        // based on mapcache_grid_get_tile_extent
         let res = self.resolutions[zoom as usize];
         let tile_sx = self.width as f64;
         let tile_sy = self.height as f64;
-        Extent {
-            minx: self.extent.minx + (res * xtile as f64 * tile_sx),
-            miny: self.extent.miny + (res * ytile as f64 * tile_sy),
-            maxx: self.extent.minx + (res * (xtile + 1) as f64 * tile_sx),
-            maxy: self.extent.miny + (res * (ytile + 1) as f64 * tile_sy),
+        match self.origin {
+            Origin::BottomLeft =>
+                Extent {
+                    minx: self.extent.minx + (res * xtile as f64 * tile_sx),
+                    miny: self.extent.miny + (res * ytile as f64 * tile_sy),
+                    maxx: self.extent.minx + (res * (xtile + 1) as f64 * tile_sx),
+                    maxy: self.extent.miny + (res * (ytile + 1) as f64 * tile_sy),
+                },
+            Origin::TopLeft =>
+                Extent {
+                    minx: self.extent.minx + (res * xtile as f64 * tile_sx),
+                    miny: self.extent.maxy - (res * (ytile + 1) as f64 * tile_sy),
+                    maxx: self.extent.minx + (res * (xtile + 1) as f64 * tile_sx),
+                    maxy: self.extent.maxy - (res * ytile as f64 * tile_sy)
+                }
         }
-        /* ORIGIN_TOP_LEFT:
-            minx: self.extent.minx + (res * xtile as f64 * tile_sx),
-            miny: self.extent.maxy - (res * (ytile + 1) as f64 * tile_sy),
-            maxx: self.extent.minx + (res * (xtile + 1) as f64 * tile_sx),
-            maxy: self.extent.maxy - (res * ytile as f64 * tile_sy)
-        */
     }
     /// Extent of a given tile in GoogleMaps XYZ adressing scheme
     pub fn tile_extent_reverse_y(&self, xtile: u16, ytile: u16, zoom: u8) -> Extent {
@@ -131,6 +161,53 @@ impl Grid {
         let maxy = ((self.extent.maxy-self.extent.minx- 0.01* unitheight)/unitheight).ceil() as u16;
         let y = maxy-ytile-1;
         self.tile_extent(xtile, y, zoom)
+    }
+    /// (maxx, maxy) of grid level
+    pub fn level_limit(&self, zoom: u8) -> (u16, u16) {
+        let res = self.resolutions[zoom as usize];
+        let unitheight = self.height as f64 * res;
+        let unitwidth = self.width as f64 * res;
+
+        let maxy = ((self.extent.maxy-self.extent.miny - 0.01* unitheight)/unitheight).ceil() as u16;
+        let maxx = ((self.extent.maxx-self.extent.miny - 0.01* unitwidth)/unitwidth).ceil() as u16;
+        (maxx, maxy)
+    }
+    /// Tile index limits covering extent
+    pub fn tile_limits(&self, extent: Extent, tolerance: i16) -> Vec<ExtentInt> {
+      // Based on mapcache_grid_compute_limits
+      const EPSILON: f64 = 0.0000001;
+      let nlevels = self.resolutions.len() as u8;
+      (0..nlevels).map(|i| {
+        let res = self.resolutions[i as usize];
+        let unitheight = self.height as f64 * res;
+        let unitwidth = self.width as f64 * res;
+        let (level_maxx, level_maxy) = self.level_limit(i);
+
+        let (mut minx, mut maxx, mut miny, mut maxy) = match self.origin {
+            Origin::BottomLeft =>
+                (
+                    (((extent.minx - self.extent.minx) / unitwidth  + EPSILON).floor() as i16) - tolerance,
+                    (((extent.maxx - self.extent.minx) / unitwidth  - EPSILON).ceil()  as i16) + tolerance,
+                    (((extent.miny - self.extent.miny) / unitheight + EPSILON).floor() as i16) - tolerance,
+                    (((extent.maxy - self.extent.miny) / unitheight - EPSILON).ceil()  as i16) + tolerance,
+                ),
+            Origin::TopLeft =>
+                (
+                    (((extent.minx - self.extent.minx) / unitwidth  + EPSILON).floor() as i16) - tolerance,
+                    (((extent.maxx - self.extent.minx) / unitwidth  - EPSILON).ceil()  as i16) + tolerance,
+                    (((self.extent.maxy - extent.maxy) / unitheight + EPSILON).floor() as i16) - tolerance,
+                    (((self.extent.maxy - extent.miny) / unitheight - EPSILON).ceil()  as i16) + tolerance,
+                )
+        };
+
+        // to avoid requesting out-of-range tiles
+        if minx < 0 { minx = 0; }
+        if maxx > level_maxx as i16 { maxx = level_maxx as i16 };
+        if miny < 0 { miny = 0 };
+        if maxy > level_maxy as i16 { maxy = level_maxy as i16 };
+
+        ExtentInt { minx: minx as u16, maxx: maxx as u16, miny: miny as u16, maxy: maxy as u16 }
+      }).collect()
     }
 }
 
@@ -168,9 +245,11 @@ fn test_bbox() {
 
     let extent = grid.tile_extent_reverse_y(486, 332, 10);
     assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: 7005300.768279828, maxx: -978393.9620502591, maxy: 7044436.526761841});
+    let extent = grid.tile_extent(486, 691, 10);
+    assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: 7005300.768279828, maxx: -978393.9620502591, maxy: 7044436.526761841});
 
-    //let extent_ch = service.tile_extent(1073, 717, 11);
-    //assert_eq!(extent_ch, Extent { minx: 958826.0828092434, miny: 5987771.04774756, maxx: 978393.9620502479, maxy: 6007338.926988564 });
+    let extent_ch = grid.tile_extent_reverse_y(1073, 717, 11);
+    assert_eq!(extent_ch, Extent { minx: 958826.0828092434, miny: 5987771.04774756, maxx: 978393.9620502479, maxy: 6007338.926988564 });
 
     let wgs84extent000 = Grid::wgs84().tile_extent(0, 0, 0);
     assert_eq!(wgs84extent000, Extent { minx: -180.0, miny: -90.0, maxx: 0.0, maxy: 90.0 });
@@ -179,8 +258,20 @@ fn test_bbox() {
 #[test]
 fn test_grid_calculations() {
     let grid = Grid::web_mercator();
+
     assert_eq!(grid.pixel_width(10), 152.8740565703525);
     assert_eq!(grid.scale_denominator(10), 577791.7098721985);
+
+    assert_eq!(grid.level_limit(0), (1, 1));
+    assert_eq!(grid.level_limit(10), (1024, 1024));
+
+    let limits = grid.tile_limits(grid.tile_extent(0, 0, 0), 0);
+    assert_eq!(limits[0], ExtentInt {minx: 0, miny: 0, maxx: 1, maxy: 1 });
+    assert_eq!(limits[10], ExtentInt {minx: 0, miny: 0, maxx: 1024, maxy: 1024 });
+
+    let limits = grid.tile_limits(Extent {minx: -1017529.7205322683, miny: 7005300.768279828, maxx: -978393.9620502591, maxy: 7044436.526761841}, 0);
+    assert_eq!(limits[0], ExtentInt {minx: 0, miny: 0, maxx: 1, maxy: 1 });
+    assert_eq!(limits[10], ExtentInt {minx: 486, miny: 691, maxx: 487, maxy: 692});
 }
 
 #[test]

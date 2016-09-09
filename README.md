@@ -38,6 +38,10 @@ Run server with configuration file:
 
     t_rex serve --config osm2vectortiles.cfg
 
+Generate tiles for cache:
+
+    t_rex generate --config osm2vectortiles.cfg
+
 
 Configuration
 -------------

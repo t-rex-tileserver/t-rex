@@ -119,7 +119,7 @@ port = 6767
 threads = 4
 "#;
 
-fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
+pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
     if let Some(cfgpath) = args.value_of("config") {
         info!("Reading configuration from '{}'", cfgpath);
         let config = read_config(cfgpath).unwrap_or_else(|err| {

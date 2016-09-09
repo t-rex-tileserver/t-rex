@@ -27,8 +27,9 @@ mod service;
 mod cache;
 mod webserver;
 
-use clap::{App, SubCommand};
+use clap::{App, SubCommand, ArgMatches};
 use std::env;
+use std::process;
 use log::{LogRecord, LogLevelFilter};
 use env_logger::LogBuilder;
 
@@ -56,6 +57,28 @@ fn init_logger() {
     builder.init().unwrap();
 }
 
+fn generate(args: &ArgMatches) {
+    let (mut service, config) = webserver::server::service_from_args(args);
+    let _ = config.lookup("service.mvt")
+        .ok_or("Missing configuration entry [service.mvt]".to_string())
+        .unwrap_or_else(|err| {
+            println!("Error reading configuration - {} ", err);
+            process::exit(1)
+        });
+    let _ = config.lookup("cache.file.base")
+        .ok_or("Missing configuration entry base in [cache.file]".to_string())
+        .unwrap_or_else(|err| {
+            println!("Error reading configuration - {} ", err);
+            process::exit(1)
+        });
+    let tileset = args.value_of("tileset");
+    let minzoom = args.value_of("minzoom").map(|s| s.parse::<u8>().unwrap());
+    let maxzoom = args.value_of("maxzoom").map(|s| s.parse::<u8>().unwrap());
+    let extent = None;
+    service.prepare_feature_queries();
+    service.generate(tileset, minzoom, maxzoom, extent);
+}
+
 fn main() {
     init_logger();
 
@@ -75,7 +98,13 @@ fn main() {
                             .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'
                                               --simplify=[true|false] 'Simplify geometries'
                                               --clip=[true|false] 'Clip geometries'")
-                            .about("Generate configuration template"));
+                            .about("Generate configuration template"))
+                        .subcommand(SubCommand::with_name("generate")
+                            .args_from_usage("-c, --config=<FILE> 'Load from custom config file'
+                                              --tileset=[NAME] 'Tileset name'
+                                              --minzoom=[LEVEL] 'Minimum zoom level'
+                                              --maxzoom=[LEVEL] 'Maximum zoom level'")
+                            .about("Generate tiles for cache"));
 
     match app.get_matches_from_safe_borrow(env::args()) { //app.get_matches() prohibits later call of app.print_help()
         Result::Err(e) => { println!("{}", e); },
@@ -83,6 +112,7 @@ fn main() {
             match matches.subcommand() {
                 ("serve", Some(sub_m))     => webserver::server::webserver(sub_m),
                 ("genconfig", Some(sub_m)) => println!("{}", webserver::server::gen_config(sub_m)),
+                ("generate", Some(sub_m))  => generate(sub_m),
                 _                          => { let _ = app.print_help(); println!(""); },
             }
         }
