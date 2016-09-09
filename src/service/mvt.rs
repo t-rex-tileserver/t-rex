@@ -92,7 +92,7 @@ impl MvtService {
             "bounds": [-180.0,-90.0,180.0,90.0],
             "minzoom": 0,
             "maxzoom": 14,
-            "center": "0.0,0.0,2",
+            "center": [0.0, 0.0, 2],
             "basename": "{}"
         }}"#, tileset, tileset, tileset, tileset)).unwrap();
         let layers_metadata: Vec<(String,String)> = layers.iter().map(|layer| {
