@@ -505,7 +505,7 @@ pub fn test_tilejson() {
     service.prepare_feature_queries();
 
     let metadata = service.get_tilejson("http://127.0.0.1", "points");
-    let expected = r#"{"attribution":"","basename":"points","bounds":[-180.0,-90.0,180.0,90.0],"center":"0.0,0.0,2","description":"points","format":"pbf","id":"points","maxzoom":14,"minzoom":0,"name":"points","scheme":"xyz","tiles":["http://127.0.0.1/points/{z}/{x}/{y}.pbf"],"vector_layers":[{"description":"","fields":{"fid":"","name":"","pop_max":"","scalerank":""},"id":"points","maxzoom":99,"minzoom":0}],"version":"2.0.0"}"#;
+    let expected = r#"{"attribution":"","basename":"points","bounds":[-180.0,-90.0,180.0,90.0],"center":[0.0,0.0,2],"description":"points","format":"pbf","id":"points","maxzoom":14,"minzoom":0,"name":"points","scheme":"xyz","tiles":["http://127.0.0.1/points/{z}/{x}/{y}.pbf"],"vector_layers":[{"description":"","fields":{"fid":"","name":"","pop_max":"","scalerank":""},"id":"points","maxzoom":99,"minzoom":0}],"version":"2.0.0"}"#;
     println!("{}", metadata);
     assert_eq!(metadata, expected);
 }
