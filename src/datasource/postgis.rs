@@ -366,11 +366,11 @@ impl PostgisInput {
             geom_expr
         } else {
             let mut cols: Vec<String> = self.detect_data_columns(layer, sql).iter().map(|&(ref name, ref casttype)| {
+                // Wrap column names in double quotes to guarantee validity. Columns might have colons
                 if casttype.is_empty() {
-                    // Wrap in double quotes to guarantee validity. Columns might have colons
                     format!("\"{}\"", name)
                 } else {
-                    format!("{}::{}", &name, &casttype)
+                    format!("\"{}\"::{}", &name, &casttype)
                 }
             }).collect();
             cols.insert(0, geom_expr);
