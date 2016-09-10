@@ -74,9 +74,11 @@ fn generate(args: &ArgMatches) {
         let arr: Vec<f64> = vals.map(|v| v.parse().unwrap()).collect();
         Extent { minx: arr[0], miny: arr[1], maxx: arr[2], maxy: arr[3] }
     });
+    let nodes = args.value_of("nodes").map(|s| s.parse::<u8>().unwrap());
+    let nodeno = args.value_of("nodeno").map(|s| s.parse::<u8>().unwrap());
     let progress = args.value_of("progress").map_or(true, |s| s.parse::<bool>().unwrap());
     service.prepare_feature_queries();
-    service.generate(tileset, minzoom, maxzoom, extent, progress);
+    service.generate(tileset, minzoom, maxzoom, extent, nodes, nodeno, progress);
 }
 
 fn main() {
@@ -105,6 +107,8 @@ fn main() {
                                               --minzoom=[LEVEL] 'Minimum zoom level'
                                               --maxzoom=[LEVEL] 'Maximum zoom level'
                                               --extent=[minx,miny,maxx,maxy] 'Extent of tiles'
+                                              --nodes=[NUM] 'Number of generator nodes'
+                                              --nodeno=[NUM] 'Number of this nodes (0 <= n < nodes)'
                                               --progress=[true|false] 'Show progress bar'")
                             .about("Generate tiles for cache"));
 

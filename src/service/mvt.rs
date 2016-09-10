@@ -204,8 +204,8 @@ impl MvtService {
         tilegz
     }
     fn progress_bar(&self, msg: &str, limits: &ExtentInt) -> ProgressBar<Stdout> {
-        let tiles = (limits.maxx-limits.minx)*(limits.maxy-limits.miny);
-        let mut pb = ProgressBar::new(tiles as u64);
+        let tiles = (limits.maxx as u64-limits.minx as u64)*(limits.maxy as u64-limits.miny as u64);
+        let mut pb = ProgressBar::new(tiles);
         pb.message(msg);
         //pb.set_max_refresh_rate(Some(Duration::from_millis(200)));
         pb.show_speed = false;
@@ -214,11 +214,15 @@ impl MvtService {
         pb
     }
     /// Populate tile cache
-    pub fn generate(&self, tileset_name: Option<&str>, minzoom: Option<u8>, maxzoom: Option<u8>, extent: Option<Extent>, progress: bool) {
+    pub fn generate(&self, tileset_name: Option<&str>, minzoom: Option<u8>, maxzoom: Option<u8>,
+                    extent: Option<Extent>, nodes: Option<u8>, nodeno: Option<u8>, progress: bool) {
         self.init_cache();
         let minzoom = minzoom.unwrap_or(0);
         let maxzoom = maxzoom.unwrap_or(self.grid.nlevels());
         let extent = extent.unwrap_or(self.grid.tile_extent(0, 0, 0));
+        let nodes = nodes.unwrap_or(1) as u64;
+        let nodeno = nodeno.unwrap_or(0) as u64;
+        let mut tileno: u64 = 0;
         let limits = self.grid.tile_limits(extent, 0);
         for tileset in &self.tilesets {
             if tileset_name.is_some() &&
@@ -232,8 +236,11 @@ impl MvtService {
                 if progress { pb.tick(); }
                 for xtile in limit.minx..limit.maxx {
                     for ytile in limit.miny..limit.maxy {
-                        let mvt_tile = self.tile(&tileset.name, xtile, ytile, zoom);
+                        let skip = tileno % nodes != nodeno;
+                        tileno += 1;
+                        if skip { continue; }
 
+                        let mvt_tile = self.tile(&tileset.name, xtile, ytile, zoom);
                         let mut tilegz = Vec::new();
                         Tile::write_gz_to(&mut tilegz, &mvt_tile);
                         let path = format!("{}/{}/{}/{}.pbf", &tileset.name, zoom, xtile, ytile);
