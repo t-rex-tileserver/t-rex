@@ -28,6 +28,7 @@ mod service;
 mod cache;
 mod webserver;
 
+use core::grid::Extent;
 use clap::{App, SubCommand, ArgMatches};
 use std::env;
 use std::process;
@@ -69,7 +70,10 @@ fn generate(args: &ArgMatches) {
     let tileset = args.value_of("tileset");
     let minzoom = args.value_of("minzoom").map(|s| s.parse::<u8>().unwrap());
     let maxzoom = args.value_of("maxzoom").map(|s| s.parse::<u8>().unwrap());
-    let extent = None;
+    let extent = args.values_of("extent").map(|vals| {
+        let arr: Vec<f64> = vals.map(|v| v.parse().unwrap()).collect();
+        Extent { minx: arr[0], miny: arr[1], maxx: arr[2], maxy: arr[3] }
+    });
     let progress = args.value_of("progress").map_or(true, |s| s.parse::<bool>().unwrap());
     service.prepare_feature_queries();
     service.generate(tileset, minzoom, maxzoom, extent, progress);
@@ -100,6 +104,7 @@ fn main() {
                                               --tileset=[NAME] 'Tileset name'
                                               --minzoom=[LEVEL] 'Minimum zoom level'
                                               --maxzoom=[LEVEL] 'Maximum zoom level'
+                                              --extent=[minx,miny,maxx,maxy] 'Extent of tiles'
                                               --progress=[true|false] 'Show progress bar'")
                             .about("Generate tiles for cache"));
 
