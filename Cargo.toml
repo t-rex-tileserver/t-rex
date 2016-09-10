@@ -23,6 +23,7 @@ log = "*"
 env_logger = "*"
 time = "*"
 flate2 = "*"
+pbr = "*"
 
 [dependencies.postgres]
 version = "*"

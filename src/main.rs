@@ -19,6 +19,7 @@ extern crate protobuf;
 extern crate clap;
 extern crate time;
 extern crate flate2;
+extern crate pbr;
 
 pub mod core;
 mod datasource;
@@ -59,12 +60,6 @@ fn init_logger() {
 
 fn generate(args: &ArgMatches) {
     let (mut service, config) = webserver::server::service_from_args(args);
-    let _ = config.lookup("service.mvt")
-        .ok_or("Missing configuration entry [service.mvt]".to_string())
-        .unwrap_or_else(|err| {
-            println!("Error reading configuration - {} ", err);
-            process::exit(1)
-        });
     let _ = config.lookup("cache.file.base")
         .ok_or("Missing configuration entry base in [cache.file]".to_string())
         .unwrap_or_else(|err| {
@@ -75,8 +70,9 @@ fn generate(args: &ArgMatches) {
     let minzoom = args.value_of("minzoom").map(|s| s.parse::<u8>().unwrap());
     let maxzoom = args.value_of("maxzoom").map(|s| s.parse::<u8>().unwrap());
     let extent = None;
+    let progress = args.value_of("progress").map_or(true, |s| s.parse::<bool>().unwrap());
     service.prepare_feature_queries();
-    service.generate(tileset, minzoom, maxzoom, extent);
+    service.generate(tileset, minzoom, maxzoom, extent, progress);
 }
 
 fn main() {
@@ -103,7 +99,8 @@ fn main() {
                             .args_from_usage("-c, --config=<FILE> 'Load from custom config file'
                                               --tileset=[NAME] 'Tileset name'
                                               --minzoom=[LEVEL] 'Minimum zoom level'
-                                              --maxzoom=[LEVEL] 'Maximum zoom level'")
+                                              --maxzoom=[LEVEL] 'Maximum zoom level'
+                                              --progress=[true|false] 'Show progress bar'")
                             .about("Generate tiles for cache"));
 
     match app.get_matches_from_safe_borrow(env::args()) { //app.get_matches() prohibits later call of app.print_help()

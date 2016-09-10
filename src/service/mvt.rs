@@ -5,7 +5,7 @@
 
 use datasource::{Datasource,DatasourceInput};
 use datasource::PostgisInput;
-use core::grid::{Grid, Extent};
+use core::grid::{Grid, Extent, ExtentInt};
 use core::layer::Layer;
 use core::Config;
 use mvt::tile::Tile;
@@ -16,6 +16,8 @@ use std::fs::{self,File};
 use std::io::Write;
 use toml;
 use rustc_serialize::json::{self, Json, ToJson};
+use pbr::ProgressBar;
+use std::io::Stdout;
 
 
 /// Collection of layers in one MVT
@@ -201,8 +203,18 @@ impl MvtService {
         //TODO: return unzipped if gzip == false
         tilegz
     }
+    fn progress_bar(&self, msg: &str, limits: &ExtentInt) -> ProgressBar<Stdout> {
+        let tiles = (limits.maxx-limits.minx)*(limits.maxy-limits.miny);
+        let mut pb = ProgressBar::new(tiles as u64);
+        pb.message(msg);
+        //pb.set_max_refresh_rate(Some(Duration::from_millis(200)));
+        pb.show_speed = false;
+        pb.show_percent = false;
+        pb.show_time_left = false;
+        pb
+    }
     /// Populate tile cache
-    pub fn generate(&self, tileset_name: Option<&str>, minzoom: Option<u8>, maxzoom: Option<u8>, extent: Option<Extent>) {
+    pub fn generate(&self, tileset_name: Option<&str>, minzoom: Option<u8>, maxzoom: Option<u8>, extent: Option<Extent>, progress: bool) {
         self.init_cache();
         let minzoom = minzoom.unwrap_or(0);
         let maxzoom = maxzoom.unwrap_or(self.grid.nlevels());
@@ -213,8 +225,11 @@ impl MvtService {
                tileset_name.unwrap() != &tileset.name {
                 continue;
             }
+            if progress { println!("Generating tileset '{}'...", tileset.name); }
             for zoom in minzoom..maxzoom {
                 let ref limit = limits[zoom as usize];
+                let mut pb = self.progress_bar(&format!("Level {}: ", zoom), &limit);
+                if progress { pb.tick(); }
                 for xtile in limit.minx..limit.maxx {
                     for ytile in limit.miny..limit.maxy {
                         let mvt_tile = self.tile(&tileset.name, xtile, ytile, zoom);
@@ -223,10 +238,12 @@ impl MvtService {
                         Tile::write_gz_to(&mut tilegz, &mvt_tile);
                         let path = format!("{}/{}/{}/{}.pbf", &tileset.name, zoom, xtile, ytile);
                         let _ = self.cache.write(&path, &tilegz);
+                        if progress { pb.inc(); }
                     }
                 }
             }
         }
+        if progress { println!(""); }
     }
     pub fn init_cache(&self) {
         if let Tilecache::Filecache(ref fc) = self.cache {
