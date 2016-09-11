@@ -2,8 +2,8 @@
 <html>
   <head>
     <title>T-Rex Vector Tile viewer</title>
-    <link rel="stylesheet" href="http://openlayers.org/en/v3.15.1/css/ol.css" type="text/css">
-    <script src="http://openlayers.org/en/v3.15.1/build/ol.js"></script>
+    <link rel="stylesheet" href="http://openlayers.org/en/v3.18.2/css/ol.css" type="text/css">
+    <script src="http://openlayers.org/en/v3.18.2/build/ol-debug.js"></script>
     <style>
       .map {
         background: #f8f4f0;

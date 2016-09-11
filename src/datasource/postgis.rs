@@ -348,8 +348,15 @@ impl PostgisInput {
             }
 
             if layer.simplify.unwrap_or(false) {
-                if layer.geometry_type.as_ref().unwrap_or(&"GEOMETRY".to_string()) != "POINT" {
-                    geom_expr = format!("ST_SimplifyPreserveTopology({},!pixel_width!/2)", geom_expr);
+                geom_expr = match layer.geometry_type.as_ref().unwrap_or(&"GEOMETRY".to_string()) as &str {
+                    "LINESTRING" | "MULTILINESTRING" =>
+                        format!("ST_SimplifyPreserveTopology({},!pixel_width!/2)", geom_expr),
+                    "POLYGON" | "MULTIPOLYGON" => {
+                        let geom_type = layer.geometry_type.as_ref().unwrap();
+                        let empty_geom = format!("ST_GeomFromText('{} EMPTY',{})", geom_type, grid_srid);
+                        format!("COALESCE(ST_SnapToGrid({}, !pixel_width!/2),{})::geometry({},{})", geom_expr, empty_geom, geom_type, grid_srid)
+                    },
+                    _ => geom_expr // No simplification for points of unknown types
                 }
             }
         }
@@ -361,7 +368,7 @@ impl PostgisInput {
         geom_expr
     }
     /// Build select list expressions for feature query.
-    fn build_select_list(&self, layer: &Layer, grid_srid: i32, geom_expr: String, sql: Option<&String>) -> String {
+    fn build_select_list(&self, layer: &Layer, geom_expr: String, sql: Option<&String>) -> String {
         let offline = self.conn_pool.is_none();
         if offline {
             geom_expr
@@ -397,7 +404,7 @@ impl PostgisInput {
         let mut query;
         let offline = self.conn_pool.is_none();
         let geom_expr = self.build_geom_expr(layer, grid_srid, raw_geom);
-        let select_list = self.build_select_list(layer, grid_srid, geom_expr, sql);
+        let select_list = self.build_select_list(layer, geom_expr, sql);
         let intersect_clause = format!(" WHERE {} && !bbox!", layer.geometry_field.as_ref().unwrap());
 
         if let Some(&ref userquery) = sql {
@@ -624,7 +631,7 @@ pub fn test_feature_query() {
 
     layer.simplify = Some(true);
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
-        "SELECT ST_SimplifyPreserveTopology(geometry,$5::FLOAT8/2) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+        "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
     layer.simplify = Some(false);
     layer.query_limit = Some(1);

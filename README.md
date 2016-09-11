@@ -157,6 +157,10 @@ Run server:
 
     cargo run -- serve --dbconn postgresql://pi@%2Frun%2Fpostgresql/natural_earth_vectors
 
+Log level:
+
+Set e.g.
+    RUST_LOG=debug
 
 License
 -------
