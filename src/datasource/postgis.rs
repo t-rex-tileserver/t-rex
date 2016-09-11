@@ -318,7 +318,7 @@ impl PostgisInput {
         cols.into_iter().filter(|&(ref col, _)| !filter_cols.contains(&&col) ).collect()
     }
     /// Build geometry selection expression for feature query.
-    fn build_geom_expr(&self, layer: &Layer, grid_srid: i32) -> String {
+    fn build_geom_expr(&self, layer: &Layer, grid_srid: i32, raw_geom: bool) -> String {
         let ref geom_name = layer.geometry_field.as_ref().unwrap();
         let layer_srid = layer.srid.unwrap_or(0);
 
@@ -336,19 +336,21 @@ impl PostgisInput {
             }
         };
 
-        if let Some(_) = layer.buffer_size {
-            //Buffer is added to !bbox! when replaced
-            geom_expr = format!("ST_Intersection(ST_MakeValid({}),!bbox!)", geom_expr);
-            //Workaround (FIXME): convert multi- to single-geometries
-            if let Some(ref geom_type) = layer.geometry_type {
-                let empty_geom = format!("ST_GeomFromText('{} EMPTY',{})", geom_type, grid_srid);
-                geom_expr = format!("COALESCE(ST_GeometryN({},1),{})::geometry({},{})", geom_expr, empty_geom, geom_type, grid_srid);
+        if !raw_geom {
+            if let Some(_) = layer.buffer_size {
+                //Buffer is added to !bbox! when replaced
+                geom_expr = format!("ST_Intersection(ST_MakeValid({}),!bbox!)", geom_expr);
+                //Workaround (FIXME): convert multi- to single-geometries
+                if let Some(ref geom_type) = layer.geometry_type {
+                    let empty_geom = format!("ST_GeomFromText('{} EMPTY',{})", geom_type, grid_srid);
+                    geom_expr = format!("COALESCE(ST_GeometryN({},1),{})::geometry({},{})", geom_expr, empty_geom, geom_type, grid_srid);
+                }
             }
-        }
 
-        if layer.simplify.unwrap_or(false) {
-            if layer.geometry_type.as_ref().unwrap_or(&"GEOMETRY".to_string()) != "POINT" {
-                geom_expr = format!("ST_SimplifyPreserveTopology({},!pixel_width!/2)", geom_expr);
+            if layer.simplify.unwrap_or(false) {
+                if layer.geometry_type.as_ref().unwrap_or(&"GEOMETRY".to_string()) != "POINT" {
+                    geom_expr = format!("ST_SimplifyPreserveTopology({},!pixel_width!/2)", geom_expr);
+                }
             }
         }
 
@@ -359,8 +361,7 @@ impl PostgisInput {
         geom_expr
     }
     /// Build select list expressions for feature query.
-    fn build_select_list(&self, layer: &Layer, grid_srid: i32, sql: Option<&String>) -> String {
-        let geom_expr = self.build_geom_expr(layer, grid_srid);
+    fn build_select_list(&self, layer: &Layer, grid_srid: i32, geom_expr: String, sql: Option<&String>) -> String {
         let offline = self.conn_pool.is_none();
         if offline {
             geom_expr
@@ -392,10 +393,11 @@ impl PostgisInput {
         expr
     }
     /// Build feature query SQL.
-    pub fn build_query_sql(&self, layer: &Layer, grid_srid: i32, sql: Option<&String>) -> Option<String> {
+    pub fn build_query_sql(&self, layer: &Layer, grid_srid: i32, sql: Option<&String>, raw_geom: bool) -> Option<String> {
         let mut query;
         let offline = self.conn_pool.is_none();
-        let select_list = self.build_select_list(layer, grid_srid, sql);
+        let geom_expr = self.build_geom_expr(layer, grid_srid, raw_geom);
+        let select_list = self.build_select_list(layer, grid_srid, geom_expr, sql);
         let intersect_clause = format!(" WHERE {} && !bbox!", layer.geometry_field.as_ref().unwrap());
 
         if let Some(&ref userquery) = sql {
@@ -420,7 +422,7 @@ impl PostgisInput {
         Some(query)
     }
     fn build_query(&self, layer: &Layer, grid_srid: i32, sql: Option<&String>) -> Option<SqlQuery> {
-        let sqlquery = self.build_query_sql(layer, grid_srid, sql);
+        let sqlquery = self.build_query_sql(layer, grid_srid, sql, false);
         if sqlquery.is_none() { return None }
         let bbox_expr = self.build_bbox_expr(layer, grid_srid);
         let mut query = SqlQuery { sql: sqlquery.unwrap(), params: Vec::new() };

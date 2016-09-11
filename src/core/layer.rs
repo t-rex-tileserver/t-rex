@@ -84,8 +84,8 @@ impl Layer {
     pub fn gen_runtime_config_from_input(&self, input: &PostgisInput) -> String {
         let mut cfg = self.gen_runtime_config();
         if self.query(0).is_none() {
-            let query = input.build_query_sql(self, 3857, None).unwrap();
-            cfg.push_str(&format!("#sql = \"{}\"\n", query))
+            let query = input.build_query_sql(self, 3857, None, true).unwrap();
+            cfg.push_str(&format!("#sql = \"\"\"{}\"\"\"\n", query))
         }
         cfg
     }
