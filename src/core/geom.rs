@@ -45,6 +45,19 @@ impl Clone for GeometryType {
     }
 }
 
+impl GeometryType {
+    pub fn is_empty(&self) -> bool {
+        match self {
+            &GeometryType::LineString(ref p) => p.points.len() == 0,
+            &GeometryType::Polygon(ref p) => p.rings.len() == 0,
+            &GeometryType::MultiPoint(ref p) => p.points.len() == 0,
+            &GeometryType::MultiLineString(ref p) => p.lines.len() == 0,
+            &GeometryType::MultiPolygon(ref p) => p.polygons.len() == 0,
+            _ => false
+        }
+    }
+}
+
 #[cfg(test)]
 impl GeometryType {
     pub fn new_point(x: f64, y: f64) -> GeometryType {

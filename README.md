@@ -162,6 +162,10 @@ Log level:
 Set e.g.
     RUST_LOG=debug
 
+Decode a vector tile:
+
+    curl --silent http://127.0.0.1:6767/ne_10m_populated_places/5/31/17.pbf | gunzip -d | protoc --decode=vector_tile.Tile src/mvt/vector_tile.proto
+
 License
 -------
 

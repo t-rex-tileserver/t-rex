@@ -356,7 +356,7 @@ impl PostgisInput {
                         let empty_geom = format!("ST_GeomFromText('{} EMPTY',{})", geom_type, grid_srid);
                         format!("COALESCE(ST_SnapToGrid({}, !pixel_width!/2),{})::geometry({},{})", geom_expr, empty_geom, geom_type, grid_srid)
                     },
-                    _ => geom_expr // No simplification for points of unknown types
+                    _ => geom_expr // No simplification for points or unknown types
                 }
             }
         }

@@ -207,9 +207,11 @@ impl<'a> Tile<'a> {
                 attr.key.clone(), mvt_value);
         }
         if let Ok(geom) = feature.geometry() {
-            mvt_feature.set_field_type(geom.mvt_field_type());
-            mvt_feature.set_geometry(self.encode_geom(geom).vec());
-            mvt_layer.mut_features().push(mvt_feature);
+            if !geom.is_empty() {
+                mvt_feature.set_field_type(geom.mvt_field_type());
+                mvt_feature.set_geometry(self.encode_geom(geom).vec());
+                mvt_layer.mut_features().push(mvt_feature);
+            }
         }
     }
 
