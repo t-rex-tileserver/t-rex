@@ -68,30 +68,21 @@ name = "points"
 table_name = "ne_10m_populated_places"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
-simplify = true
 fid_field = "id"
 
 [[tileset.layer]]
 name = "buildings"
-geometry_field = "way"
+geometry_field = "geometry"
 geometry_type = "POLYGON"
 fid_field = "osm_id"
 # Clip polygons with a buffer
 buffer-size = 10
+simplify = true
   # Queries for different zoom levels:
   [[tileset.layer.query]]
   sql = """
-    SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way
+    SELECT name, type, 0 as osm_id, ST_Union(geometry) AS geometry
     FROM osm_buildings_gen0
-    WHERE geometry && !bbox!
-    GROUP BY name, type
-    ORDER BY sum(area) DESC"""
-  [[tileset.layer.query]]
-  minzoom = 14
-  maxzoom = 16
-  sql = """
-    SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),!pixel_width!/2) AS way
-    FROM osm_buildings
     WHERE geometry && !bbox!
     GROUP BY name, type
     ORDER BY sum(area) DESC"""
@@ -99,7 +90,7 @@ buffer-size = 10
   minzoom = 17
   maxzoom = 22
   sql = """
-    SELECT name, type, osm_id, geometry AS way
+    SELECT name, type, osm_id, geometry
     FROM osm_buildings
     ORDER BY area DESC"""
 
@@ -157,10 +148,9 @@ Run server:
 
     cargo run -- serve --dbconn postgresql://pi@%2Frun%2Fpostgresql/natural_earth_vectors
 
-Log level:
+Set log level:
 
-Set e.g.
-    RUST_LOG=debug
+    RUST_LOG=debug  # error, warn, info, debug, trace
 
 Decode a vector tile:
 
