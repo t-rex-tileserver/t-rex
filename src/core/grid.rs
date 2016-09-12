@@ -24,11 +24,11 @@ pub struct ExtentInt {
     pub maxy: u16,
 }
 
-enum Origin {
+pub enum Origin {
     TopLeft, BottomLeft //TopRight, BottomRight
 }
 
-enum Unit {
+pub enum Unit {
     M, DD, Ft
 }
 
