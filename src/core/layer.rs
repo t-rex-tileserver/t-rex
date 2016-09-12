@@ -64,9 +64,9 @@ impl Layer {
         self.query.iter().map(|q| q.maxzoom()).max().unwrap_or(99)
     }
     // SQL query for zoom level
-    pub fn query(&self, level: u8) -> Option<&str> {
+    pub fn query(&self, level: u8) -> Option<&String> {
         let query = self.query.iter().find(|ref q| level >= q.minzoom() && level <= q.maxzoom());
-        query.and_then(|ref q| q.sql.as_ref().and_then(|sql| Some(sql.as_str())))
+        query.and_then(|ref q| q.sql.as_ref().and_then(|sql| Some(sql)))
     }
     /// Layer properties needed e.g. for metadata.json
     pub fn metadata(&self) -> HashMap<&str, String> {
@@ -228,8 +228,8 @@ fn test_toml_decode() {
     assert_eq!(cfg.minzoom(), 10);
     assert_eq!(cfg.maxzoom(), 14);
     assert_eq!(cfg.query(9), None);
-    assert_eq!(cfg.query(10), Some("SELECT name,wkb_geometry FROM places_z10"));
-    assert_eq!(cfg.query(14), Some("SELECT name,wkb_geometry FROM places_z10"));
+    assert_eq!(cfg.query(10), Some(&"SELECT name,wkb_geometry FROM places_z10".to_string()));
+    assert_eq!(cfg.query(14), Some(&"SELECT name,wkb_geometry FROM places_z10".to_string()));
     assert_eq!(cfg.query(15), None);
 
     // Minimal config

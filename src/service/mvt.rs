@@ -99,7 +99,8 @@ impl MvtService {
         }}"#, tileset, tileset, tileset, tileset)).unwrap();
         let layers_metadata: Vec<(String,String)> = layers.iter().map(|layer| {
             let meta = layer.metadata();
-            let fields = self.input.detect_data_columns(&layer, None);
+            let query = layer.query(layer.maxzoom());
+            let fields = self.input.detect_data_columns(&layer, query);
             let fields_json: Vec<String> = fields.iter().map(|&(ref f, _)| format!("\"{}\": \"\"", f)).collect();
             let layers = format!(r#"{{
                 "id": "{}",

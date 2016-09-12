@@ -313,6 +313,7 @@ impl PostgisInput {
     }
     // Return column field names and Rust compatible type conversion - without geometry column
     pub fn detect_data_columns(&self, layer: &Layer, sql: Option<&String>) -> Vec<(String, String)> {
+        debug!("detect_data_columns for layer {} with sql {:?}", layer.name, sql);
         let cols = self.detect_columns(layer, sql);
         let filter_cols = vec![layer.geometry_field.as_ref().unwrap()];
         cols.into_iter().filter(|&(ref col, _)| !filter_cols.contains(&&col) ).collect()
@@ -439,18 +440,25 @@ impl PostgisInput {
     pub fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
         let mut queries = BTreeMap::new();
 
-        if let Some(query) = self.build_query(layer, grid_srid, None) {
-            debug!("Query for layer '{}': {}", layer.name, query.sql);
-            for zoom in layer.minzoom()..layer.maxzoom() {
-                queries.insert(zoom, query.clone());
-            }
-        }
-
         for layer_query in &layer.query {
             if let Some(query) = self.build_query(layer, grid_srid, layer_query.sql.as_ref()) {
                 debug!("Query for layer '{}': {}", layer.name, query.sql);
                 for zoom in layer_query.minzoom()..layer_query.maxzoom() {
                     queries.insert(zoom, query.clone());
+                }
+            }
+        }
+
+        let has_gaps = (layer.minzoom() .. layer.maxzoom()).any(|zoom| !queries.contains_key(&zoom) );
+
+        // Genereate queries for zoom levels without user sql
+        if has_gaps {
+            if let Some(query) = self.build_query(layer, grid_srid, None) {
+                debug!("Query for layer '{}': {}", layer.name, query.sql);
+                for zoom in layer.minzoom()..layer.maxzoom() {
+                    if !queries.contains_key(&zoom) {
+                        queries.insert(zoom, query.clone());
+                    }
                 }
             }
         }
