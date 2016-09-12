@@ -31,9 +31,10 @@ fn log_request<'mw>(req: &mut Request<MvtService>, res: Response<'mw,MvtService>
 }
 
 #[allow(dead_code)]
-fn enable_cors<'mw>(_req: &mut Request, mut res: Response<'mw>) -> MiddlewareResult<'mw> {
+fn enable_cors<'mw>(_req: &mut Request<MvtService>, mut res: Response<'mw,MvtService>) -> MiddlewareResult<'mw,MvtService> {
   // access-control-allow-methods: GET
   // access-control-allow-origin: *
+  // see also https://github.com/nickel-org/nickel.rs/blob/master/examples/enable_cors.rs
   res.set(AccessControlAllowMethods(vec![Method::Get]));
   res.set(AccessControlAllowOrigin::Any);
 
@@ -209,6 +210,8 @@ pub fn webserver(args: &ArgMatches) {
     server.get("/index.json", middleware! { |_req, mut res|
         let service: &MvtService = res.server_data();
         res.set(MediaType::Json);
+        res.set(AccessControlAllowMethods(vec![Method::Get]));
+        res.set(AccessControlAllowOrigin::Any);
         service.get_mvt_metadata()
     });
 
@@ -216,6 +219,8 @@ pub fn webserver(args: &ArgMatches) {
         let service: &MvtService = res.server_data();
         let tileset = req.param("tileset").unwrap();
         res.set(MediaType::Json);
+        res.set(AccessControlAllowMethods(vec![Method::Get]));
+        res.set(AccessControlAllowOrigin::Any);
         let host = req.origin.headers.get::<header::Host>().unwrap();
         let baseurl = format!("http://{}:{}", host.hostname, host.port.unwrap_or(80));
         service.get_tilejson(&baseurl, &tileset)
