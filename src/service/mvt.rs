@@ -151,6 +151,29 @@ impl MvtService {
         obj.insert("vector_layers".to_string(), vector_layers);
         obj.to_json().to_string()
     }
+    /// MapboxGL Style JSON
+    pub fn get_stylejson(&self, baseurl: &str, tileset: &str) -> String {
+        let json = Json::from_str(&format!(r#"
+        {{
+            "version": 8,
+            "name": "t-rex",
+            "sources": {{
+                "{}": {{
+                    "url": "{}/{}.json",
+                    "type": "vector"
+                }}
+            }},
+            "layers": [
+                {{
+                    "id": "{}",
+                    "type": "line",
+                    "source": "{}",
+                    "source-layer": "{}"
+                }}
+            ]
+        }}"#, tileset, baseurl, tileset, tileset, tileset, tileset)).unwrap();
+        json.to_string()
+    }
     /// MBTiles metadata.json
     pub fn get_mbtiles_metadata(&self, tileset: &str) -> String {
         let (mut metadata, layers, vector_layers) = self.get_tilejson_infos(tileset);
