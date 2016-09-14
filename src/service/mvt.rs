@@ -57,6 +57,7 @@ impl MvtService {
             tilejson: String,
             tileurl: String,
             layers: Vec<LayerInfo>,
+            supported: bool,
         }
         #[derive(RustcEncodable)]
         struct LayerInfo {
@@ -68,11 +69,16 @@ impl MvtService {
             let layerinfos = set.layers.iter().map(|l| {
                 LayerInfo { name: l.name.clone(), geometry_type: l.geometry_type.clone() }
                 }).collect();
+            let supported = set.layers.iter().any(|l| {
+                let geom_type = l.geometry_type.clone().unwrap_or("UNKNOWN".to_string());
+                ["POINT","LINESTRING","POLYGON"].contains(&(&geom_type as &str))
+            });
             TilesetInfo {
                 name: set.name.clone(),
                 tilejson: format!("{}.json", set.name),
                 tileurl: format!("/{}/{{z}}/{{x}}/{{y}}.pbf", set.name),
                 layers: layerinfos,
+                supported: supported,
             }
         }).collect();
         tileset_infos.sort_by_key(|ti| ti.name.clone());
@@ -527,6 +533,7 @@ pub fn test_mvt_metadata() {
         }
       ],
       "name": "osm",
+      "supported": true,
       "tilejson": "osm.json",
       "tileurl": "/osm/{z}/{x}/{y}.pbf"
     }
