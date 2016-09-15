@@ -151,7 +151,7 @@ impl MvtService {
         obj.insert("vector_layers".to_string(), vector_layers);
         obj.to_json().to_string()
     }
-    /// MapboxGL Style JSON
+    /// MapboxGL Style JSON (https://www.mapbox.com/mapbox-gl-style-spec/)
     pub fn get_stylejson(&self, baseurl: &str, tileset: &str) -> String {
         let json = Json::from_str(&format!(r#"
         {{
@@ -663,6 +663,78 @@ pub fn test_stylejson() {
   "version": 8
 }"#;
     assert_eq!(json, expected);
+
+    // Mapbox GL style experiments
+    let configjson = json::encode(&config.lookup("tileset.0.layer.1.style").unwrap()).unwrap().replace("}{", "},{").replace("][", "],[");
+    let configjson = Json::from_str(&configjson).unwrap().pretty().to_string();
+    println!("{}", configjson);
+    let expected= r##"[
+  {
+    "fill-color": {
+      "stops": [
+        {
+          "in": 15.5,
+          "out": "#f2eae2"
+        },
+        {
+          "in": 16,
+          "out": "#dfdbd7"
+        }
+      ]
+    },
+    "interactive": true,
+    "type": "fill"
+  },
+  {
+    "circle-color": [
+      {
+        "property": "temperature",
+        "stops": [
+          {
+            "in": 0,
+            "out": "blue"
+          },
+          {
+            "in": 100,
+            "out": "red"
+          }
+        ]
+      }
+    ],
+    "fill-color": "#f2eae2",
+    "fill-outline-color": "#dfdbd7",
+    "fill-translate": {
+      "stops": [
+        {
+          "in": 15,
+          "out": [
+            11
+          ]
+        },
+        {
+          "in": 16,
+          "out": [
+            -20
+          ]
+        }
+      ]
+    },
+    "fillopacity": {
+      "base": 1,
+      "stops": [
+        [
+          150
+        ],
+        [
+          161
+        ]
+      ]
+    },
+    "interactive": true,
+    "type": "fill"
+  }
+]"##;
+    assert_eq!(configjson, expected);
 }
 
 #[test]
