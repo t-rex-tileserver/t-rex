@@ -568,28 +568,101 @@ pub fn test_mvt_metadata() {
 
 #[test]
 pub fn test_tilejson() {
+    use core::read_config;
     use std::io::{self,Write};
     use std::env;
 
-    let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
-        Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
-    }.unwrap();
-    let grid = Grid::web_mercator();
-    let mut layer = Layer::new("points");
-    layer.table_name = Some(String::from("ne_10m_populated_places"));
-    layer.geometry_field = Some(String::from("wkb_geometry"));
-    layer.geometry_type = Some(String::from("POINT"));
-    layer.query_limit = Some(1);
-    let tileset = Tileset{name: "points".to_string(), layers: vec![layer]};
-    let mut service = MvtService {input: pg, grid: grid,
-                              tilesets: vec![tileset], cache: Tilecache::Nocache(Nocache)};
+    if env::var("DBCONN").is_err() {
+        write!(&mut io::stdout(), "skipped ").unwrap();
+        return;
+    }
+
+    let config = read_config("src/test/example.cfg").unwrap();
+    let mut service = MvtService::from_config(&config).unwrap();
+    service.connect();
     service.prepare_feature_queries();
 
-    let metadata = service.get_tilejson("http://127.0.0.1", "points");
-    let expected = r#"{"attribution":"","basename":"points","bounds":[-180.0,-90.0,180.0,90.0],"center":[0.0,0.0,2],"description":"points","format":"pbf","id":"points","maxzoom":14,"minzoom":0,"name":"points","scheme":"xyz","tiles":["http://127.0.0.1/points/{z}/{x}/{y}.pbf"],"vector_layers":[{"description":"","fields":{"fid":"","name":"","pop_max":"","scalerank":""},"id":"points","maxzoom":99,"minzoom":0}],"version":"2.0.0"}"#;
+    let metadata = service.get_tilejson("http://127.0.0.1", "osm");
+    let metadata = Json::from_str(&metadata).unwrap().pretty().to_string();
     println!("{}", metadata);
+    let expected = r#"{
+  "attribution": "",
+  "basename": "osm",
+  "bounds": [
+    -180.0,
+    -90.0,
+    180.0,
+    90.0
+  ],
+  "center": [
+    0.0,
+    0.0,
+    2
+  ],
+  "description": "osm",
+  "format": "pbf",
+  "id": "osm",
+  "maxzoom": 14,
+  "minzoom": 0,
+  "name": "osm",
+  "scheme": "xyz",
+  "tiles": [
+    "http://127.0.0.1/osm/{z}/{x}/{y}.pbf"
+  ],
+  "vector_layers": [
+    {
+      "description": "",
+      "fields": {
+        "fid": "",
+        "name": "",
+        "pop_max": "",
+        "scalerank": ""
+      },
+      "id": "points",
+      "maxzoom": 99,
+      "minzoom": 0
+    },
+    {
+      "description": "",
+      "fields": {},
+      "id": "buildings",
+      "maxzoom": 99,
+      "minzoom": 0
+    }
+  ],
+  "version": "2.0.0"
+}"#;
     assert_eq!(metadata, expected);
+}
+
+#[test]
+pub fn test_stylejson() {
+    use core::read_config;
+
+    let config = read_config("src/test/example.cfg").unwrap();
+    let service = MvtService::from_config(&config).unwrap();
+    let json = service.get_stylejson("http://127.0.0.1", "osm");
+    let json = Json::from_str(&json).unwrap().pretty().to_string();
+    println!("{}", json);
+    let expected= r#"{
+  "layers": [
+    {
+      "id": "osm",
+      "source": "osm",
+      "source-layer": "osm",
+      "type": "line"
+    }
+  ],
+  "name": "t-rex",
+  "sources": {
+    "osm": {
+      "type": "vector",
+      "url": "http://127.0.0.1/osm.json"
+    }
+  },
+  "version": 8
+}"#;
+    assert_eq!(json, expected);
 }
 
 #[test]
@@ -604,13 +677,36 @@ pub fn test_mbtiles_metadata() {
     }
 
     let config = read_config("src/test/example.cfg").unwrap();
-    let service = MvtService::from_config(&config).unwrap();
-    let metadata = service.get_mbtiles_metadata("points");
+    let mut service = MvtService::from_config(&config).unwrap();
+    service.connect();
+    let metadata = service.get_mbtiles_metadata("osm");
+    let metadata = Json::from_str(&metadata).unwrap().pretty().to_string();
     println!("{}", metadata);
-    let format = r#""format":"pbf""#;
-    assert!(metadata.contains(format));
-    let jsonmeta = r#"\"vector_layers\":"#;
-    assert!(metadata.contains(jsonmeta));
+    let expected = r#"{
+  "attribution": "",
+  "basename": "osm",
+  "bounds": [
+    -180.0,
+    -90.0,
+    180.0,
+    90.0
+  ],
+  "center": [
+    0.0,
+    0.0,
+    2
+  ],
+  "description": "osm",
+  "format": "pbf",
+  "id": "osm",
+  "json": "{\"Layer\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"name\":\"points\",\"properties\":{\"buffer-size\":0,\"maxzoom\":99,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"name\":\"buildings\",\"properties\":{\"buffer-size\":0,\"maxzoom\":99,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"}],\"vector_layers\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"maxzoom\":99,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"maxzoom\":99,\"minzoom\":0}]}",
+  "maxzoom": 14,
+  "minzoom": 0,
+  "name": "osm",
+  "scheme": "xyz",
+  "version": "2.0.0"
+}"#;
+    assert_eq!(metadata, expected);
 }
 
 #[test]
