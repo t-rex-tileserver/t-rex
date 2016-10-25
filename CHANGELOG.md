@@ -1,5 +1,5 @@
 <a name="0.5.0"></a>
-## 0.5.0 (UNRELEASED)
+## 0.5.0 (2016-10-25)
 
 * Experimental Mapbox GL Style Json output
 
