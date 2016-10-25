@@ -44,7 +44,7 @@ pub struct Grid {
     /// Spatial reference system (PostGIS SRID).
     pub srid: i32,
     /// Grid units
-    units: Unit,
+    pub units: Unit,
     /// This is a list of resolutions for each of the zoom levels defined by the grid. This must be supplied as a list of positive floating point values, ordered from largest to smallest.
     /// The largest value will correspond to the grid’s zoom level 0. Resolutions are expressed in “units-per-pixel”, depending on the unit used by the grid (e.g. resolutions are in meters per pixel for most grids used in webmapping).
     resolutions: &'static[f64],

@@ -170,6 +170,7 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
     }
 }
 
+#[allow(unreachable_code)]
 pub fn webserver(args: &ArgMatches) {
     let (mut service, config) = service_from_args(args);
 
