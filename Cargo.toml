@@ -13,7 +13,7 @@ dbtest = []
 toml = "*"
 r2d2 = "*"
 r2d2_postgres = "*"
-postgis = "*"
+postgis = { git = "https://github.com/pka/rust-postgis.git", branch = "rust-geo" }
 protobuf = "*"
 nickel = "*"
 mustache = "0.6.3" # Same version as nickel

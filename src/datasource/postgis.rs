@@ -25,14 +25,21 @@ impl GeometryType {
     fn from_geom_field(row: &Row, idx: &str, type_name: &str) -> Result<GeometryType, String> {
         let field = match type_name {
             //Option<Result<T>> --> Option<Result<GeometryType>>
-            "POINT"              => row.get_opt::<_, Point>(idx).map(|opt| opt.map(|f| GeometryType::Point(f))),
-            "LINESTRING"         => row.get_opt::<_, LineString>(idx).map(|opt| opt.map(|f| GeometryType::LineString(f))),
-            "POLYGON"            => row.get_opt::<_, Polygon>(idx).map(|opt| opt.map(|f| GeometryType::Polygon(f))),
-            "MULTIPOINT"         => row.get_opt::<_, MultiPoint>(idx).map(|opt| opt.map(|f| GeometryType::MultiPoint(f))),
-            "MULTILINESTRING"    => row.get_opt::<_, MultiLineString>(idx).map(|opt| opt.map(|f| GeometryType::MultiLineString(f))),
-            "MULTIPOLYGON"       => row.get_opt::<_, MultiPolygon>(idx).map(|opt| opt.map(|f| GeometryType::MultiPolygon(f))),
-            "GEOMETRYCOLLECTION" => row.get_opt::<_, GeometryCollection>(idx).map(|opt| opt.map(|f| GeometryType::GeometryCollection(f))),
-            _                    => {
+            "POINT" =>
+                row.get_opt::<_, Point>(idx).map(|opt| opt.map(|f| GeometryType::Point(f))),
+            //"LINESTRING" =>
+            //    row.get_opt::<_, LineString>(idx).map(|opt| opt.map(|f| GeometryType::LineString(f))),
+            //"POLYGON" =>
+            //    row.get_opt::<_, Polygon>(idx).map(|opt| opt.map(|f| GeometryType::Polygon(f))),
+            "MULTIPOINT" =>
+                row.get_opt::<_, MultiPoint>(idx).map(|opt| opt.map(|f| GeometryType::MultiPoint(f))),
+            "LINESTRING" | "MULTILINESTRING" =>
+                row.get_opt::<_, MultiLineString>(idx).map(|opt| opt.map(|f| GeometryType::MultiLineString(f))),
+            "POLYGON" | "MULTIPOLYGON" =>
+                row.get_opt::<_, MultiPolygon>(idx).map(|opt| opt.map(|f| GeometryType::MultiPolygon(f))),
+            "GEOMETRYCOLLECTION" =>
+                row.get_opt::<_, GeometryCollection>(idx).map(|opt| opt.map(|f| GeometryType::GeometryCollection(f))),
+            _  => {
                 let err: Box<std::error::Error + Sync + Send> = format!("Unknown geometry type {}", type_name).into();
                 Some(Err(postgres::error::Error::Conversion(err)))
             }
@@ -338,28 +345,40 @@ impl PostgisInput {
         };
 
         if !raw_geom {
+            // Clipping
             if let Some(_) = layer.buffer_size {
-                //Buffer is added to !bbox! when replaced
-                geom_expr = format!("ST_Intersection(ST_MakeValid({}),!bbox!)", geom_expr);
-                //Workaround (FIXME): convert multi- to single-geometries
-                if let Some(ref geom_type) = layer.geometry_type {
-                    let empty_geom = format!("ST_GeomFromText('{} EMPTY',{})", geom_type, grid_srid);
-                    geom_expr = format!("COALESCE(ST_GeometryN({},1),{})::geometry({},{})", geom_expr, empty_geom, geom_type, grid_srid);
-                }
+                match layer.geometry_type.as_ref().unwrap_or(&"GEOMETRY".to_string()) as &str {
+                    "POLYGON" | "MULTIPOLYGON" => {
+                        geom_expr = format!("ST_Buffer(ST_Intersection(ST_MakeValid({}),!bbox!), 0.0)", geom_expr);
+                    },
+                    _ => {
+                        geom_expr = format!("ST_Intersection(ST_MakeValid({}),!bbox!)", geom_expr);
+                    }
+                    //Buffer is added to !bbox! when replaced
+                };
             }
 
+            // convert LINESTRING and POLYGON to multi geometries (and fix potential (empty) single types)
+            match layer.geometry_type.as_ref().unwrap_or(&"GEOMETRY".to_string()) as &str {
+                "LINESTRING" | "MULTILINESTRING" | "POLYGON" | "MULTIPOLYGON" => {
+                    geom_expr = format!("ST_Multi({})", geom_expr);
+                }
+                _ => {}
+            }
+
+            // Simplify
             if layer.simplify.unwrap_or(false) {
                 geom_expr = match layer.geometry_type.as_ref().unwrap_or(&"GEOMETRY".to_string()) as &str {
                     "LINESTRING" | "MULTILINESTRING" =>
-                        format!("ST_SimplifyPreserveTopology({},!pixel_width!/2)", geom_expr),
+                        format!("ST_Multi(ST_SimplifyPreserveTopology({},!pixel_width!/2))", geom_expr),
                     "POLYGON" | "MULTIPOLYGON" => {
-                        let geom_type = layer.geometry_type.as_ref().unwrap();
-                        let empty_geom = format!("ST_GeomFromText('{} EMPTY',{})", geom_type, grid_srid);
-                        format!("COALESCE(ST_SnapToGrid({}, !pixel_width!/2),{})::geometry({},{})", geom_expr, empty_geom, geom_type, grid_srid)
+                        let empty_geom = format!("ST_GeomFromText('MULTIPOLYGON EMPTY',{})", grid_srid);
+                        format!("COALESCE(ST_SnapToGrid({}, !pixel_width!/2),{})::geometry(MULTIPOLYGON,{})", geom_expr, empty_geom, grid_srid)
                     },
                     _ => geom_expr // No simplification for points or unknown types
-                }
+                };
             }
+
         }
 
         if geom_expr.starts_with("ST_") || geom_expr.starts_with("COALESCE") {
@@ -379,7 +398,7 @@ impl PostgisInput {
                 if casttype.is_empty() {
                     format!("\"{}\"", name)
                 } else {
-                    format!("\"{}\"::{}", &name, &casttype)
+                    format!("\"{}\"::{}", name, casttype)
                 }
             }).collect();
             cols.insert(0, geom_expr);
@@ -562,26 +581,24 @@ pub fn test_from_geom_fields() {
     for row in &conn.query(sql, &[]).unwrap() {
         let geom = row.get::<_, Point>("wkb_geometry");
         assert_eq!(&*format!("{:?}", geom),
-            "SRID=3857;POINT(-6438719.622820721 -4093437.7144101723)");
+            "Point { x: -6438719.622820721, y: -4093437.7144101723, srid: Some(3857) }");
         let geom = GeometryType::from_geom_field(&row, "wkb_geometry", "POINT");
         assert_eq!(&*format!("{:?}", geom),
-            "Ok(Point(SRID=3857;POINT(-6438719.622820721 -4093437.7144101723)))");
+            "Ok(Point(Point { x: -6438719.622820721, y: -4093437.7144101723, srid: Some(3857) }))");
     }
 
-    let sql = "SELECT wkb_geometry FROM rivers_lake_centerlines WHERE ST_NPoints(wkb_geometry)<10 LIMIT 1";
+    let sql = "SELECT ST_Multi(wkb_geometry) AS wkb_geometry FROM rivers_lake_centerlines WHERE ST_NPoints(wkb_geometry)<10 LIMIT 1";
     for row in &conn.query(sql, &[]).unwrap() {
         let geom = GeometryType::from_geom_field(&row, "wkb_geometry", "LINESTRING");
         assert_eq!(&*format!("{:?}", geom),
-            "Ok(LineString(LineString { points: [SRID=3857;POINT(18672061.098933436 -5690573.725394946), SRID=3857;POINT(18671798.382036217 -5692123.11701991), SRID=3857;POINT(18671707.790002696 -5693530.713572942), SRID=3857;POINT(18671789.322832868 -5694822.281317252), SRID=3857;POINT(18672061.098933436 -5695997.770001522), SRID=3857;POINT(18670620.68560042 -5698245.837796968), SRID=3857;POINT(18668283.41113552 -5700403.997584983), SRID=3857;POINT(18666082.024720907 -5701179.511527114), SRID=3857;POINT(18665148.926775623 -5699253.775757339)] }))");
+            "Ok(MultiLineString(MultiLineStringT { lines: [LineStringT { points: [Point { x: 18672061.098933436, y: -5690573.725394946, srid: None }, Point { x: 18671798.382036217, y: -5692123.11701991, srid: None }, Point { x: 18671707.790002696, y: -5693530.713572942, srid: None }, Point { x: 18671789.322832868, y: -5694822.281317252, srid: None }, Point { x: 18672061.098933436, y: -5695997.770001522, srid: None }, Point { x: 18670620.68560042, y: -5698245.837796968, srid: None }, Point { x: 18668283.41113552, y: -5700403.997584983, srid: None }, Point { x: 18666082.024720907, y: -5701179.511527114, srid: None }, Point { x: 18665148.926775623, y: -5699253.775757339, srid: None }], srid: None }], srid: Some(3857) }))");
     }
-    /* row.get panics for multi-geometries: https://github.com/andelf/rust-postgis/issues/6
     let sql = "SELECT wkb_geometry FROM ne_10m_rivers_lake_centerlines WHERE ST_NPoints(wkb_geometry)<10 LIMIT 1";
     for row in &conn.query(sql, &[]).unwrap() {
-        let geom = row.get::<_, postgis::MultiLineString<postgis::Point<EPSG_3857>>>("wkb_geometry");
-        assert_eq!(&*format!("{:#?}", geom),
-            "SRID=3857;MULTILINESTRING((5959308.21223679 7539958.36540974,5969998.07219252 7539958.36540974,5972498.41231776 7539118.00291568,5977308.84929784 7535385.96203562))");
-    }*/
-
+        let geom = row.get::<_, MultiLineString>("wkb_geometry");
+        assert_eq!(&*format!("{:?}", geom),
+            "MultiLineStringT { lines: [LineStringT { points: [Point { x: 5959308.212236793, y: 7539958.36540974, srid: None }, Point { x: 5969998.072192525, y: 7539958.36540974, srid: None }, Point { x: 5972498.412317764, y: 7539118.002915677, srid: None }, Point { x: 5977308.849297845, y: 7535385.962035617, srid: None }], srid: None }], srid: Some(3857) }");
+    }
     let sql = "SELECT wkb_geometry, ST_AsBinary(wkb_geometry) FROM rivers_lake_centerlines LIMIT 1";
     let rows = &conn.query(sql, &[]).unwrap();
     assert_eq!(rows.columns()[0].name(), "wkb_geometry");
@@ -709,7 +726,7 @@ pub fn test_retrieve_features() {
     let mut reccnt = 0;
     pg.prepare_queries(&layer, 3857);
     pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
-        assert_eq!("Ok(Point(SRID=3857;POINT(831219.9062494118 5928485.165733484)))", &*format!("{:?}", feat.geometry()));
+        assert_eq!("Ok(Point(Point { x: 831219.9062494118, y: 5928485.165733484, srid: Some(3857) }))", &*format!("{:?}", feat.geometry()));
         assert_eq!(4, feat.attributes().len());
         assert_eq!(None, feat.fid());
         reccnt += 1;
@@ -721,7 +738,7 @@ pub fn test_retrieve_features() {
     layer.fid_field = Some(String::from("fid"));
     pg.prepare_queries(&layer, 3857);
     pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
-        assert_eq!("Ok(Point(SRID=3857;POINT(831219.9062494118 5928485.165733484)))", &*format!("{:?}", feat.geometry()));
+        assert_eq!("Ok(Point(Point { x: 831219.9062494118, y: 5928485.165733484, srid: Some(3857) }))", &*format!("{:?}", feat.geometry()));
         assert_eq!(feat.attributes()[0].key, "fid");
         assert_eq!(feat.attributes()[1].key, "scalerank"); //Numeric
         assert_eq!(feat.attributes()[2].key, "name");

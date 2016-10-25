@@ -10,7 +10,7 @@ dependencies = [
  "mustache 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "nickel 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pbr 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "postgis 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "postgis 0.2.2 (git+https://github.com/pka/rust-postgis.git?branch=rust-geo)",
  "postgres 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 1.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "r2d2 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -288,7 +288,7 @@ dependencies = [
 [[package]]
 name = "postgis"
 version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/pka/rust-postgis.git?branch=rust-geo#a0e46b54175d97bec0ce2839f57e0cfda8f51365"
 dependencies = [
  "byteorder 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "postgres 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -574,7 +574,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum phf 0.7.15 (registry+https://github.com/rust-lang/crates.io-index)" = "17896951e179a6cbed7d3519b3078ac6c03a347d3e9cf8f303c8a1a73c5a3e44"
 "checksum phf_shared 0.7.15 (registry+https://github.com/rust-lang/crates.io-index)" = "bb6c14aac1140c2b06b41477096f249416b17c893d56386a892ac657edfdffba"
 "checksum plugin 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "1a6a0dc3910bc8db877ffed8e457763b317cf880df4ae19109b9f77d277cf6e0"
-"checksum postgis 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "13955b7bab634fc8c9e57cf3a33e83dbddc6ced19c02e2065fd90b8952e1ef72"
+"checksum postgis 0.2.2 (git+https://github.com/pka/rust-postgis.git?branch=rust-geo)" = "<none>"
 "checksum postgres 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)" = "991779b6de908cfbd9fdc7e250681649017bd40500bcae733ad41c34c85de811"
 "checksum protobuf 1.0.24 (registry+https://github.com/rust-lang/crates.io-index)" = "6ec4c2fe04370298218a09ab53a534febf54c160c5554e4de987b6d73c916d5d"
 "checksum r2d2 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a63c7dd6655b3165145c5c140e8548ba2176a263682c07aaead2fe79eedd97bc"

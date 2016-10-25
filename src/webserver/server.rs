@@ -65,7 +65,7 @@ impl TilesetInfo {
         let mut hasviewer = true;
         let layerinfos: Vec<String> = set.layers.iter().map(|l| {
                 let geom_type = l.geometry_type.clone().unwrap_or("UNKNOWN".to_string());
-                hasviewer = hasviewer && ["POINT","LINESTRING","POLYGON"].contains(&(&geom_type as &str));
+                hasviewer = hasviewer && ["POINT","LINESTRING","POLYGON","MULTPOINT","MULTILINESTRING","MULTIPOLYGON"].contains(&(&geom_type as &str));
                 format!("{} [{}]", &l.name, &geom_type)
             }).collect();
         TilesetInfo {

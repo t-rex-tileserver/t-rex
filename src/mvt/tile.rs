@@ -117,9 +117,9 @@ impl ScreenGeom<geom::MultiPolygon> for screen::MultiPolygon {
 
 #[test]
 fn test_point_to_screen_coords() {
-    //let zh_mercator = geom::Point::new(949398.0, 6002729.0);
-    let zh_mercator = geom::Point::new(960000.0, 6002729.0);
-    //let zh_wgs84 = postgis::Point::<WGS84>::new(47.3703149, 8.5285874);
+    //let zh_mercator = geom::Point::new(949398.0, 6002729.0, Some(3857));
+    let zh_mercator = geom::Point::new(960000.0, 6002729.0, Some(3857));
+    //let zh_wgs84 = postgis::Point::new(47.3703149, 8.5285874, Some(4326));
     let tile_extent = Extent {minx: 958826.08, miny: 5987771.04, maxx: 978393.96, maxy: 6007338.92};
     let screen_pt = screen::Point::from_geom(&tile_extent, false, 4096, &zh_mercator);
     assert_eq!(screen_pt, screen::Point { x: 245, y: 3131 });
@@ -501,7 +501,7 @@ fn test_build_mvt_with_helpers() {
     let layer = Layer::new("points");
     let mut mvt_layer = tile.new_layer(&layer);
 
-    let geom : GeometryType = GeometryType::Point(geom::Point::new(960000.0, 6002729.0));
+    let geom : GeometryType = GeometryType::Point(geom::Point::new(960000.0, 6002729.0, Some(3857)));
     let feature = FeatureStruct {
         fid: Some(1),
         attributes: vec![
@@ -513,7 +513,7 @@ fn test_build_mvt_with_helpers() {
     };
     tile.add_feature(&mut mvt_layer, &feature);
 
-    let geom : GeometryType = GeometryType::Point(geom::Point::new(960000.0, 6002729.0));
+    let geom : GeometryType = GeometryType::Point(geom::Point::new(960000.0, 6002729.0, Some(3857)));
     let feature = FeatureStruct {
         fid: Some(2),
         attributes: vec![
