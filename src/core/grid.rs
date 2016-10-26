@@ -5,9 +5,10 @@
 
 use core::Config;
 use toml;
+use rustc_serialize::{Decodable, Decoder};
 
 
-#[derive(PartialEq,Debug)]
+#[derive(PartialEq, RustcDecodable, Debug)]
 pub struct Extent {
     pub minx: f64,
     pub miny: f64,
@@ -24,15 +25,41 @@ pub struct ExtentInt {
     pub maxy: u16,
 }
 
+#[derive(PartialEq, Debug)]
 pub enum Origin {
     TopLeft, BottomLeft //TopRight, BottomRight
 }
 
+impl Decodable for Origin {
+    fn decode<D: Decoder>(d: &mut D) -> Result<Origin, D::Error> {
+        let val = try!(d.read_str());
+        match &val as &str {
+            "TopLeft" => Ok(Origin::TopLeft),
+            "BottomLeft" => Ok(Origin::BottomLeft),
+            _ => Err(d.error(&*format!("Unknown value `{}`", val)))
+        }
+    }
+}
+
+#[derive(PartialEq, Debug)]
 pub enum Unit {
     M, DD, Ft
 }
 
+impl Decodable for Unit {
+    fn decode<D: Decoder>(d: &mut D) -> Result<Unit, D::Error> {
+        let val = try!(d.read_str());
+        match &val as &str {
+            "M" => Ok(Unit::M),
+            "DD" => Ok(Unit::DD),
+            "Ft" => Ok(Unit::Ft),
+            _ => Err(d.error(&*format!("Unknown value `{}`", val)))
+        }
+    }
+}
+
 // Credits: MapCache by Thomas Bonfort (http://mapserver.org/mapcache/)
+#[derive(RustcDecodable, Debug)]
 pub struct Grid {
     /// The width and height of an individual tile, in pixels.
     width: u16,
@@ -47,7 +74,7 @@ pub struct Grid {
     pub units: Unit,
     /// This is a list of resolutions for each of the zoom levels defined by the grid. This must be supplied as a list of positive floating point values, ordered from largest to smallest.
     /// The largest value will correspond to the grid’s zoom level 0. Resolutions are expressed in “units-per-pixel”, depending on the unit used by the grid (e.g. resolutions are in meters per pixel for most grids used in webmapping).
-    resolutions: &'static[f64],
+    resolutions: Vec<f64>,
     /// Grid origin
     origin: Origin,
 }
@@ -55,68 +82,64 @@ pub struct Grid {
 impl Grid {
     /// WGS84 grid
     pub fn wgs84() -> Grid {
-        static WGS84_RESOLUTIONS: [f64; 18] = [
-            0.703125000000000,
-            0.351562500000000,
-            0.175781250000000,
-            8.78906250000000e-2,
-            4.39453125000000e-2,
-            2.19726562500000e-2,
-            1.09863281250000e-2,
-            5.49316406250000e-3,
-            2.74658203125000e-3,
-            1.37329101562500e-3,
-            6.86645507812500e-4,
-            3.43322753906250e-4,
-            1.71661376953125e-4,
-            8.58306884765625e-5,
-            4.29153442382812e-5,
-            2.14576721191406e-5,
-            1.07288360595703e-5,
-            5.36441802978516e-6
-        ];
-
         Grid {
             width: 256, height: 256,
             extent: Extent {minx: -180.0, miny: -90.0, maxx: 180.0, maxy: 90.0},
             srid: 4236,
-            units: Unit::M,
-            resolutions: &WGS84_RESOLUTIONS,
+            units: Unit::DD,
+            resolutions: vec![
+                0.703125000000000,
+                0.351562500000000,
+                0.175781250000000,
+                8.78906250000000e-2,
+                4.39453125000000e-2,
+                2.19726562500000e-2,
+                1.09863281250000e-2,
+                5.49316406250000e-3,
+                2.74658203125000e-3,
+                1.37329101562500e-3,
+                6.86645507812500e-4,
+                3.43322753906250e-4,
+                1.71661376953125e-4,
+                8.58306884765625e-5,
+                4.29153442382812e-5,
+                2.14576721191406e-5,
+                1.07288360595703e-5,
+                5.36441802978516e-6
+            ],
             origin: Origin::BottomLeft
         }
     }
 
     /// Web Mercator grid (Google maps compatible)
     pub fn web_mercator() -> Grid {
-        static GOOGLE_RESOLUTIONS: [f64; 19] = [
-            156543.0339280410,
-            78271.51696402048,
-            39135.75848201023,
-            19567.87924100512,
-            9783.939620502561,
-            4891.969810251280,
-            2445.984905125640,
-            1222.992452562820,
-            611.4962262814100,
-            305.7481131407048,
-            152.8740565703525,
-            76.43702828517624,
-            38.21851414258813,
-            19.10925707129406,
-            9.554628535647032,
-            4.777314267823516,
-            2.388657133911758,
-            1.194328566955879,
-            0.5971642834779395
-        ];
-
         Grid {
             width: 256, height: 256,
             extent: Extent {minx: -20037508.3427892480, miny: -20037508.3427892480,
                             maxx: 20037508.3427892480, maxy: 20037508.3427892480},
             srid: 3857,
-            units: Unit::DD,
-            resolutions: &GOOGLE_RESOLUTIONS,
+            units: Unit::M,
+            resolutions: vec![
+                156543.0339280410,
+                78271.51696402048,
+                39135.75848201023,
+                19567.87924100512,
+                9783.939620502561,
+                4891.969810251280,
+                2445.984905125640,
+                1222.992452562820,
+                611.4962262814100,
+                305.7481131407048,
+                152.8740565703525,
+                76.43702828517624,
+                38.21851414258813,
+                19.10925707129406,
+                9.554628535647032,
+                4.777314267823516,
+                2.388657133911758,
+                1.194328566955879,
+                0.5971642834779395
+            ],
             origin: Origin::BottomLeft
         }
     }
@@ -213,17 +236,24 @@ impl Grid {
 
 impl Config<Grid> for Grid {
     fn from_config(config: &toml::Value) -> Result<Self, String> {
-        config.lookup("grid")
-            .ok_or("Missing configuration entry [grid]".to_string())
-            .and_then(|val| val.lookup("predefined").ok_or("Missing configuration entry 'predefined'".to_string()))
-            .and_then(|val| val.as_str().ok_or("grid.predefined entry is not a string".to_string()))
-            .and_then(|gridname| {
-                match gridname {
-                    "wgs84" => Ok(Grid::wgs84()),
-                    "web_mercator" => Ok(Grid::web_mercator()),
-                    _ => Err(format!("Unkown grid '{}'", gridname))
-                }
+        if config.lookup("grid").is_none() {
+            return Err("Missing configuration entry [grid]".to_string())
+        }
+        if let Some(predef) = config.lookup("grid.predefined") {
+            predef.as_str().ok_or("grid.predefined entry is not a string".to_string())
+                .and_then(|gridname| {
+                    match gridname {
+                        "wgs84" => Ok(Grid::wgs84()),
+                        "web_mercator" => Ok(Grid::web_mercator()),
+                        _ => Err(format!("Unkown grid '{}'", gridname))
+                    }
             })
+        } else {
+            let gridcfg = config.lookup("grid").unwrap();
+            let mut decoder = toml::Decoder::new(gridcfg.clone());
+            let grid = Grid::decode(&mut decoder);
+            grid.map_err(|e| format!("Error reading configuration - {}", e))
+        }
     }
     fn gen_config() -> String {
         let toml = r#"
@@ -286,6 +316,22 @@ fn test_grid_from_config() {
     let grid = Grid::from_config(&config).unwrap();
     assert_eq!(grid.extent, Extent {minx: -20037508.3427892480, miny: -20037508.3427892480,
                                     maxx: 20037508.3427892480, maxy: 20037508.3427892480});
+
+    let toml = r#"
+        [grid]
+        width = 256
+        height = 256
+        extent = { minx = 2420000.0, miny = 1030000.0, maxx = 2900000.0, maxy = 1350000.0 }
+        srid = 2056
+        units = "M"
+        resolutions = [4000.0,3750.0,3500.0,3250.0,3000.0,2750.0,2500.0,2250.0,2000.0,1750.0,1500.0,1250.0,1000.0,750.0,650.0,500.0,250.0,100.0,50.0,20.0,10.0,5.0,2.5,2.0,1.5,1.0,0.5,0.25,0.1]
+        origin = "BottomLeft"
+        "#;
+    let config = parse_config(toml.to_string(), "").unwrap();
+    let grid = Grid::from_config(&config).unwrap();
+    assert_eq!(grid.extent, Extent {minx: 2420000.0, miny: 1030000.0,
+                                    maxx: 2900000.0, maxy: 1350000.0});
+    assert_eq!(grid.origin, Origin::BottomLeft);
 }
 
 
