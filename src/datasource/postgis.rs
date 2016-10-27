@@ -565,15 +565,15 @@ url = "{}"
 }
 
 #[cfg(test)] use postgres::Connection;
-#[cfg(test)] use std::io::{self,Write};
 #[cfg(test)] use std::env;
 #[cfg(test)] use core::layer::LayerQuery;
 
 #[test]
+#[ignore]
 pub fn test_from_geom_fields() {
     let conn: Connection = match env::var("DBCONN") {
         Result::Ok(val) => Connection::connect(&val as &str, postgres::SslMode::None),
-        Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
+        Result::Err(_) => { panic!("DBCONN undefined") }
     }.unwrap();
     let sql = "SELECT wkb_geometry FROM ne_10m_populated_places LIMIT 1";
     for row in &conn.query(sql, &[]).unwrap() {
@@ -606,24 +606,26 @@ pub fn test_from_geom_fields() {
 }
 
 #[test]
+#[ignore]
 pub fn test_detect_layers() {
     let pg: PostgisInput = match env::var("DBCONN") {
         Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
-        Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
+        Result::Err(_) => { panic!("DBCONN undefined") }
     }.unwrap();
     let layers = pg.detect_layers(false);
-    assert_eq!(layers[0].name, "rivers_lake_centerlines");
+    assert!(layers.iter().any(|ref layer| layer.name == "rivers_lake_centerlines"));
 }
 
 #[test]
+#[ignore]
 pub fn test_detect_columns() {
     let pg: PostgisInput = match env::var("DBCONN") {
         Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
-        Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
+        Result::Err(_) => { panic!("DBCONN undefined") }
     }.unwrap();
     let layers = pg.detect_layers(false);
-    assert_eq!(layers[0].name, "rivers_lake_centerlines");
-    let cols = pg.detect_data_columns(&layers[0], None);
+    let layer = layers.iter().find(|ref layer| layer.name == "rivers_lake_centerlines").unwrap();
+    let cols = pg.detect_data_columns(&layer, None);
     assert_eq!(cols, vec![
         ("fid".to_string(), "".to_string()),
         ("scalerank".to_string(), "FLOAT8".to_string()),
@@ -724,10 +726,11 @@ pub fn test_query_params() {
 }
 
 #[test]
+#[ignore]
 pub fn test_retrieve_features() {
     let mut pg: PostgisInput = match env::var("DBCONN") {
         Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
-        Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
+        Result::Err(_) => { panic!("DBCONN undefined") }
     }.unwrap();
 
     let mut layer = Layer::new("points");

@@ -382,13 +382,13 @@ viewer = true
 #[cfg(test)] use cache::Nocache;
 
 #[test]
+#[ignore]
 pub fn test_tile_query() {
-    use std::io::{self,Write};
     use std::env;
 
     let pg: PostgisInput = match env::var("DBCONN") {
         Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
-        Result::Err(_) => { write!(&mut io::stdout(), "skipped ").unwrap(); return; }
+        Result::Err(_) => { panic!("DBCONN undefined") }
     }.unwrap();
     let grid = Grid::web_mercator();
     let mut layer = Layer::new("points");
@@ -567,14 +567,13 @@ pub fn test_mvt_metadata() {
 }
 
 #[test]
+#[ignore]
 pub fn test_tilejson() {
     use core::read_config;
-    use std::io::{self,Write};
     use std::env;
 
     if env::var("DBCONN").is_err() {
-        write!(&mut io::stdout(), "skipped ").unwrap();
-        return;
+        panic!("DBCONN undefined");
     }
 
     let config = read_config("src/test/example.cfg").unwrap();
@@ -738,14 +737,13 @@ pub fn test_stylejson() {
 }
 
 #[test]
+#[ignore]
 pub fn test_mbtiles_metadata() {
     use core::read_config;
-    use std::io::{self,Write};
     use std::env;
 
     if env::var("DBCONN").is_err() {
-        write!(&mut io::stdout(), "skipped ").unwrap();
-        return;
+        panic!("DBCONN undefined");
     }
 
     let config = read_config("src/test/example.cfg").unwrap();

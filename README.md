@@ -134,16 +134,6 @@ Run tests:
 
     cargo test
 
-To run DB tests you have to set an environment variable with the [connection spec](https://github.com/sfackler/rust-postgres#connecting) first. Example:
-
-     export DBCONN=postgresql://user:pass@localhost/natural_earth_vectors
-
-Creating test database:
-
-    # Set Postgresql environment variables when needed: PGHOST, PGPORT, PGUSER, PGPASSWORD
-    cd src/test
-    make
-
 Run server:
 
     cargo run -- serve --dbconn postgresql://pi@%2Frun%2Fpostgresql/natural_earth_vectors
@@ -155,6 +145,27 @@ Set log level:
 Decode a vector tile:
 
     curl --silent http://127.0.0.1:6767/ne_10m_populated_places/5/31/17.pbf | gunzip -d | protoc --decode=vector_tile.Tile src/mvt/vector_tile.proto
+
+
+### Database tests
+
+Unit tests which need a PostgreSQL connection are ignored by default.
+
+To run the database tests, declare the [connection](https://github.com/sfackler/rust-postgres#connecting) in an 
+environment variable `DBCONN`. Example:
+
+    export DBCONN=postgresql://user:pass@localhost/natural_earth_vectors
+
+Creating test database:
+
+    # Set Postgresql environment variables when needed: PGHOST, PGPORT, PGUSER, PGPASSWORD
+    cd src/test
+    make
+
+Run the tests with
+
+    cargo test -- --ignored
+
 
 License
 -------

@@ -335,15 +335,14 @@ fn test_gen_config() {
 }
 
 #[test]
+#[ignore]
 fn test_runtime_config() {
-    use std::io::{self,Write};
     use std::env;
     use clap::App;
     use core::parse_config;
 
     if env::var("DBCONN").is_err() {
-        write!(&mut io::stdout(), "skipped ").unwrap();
-        return;
+        panic!("DBCONN undefined");
     }
     let args = App::new("test")
                 .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'")
