@@ -327,22 +327,9 @@ impl PostgisInput {
     }
     /// Build geometry selection expression for feature query.
     fn build_geom_expr(&self, layer: &Layer, grid_srid: i32, raw_geom: bool) -> String {
-        let ref geom_name = layer.geometry_field.as_ref().unwrap();
         let layer_srid = layer.srid.unwrap_or(0);
-
-        let mut geom_expr = if layer_srid <= 0 { // Unknown SRID
-            warn!("Layer '{}' - Casting geometry '{}' to SRID {}", layer.name,
-                geom_name, grid_srid);
-            format!("ST_SetSRID({},{})", geom_name, grid_srid)
-        } else {
-            if layer_srid == grid_srid {
-                String::from(geom_name as &str)
-            } else {
-                warn!("Layer '{}' - Reprojecting geometry '{}' to SRID {}", layer.name,
-                    geom_name, grid_srid);
-                format!("ST_Transform({},{})", geom_name, grid_srid)
-            }
-        };
+        let ref geom_name = layer.geometry_field.as_ref().unwrap();
+        let mut geom_expr = String::from(geom_name as &str);
 
         if !raw_geom {
             // Clipping
@@ -372,8 +359,8 @@ impl PostgisInput {
                     "LINESTRING" | "MULTILINESTRING" =>
                         format!("ST_Multi(ST_SimplifyPreserveTopology({},!pixel_width!/2))", geom_expr),
                     "POLYGON" | "MULTIPOLYGON" => {
-                        let empty_geom = format!("ST_GeomFromText('MULTIPOLYGON EMPTY',{})", grid_srid);
-                        format!("COALESCE(ST_SnapToGrid({}, !pixel_width!/2),{})::geometry(MULTIPOLYGON,{})", geom_expr, empty_geom, grid_srid)
+                        let empty_geom = format!("ST_GeomFromText('MULTIPOLYGON EMPTY',{})", layer_srid);
+                        format!("COALESCE(ST_SnapToGrid({}, !pixel_width!/2),{})::geometry(MULTIPOLYGON,{})", geom_expr, empty_geom, layer_srid)
                     },
                     _ => geom_expr // No simplification for points or unknown types
                 };
@@ -381,8 +368,19 @@ impl PostgisInput {
 
         }
 
+        // Transform geometry to grid SRID
+        if layer_srid <= 0 { // Unknown SRID
+            warn!("Layer '{}' - Casting geometry '{}' to SRID {}", layer.name,
+                geom_name, grid_srid);
+            geom_expr = format!("ST_SetSRID({},{})", geom_expr, grid_srid)
+        } else if layer_srid != grid_srid {
+            warn!("Layer '{}' - Reprojecting geometry '{}' from to SRID {}", layer.name,
+                geom_name, grid_srid);
+            geom_expr = format!("ST_Transform({},{})", geom_expr, grid_srid);
+        }
+
         if geom_expr.starts_with("ST_") || geom_expr.starts_with("COALESCE") {
-            geom_expr = format!("{} AS {}", geom_expr, geom_name)
+            geom_expr = format!("{} AS {}", geom_expr, geom_name);
         }
 
         geom_expr
@@ -642,19 +640,34 @@ pub fn test_feature_query() {
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
         "SELECT ST_SetSRID(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
+    // reprojection
     layer.srid = Some(2056);
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
         "SELECT ST_Transform(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_Transform(ST_MakeEnvelope($1,$2,$3,$4,3857),2056)");
+    layer.srid = Some(-1);
+    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+        "SELECT ST_SetSRID(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,-1)");
     layer.srid = Some(3857);
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
         "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
+    // clipping
     layer.buffer_size = Some(10);
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
         "SELECT ST_Intersection(ST_MakeValid(geometry),ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)) AS geometry FROM osm_place_point WHERE geometry && ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)");
+    layer.geometry_type = Some("POLYGON".to_string());
+    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+        "SELECT ST_Multi(ST_Buffer(ST_Intersection(ST_MakeValid(geometry),ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)), 0.0)) AS geometry FROM osm_place_point WHERE geometry && ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)");
     layer.buffer_size = None;
 
+    // simplification
     layer.simplify = Some(true);
+    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+        "SELECT COALESCE(ST_SnapToGrid(ST_Multi(geometry), $5::FLOAT8/2),ST_GeomFromText('MULTIPOLYGON EMPTY',3857))::geometry(MULTIPOLYGON,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+    layer.geometry_type = Some("LINESTRING".to_string());
+    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+        "SELECT ST_Multi(ST_SimplifyPreserveTopology(ST_Multi(geometry),$5::FLOAT8/2)) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+    layer.geometry_type = Some("POINT".to_string());
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
         "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
@@ -663,6 +676,7 @@ pub fn test_feature_query() {
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
         "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857) LIMIT 1");
 
+    // user queries
     layer.query = vec![LayerQuery {minzoom: Some(0), maxzoom: Some(22),
         sql: Some(String::from("SELECT geometry AS geom FROM osm_place_point"))}];
     layer.query_limit = None;

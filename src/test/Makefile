@@ -17,3 +17,9 @@ natural_earth_vectors: packages/Natural_Earth_quick_start/10m_cultural/ne_10m_po
 	OGR_ENABLE_PARTIAL_REPROJECTION=TRUE SHAPE_ENCODING="ISO-8859-1" ogr2ogr -t_srs EPSG:3857 -nlt PROMOTE_TO_MULTI -lco FID=fid -f PostgreSQL PG:dbname=natural_earth_vectors -select name,iso_a3 packages/Natural_Earth_quick_start/110m_cultural/ne_110m_admin_0_countries.shp
 	psql natural_earth_vectors -c "CREATE TABLE admin_0_countries AS SELECT fid,name,iso_a3,(ST_DUMP(wkb_geometry)).geom::geometry(Polygon,3857) AS wkb_geometry FROM ne_110m_admin_0_countries"
 	SHAPE_ENCODING="ISO-8859-1" ogr2ogr -select scalerank,name,pop_max -lco FID=fid -nln ne_10m_populated_places_wgs84 -f PostgreSQL PG:dbname=natural_earth_vectors packages/Natural_Earth_quick_start/10m_cultural/ne_10m_populated_places.shp
+
+# Swiss grid test data
+# https://www.bfs.admin.ch/bfsstatic/dam/assets/453578/master
+geostat:
+	psql natural_earth_vectors -c "CREATE schema geostat"
+	for i in geostat_ggg_16/shp/*.shp; do SHAPE_ENCODING="ISO-8859-1" ogr2ogr -t_srs EPSG:2056 -nlt PROMOTE_TO_MULTI -lco SCHEMA=geostat -f PostgreSQL PG:dbname=natural_earth_vectors $$i; done

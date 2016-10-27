@@ -1,5 +1,18 @@
+<a name="0.6.0"></a>
+## 0.6.0 (UNRELEASED)
+
+#### Features
+
+* User defined grids
+
+#### Bug Fixes
+
+* Fix clipping and simplification with reprojected geometries
+
 <a name="0.5.0"></a>
 ## 0.5.0 (2016-10-25)
+
+#### Features
 
 * Experimental Mapbox GL Style Json output
 
