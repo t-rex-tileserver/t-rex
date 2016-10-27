@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>LV95 Grid</title>
+    <link rel="stylesheet" href="http://openlayers.org/en/v3.18.2/css/ol.css" type="text/css">
+    <script src="http://openlayers.org/en/v3.18.2/build/ol-debug.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.3/proj4.js" type="text/javascript"></script>
+    <style>
+      .map {
+        background: #f8f4f0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map" class="map"></div>
+    <script>
+      if (proj4) {
+        proj4.defs("EPSG:2056", "+proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +k_0=1 +x_0=2600000 +y_0=1200000 +ellps=bessel +towgs84=674.374,15.056,405.346,0,0,0,0 +units=m +no_defs");
+        proj4.defs("EPSG:21781", "+proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +k_0=1 +x_0=600000 +y_0=200000 +ellps=bessel +towgs84=674.4,15.1,405.3,0,0,0,0 +units=m +no_defs");
+      }
+
+      var RESOLUTIONS = [
+        4000, 3750, 3500, 3250, 3000, 2750, 2500, 2250, 2000, 1750, 1500, 1250,
+        1000, 750, 650, 500, 250, 100, 50, 20, 10, 5, 2.5, 2, 1.5, 1, 0.5
+      ];
+
+      var extent = [2420000, 130000, 2900000, 1350000];
+      var projection = ol.proj.get("EPSG:2056");
+      projection.setExtent(extent);
+
+      var matrixIds = [];
+      for (var i = 0; i < RESOLUTIONS.length; i++) {
+        matrixIds.push(i);
+      }
+
+      var tileGrid = new ol.tilegrid.WMTS({
+        origin: [extent[0], extent[3]],
+        resolutions: RESOLUTIONS,
+        matrixIds: matrixIds
+      });
+
+      var wmtsLayer = new ol.layer.Tile({
+        source: new ol.source.WMTS(({
+          url: 'https://wmts10.geo.admin.ch/1.0.0/{Layer}/default/20140620/2056/{TileMatrix}/{TileCol}/{TileRow}.jpeg',
+          tileGrid: tileGrid,
+          projection: projection,
+          layer: "ch.swisstopo.swissimage",
+          requestEncoding: 'REST'
+        }))
+      });
+
+      var vtLayer = new ol.layer.VectorTile({
+        source: new ol.source.VectorTile({
+          format: new ol.format.MVT(),
+          tileGrid: tileGrid,
+          tilePixelRatio: 16,
+          url: 'http://127.0.0.1:6767/g1k16/{z}/{x}/{y}.pbf'
+        })
+      });
+
+      var map = new ol.Map({
+        layers: [vtLayer],
+        target: 'map',
+        view: new ol.View({
+          center: [2720000, 1095000],
+          projection: projection,
+          resolution: 100
+        })
+      });
+    </script>
+  </body>
+</html>

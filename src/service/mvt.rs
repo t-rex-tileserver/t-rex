@@ -197,7 +197,11 @@ impl MvtService {
     }
     /// Create vector tile from input at x, y, z
     pub fn tile(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u8) -> vector_tile::Tile {
-        let extent = self.grid.tile_extent_reverse_y(xtile, ytile, zoom);
+        let extent = if self.grid.srid == 3857 {
+            self.grid.tile_extent_reverse_y(xtile, ytile, zoom)
+        } else {
+            self.grid.tile_extent(xtile, ytile, zoom)
+        };
         debug!("MVT tile request {:?}", extent);
         let mut tile = Tile::new(&extent, 4096, true);
         for layer in self.get_tileset(tileset) {

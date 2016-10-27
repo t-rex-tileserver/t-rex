@@ -325,13 +325,19 @@ fn test_grid_from_config() {
         srid = 2056
         units = "M"
         resolutions = [4000.0,3750.0,3500.0,3250.0,3000.0,2750.0,2500.0,2250.0,2000.0,1750.0,1500.0,1250.0,1000.0,750.0,650.0,500.0,250.0,100.0,50.0,20.0,10.0,5.0,2.5,2.0,1.5,1.0,0.5,0.25,0.1]
-        origin = "BottomLeft"
+        origin = "TopLeft"
         "#;
     let config = parse_config(toml.to_string(), "").unwrap();
     let grid = Grid::from_config(&config).unwrap();
     assert_eq!(grid.extent, Extent {minx: 2420000.0, miny: 1030000.0,
                                     maxx: 2900000.0, maxy: 1350000.0});
-    assert_eq!(grid.origin, Origin::BottomLeft);
+    assert_eq!(grid.origin, Origin::TopLeft);
+
+    let extent = grid.tile_extent(10, 4, 17); // lake of Zurich
+    assert_eq!(extent, Extent {minx: 2676000., miny: 1222000., maxx: 2701600., maxy: 1247600.});
+    //BBOX ZH: (2669255.48 1223902.28, 2716899.60125 1283304.23625)
+    let extent = grid.tile_extent_reverse_y(10, 4, 17);
+    assert_eq!(extent, Extent {minx: 2676000., miny: -1675219600., maxx: 2701600., maxy: -1675194000.});
 }
 
 

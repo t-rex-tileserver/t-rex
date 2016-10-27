@@ -22,4 +22,4 @@ natural_earth_vectors: packages/Natural_Earth_quick_start/10m_cultural/ne_10m_po
 # https://www.bfs.admin.ch/bfsstatic/dam/assets/453578/master
 geostat:
 	psql natural_earth_vectors -c "CREATE schema geostat"
-	for i in geostat_ggg_16/shp/*.shp; do SHAPE_ENCODING="ISO-8859-1" ogr2ogr -t_srs EPSG:2056 -nlt PROMOTE_TO_MULTI -lco SCHEMA=geostat -f PostgreSQL PG:dbname=natural_earth_vectors $$i; done
+	SHAPE_ENCODING="ISO-8859-1" ogr2ogr -t_srs EPSG:2056 -nlt PROMOTE_TO_MULTI -lco SCHEMA=geostat -f PostgreSQL PG:dbname=natural_earth_vectors geostat_ggg_16/shp/g1k16.shp

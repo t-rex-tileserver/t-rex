@@ -374,7 +374,7 @@ impl PostgisInput {
                 geom_name, grid_srid);
             geom_expr = format!("ST_SetSRID({},{})", geom_expr, grid_srid)
         } else if layer_srid != grid_srid {
-            warn!("Layer '{}' - Reprojecting geometry '{}' from to SRID {}", layer.name,
+            warn!("Layer '{}' - Reprojecting geometry '{}' to SRID {}", layer.name,
                 geom_name, grid_srid);
             geom_expr = format!("ST_Transform({},{})", geom_expr, grid_srid);
         }
