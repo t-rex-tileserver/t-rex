@@ -28,6 +28,7 @@
 * Tile cache generation command
 * Improved polygon simplification
 
+![t_rex_generate](doc/t_rex_generate.gif)
 
 <a name="v0.3.1"></a>
 ## v0.3.1 (2016-09-06)
