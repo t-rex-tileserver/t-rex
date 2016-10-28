@@ -24,7 +24,7 @@
         1000, 750, 650, 500, 250, 100, 50, 20, 10, 5, 2.5, 2, 1.5, 1, 0.5
       ];
 
-      var extent = [2420000, 130000, 2900000, 1350000];
+      var extent = [2420000, 1030000, 2900000, 1350000];
       var projection = ol.proj.get("EPSG:2056");
       projection.setExtent(extent);
 
@@ -49,22 +49,30 @@
         }))
       });
 
+      var style = new ol.style.Style({
+        stroke: new ol.style.Stroke({
+          color: '#FFFF33',
+          width: 3
+        })
+      });
+
       var vtLayer = new ol.layer.VectorTile({
         source: new ol.source.VectorTile({
           format: new ol.format.MVT(),
           tileGrid: tileGrid,
           tilePixelRatio: 16,
-          url: 'http://127.0.0.1:6767/g1k16/{z}/{x}/{y}.pbf'
-        })
+          url: 'http://localhost:6767/g1k16/{z}/{x}/{y}.pbf'
+        }),
+        style: style
       });
 
       var map = new ol.Map({
-        layers: [vtLayer],
+        layers: [wmtsLayer,vtLayer],
         target: 'map',
         view: new ol.View({
-          center: [2720000, 1095000],
+          center: [2660000, 1190000],
           projection: projection,
-          resolution: 100
+          resolution: 500
         })
       });
     </script>
