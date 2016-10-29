@@ -103,6 +103,22 @@ port = 8080
 threads = 4
 ```
 
+### Custom tile grids
+
+t-rex has two built-in grids, `web_mercator` and `wgs84`. Here's an example showing how to define your own grid:
+
+```toml
+[grid]
+width = 256
+height = 256
+extent = { minx = 2420000.0, miny = 1030000.0, maxx = 2900000.0, maxy = 1350000.0 }
+srid = 2056
+units = "M"
+resolutions = [4000.0,3750.0,3500.0,3250.0,3000.0,2750.0,2500.0,2250.0,2000.0,1750.0,1500.0,1250.0,1000.0,750.0,650.0,500.0,250.0,100.0,50.0,20.0,10.0,5.0,2.5,2.0,1.5,1.0,0.5]
+origin = "TopLeft"
+```
+
+
 Installation
 ------------
 
