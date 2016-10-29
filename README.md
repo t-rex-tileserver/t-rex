@@ -7,12 +7,17 @@ t-rex
 t-rex is a vector tile server specialized on publishing [MVT tiles](https://github.com/mapbox/vector-tile-spec/tree/master/2.1)
 from a PostGIS database.
 
-An extensible design allows future support for more data sources (e.g. OGR), custom tile
-grids with other reference systems than Spherical Mercator and additional output formats like
-JSON.
 
-Presentations
--------------
+Features
+--------
+
+* Auto-detection of layers in database
+* Built-in viewers for data display and inspection
+* Tile generation command with simple parallelization
+* Automatic reprojection to grid CRS
+* Support for custom tile grids
+
+### Presentations
 
 * Workshop "Vector Tiles", GEOSummit Bern 7.6.16: [slides](doc/t-rex_vector_tile_server.pdf)
 
@@ -45,6 +50,10 @@ Generate tiles for cache:
 
 Configuration
 -------------
+
+Services can be configured in a text file with [TOML](https://github.com/toml-lang/toml) syntax.
+
+A good starting point is the template generated with the `genconfig` command.
 
 Configuration file example:
 
@@ -92,6 +101,7 @@ simplify = true
   sql = """
     SELECT name, type, osm_id, geometry
     FROM osm_buildings
+    WHERE geometry && !bbox!
     ORDER BY area DESC"""
 
 [cache.file]
@@ -102,6 +112,19 @@ bind = "0.0.0.0"
 port = 8080
 threads = 4
 ```
+
+### Layer configuration
+
+Custom queries can be configured as PostGIS SQL queries.
+
+The following variables are replaced at runtime:
+
+* `!bbox!`: Bounding box of tile
+* `!zoom!`: Zoom level of tile request
+* `!scale_denominator!`: Map scale of tile request
+* `!pixel_width!`: Width of pixel in grid units
+
+If an `fid_field` is declared, this field is used as the feature ID.
 
 ### Custom tile grids
 
