@@ -16,7 +16,6 @@ r2d2_postgres = "*"
 postgis = { git = "https://github.com/pka/rust-postgis.git", branch = "rust-geo" }
 protobuf = "*"
 nickel = "*"
-mustache = "0.6.3" # Same version as nickel
 rustc-serialize = "*"
 clap = "~2.10.0" # Compile error in 2.11.3
 log = "*"

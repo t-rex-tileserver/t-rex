@@ -12,9 +12,7 @@ use core::{Config,read_config,parse_config};
 use toml;
 use cache::{Tilecache,Nocache,Filecache};
 
-use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult, Halt, StaticFilesHandler};
-use mustache;
-use rustc_serialize::Encodable;
+use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult, StaticFilesHandler};
 use hyper::header::{CacheControl, CacheDirective, AccessControlAllowOrigin, AccessControlAllowMethods, ContentEncoding, Encoding};
 use hyper::method::Method;
 use hyper::header;
@@ -83,32 +81,13 @@ struct StaticFiles {
 impl StaticFiles {
     fn new() -> StaticFiles {
         let mut static_files = HashMap::new();
-        static_files.insert("tile-inspector", str::from_utf8(include_bytes!("static/tile-inspector.html")).unwrap());
-        static_files.insert("vector", str::from_utf8(include_bytes!("static/vector.js")).unwrap());
-        static_files.insert("xray", str::from_utf8(include_bytes!("static/xray.html")).unwrap());
+        static_files.insert("index.html", str::from_utf8(include_bytes!("static/index.html")).unwrap());
+        static_files.insert("viewer.js", str::from_utf8(include_bytes!("static/viewer.js")).unwrap());
+        static_files.insert("viewer.css", str::from_utf8(include_bytes!("static/viewer.css")).unwrap());
         StaticFiles { files: static_files }
     }
 }
 
-struct InlineTemplate {
-    template: mustache::Template,
-}
-
-impl InlineTemplate {
-    fn new(template: &str) -> InlineTemplate {
-        let tpl = mustache::compile_str(template);
-        InlineTemplate { template: tpl }
-    }
-    // extracted from Nickel::Response#render
-    fn render<'a, D, T>(&self, res: Response<'a, D>, data: &T)
-            -> MiddlewareResult<'a, D> where T: Encodable {
-        let mut stream = try!(res.start());
-        match self.template.render(&mut stream, data) {
-            Ok(()) => Ok(Halt(stream)),
-            Err(e) => stream.bail(format!("Problem rendering template: {:?}", e))
-        }
-    }
-}
 
 const DEFAULT_CONFIG: &'static str = r#"
 [service.mvt]
@@ -268,30 +247,21 @@ pub fn webserver(args: &ArgMatches) {
     });
 
     if mvt_viewer {
-        let tpl_olviewer = InlineTemplate::new(str::from_utf8(include_bytes!("templates/olviewer.tpl")).unwrap());
-        server.get("/:tileset/", middleware! { |req, res|
-            let tileset = req.param("tileset").unwrap();
-            let host = req.origin.headers.get::<header::Host>().unwrap();
-            let baseurl = format!("http://{}:{}", host.hostname, host.port.unwrap_or(80));
-            let mut data = HashMap::new();
-            data.insert("baseurl", baseurl);
-            data.insert("tileset", tileset.to_string());
-            return tpl_olviewer.render(res, &data);
-        });
-
         let static_files = StaticFiles::new();
-        server.get("/:static", middleware! { |req, res|
-            let name = req.param("static").unwrap();
-            if let Some(content) = static_files.files.get(name) {
+        server.get("/:static", middleware! { |req, mut res|
+            let mut name = req.param("static").unwrap().to_string();
+            if let Some(format) = req.param("format") {
+                name = format!("{}.{}", name, format);
+            }
+            match req.param("format") {
+                Some("css") => { res.set(MediaType::Css); },
+                Some("js") => { res.set(MediaType::Js); },
+                _ => {}
+            }
+            if name == "." { name = "index.html".to_string(); }
+            if let Some(content) = static_files.files.get(&name as &str) {
                 return res.send(*content)
             }
-        });
-
-        let tpl_index = InlineTemplate::new(str::from_utf8(include_bytes!("templates/index.tpl")).unwrap());
-        server.get("/", middleware! { |_req, res|
-            let mut data = HashMap::new();
-            data.insert("tileset", &tileset_infos);
-            return tpl_index.render(res, &data);
         });
     }
 

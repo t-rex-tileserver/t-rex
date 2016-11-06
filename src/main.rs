@@ -8,7 +8,6 @@ extern crate log;
 extern crate env_logger;
 extern crate toml;
 #[macro_use] extern crate nickel;
-extern crate mustache;
 extern crate rustc_serialize;
 #[macro_use] extern crate hyper;
 extern crate r2d2;
