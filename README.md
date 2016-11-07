@@ -1,7 +1,7 @@
 t-rex
 =====
 
-[![Travis build Status](https://travis-ci.org/pka/t-rex.svg?branch=master)](https://travis-ci.org/pka/t-rex) [![Appveyor build status](https://ci.appveyor.com/api/projects/status/o60e9bu97i49lxyf?svg=true)](https://ci.appveyor.com/project/pka/t-rex)
+[![Travis build Status](https://travis-ci.org/pka/t-rex.svg?branch=master)](https://travis-ci.org/pka/t-rex) [![Appveyor build status](https://ci.appveyor.com/api/projects/status/o60e9bu97i49lxyf?svg=true)](https://ci.appveyor.com/project/pka/t-rex) [![Language (Rust)](https://img.shields.io/badge/powered_by-Rust-blue.svg)](http://www.rust-lang.org/)
 
 
 t-rex is a vector tile server specialized on publishing [MVT tiles](https://github.com/mapbox/vector-tile-spec/tree/master/2.1)
