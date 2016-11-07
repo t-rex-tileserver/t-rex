@@ -1,9 +1,12 @@
 <a name="0.6.0"></a>
-## 0.6.0 (UNRELEASED)
+## 0.6.0 (2016-11-07)
 
 #### Features
 
+* New viewer with inlined OpenLayers and Mapbox GL libs
 * User defined grids
+
+![user_grid](doc/lv95grid.jpg)
 
 #### Bug Fixes
 
