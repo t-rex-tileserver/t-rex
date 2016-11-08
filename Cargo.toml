@@ -6,9 +6,6 @@ authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 [[bin]]
 name = "t_rex"
 
-[features]
-dbtest = []
-
 [dependencies]
 toml = "*"
 postgres = "*"

@@ -1,3 +1,10 @@
+<a name="0.6.1"></a>
+## 0.6.1 (UNRELEASED)
+
+#### Features
+
+* Support for PostgreSQL Unix socket connections
+
 <a name="0.6.0"></a>
 ## 0.6.0 (2016-11-07)
 
