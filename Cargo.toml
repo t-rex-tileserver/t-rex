@@ -11,9 +11,10 @@ dbtest = []
 
 [dependencies]
 toml = "*"
+postgres = "*"
 r2d2 = "*"
-r2d2_postgres = "~0.10.1"
-postgis = { git = "https://github.com/pka/rust-postgis.git", branch = "rust-geo" }
+r2d2_postgres = "*"
+postgis = { git = "https://github.com/andelf/rust-postgis.git" }
 protobuf = "*"
 nickel = "~0.8.1"
 rustc-serialize = "*"
@@ -23,11 +24,6 @@ env_logger = "*"
 time = "*"
 flate2 = "*"
 pbr = "*"
-
-[dependencies.postgres]
-version = "~0.11.11"
-#Breaks Windows build (https://github.com/rust-lang/cargo/issues/2589#issuecomment-224697180)
-#features = ["unix_socket"]
 
 [dependencies.hyper]
 version = "0.8.1" # Same version as nickel

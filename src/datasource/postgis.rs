@@ -8,8 +8,7 @@ use postgres::rows::Row;
 use postgres::types::{Type, FromSql, ToSql, SessionInfo};
 use postgres;
 use r2d2;
-use r2d2_postgres::{PostgresConnectionManager, SslMode};
-use std::io::Read;
+use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use std;
 use core::feature::{Feature,FeatureAttr,FeatureAttrValType};
 use core::geom::*;
@@ -62,7 +61,7 @@ impl FromSql for FeatureAttrValType {
             _ => false
         }
     }
-    fn from_sql<R: Read>(ty: &Type, raw: &mut R, _ctx: &SessionInfo) -> postgres::Result<FeatureAttrValType> {
+    fn from_sql(ty: &Type, raw: &[u8], _ctx: &SessionInfo) -> Result<Self, Box<std::error::Error + Sync + Send>> {
         match ty {
             &Type::Varchar | &Type::Text | &Type::CharArray
                 => <String>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::String(v))),
@@ -80,7 +79,7 @@ impl FromSql for FeatureAttrValType {
                 => <bool>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::Bool(v))),
             _ => {
                 let err: Box<std::error::Error + Sync + Send> = format!("cannot convert {} to FeatureAttrValType", ty).into();
-                Err(postgres::error::Error::Conversion(err))
+                Err(err)
             }
         }
     }
@@ -204,7 +203,7 @@ impl PostgisInput {
     /// New instance with connected pool
     pub fn connected(&self) -> PostgisInput {
         let manager = PostgresConnectionManager::new(
-            self.connection_url.as_ref(), SslMode::None).unwrap();
+            self.connection_url.as_ref(), TlsMode::None).unwrap();
         let config = r2d2::Config::builder()
                 .pool_size(10)
                 .build();
@@ -572,7 +571,7 @@ url = "{}"
 #[ignore]
 pub fn test_from_geom_fields() {
     let conn: Connection = match env::var("DBCONN") {
-        Result::Ok(val) => Connection::connect(&val as &str, postgres::SslMode::None),
+        Result::Ok(val) => Connection::connect(&val as &str, postgres::TlsMode::None),
         Result::Err(_) => { panic!("DBCONN undefined") }
     }.unwrap();
     let sql = "SELECT wkb_geometry FROM ne_10m_populated_places LIMIT 1";
