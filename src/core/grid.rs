@@ -182,7 +182,7 @@ impl Grid {
         let res = self.resolutions[zoom as usize];
         let unitheight = self.height as f64 * res;
         let maxy = ((self.extent.maxy-self.extent.minx- 0.01* unitheight)/unitheight).ceil() as u16;
-        let y = maxy-ytile-1;
+        let y = maxy.saturating_sub(ytile).saturating_sub(1); // y = maxy-ytile-1
         self.tile_extent(xtile, y, zoom)
     }
     /// (maxx, maxy) of grid level
@@ -268,6 +268,8 @@ predefined = "web_mercator"
 
 #[test]
 fn test_bbox() {
+    use std::u16;
+
     let grid = Grid::web_mercator();
 
     let extent000 = grid.tile_extent(0, 0, 0);
@@ -277,6 +279,10 @@ fn test_bbox() {
     assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: 7005300.768279828, maxx: -978393.9620502591, maxy: 7044436.526761841});
     let extent = grid.tile_extent(486, 691, 10);
     assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: 7005300.768279828, maxx: -978393.9620502591, maxy: 7044436.526761841});
+
+    //overflow
+    let extent = grid.tile_extent_reverse_y(486, u16::MAX, 10);
+    assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: -20037508.342789248, maxx: -978393.9620502591, maxy: -19998372.58430724});
 
     let extent_ch = grid.tile_extent_reverse_y(1073, 717, 11);
     assert_eq!(extent_ch, Extent { minx: 958826.0828092434, miny: 5987771.04774756, maxx: 978393.9620502479, maxy: 6007338.926988564 });

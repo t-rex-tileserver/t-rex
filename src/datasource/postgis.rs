@@ -530,9 +530,10 @@ impl DatasourceInput for PostgisInput {
             error!("Param values: {:?}", params);
             return;
         };
+        debug!("Reading features in layer {}", layer.name); // rust_postgis may panic with unexpected geometry data
         for row in &rows.unwrap() {
             let feature = FeatureRow { layer: layer, row: &row };
-            read(&feature)
+            read(&feature);
         }
     }
 }

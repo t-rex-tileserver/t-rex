@@ -59,7 +59,7 @@ impl ScreenGeom<geom::Point> for screen::Point {
             x: ((point.x-extent.minx) * tile_size as f64 / x_span) as i32,
             y: ((point.y-extent.miny) * tile_size as f64 / y_span) as i32
         };
-        if reverse_y { screen_geom.y = tile_size as i32 - screen_geom.y };
+        if reverse_y { screen_geom.y = (tile_size as i32).saturating_sub(screen_geom.y) };
         screen_geom
     }
 }
@@ -117,6 +117,9 @@ impl ScreenGeom<geom::MultiPolygon> for screen::MultiPolygon {
 
 #[test]
 fn test_point_to_screen_coords() {
+    use std::f64;
+    use std::i32;
+
     //let zh_mercator = geom::Point::new(949398.0, 6002729.0, Some(3857));
     let zh_mercator = geom::Point::new(960000.0, 6002729.0, Some(3857));
     //let zh_wgs84 = postgis::Point::new(47.3703149, 8.5285874, Some(4326));
@@ -124,6 +127,13 @@ fn test_point_to_screen_coords() {
     let screen_pt = screen::Point::from_geom(&tile_extent, false, 4096, &zh_mercator);
     assert_eq!(screen_pt, screen::Point { x: 245, y: 3131 });
     assert_eq!(screen_pt.encode().vec(), &[9,490,6262]);
+
+    //overflow
+    let point = geom::Point::new(960000.0, f64::MAX, Some(3857));
+    let screen_pt = screen::Point::from_geom(&tile_extent, false, 4096, &point);
+    assert_eq!(screen_pt, screen::Point { x: 245, y: i32::MIN });
+    let screen_pt = screen::Point::from_geom(&tile_extent, true, 4096, &point);
+    assert_eq!(screen_pt, screen::Point { x: 245, y: i32::MAX });
 }
 
 

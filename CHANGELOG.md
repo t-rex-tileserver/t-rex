@@ -5,6 +5,10 @@
 
 * Support for PostgreSQL Unix socket connections
 
+#### Bug Fixes
+
+* Fix integer overflows in grid calculations and MVT encoding
+
 <a name="0.6.0"></a>
 ## 0.6.0 (2016-11-07)
 

@@ -112,8 +112,8 @@ impl EncodableGeom for screen::Point {
     fn encode_from(&self, startpos: &screen::Point, seq: &mut CommandSequence) {
         seq.push(CommandInteger::new(
             Command::MoveTo, 1).0);
-        seq.push(ParameterInteger::new(self.x - startpos.x).0);
-        seq.push(ParameterInteger::new(self.y - startpos.y).0);
+        seq.push(ParameterInteger::new(self.x.saturating_sub(startpos.x)).0);
+        seq.push(ParameterInteger::new(self.y.saturating_sub(startpos.y)).0);
     }
 }
 
@@ -123,8 +123,8 @@ impl EncodableGeom for screen::MultiPoint {
             Command::MoveTo, self.points.len() as u32).0);
         let (mut posx, mut posy) = (startpos.x, startpos.y);
         for point in &self.points {
-            seq.push(ParameterInteger::new(point.x - posx).0);
-            seq.push(ParameterInteger::new(point.y - posy).0);
+            seq.push(ParameterInteger::new(point.x.saturating_sub(posx)).0);
+            seq.push(ParameterInteger::new(point.y.saturating_sub(posy)).0);
             posx = point.x;
             posy = point.y;
         }
@@ -140,8 +140,8 @@ impl EncodableGeom for screen::LineString {
             for i in 1..self.points.len() {
                 let ref pos = &self.points[i-1];
                 let ref point = &self.points[i];
-                seq.push(ParameterInteger::new(point.x - pos.x).0);
-                seq.push(ParameterInteger::new(point.y - pos.y).0);
+                seq.push(ParameterInteger::new(point.x.saturating_sub(pos.x)).0);
+                seq.push(ParameterInteger::new(point.y.saturating_sub(pos.y)).0);
             }
         }
     }
@@ -156,8 +156,8 @@ impl screen::LineString {
             for i in 1..self.points.len()-1 {
                 let ref pos = &self.points[i-1];
                 let ref point = &self.points[i];
-                seq.push(ParameterInteger::new(point.x - pos.x).0);
-                seq.push(ParameterInteger::new(point.y - pos.y).0);
+                seq.push(ParameterInteger::new(point.x.saturating_sub(pos.x)).0);
+                seq.push(ParameterInteger::new(point.y.saturating_sub(pos.y)).0);
             }
             seq.push(CommandInteger::new(Command::ClosePath, 1).0);
         }
@@ -299,4 +299,30 @@ fn test_geom_encoding() {
         };
     let expected = [9,0,0,26,20,0,0,20,19,0,15,9,22,2,34,18,0,0,18,17,0,0,0,15,9,4,13,26,0,8,8,0,0,7,15];
     assert_eq!(multipolygon.encode().0, &expected[0..35]);
+}
+
+#[test]
+fn test_overflow() {
+    use std::i32;
+    use std::u32;
+
+    assert_eq!(i32::MIN, -2147483648);
+    assert_eq!(i32::MAX,  2147483647);
+    assert_eq!(u32::MAX,  4294967295);
+
+    let multipoint = screen::MultiPoint {
+        points: vec![
+            screen::Point { x: 5, y: 7 },
+            screen::Point { x: i32::MIN, y: i32::MIN }
+            ]
+        };
+    assert_eq!(multipoint.encode().0, &[17,10,14,u32::MAX,u32::MAX]);
+
+    let multipoint = screen::MultiPoint {
+        points: vec![
+            screen::Point { x: -5, y: -10 },
+            screen::Point { x: i32::MAX, y: i32::MAX }
+            ]
+        };
+    assert_eq!(multipoint.encode().0, &[17,9,19,u32::MAX-1,u32::MAX-1]);
 }
