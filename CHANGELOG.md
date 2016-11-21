@@ -4,6 +4,7 @@
 #### Features
 
 * Support for PostgreSQL Unix socket connections
+* Mac OS X build
 
 #### Bug Fixes
 

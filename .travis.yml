@@ -14,12 +14,17 @@ matrix:
     - os: linux
       rust: stable
       env: TARGET=x86_64-unknown-linux-gnu
+    - os: osx
+      rust: stable
+      env: TARGET=x86_64-apple-darwin
 
 services:
   - postgresql
 
 before_install:
-  - psql -c 'create database natural_earth_vectors;' -U postgres
+  # for osx see http://stackoverflow.com/a/36945462/1981751
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then psql -U postgres -c "CREATE DATABASE natural_earth_vectors"; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then psql -U postgres -c "CREATE EXTENSION postgis" natural_earth_vectors; fi
   - export PATH="$PATH:$HOME/.cargo/bin"
 
 install:
