@@ -85,7 +85,7 @@ fn main() {
 
     // http://kbknapp.github.io/clap-rs/clap/
     let mut app = App::new("t_rex")
-                        .version("0.6.0")
+                        .version("0.6.1")
                         .author("Pirmin Kalberer <pka@sourcepole.ch>")
                         .about("vector tile server specialized on publishing MVT tiles from a PostGIS database")
                         .subcommand(SubCommand::with_name("serve")
