@@ -41,6 +41,7 @@ run_test_suite() {
     cargo build --target $TARGET --verbose
     cargo run --target $TARGET
     cargo test --target $TARGET
+    [ "$TRAVIS_OS_NAME" == "linux" ] && cargo test --target $TARGET -- --ignored
 
     # sanity check the file type
     file target/$TARGET/debug/t_rex

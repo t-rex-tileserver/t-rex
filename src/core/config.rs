@@ -64,7 +64,7 @@ fn test_parse_config() {
                 "postgis"
             ),
             "url": String(
-                "postgresql://pi@localhost/natural_earth_vectors"
+                "postgresql://postgres@127.0.0.1/natural_earth_vectors"
             )
         }
     ),

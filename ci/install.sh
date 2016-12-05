@@ -48,13 +48,31 @@ EOF
     fi
 }
 
+configure_postgis() {
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+        # http://stackoverflow.com/questions/36875239/travis-os-x-test-postgres/36945462#36945462
+        export PG_DATA=$(brew --prefix)/var/postgres
+        pg_ctl -w start -l postgres.log --pgdata ${PG_DATA} || cat postgres.log
+        #FATAL:  database files are incompatible with server
+        #DETAIL:  The data directory was initialized by PostgreSQL version 9.4, which is not compatible with this version 9.5.4.
+        #createuser -s postgres
+        #cat postgres.log
+    fi
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+        export PGUSER=postgres
+        #cd src/test
+        #make
+        wget http://pkg.sourcepole.ch/ne_t_rex_test.dump
+        pg_restore --create --no-owner -d postgres ne_t_rex_test.dump
+    fi
+}
+
 main() {
     install_c_toolchain
     install_rustup
     install_standard_crates
     configure_cargo
-
-    # TODO if you need to install extra stuff add it here
+    configure_postgis
 }
 
 main

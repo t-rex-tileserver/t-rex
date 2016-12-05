@@ -585,13 +585,13 @@ pub fn test_from_geom_fields() {
             "Ok(Point(Point { x: -6438719.622820721, y: -4093437.7144101723, srid: Some(3857) }))");
     }
 
-    let sql = "SELECT ST_Multi(wkb_geometry) AS wkb_geometry FROM rivers_lake_centerlines WHERE ST_NPoints(wkb_geometry)<10 LIMIT 1";
+    let sql = "SELECT ST_Multi(wkb_geometry) AS wkb_geometry FROM rivers_lake_centerlines WHERE name='Waiau' AND ST_NPoints(wkb_geometry)<10";
     for row in &conn.query(sql, &[]).unwrap() {
         let geom = GeometryType::from_geom_field(&row, "wkb_geometry", "LINESTRING");
         assert_eq!(&*format!("{:?}", geom),
             "Ok(MultiLineString(MultiLineStringT { lines: [LineStringT { points: [Point { x: 18672061.098933436, y: -5690573.725394946, srid: None }, Point { x: 18671798.382036217, y: -5692123.11701991, srid: None }, Point { x: 18671707.790002696, y: -5693530.713572942, srid: None }, Point { x: 18671789.322832868, y: -5694822.281317252, srid: None }, Point { x: 18672061.098933436, y: -5695997.770001522, srid: None }, Point { x: 18670620.68560042, y: -5698245.837796968, srid: None }, Point { x: 18668283.41113552, y: -5700403.997584983, srid: None }, Point { x: 18666082.024720907, y: -5701179.511527114, srid: None }, Point { x: 18665148.926775623, y: -5699253.775757339, srid: None }], srid: None }], srid: Some(3857) }))");
     }
-    let sql = "SELECT wkb_geometry FROM ne_10m_rivers_lake_centerlines WHERE ST_NPoints(wkb_geometry)<10 LIMIT 1";
+    let sql = "SELECT wkb_geometry FROM ne_10m_rivers_lake_centerlines WHERE name='Belaya' AND ST_NPoints(wkb_geometry)<10";
     for row in &conn.query(sql, &[]).unwrap() {
         let geom = row.get::<_, MultiLineString>("wkb_geometry");
         assert_eq!(&*format!("{:?}", geom),
