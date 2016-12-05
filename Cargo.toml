@@ -11,7 +11,7 @@ toml = "*"
 postgres = "*"
 r2d2 = "*"
 r2d2_postgres = "*"
-postgis = { git = "https://github.com/andelf/rust-postgis.git" }
+postgis = "~0.3.0"
 protobuf = "*"
 nickel = "~0.8.1"
 rustc-serialize = "*"
