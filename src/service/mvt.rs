@@ -641,6 +641,7 @@ pub fn test_tilejson() {
 #[test]
 pub fn test_stylejson() {
     use core::read_config;
+    use service::glstyle_converter::toml_style_to_gljson;
 
     let config = read_config("src/test/example.cfg").unwrap();
     let service = MvtService::from_config(&config).unwrap();
@@ -668,8 +669,7 @@ pub fn test_stylejson() {
     assert_eq!(json, expected);
 
     // Mapbox GL style experiments
-    let configjson = json::encode(&config.lookup("tileset.0.layer.1.style").unwrap()).unwrap().replace("}{", "},{").replace("][", "],[");
-    let configjson = Json::from_str(&configjson).unwrap().pretty().to_string();
+    let configjson = toml_style_to_gljson(&config.lookup("tileset.0.layer.1.style").unwrap());
     println!("{}", configjson);
     let expected= r##"[
   {
