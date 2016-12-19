@@ -641,7 +641,6 @@ pub fn test_tilejson() {
 #[test]
 pub fn test_stylejson() {
     use core::read_config;
-    use service::glstyle_converter::toml_style_to_gljson;
 
     let config = read_config("src/test/example.cfg").unwrap();
     let service = MvtService::from_config(&config).unwrap();
@@ -667,77 +666,6 @@ pub fn test_stylejson() {
   "version": 8
 }"#;
     assert_eq!(json, expected);
-
-    // Mapbox GL style experiments
-    let configjson = toml_style_to_gljson(&config.lookup("tileset.0.layer.1.style").unwrap());
-    println!("{}", configjson);
-    let expected= r##"[
-  {
-    "fill-color": {
-      "stops": [
-        {
-          "in": 15.5,
-          "out": "#f2eae2"
-        },
-        {
-          "in": 16,
-          "out": "#dfdbd7"
-        }
-      ]
-    },
-    "interactive": true,
-    "type": "fill"
-  },
-  {
-    "circle-color": [
-      {
-        "property": "temperature",
-        "stops": [
-          {
-            "in": 0,
-            "out": "blue"
-          },
-          {
-            "in": 100,
-            "out": "red"
-          }
-        ]
-      }
-    ],
-    "fill-color": "#f2eae2",
-    "fill-outline-color": "#dfdbd7",
-    "fill-translate": {
-      "stops": [
-        {
-          "in": 15,
-          "out": [
-            11
-          ]
-        },
-        {
-          "in": 16,
-          "out": [
-            -20
-          ]
-        }
-      ]
-    },
-    "fillopacity": {
-      "base": 1,
-      "stops": [
-        [
-          150
-        ],
-        [
-          161
-        ]
-      ]
-    },
-    "interactive": true,
-    "type": "fill"
-  }
-]"##;
-    assert_eq!(configjson, expected);
 }
 
 #[test]
