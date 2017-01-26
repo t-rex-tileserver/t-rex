@@ -264,7 +264,7 @@ impl MvtService {
                 continue;
             }
             if progress { println!("Generating tileset '{}'...", tileset.name); }
-            for zoom in minzoom..maxzoom {
+            for zoom in minzoom..(maxzoom+1) {
                 let ref limit = limits[zoom as usize];
                 let mut pb = self.progress_bar(&format!("Level {}: ", zoom), &limit);
                 if progress { pb.tick(); }
