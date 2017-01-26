@@ -28,7 +28,7 @@ mod cache;
 mod webserver;
 
 use core::grid::Extent;
-use clap::{App, SubCommand, ArgMatches};
+use clap::{App, SubCommand, ArgMatches, AppSettings};
 use std::env;
 use std::process;
 use log::{LogRecord, LogLevelFilter};
@@ -101,6 +101,7 @@ fn main() {
                                               --clip=[true|false] 'Clip geometries'")
                             .about("Generate configuration template"))
                         .subcommand(SubCommand::with_name("generate")
+                            .setting(AppSettings::AllowLeadingHyphen)
                             .args_from_usage("-c, --config=<FILE> 'Load from custom config file'
                                               --tileset=[NAME] 'Tileset name'
                                               --minzoom=[LEVEL] 'Minimum zoom level'
