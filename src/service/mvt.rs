@@ -274,11 +274,16 @@ impl MvtService {
                         tileno += 1;
                         if skip { continue; }
 
-                        let mvt_tile = self.tile(&tileset.name, xtile, ytile, zoom);
-                        let mut tilegz = Vec::new();
-                        Tile::write_gz_to(&mut tilegz, &mvt_tile);
                         let path = format!("{}/{}/{}/{}.pbf", &tileset.name, zoom, xtile, ytile);
-                        let _ = self.cache.write(&path, &tilegz);
+
+                        if ! self.cache.exists(&path) {
+                            // Entry doesn't exist, so generate it
+                            let mvt_tile = self.tile(&tileset.name, xtile, ytile, zoom);
+                            let mut tilegz = Vec::new();
+                            Tile::write_gz_to(&mut tilegz, &mvt_tile);
+                            let _ = self.cache.write(&path, &tilegz);
+                        }
+
                         if progress { pb.inc(); }
                     }
                 }

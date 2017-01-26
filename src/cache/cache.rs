@@ -11,6 +11,7 @@ pub trait Cache {
     fn read<F>(&self, path: &str, read: F) -> bool
         where F : FnMut(&mut Read);
     fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error>;
+    fn exists(&self, path: &str) -> bool;
 }
 
 
@@ -27,5 +28,9 @@ impl Cache for Nocache {
     fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error>
     {
         Ok(())
+    }
+
+    fn exists(&self, path: &str) -> bool {
+        false
     }
 }

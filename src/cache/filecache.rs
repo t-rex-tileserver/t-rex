@@ -33,6 +33,11 @@ impl Cache for Filecache {
         let mut f = try!(File::create(&fullpath));
         f.write_all(obj)
     }
+
+    fn exists(&self, path: &str) -> bool {
+        let fullpath = format!("{}/{}", self.basepath, path);
+        Path::new(&fullpath).exists()
+    }
 }
 
 #[test]

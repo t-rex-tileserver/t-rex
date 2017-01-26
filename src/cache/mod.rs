@@ -36,6 +36,13 @@ impl Cache for Tilecache {
             &Tilecache::Filecache(ref cache) => cache.write(path, obj),
         }
     }
+    fn exists(&self, path: &str) -> bool
+    {
+        match self {
+            &Tilecache::Nocache(ref cache)   => cache.exists(path),
+            &Tilecache::Filecache(ref cache) => cache.exists(path),
+        }
+    }
 }
 
 impl Config<Tilecache> for Tilecache {
