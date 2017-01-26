@@ -30,7 +30,7 @@ impl Cache for Nocache {
         Ok(())
     }
 
-    fn exists(&self, path: &str) -> bool {
+    fn exists(&self, _path: &str) -> bool {
         false
     }
 }

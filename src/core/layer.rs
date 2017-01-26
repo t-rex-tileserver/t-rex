@@ -65,8 +65,12 @@ impl Layer {
     }
     // SQL query for zoom level
     pub fn query(&self, level: u8) -> Option<&String> {
-        let query = self.query.iter().find(|ref q| level >= q.minzoom() && level <= q.maxzoom());
-        query.and_then(|ref q| q.sql.as_ref().and_then(|sql| Some(sql)))
+        let mut queries = self.query.iter().map(|ref q|
+            (q.minzoom(), q.maxzoom(), q.sql.as_ref().and_then(|sql| Some(sql)))
+        ).collect::<Vec<_>>();
+        queries.sort_by_key(|ref t| t.0);
+        let query = queries.iter().rev().find(|ref q| level >= q.0 && level <= q.1);
+        query.and_then(|ref q| q.2)
     }
     /// Layer properties needed e.g. for metadata.json
     pub fn metadata(&self) -> HashMap<&str, String> {
@@ -191,6 +195,9 @@ fn test_toml_decode() {
         query_limit = 100
         #query = "SELECT name,wkb_geometry FROM ne_10m_populated_places"
         [[tileset.layer.query]]
+        minzoom = 2
+        sql = "SELECT name,wkb_geometry FROM places_z2"
+        [[tileset.layer.query]]
         minzoom = 10
         maxzoom = 14
         sql = "SELECT name,wkb_geometry FROM places_z10"
@@ -220,17 +227,21 @@ fn test_toml_decode() {
     println!("{:?}", cfg);
     assert_eq!(cfg.name, "points");
     assert_eq!(cfg.table_name, Some("ne_10m_populated_places".to_string()));
-    assert_eq!(cfg.query.len(), 1);
-    assert_eq!(cfg.query[0].minzoom, Some(10));
-    assert_eq!(cfg.query[0].minzoom(), 10);
-    assert_eq!(cfg.query[0].maxzoom(), 14);
-    assert_eq!(cfg.query[0].sql, Some("SELECT name,wkb_geometry FROM places_z10".to_string()));
-    assert_eq!(cfg.minzoom(), 10);
-    assert_eq!(cfg.maxzoom(), 14);
-    assert_eq!(cfg.query(9), None);
+    assert_eq!(cfg.query.len(), 2);
+    assert_eq!(cfg.query[0].minzoom(), 2);
+    assert_eq!(cfg.query[0].maxzoom(), 99);
+    assert_eq!(cfg.query[1].minzoom, Some(10));
+    assert_eq!(cfg.query[1].minzoom(), 10);
+    assert_eq!(cfg.query[1].maxzoom(), 14);
+    assert_eq!(cfg.query[1].sql, Some("SELECT name,wkb_geometry FROM places_z10".to_string()));
+    assert_eq!(cfg.minzoom(), 2);
+    assert_eq!(cfg.maxzoom(), 99);
+    assert_eq!(cfg.query(1), None);
+    assert_eq!(cfg.query(2), Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
+    assert_eq!(cfg.query(9), Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
     assert_eq!(cfg.query(10), Some(&"SELECT name,wkb_geometry FROM places_z10".to_string()));
     assert_eq!(cfg.query(14), Some(&"SELECT name,wkb_geometry FROM places_z10".to_string()));
-    assert_eq!(cfg.query(15), None);
+    assert_eq!(cfg.query(15), Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
 
     // Minimal config
     let ref layer = layers[1];
