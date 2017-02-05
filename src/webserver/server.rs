@@ -29,7 +29,7 @@ fn log_request<'mw>(req: &mut Request<MvtService>, res: Response<'mw,MvtService>
 }
 
 #[allow(dead_code)]
-fn enable_cors<'mw>(_req: &mut Request<MvtService>, mut res: Response<'mw,MvtService>) -> MiddlewareResult<'mw,MvtService> {
+fn enable_cors<'mw>(_req: &mut Request, mut res: Response<'mw>) -> MiddlewareResult<'mw> {
   // access-control-allow-methods: GET
   // access-control-allow-origin: *
   // see also https://github.com/nickel-org/nickel.rs/blob/master/examples/enable_cors.rs
@@ -267,7 +267,7 @@ pub fn webserver(args: &ArgMatches) {
 
     server.get("/**", StaticFilesHandler::new("public/"));
 
-    server.listen((bind, port));
+    let _listening = server.listen((bind, port)).expect("Failed to launch server");
 }
 
 pub fn gen_config(args: &ArgMatches) -> String {
