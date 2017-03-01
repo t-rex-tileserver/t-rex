@@ -4,6 +4,7 @@
 //
 
 use core::Config;
+use service::glstyle_converter::toml_style_to_gljson;
 use toml;
 use rustc_serialize::Decodable;
 use std::collections::HashMap;
@@ -34,6 +35,8 @@ pub struct Layer {
     pub simplify: Option<bool>,
     /// Tile buffer size in pixels
     pub buffer_size: Option<u32>,
+    // Inline style
+    pub style: Option<String>,
 }
 
 impl LayerQuery {
@@ -79,7 +82,7 @@ impl Layer {
         metadata.insert("id", self.name.clone());
         metadata.insert("name", self.name.clone());
         metadata.insert("description", "".to_string());
-        metadata.insert("buffer-size", "0".to_string());
+        metadata.insert("buffer-size", self.buffer_size.unwrap_or(0).to_string());
         metadata.insert("minzoom", self.minzoom().to_string());
         metadata.insert("maxzoom", self.maxzoom().to_string());
         metadata.insert("srs", "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over".to_string());
@@ -97,9 +100,19 @@ impl Layer {
 
 impl Config<Layer> for Layer {
     fn from_config(layerval: &toml::Value) -> Result<Self, String> {
-        let mut decoder = toml::Decoder::new(layerval.clone());
+        // Remove TOML style - will be converted separately
+        let mut layercfg = layerval.as_table().unwrap().clone();
+        let layerstyle = layercfg.remove("style");
+        let mut decoder = toml::Decoder::new(toml::Value::Table(layercfg));
         let layer = Layer::decode(&mut decoder);
-        layer.map_err(|e| format!("Error reading configuration - {}", e))
+        layer.and_then(|mut lyr| {
+            // Convert extracted TOML style to JSON
+            if let Some(ref style) = layerstyle {
+                let gljson = toml_style_to_gljson(&style);
+                lyr.style = Some(gljson);
+            }
+            Ok(lyr)
+        }).map_err(|e| format!("Error reading configuration - {}", e))
     }
 
     fn gen_config() -> String {

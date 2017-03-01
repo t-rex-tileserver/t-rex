@@ -11,6 +11,7 @@ use core::Config;
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use cache::{Cache,Tilecache};
+use std::collections::BTreeMap;
 use std::path::Path;
 use std::fs::{self,File};
 use std::io::Write;
@@ -153,7 +154,7 @@ impl MvtService {
     }
     /// MapboxGL Style JSON (https://www.mapbox.com/mapbox-gl-style-spec/)
     pub fn get_stylejson(&self, baseurl: &str, tileset: &str) -> String {
-        let json = Json::from_str(&format!(r#"
+        let mut stylejson = Json::from_str(&format!(r#"
         {{
             "version": 8,
             "name": "t-rex",
@@ -162,18 +163,32 @@ impl MvtService {
                     "url": "{}/{}.json",
                     "type": "vector"
                 }}
-            }},
-            "layers": [
-                {{
-                    "id": "{}",
-                    "type": "line",
-                    "source": "{}",
-                    "source-layer": "{}"
-                }}
-            ]
-        }}"#, tileset, baseurl, tileset, tileset, tileset, tileset)).unwrap();
-        json.to_string()
+            }}
+        }}"#, tileset, baseurl, tileset)).unwrap();
+        // TODO: background layer
+        let layers = self.get_tileset(tileset);
+        let layer_styles: Vec<String> = layers.iter().map(|layer| {
+            let mut layerjson = if let Some(ref style) =  layer.style {
+                Json::from_str(&style).unwrap()
+            } else {
+                Json::Object(BTreeMap::new())
+            };
+            layerjson.as_object_mut().unwrap().insert("id".to_string(), Json::String(layer.name.clone()));
+            layerjson.as_object_mut().unwrap().insert("source".to_string(), Json::String(tileset.to_string()));
+            layerjson.as_object_mut().unwrap().insert("source-layer".to_string(), Json::String(layer.name.clone()));
+            // TODO: support source-layer referencing other layers
+            // Default paint type
+            layerjson.as_object_mut().unwrap().entry("type".to_string()).or_insert(Json::String("line".to_string()));
+
+            layerjson.to_string()
+        }).collect();
+        // Insert layers in stylejson
+        let mut obj = stylejson.as_object_mut().unwrap();
+        let layer_styles_json = Json::from_str(&format!("[{}]", layer_styles.join(","))).unwrap();
+        obj.insert("layers".to_string(), layer_styles_json);
+        obj.to_json().to_string()
     }
+
     /// MBTiles metadata.json
     pub fn get_mbtiles_metadata(&self, tileset: &str) -> String {
         let (mut metadata, layers, vector_layers) = self.get_tilejson_infos(tileset);
@@ -562,6 +577,10 @@ pub fn test_mvt_metadata() {
         {
           "geometry_type": "POLYGON",
           "name": "buildings"
+        },
+        {
+          "geometry_type": "POLYGON",
+          "name": "admin_0_countries"
         }
       ],
       "name": "osm",
@@ -652,15 +671,7 @@ pub fn test_stylejson() {
     let json = service.get_stylejson("http://127.0.0.1", "osm");
     let json = Json::from_str(&json).unwrap().pretty().to_string();
     println!("{}", json);
-    let expected= r#"{
-  "layers": [
-    {
-      "id": "osm",
-      "source": "osm",
-      "source-layer": "osm",
-      "type": "line"
-    }
-  ],
+    let expected= r#"
   "name": "t-rex",
   "sources": {
     "osm": {
@@ -669,8 +680,28 @@ pub fn test_stylejson() {
     }
   },
   "version": 8
-}"#;
-    assert_eq!(json, expected);
+"#;
+    assert!(json.contains(expected));
+    let expected= r#"
+  "layers": [
+    {
+      "id": "points",
+      "source": "osm",
+      "source-layer": "points",
+      "type": "line"
+    },"#;
+    assert!(json.contains(expected));
+
+    let expected= r##"
+      "paint": {
+        "fill-color": "#d8e8c8",
+        "fill-opacity": 0.5
+      },"##;
+    assert!(json.contains(expected));
+
+    let expected= r#"
+      "id": "buildings","#;
+    assert!(json.contains(expected));
 }
 
 #[test]

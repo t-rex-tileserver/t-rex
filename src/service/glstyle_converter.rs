@@ -12,7 +12,7 @@ use toml::Value::{self, String, Integer, Float, Boolean, Datetime, Array, Table}
 
 
 /// Convert Mapbox GL Styles from [TOML format](https://pka.github.io/mapbox-gl-style-spec/) to JSON
-fn toml_style_to_gljson(toml: &toml::Value) -> std::string::String {
+pub fn toml_style_to_gljson(toml: &toml::Value) -> std::string::String {
     let converter = TomlConverter::new();
     let json = converter.convert_value(toml);
     json.pretty().to_string()
@@ -272,26 +272,15 @@ pub fn layer_style_from_cfg() {
 }"##;
     assert_eq!(configjson, expected);
 
-    let style = config.lookup("tileset.0.layer.1.style").unwrap();
+    let style = config.lookup("tileset.0.layer.2.style").unwrap();
 
     let configjson = toml_style_to_gljson(style);
     println!("{}", configjson);
     let expected= r##"{
   "interactive": true,
   "paint": {
-    "fill-color": {
-      "base": 1,
-      "stops": [
-        [
-          15.5,
-          "#f2eae2"
-        ],
-        [
-          16,
-          "#dfdbd7"
-        ]
-      ]
-    }
+    "fill-color": "#d8e8c8",
+    "fill-opacity": 0.5
   },
   "type": "fill"
 }"##;
