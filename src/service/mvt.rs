@@ -87,9 +87,8 @@ impl MvtService {
         let encoded = json::encode(&mvt_info).unwrap();
         Json::from_str(&encoded).unwrap()
     }
-    fn get_tilejson_infos(&self, tileset: &str) -> (Json, Json, Json) {
-        let layers = self.get_tileset(tileset);
-        let metadata = Json::from_str(&format!(r#"
+    fn get_tilejson_metadata(&self, tileset: &str) -> Json {
+        Json::from_str(&format!(r#"
         {{
             "id": "{}",
             "name": "{}",
@@ -103,13 +102,16 @@ impl MvtService {
             "maxzoom": 14,
             "center": [0.0, 0.0, 2],
             "basename": "{}"
-        }}"#, tileset, tileset, tileset, tileset)).unwrap();
-        let layers_metadata: Vec<(String,String)> = layers.iter().map(|layer| {
+        }}"#, tileset, tileset, tileset, tileset)).unwrap()
+    }
+    fn get_tilejson_layers(&self, tileset: &str) -> Json {
+        let layers = self.get_tileset(tileset);
+        let layers_metadata: Vec<String> = layers.iter().map(|layer| {
             let meta = layer.metadata();
             let query = layer.query(layer.maxzoom());
             let fields = self.input.detect_data_columns(&layer, query);
             let fields_json: Vec<String> = fields.iter().map(|&(ref f, _)| format!("\"{}\": \"\"", f)).collect();
-            let layers = format!(r#"{{
+            format!(r#"{{
                 "id": "{}",
                 "name": "{}",
                 "description": "{}",
@@ -124,8 +126,18 @@ impl MvtService {
                 }}
                 }}"#, meta.get("id").unwrap(), meta.get("name").unwrap(),  meta.get("description").unwrap(),
                 meta.get("srs").unwrap(), meta.get("minzoom").unwrap(), meta.get("maxzoom").unwrap(),
-                meta.get("buffer-size").unwrap(), fields_json.join(","));
-            let vector_layers = format!(r#"{{
+                meta.get("buffer-size").unwrap(), fields_json.join(","))
+        }).collect();
+        Json::from_str(&format!("[{}]", layers_metadata.join(","))).unwrap()
+    }
+    fn get_tilejson_vector_layers(&self, tileset: &str) -> Json {
+        let layers = self.get_tileset(tileset);
+        let vector_layers: Vec<String> = layers.iter().map(|layer| {
+            let meta = layer.metadata();
+            let query = layer.query(layer.maxzoom());
+            let fields = self.input.detect_data_columns(&layer, query);
+            let fields_json: Vec<String> = fields.iter().map(|&(ref f, _)| format!("\"{}\": \"\"", f)).collect();
+            format!(r#"{{
                 "id": "{}",
                 "description": "{}",
                 "minzoom": {},
@@ -134,18 +146,14 @@ impl MvtService {
                     {}
                 }}
                 }}"#, meta.get("id").unwrap(), meta.get("description").unwrap(),
-                meta.get("minzoom").unwrap(), meta.get("maxzoom").unwrap(), fields_json.join(","));
-            (layers, vector_layers)
+                meta.get("minzoom").unwrap(), meta.get("maxzoom").unwrap(), fields_json.join(","))
         }).collect();
-        let layers: Vec<String> = layers_metadata.iter().map(|&(ref l, _)| l.clone()).collect();
-        let layers_json = Json::from_str(&format!("[{}]", layers.join(","))).unwrap();
-        let vector_layers: Vec<String> = layers_metadata.iter().map(|&(_, ref l)| l.clone()).collect();
-        let vector_layers_json = Json::from_str(&format!("[{}]", vector_layers.join(","))).unwrap();
-        (metadata, layers_json, vector_layers_json)
+        Json::from_str(&format!("[{}]", vector_layers.join(","))).unwrap()
     }
     /// TileJSON metadata (https://github.com/mapbox/tilejson-spec)
     pub fn get_tilejson(&self, baseurl: &str, tileset: &str) -> String {
-        let (mut metadata, _layers, vector_layers) = self.get_tilejson_infos(tileset);
+        let mut metadata = self.get_tilejson_metadata(tileset);
+        let vector_layers = self.get_tilejson_vector_layers(tileset);
         let mut obj = metadata.as_object_mut().unwrap();
         let url = Json::from_str(&format!("[\"{}/{}/{{z}}/{{x}}/{{y}}.pbf\"]", baseurl, tileset)).unwrap();
         obj.insert("tiles".to_string(), url);
@@ -191,7 +199,9 @@ impl MvtService {
 
     /// MBTiles metadata.json
     pub fn get_mbtiles_metadata(&self, tileset: &str) -> String {
-        let (mut metadata, layers, vector_layers) = self.get_tilejson_infos(tileset);
+        let mut metadata = self.get_tilejson_metadata(tileset);
+        let layers = self.get_tilejson_layers(tileset);
+        let vector_layers = self.get_tilejson_vector_layers(tileset);
         let json_str = format!(r#"
         {{
           "Layer": {},
@@ -655,6 +665,17 @@ pub fn test_tilejson() {
       "id": "buildings",
       "maxzoom": 99,
       "minzoom": 0
+    },
+    {
+      "description": "",
+      "fields": {
+        "fid": "",
+        "iso_a3": "",
+        "name": ""
+      },
+      "id": "admin_0_countries",
+      "maxzoom": 99,
+      "minzoom": 0
     }
   ],
   "version": "2.0.0"
@@ -737,7 +758,7 @@ pub fn test_mbtiles_metadata() {
   "description": "osm",
   "format": "pbf",
   "id": "osm",
-  "json": "{\"Layer\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"name\":\"points\",\"properties\":{\"buffer-size\":0,\"maxzoom\":99,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"name\":\"buildings\",\"properties\":{\"buffer-size\":0,\"maxzoom\":99,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"}],\"vector_layers\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"maxzoom\":99,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"maxzoom\":99,\"minzoom\":0}]}",
+  "json": "{\"Layer\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"name\":\"points\",\"properties\":{\"buffer-size\":0,\"maxzoom\":99,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"name\":\"buildings\",\"properties\":{\"buffer-size\":10,\"maxzoom\":99,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{\"fid\":\"\",\"iso_a3\":\"\",\"name\":\"\"},\"id\":\"admin_0_countries\",\"name\":\"admin_0_countries\",\"properties\":{\"buffer-size\":1,\"maxzoom\":99,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"}],\"vector_layers\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"maxzoom\":99,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"maxzoom\":99,\"minzoom\":0},{\"description\":\"\",\"fields\":{\"fid\":\"\",\"iso_a3\":\"\",\"name\":\"\"},\"id\":\"admin_0_countries\",\"maxzoom\":99,\"minzoom\":0}]}",
   "maxzoom": 14,
   "minzoom": 0,
   "name": "osm",
