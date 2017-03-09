@@ -155,7 +155,7 @@ impl Grid {
         self.pixel_width(zoom) / pixel_screen_width
     }
     /// Extent of a given tile in the grid given its x, y, and z
-    pub fn tile_extent(&self, xtile: u16, ytile: u16, zoom: u8) -> Extent {
+    pub fn tile_extent(&self, xtile: u32, ytile: u32, zoom: u8) -> Extent {
         // based on mapcache_grid_get_tile_extent
         let res = self.resolutions[zoom as usize];
         let tile_sx = self.width as f64;
@@ -178,10 +178,10 @@ impl Grid {
         }
     }
     /// Extent of a given tile in GoogleMaps XYZ adressing scheme
-    pub fn tile_extent_reverse_y(&self, xtile: u16, ytile: u16, zoom: u8) -> Extent {
+    pub fn tile_extent_reverse_y(&self, xtile: u32, ytile: u32, zoom: u8) -> Extent {
         let res = self.resolutions[zoom as usize];
         let unitheight = self.height as f64 * res;
-        let maxy = ((self.extent.maxy-self.extent.minx- 0.01* unitheight)/unitheight).ceil() as u16;
+        let maxy = ((self.extent.maxy-self.extent.minx- 0.01* unitheight)/unitheight).ceil() as u32;
         let y = maxy.saturating_sub(ytile).saturating_sub(1); // y = maxy-ytile-1
         self.tile_extent(xtile, y, zoom)
     }
