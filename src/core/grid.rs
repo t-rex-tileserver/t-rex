@@ -268,7 +268,7 @@ predefined = "web_mercator"
 
 #[test]
 fn test_bbox() {
-    use std::u16;
+    use std::u32;
 
     let grid = Grid::web_mercator();
 
@@ -281,7 +281,7 @@ fn test_bbox() {
     assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: 7005300.768279828, maxx: -978393.9620502591, maxy: 7044436.526761841});
 
     //overflow
-    let extent = grid.tile_extent_reverse_y(486, u16::MAX, 10);
+    let extent = grid.tile_extent_reverse_y(486, u32::MAX, 10);
     assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: -20037508.342789248, maxx: -978393.9620502591, maxy: -19998372.58430724});
 
     let extent_ch = grid.tile_extent_reverse_y(1073, 717, 11);
@@ -343,7 +343,7 @@ fn test_grid_from_config() {
     assert_eq!(extent, Extent {minx: 2676000., miny: 1222000., maxx: 2701600., maxy: 1247600.});
     //BBOX ZH: (2669255.48 1223902.28, 2716899.60125 1283304.23625)
     let extent = grid.tile_extent_reverse_y(10, 4, 17);
-    assert_eq!(extent, Extent {minx: 2676000., miny: -1675219600., maxx: 2701600., maxy: -1675194000.});
+    assert_eq!(extent, Extent {minx: 2676000., miny: -109951160275600., maxx: 2701600., maxy: -109951160250000.});
 }
 
 
