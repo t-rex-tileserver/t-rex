@@ -229,8 +229,8 @@ pub fn webserver(args: &ArgMatches) {
 
         let tileset = req.param("tileset").unwrap();
         let z = req.param("z").unwrap().parse::<u8>().unwrap();
-        let x = req.param("x").unwrap().parse::<u16>().unwrap();
-        let y = req.param("y").unwrap().parse::<u16>().unwrap();
+        let x = req.param("x").unwrap().parse::<u32>().unwrap();
+        let y = req.param("y").unwrap().parse::<u32>().unwrap();
 
         let gzip = true; // TODO: From AcceptEncoding
         let tile = service.tile_cached(tileset, x, y, z, gzip);

@@ -221,7 +221,7 @@ impl MvtService {
         }
     }
     /// Create vector tile from input at x, y, z
-    pub fn tile(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u8) -> vector_tile::Tile {
+    pub fn tile(&self, tileset: &str, xtile: u32, ytile: u32, zoom: u8) -> vector_tile::Tile {
         let extent = if self.grid.srid == 3857 {
             self.grid.tile_extent_reverse_y(xtile, ytile, zoom)
         } else {
@@ -239,7 +239,7 @@ impl MvtService {
         tile.mvt_tile
     }
     /// Fetch or create vector tile from input at x, y, z
-    pub fn tile_cached(&self, tileset: &str, xtile: u16, ytile: u16, zoom: u8, _gzip: bool) -> Vec<u8> {
+    pub fn tile_cached(&self, tileset: &str, xtile: u32, ytile: u32, zoom: u8, _gzip: bool) -> Vec<u8> {
         let path = format!("{}/{}/{}/{}.pbf", tileset, zoom, xtile, ytile);
 
         let mut tile: Option<Vec<u8>> = None;
@@ -303,7 +303,7 @@ impl MvtService {
 
                         if ! self.cache.exists(&path) {
                             // Entry doesn't exist, so generate it
-                            let mvt_tile = self.tile(&tileset.name, xtile, ytile, zoom);
+                            let mvt_tile = self.tile(&tileset.name, xtile as u32, ytile as u32, zoom);
                             let mut tilegz = Vec::new();
                             Tile::write_gz_to(&mut tilegz, &mvt_tile);
                             let _ = self.cache.write(&path, &tilegz);
