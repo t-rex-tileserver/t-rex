@@ -195,6 +195,14 @@ pub fn webserver(args: &ArgMatches) {
         service.get_mvt_metadata()
     });
 
+    // Font list for Maputnik
+    server.get("/fontstacks.json", middleware! { |_req, mut res|
+        res.set(MediaType::Json);
+        res.set(AccessControlAllowMethods(vec![Method::Get]));
+        res.set(AccessControlAllowOrigin::Any);
+        "[]"
+    });
+
     server.get("/:tileset.json", middleware! { |req, mut res|
         let service: &MvtService = res.server_data();
         let tileset = req.param("tileset").unwrap();

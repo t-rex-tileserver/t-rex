@@ -166,13 +166,20 @@ impl MvtService {
         {{
             "version": 8,
             "name": "t-rex",
+            "metadata": {{
+                "mapbox:autocomposite": false,
+                "mapbox:type": "template",
+                "maputnik:renderer": "mbgljs",
+                "openmaptiles:version": "3.x"
+            }},
+            "glyphs": "{}/fonts/{{fontstack}}/{{range}}.pbf",
             "sources": {{
                 "{}": {{
                     "url": "{}/{}.json",
                     "type": "vector"
                 }}
             }}
-        }}"#, tileset, baseurl, tileset)).unwrap();
+        }}"#, baseurl, tileset, baseurl, tileset)).unwrap();
         // TODO: background layer
         let layers = self.get_tileset(tileset);
         let layer_styles: Vec<String> = layers.iter().map(|layer| {
