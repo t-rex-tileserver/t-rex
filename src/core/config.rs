@@ -105,12 +105,7 @@ fn test_parse_config() {
                                     ),
                                     "name": String(
                                         "points"
-                                    ),
-                                    "table_name": String(
-                                        "ne_10m_populated_places"
-                                    )
-                                }
-                            ),"#;
+                                    ),"#;
 
     let expected_end = r#",
     "webserver": Table(

@@ -277,7 +277,6 @@ pub fn layer_style_from_cfg() {
     let configjson = toml_style_to_gljson(style);
     println!("{}", configjson);
     let expected= r##"{
-  "interactive": true,
   "paint": {
     "fill-color": "#d8e8c8",
     "fill-opacity": 0.5

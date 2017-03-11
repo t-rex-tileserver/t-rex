@@ -713,11 +713,7 @@ pub fn test_stylejson() {
     let expected= r#"
   "layers": [
     {
-      "id": "points",
-      "source": "osm",
-      "source-layer": "points",
-      "type": "line"
-    },"#;
+      "id": "points","#;
     assert!(json.contains(expected));
 
     let expected= r##"
