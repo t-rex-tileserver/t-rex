@@ -1,3 +1,14 @@
+<a name="0.7.0"></a>
+## 0.7.0 (2017-03-12)
+
+#### Features
+
+* Inline Mapbox GL (TOML) styles
+
+#### Bug Fixes
+
+* Extent and zoom calculation fixes (Thanks @rory and @joostvenema!)
+
 <a name="0.6.1"></a>
 ## 0.6.1 (2016-11-22)
 
