@@ -180,9 +180,15 @@ impl MvtService {
                 }}
             }}
         }}"#, baseurl, tileset, baseurl, tileset)).unwrap();
-        // TODO: background layer
+        let background_layer = r#"{
+          "id": "background_",
+          "type": "background",
+          "paint": {
+            "background-color": "rgba(255, 255, 255, 1)"
+          }
+        }"#; // TODO: from global style
         let layers = self.get_tileset(tileset);
-        let layer_styles: Vec<String> = layers.iter().map(|layer| {
+        let mut layer_styles: Vec<String> = layers.iter().map(|layer| {
             let mut layerjson = if let Some(ref style) = layer.style {
                 Json::from_str(&style).unwrap()
             } else {
@@ -205,6 +211,7 @@ impl MvtService {
 
             layerjson.to_string()
         }).collect();
+        layer_styles.insert(0, background_layer.to_string());
         // Insert layers in stylejson
         let mut obj = stylejson.as_object_mut().unwrap();
         let layer_styles_json = Json::from_str(&format!("[{}]", layer_styles.join(","))).unwrap();
@@ -720,6 +727,13 @@ pub fn test_stylejson() {
     assert!(json.contains(expected));
     let expected= r#"
   "layers": [
+    {
+      "id": "background_",
+      "paint": {
+        "background-color": "rgba(255, 255, 255, 1)"
+      },
+      "type": "background"
+    },
     {
       "id": "points","#;
     assert!(json.contains(expected));
