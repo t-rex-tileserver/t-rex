@@ -183,7 +183,7 @@ impl MvtService {
         // TODO: background layer
         let layers = self.get_tileset(tileset);
         let layer_styles: Vec<String> = layers.iter().map(|layer| {
-            let mut layerjson = if let Some(ref style) =  layer.style {
+            let mut layerjson = if let Some(ref style) = layer.style {
                 Json::from_str(&style).unwrap()
             } else {
                 Json::Object(BTreeMap::new())
@@ -193,7 +193,15 @@ impl MvtService {
             layerjson.as_object_mut().unwrap().insert("source-layer".to_string(), Json::String(layer.name.clone()));
             // TODO: support source-layer referencing other layers
             // Default paint type
-            layerjson.as_object_mut().unwrap().entry("type".to_string()).or_insert(Json::String("line".to_string()));
+            let default_type = if let Some(ref geomtype) = layer.geometry_type {
+                match &geomtype as &str {
+                    "POINT" => "circle",
+                    _ => "line"
+                }
+            } else {
+                "line"
+            }.to_string();
+            layerjson.as_object_mut().unwrap().entry("type".to_string()).or_insert(Json::String(default_type));
 
             layerjson.to_string()
         }).collect();
