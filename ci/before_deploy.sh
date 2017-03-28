@@ -2,6 +2,42 @@
 
 set -ex
 
+. $(dirname $0)/utils.sh
+
+# Package your artifacts in a .deb file
+# NOTE right now you can only package binaries using the `dobin` command. Simply call
+# `dobin [file..]` to include one or more binaries in your .deb package. I'll add more commands to
+# install other things like manpages (`doman`) as the needs arise.
+# XXX This .deb packaging is minimal -- just to make your app installable via `dpkg` -- and doesn't
+# fully conform to Debian packaging guideliens (`lintian` raises a few warnings/errors)
+mk_deb() {
+    dobin t_rex
+}
+
+mk_package() {
+    if [ $TRAVIS_OS_NAME = linux ]; then
+        if [ ! -z $MAKE_DEB ]; then
+            dtd=$(mktemp -d)
+            mkdir -p $dtd/debian/usr/bin
+
+            mk_deb
+
+            mkdir -p $dtd/debian/DEBIAN
+            cat >$dtd/debian/DEBIAN/control <<EOF
+Package: $CRATE_NAME
+Version: ${TRAVIS_TAG#v}
+Architecture: $(architecture $TARGET)
+Maintainer: $DEB_MAINTAINER
+Description: $DEB_DESCRIPTION
+EOF
+
+            fakeroot dpkg-deb --build $dtd/debian
+            mv $dtd/debian.deb $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.deb
+            rm -r $dtd
+        fi
+    fi
+}
+
 main() {
     local src=$(pwd) \
           stage=
@@ -17,14 +53,15 @@ main() {
 
     test -f Cargo.lock || cargo generate-lockfile
 
-    # TODO Update this to build the artifacts that matter to you
-    cross rustc --bin hello --target $TARGET --release -- -C lto
+    cross rustc --bin t_rex --target $TARGET --release -- -C lto
 
-    # TODO Update this to package the right artifacts
-    cp target/$TARGET/release/hello $stage/
+    cp target/$TARGET/release/t_rex $stage/
 
     cd $stage
     tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz *
+
+    mk_package
+
     cd $src
 
     rm -rf $stage

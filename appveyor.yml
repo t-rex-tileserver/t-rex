@@ -3,29 +3,24 @@
 
 environment:
   global:
-  # TODO This is the Rust channel that build jobs will use by default but can be
-  # overridden on a case by case basis down below
     RUST_VERSION: stable
 
-    # TODO Update this to match the name of your project.
-    CRATE_NAME: trust
+    CRATE_NAME: t-rex
 
-  # TODO These are all the build jobs. Adjust as necessary. Comment out what you
-  # don't need
   matrix:
     # MinGW
-    - TARGET: i686-pc-windows-gnu
-    - TARGET: x86_64-pc-windows-gnu
+    #- TARGET: i686-pc-windows-gnu
+    #- TARGET: x86_64-pc-windows-gnu
 
     # MSVC
-    - TARGET: i686-pc-windows-msvc
+    #- TARGET: i686-pc-windows-msvc
     - TARGET: x86_64-pc-windows-msvc
 
     # Testing other channels
-    - TARGET: x86_64-pc-windows-gnu
-      RUST_VERSION: nightly
-    - TARGET: x86_64-pc-windows-msvc
-      RUST_VERSION: nightly
+    #- TARGET: x86_64-pc-windows-gnu
+    #  RUST_VERSION: nightly
+    #- TARGET: x86_64-pc-windows-msvc
+    #  RUST_VERSION: nightly
 
 install:
   - ps: >-
@@ -54,17 +49,13 @@ test_script:
 
 before_deploy:
   # TODO Update this to build the artifacts that matter to you
-  - cargo rustc --target %TARGET% --release --bin hello -- -C lto
+  - cargo rustc --target %TARGET% --release --bin t_rex -- -C lto
   - ps: ci\before_deploy.ps1
 
 deploy:
   artifact: /.*\.zip/
-  # TODO update `auth_token.secure`
-  # - Create a `public_repo` GitHub token. Go to: https://github.com/settings/tokens/new
-  # - Encrypt it. Go to https://ci.appveyor.com/tools/encrypt
-  # - Paste the output down here
   auth_token:
-    secure: t3puM/2hOig26EHhAodcZBc61NywF7/PFEpimR6SwGaCiqS07KR5i7iAhSABmBp7
+    secure: SBSCNxEf2bxSkYTYj95/dAkg0JZmthpcWxufEdr9AyyOXoViT3zyglUT2yfdBAlO
   description: ''
   on:
     # TODO Here you can pick which targets will generate binary releases
@@ -79,11 +70,11 @@ cache:
   - C:\Users\appveyor\.cargo\registry
   - target
 
-branches:
-  only:
-    # Release tags
-    - /^v\d+\.\d+\.\d+.*$/
-    - master
+#branches:
+#  only:
+#    # Release tags
+#    - /^v\d+\.\d+\.\d+.*$/
+#    - master
 
 notifications:
   - provider: Email
