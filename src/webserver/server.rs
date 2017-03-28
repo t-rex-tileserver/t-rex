@@ -84,6 +84,9 @@ impl StaticFiles {
         static_files.insert("index.html", str::from_utf8(include_bytes!("static/index.html")).unwrap());
         static_files.insert("viewer.js", str::from_utf8(include_bytes!("static/viewer.js")).unwrap());
         static_files.insert("viewer.css", str::from_utf8(include_bytes!("static/viewer.css")).unwrap());
+        static_files.insert("maputnik.html", str::from_utf8(include_bytes!("static/maputnik.html")).unwrap());
+        static_files.insert("maputnik.js", str::from_utf8(include_bytes!("static/maputnik.js")).unwrap());
+        static_files.insert("maputnik-vendor.js", str::from_utf8(include_bytes!("static/maputnik-vendor.js")).unwrap());
         StaticFiles { files: static_files }
     }
 }
