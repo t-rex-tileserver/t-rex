@@ -1,3 +1,10 @@
+<a name="0.7.1"></a>
+## 0.7.1 (UNRELEASED)
+
+#### Features
+
+* Embedded [Maputnik](https://github.com/maputnik/editor) style editor
+
 <a name="0.7.0"></a>
 ## 0.7.0 (2017-03-12)
 

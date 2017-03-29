@@ -75,19 +75,36 @@ impl TilesetInfo {
 }
 
 struct StaticFiles {
-    files: HashMap<&'static str, &'static str>,
+    files: HashMap<&'static str, (&'static [u8], MediaType)>,
 }
 
 impl StaticFiles {
-    fn new() -> StaticFiles {
-        let mut static_files = HashMap::new();
-        static_files.insert("index.html", str::from_utf8(include_bytes!("static/index.html")).unwrap());
-        static_files.insert("viewer.js", str::from_utf8(include_bytes!("static/viewer.js")).unwrap());
-        static_files.insert("viewer.css", str::from_utf8(include_bytes!("static/viewer.css")).unwrap());
-        static_files.insert("maputnik.html", str::from_utf8(include_bytes!("static/maputnik.html")).unwrap());
-        static_files.insert("maputnik.js", str::from_utf8(include_bytes!("static/maputnik.js")).unwrap());
-        static_files.insert("maputnik-vendor.js", str::from_utf8(include_bytes!("static/maputnik-vendor.js")).unwrap());
-        StaticFiles { files: static_files }
+    fn init() -> StaticFiles {
+        let mut static_files = StaticFiles { files: HashMap::new() };
+        static_files.add("index.html", include_bytes!("static/index.html"), MediaType::Html);
+        static_files.add("viewer.js", include_bytes!("static/viewer.js"), MediaType::Js);
+        static_files.add("viewer.css", include_bytes!("static/viewer.css"), MediaType::Css);
+        static_files.add("maputnik.html", include_bytes!("static/maputnik.html"), MediaType::Html);
+        static_files.add("maputnik.js", include_bytes!("static/maputnik.js"), MediaType::Js);
+        static_files.add("maputnik-vendor.js", include_bytes!("static/maputnik-vendor.js"), MediaType::Js);
+        static_files.add("img/maputnik.png", include_bytes!("static/img/maputnik.png"), MediaType::Png);
+        static_files.add("fonts/Roboto-Regular.ttf", include_bytes!("static/fonts/Roboto-Regular.ttf"), MediaType::Ttf);
+        static_files.add("fonts/Roboto-Medium.ttf", include_bytes!("static/fonts/Roboto-Medium.ttf"), MediaType::Ttf);
+        static_files
+    }
+    fn add(&mut self, name: &'static str, data: &'static [u8], media_type: MediaType) {
+        self.files.insert(name, (data, media_type));
+    }
+    fn content(&self, base: Option<&str>, name: String) -> Option<&(&[u8], MediaType)> {
+        let mut key = if name == "." {
+            "index.html".to_string()
+        } else {
+            name
+        };
+        if let Some(path) = base {
+            key = format!("{}/{}", path, key);
+        }
+        self.files.get(&key as &str)
     }
 }
 
@@ -258,20 +275,15 @@ pub fn webserver(args: &ArgMatches) {
     });
 
     if mvt_viewer {
-        let static_files = StaticFiles::new();
-        server.get("/:static", middleware! { |req, mut res|
+        let static_files = StaticFiles::init();
+        server.get("/(:base/)?:static", middleware! { |req, mut res|
             let mut name = req.param("static").unwrap().to_string();
             if let Some(format) = req.param("format") {
                 name = format!("{}.{}", name, format);
             }
-            match req.param("format") {
-                Some("css") => { res.set(MediaType::Css); },
-                Some("js") => { res.set(MediaType::Js); },
-                _ => {}
-            }
-            if name == "." { name = "index.html".to_string(); }
-            if let Some(content) = static_files.files.get(&name as &str) {
-                return res.send(*content)
+            if let Some(content) = static_files.content(req.param("base"), name) {
+                res.set(content.1);
+                return res.send(content.0)
             }
         });
     }
