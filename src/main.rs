@@ -15,6 +15,7 @@ extern crate r2d2_postgres;
 extern crate postgres;
 extern crate postgis;
 extern crate protobuf;
+#[macro_use]
 extern crate clap;
 extern crate time;
 extern crate flate2;
@@ -67,15 +68,15 @@ fn generate(args: &ArgMatches) {
             process::exit(1)
         });
     let tileset = args.value_of("tileset");
-    let minzoom = args.value_of("minzoom").map(|s| s.parse::<u8>().unwrap());
-    let maxzoom = args.value_of("maxzoom").map(|s| s.parse::<u8>().unwrap());
-    let extent = args.values_of("extent").map(|vals| {
-        let arr: Vec<f64> = vals.map(|v| v.parse().unwrap()).collect();
-        Extent { minx: arr[0], miny: arr[1], maxx: arr[2], maxy: arr[3] }
+    let minzoom = args.value_of("minzoom").map(|s| s.parse::<u8>().expect("Error parsing 'minzoom' as integer value"));
+    let maxzoom = args.value_of("maxzoom").map(|s| s.parse::<u8>().expect("Error parsing 'maxzoom' as integer value"));
+    let extent = args.value_of("extent").and_then(|numlist| {
+        let arr: Vec<f64> = numlist.split(",").map(|v| v.parse().expect("Error parsing 'extent' as list of float values")).collect();
+        Some(Extent { minx: arr[0], miny: arr[1], maxx: arr[2], maxy: arr[3] })
     });
-    let nodes = args.value_of("nodes").map(|s| s.parse::<u8>().unwrap());
-    let nodeno = args.value_of("nodeno").map(|s| s.parse::<u8>().unwrap());
-    let progress = args.value_of("progress").map_or(true, |s| s.parse::<bool>().unwrap());
+    let nodes = args.value_of("nodes").map(|s| s.parse::<u8>().expect("Error parsing 'nodes' as integer value"));
+    let nodeno = args.value_of("nodeno").map(|s| s.parse::<u8>().expect("Error parsing 'nodeno' as integer value"));
+    let progress = args.value_of("progress").map_or(true, |s| s.parse::<bool>().expect("Error parsing 'progress' as boolean value"));
     service.prepare_feature_queries();
     service.generate(tileset, minzoom, maxzoom, extent, nodes, nodeno, progress);
 }
@@ -85,7 +86,7 @@ fn main() {
 
     // http://kbknapp.github.io/clap-rs/clap/
     let mut app = App::new("t_rex")
-                        .version("0.7.0")
+                        .version(crate_version!())
                         .author("Pirmin Kalberer <pka@sourcepole.ch>")
                         .about("vector tile server specialized on publishing MVT tiles from a PostGIS database")
                         .subcommand(SubCommand::with_name("serve")
