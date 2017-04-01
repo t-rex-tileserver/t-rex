@@ -97,10 +97,10 @@ impl MvtService {
             "format": "pbf",
             "version": "2.0.0",
             "scheme": "xyz",
-            "bounds": [-180.0,-90.0,180.0,90.0],
+            "bounds": "[-180.0,-90.0,180.0,90.0]",
             "minzoom": 0,
             "maxzoom": 14,
-            "center": [0.0, 0.0, 2],
+            "center": "[0.0, 0.0, 2]",
             "basename": "{}"
         }}"#, tileset, tileset, tileset, tileset)).unwrap()
     }
@@ -651,17 +651,8 @@ pub fn test_tilejson() {
     let expected = r#"{
   "attribution": "",
   "basename": "osm",
-  "bounds": [
-    -180.0,
-    -90.0,
-    180.0,
-    90.0
-  ],
-  "center": [
-    0.0,
-    0.0,
-    2
-  ],
+  "bounds": "[-180.0,-90.0,180.0,90.0]",
+  "center": "[0.0, 0.0, 2]",
   "description": "osm",
   "format": "pbf",
   "id": "osm",
@@ -773,17 +764,8 @@ pub fn test_mbtiles_metadata() {
     let expected = r#"{
   "attribution": "",
   "basename": "osm",
-  "bounds": [
-    -180.0,
-    -90.0,
-    180.0,
-    90.0
-  ],
-  "center": [
-    0.0,
-    0.0,
-    2
-  ],
+  "bounds": "[-180.0,-90.0,180.0,90.0]",
+  "center": "[0.0, 0.0, 2]",
   "description": "osm",
   "format": "pbf",
   "id": "osm",
