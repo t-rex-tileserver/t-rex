@@ -19,10 +19,10 @@ pub struct Extent {
 /// Min and max grid cell numbers
 #[derive(PartialEq,Debug)]
 pub struct ExtentInt {
-    pub minx: u16,
-    pub miny: u16,
-    pub maxx: u16,
-    pub maxy: u16,
+    pub minx: u32,
+    pub miny: u32,
+    pub maxx: u32,
+    pub maxy: u32,
 }
 
 #[derive(PartialEq, Debug)]
@@ -154,7 +154,7 @@ impl Grid {
         let pixel_screen_width = 0.0254 / 96.0; //FIXME: assumes 96dpi - check with mapnik
         self.pixel_width(zoom) / pixel_screen_width
     }
-    /// Extent of a given tile in the grid given its x, y, and z
+    /// Extent of a given tile in the grid given its x, y, and z in TMS adressing scheme
     pub fn tile_extent(&self, xtile: u32, ytile: u32, zoom: u8) -> Extent {
         // based on mapcache_grid_get_tile_extent
         let res = self.resolutions[zoom as usize];
@@ -177,60 +177,66 @@ impl Grid {
                 }
         }
     }
-    /// Extent of a given tile in GoogleMaps XYZ adressing scheme
-    pub fn tile_extent_reverse_y(&self, xtile: u32, ytile: u32, zoom: u8) -> Extent {
+    /// reverse y tile for XYZ adressing scheme
+    pub fn ytile_from_xyz(&self, ytile: u32, zoom: u8) -> u32 {
         let res = self.resolutions[zoom as usize];
         let unitheight = self.height as f64 * res;
+        // TODO: cache maxy for each resolution
         let maxy = ((self.extent.maxy-self.extent.minx- 0.01* unitheight)/unitheight).ceil() as u32;
         let y = maxy.saturating_sub(ytile).saturating_sub(1); // y = maxy-ytile-1
+        y
+    }
+    /// Extent of a given tile in XYZ adressing scheme
+    pub fn tile_extent_xyz(&self, xtile: u32, ytile: u32, zoom: u8) -> Extent {
+        let y = self.ytile_from_xyz(ytile, zoom);
         self.tile_extent(xtile, y, zoom)
     }
     /// (maxx, maxy) of grid level
-    pub fn level_limit(&self, zoom: u8) -> (u16, u16) {
+    pub fn level_limit(&self, zoom: u8) -> (u32, u32) {
         let res = self.resolutions[zoom as usize];
         let unitheight = self.height as f64 * res;
         let unitwidth = self.width as f64 * res;
 
-        let maxy = ((self.extent.maxy-self.extent.miny - 0.01* unitheight)/unitheight).ceil() as u16;
-        let maxx = ((self.extent.maxx-self.extent.miny - 0.01* unitwidth)/unitwidth).ceil() as u16;
+        let maxy = ((self.extent.maxy-self.extent.miny - 0.01* unitheight)/unitheight).ceil() as u32;
+        let maxx = ((self.extent.maxx-self.extent.miny - 0.01* unitwidth)/unitwidth).ceil() as u32;
         (maxx, maxy)
     }
     /// Tile index limits covering extent
-    pub fn tile_limits(&self, extent: Extent, tolerance: i16) -> Vec<ExtentInt> {
-      // Based on mapcache_grid_compute_limits
-      const EPSILON: f64 = 0.0000001;
-      let nlevels = self.resolutions.len() as u8;
-      (0..nlevels).map(|i| {
-        let res = self.resolutions[i as usize];
-        let unitheight = self.height as f64 * res;
-        let unitwidth = self.width as f64 * res;
-        let (level_maxx, level_maxy) = self.level_limit(i);
+    pub fn tile_limits(&self, extent: Extent, tolerance: i32) -> Vec<ExtentInt> {
+        // Based on mapcache_grid_compute_limits
+        const EPSILON: f64 = 0.0000001;
+        let nlevels = self.resolutions.len() as u8;
+        (0..nlevels).map(|i| {
+            let res = self.resolutions[i as usize];
+            let unitheight = self.height as f64 * res;
+            let unitwidth = self.width as f64 * res;
+            let (level_maxx, level_maxy) = self.level_limit(i);
 
-        let (mut minx, mut maxx, mut miny, mut maxy) = match self.origin {
-            Origin::BottomLeft =>
-                (
-                    (((extent.minx - self.extent.minx) / unitwidth  + EPSILON).floor() as i16) - tolerance,
-                    (((extent.maxx - self.extent.minx) / unitwidth  - EPSILON).ceil()  as i16) + tolerance,
-                    (((extent.miny - self.extent.miny) / unitheight + EPSILON).floor() as i16) - tolerance,
-                    (((extent.maxy - self.extent.miny) / unitheight - EPSILON).ceil()  as i16) + tolerance,
-                ),
-            Origin::TopLeft =>
-                (
-                    (((extent.minx - self.extent.minx) / unitwidth  + EPSILON).floor() as i16) - tolerance,
-                    (((extent.maxx - self.extent.minx) / unitwidth  - EPSILON).ceil()  as i16) + tolerance,
-                    (((self.extent.maxy - extent.maxy) / unitheight + EPSILON).floor() as i16) - tolerance,
-                    (((self.extent.maxy - extent.miny) / unitheight - EPSILON).ceil()  as i16) + tolerance,
-                )
-        };
+            let (mut minx, mut maxx, mut miny, mut maxy) = match self.origin {
+                Origin::BottomLeft =>
+                    (
+                        (((extent.minx - self.extent.minx) / unitwidth  + EPSILON).floor() as i32) - tolerance,
+                        (((extent.maxx - self.extent.minx) / unitwidth  - EPSILON).ceil()  as i32) + tolerance,
+                        (((extent.miny - self.extent.miny) / unitheight + EPSILON).floor() as i32) - tolerance,
+                        (((extent.maxy - self.extent.miny) / unitheight - EPSILON).ceil()  as i32) + tolerance,
+                    ),
+                Origin::TopLeft =>
+                    (
+                        (((extent.minx - self.extent.minx) / unitwidth  + EPSILON).floor() as i32) - tolerance,
+                        (((extent.maxx - self.extent.minx) / unitwidth  - EPSILON).ceil()  as i32) + tolerance,
+                        (((self.extent.maxy - extent.maxy) / unitheight + EPSILON).floor() as i32) - tolerance,
+                        (((self.extent.maxy - extent.miny) / unitheight - EPSILON).ceil()  as i32) + tolerance,
+                    )
+            };
 
-        // to avoid requesting out-of-range tiles
-        if minx < 0 { minx = 0; }
-        if maxx > level_maxx as i16 { maxx = level_maxx as i16 };
-        if miny < 0 { miny = 0 };
-        if maxy > level_maxy as i16 { maxy = level_maxy as i16 };
+            // to avoid requesting out-of-range tiles
+            if minx < 0 { minx = 0; }
+            if maxx > level_maxx as i32 { maxx = level_maxx as i32 };
+            if miny < 0 { miny = 0 };
+            if maxy > level_maxy as i32 { maxy = level_maxy as i32 };
 
-        ExtentInt { minx: minx as u16, maxx: maxx as u16, miny: miny as u16, maxy: maxy as u16 }
-      }).collect()
+            ExtentInt { minx: minx as u32, maxx: maxx as u32, miny: miny as u32, maxy: maxy as u32 }
+        }).collect()
     }
 }
 
@@ -275,16 +281,16 @@ fn test_bbox() {
     let extent000 = grid.tile_extent(0, 0, 0);
     assert_eq!(extent000, Extent {minx: -20037508.342789248, miny: -20037508.342789248, maxx: 20037508.342789248, maxy: 20037508.342789248});
 
-    let extent = grid.tile_extent_reverse_y(486, 332, 10);
+    let extent = grid.tile_extent_xyz(486, 332, 10);
     assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: 7005300.768279828, maxx: -978393.9620502591, maxy: 7044436.526761841});
     let extent = grid.tile_extent(486, 691, 10);
     assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: 7005300.768279828, maxx: -978393.9620502591, maxy: 7044436.526761841});
 
     //overflow
-    let extent = grid.tile_extent_reverse_y(486, u32::MAX, 10);
+    let extent = grid.tile_extent_xyz(486, u32::MAX, 10);
     assert_eq!(extent, Extent {minx: -1017529.7205322683, miny: -20037508.342789248, maxx: -978393.9620502591, maxy: -19998372.58430724});
 
-    let extent_ch = grid.tile_extent_reverse_y(1073, 717, 11);
+    let extent_ch = grid.tile_extent_xyz(1073, 717, 11);
     assert_eq!(extent_ch, Extent { minx: 958826.0828092434, miny: 5987771.04774756, maxx: 978393.9620502479, maxy: 6007338.926988564 });
 
     let wgs84extent000 = Grid::wgs84().tile_extent(0, 0, 0);
@@ -308,6 +314,12 @@ fn test_grid_calculations() {
     let limits = grid.tile_limits(Extent {minx: -1017529.7205322683, miny: 7005300.768279828, maxx: -978393.9620502591, maxy: 7044436.526761841}, 0);
     assert_eq!(limits[0], ExtentInt {minx: 0, miny: 0, maxx: 1, maxy: 1 });
     assert_eq!(limits[10], ExtentInt {minx: 486, miny: 691, maxx: 487, maxy: 692});
+
+    let extent = grid.tile_extent(133, 165, 8);
+    assert_eq!(extent, grid.tile_extent_xyz(133, 90, 8));
+    assert_eq!(extent, Extent { minx: 782715.1696402021, miny: 5792092.25533751, maxx: 939258.2035682425, maxy: 5948635.289265554 });
+    let limits = grid.tile_limits(extent, 0);
+    assert_eq!(limits[8], ExtentInt {minx: 133, miny: 165, maxx: 134, maxy: 166});
 }
 
 #[test]
@@ -342,7 +354,7 @@ fn test_grid_from_config() {
     let extent = grid.tile_extent(10, 4, 17); // lake of Zurich
     assert_eq!(extent, Extent {minx: 2676000., miny: 1222000., maxx: 2701600., maxy: 1247600.});
     //BBOX ZH: (2669255.48 1223902.28, 2716899.60125 1283304.23625)
-    let extent = grid.tile_extent_reverse_y(10, 4, 17);
+    let extent = grid.tile_extent_xyz(10, 4, 17);
     assert_eq!(extent, Extent {minx: 2676000., miny: -109951160275600., maxx: 2701600., maxy: -109951160250000.});
 }
 
@@ -362,7 +374,7 @@ pub struct LngLat {
 }
 
 /// Returns the upper left (lon, lat) of a tile
-fn ul(xtile: u16, ytile: u16, zoom: u8) -> LngLat {
+fn ul(xtile: u32, ytile: u32, zoom: u8) -> LngLat {
     let n = (zoom as f64).exp2();
     let lon_deg = xtile as f64 / n * 360.0 - 180.0;
     let lat_rad = (consts::PI * (1.0_f64 - 2.0_f64 * ytile as f64 / n)).sinh().atan();
@@ -380,7 +392,7 @@ fn xy(lon: f64, lat: f64) -> (f64, f64) {
 }
 
 /// Returns the Spherical Mercator bounding box of a tile
-fn tile_extent(xtile: u16, ytile: u16, zoom: u8) -> Extent {
+fn tile_extent(xtile: u32, ytile: u32, zoom: u8) -> Extent {
     let a = ul(xtile, ytile, zoom);
     let (ax, ay) = xy(a.lon, a.lat);
     let b = ul(xtile+1, ytile+1, zoom);
@@ -389,7 +401,7 @@ fn tile_extent(xtile: u16, ytile: u16, zoom: u8) -> Extent {
 }
 
 /// Returns the (lon, lat) bounding box of a tile
-fn tile_bounds(xtile: u16, ytile: u16, zoom: u8) -> Extent {
+fn tile_bounds(xtile: u32, ytile: u32, zoom: u8) -> Extent {
     let a = ul(xtile, ytile, zoom);
     let b = ul(xtile+1, ytile+1, zoom);
     Extent {minx: a.lon, miny: b.lat, maxx: b.lon, maxy: a.lat}

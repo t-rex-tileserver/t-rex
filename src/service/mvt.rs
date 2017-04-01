@@ -242,13 +242,9 @@ impl MvtService {
             }
         }
     }
-    /// Create vector tile from input at x, y, z
+    /// Create vector tile from input at x, y, z in TMS adressing scheme
     pub fn tile(&self, tileset: &str, xtile: u32, ytile: u32, zoom: u8) -> vector_tile::Tile {
-        let extent = if self.grid.srid == 3857 {
-            self.grid.tile_extent_reverse_y(xtile, ytile, zoom)
-        } else {
-            self.grid.tile_extent(xtile, ytile, zoom)
-        };
+        let extent = self.grid.tile_extent(xtile, ytile, zoom);
         debug!("MVT tile request {:?}", extent);
         let mut tile = Tile::new(&extent, 4096, true);
         for layer in self.get_tileset(tileset) {
@@ -262,7 +258,13 @@ impl MvtService {
     }
     /// Fetch or create vector tile from input at x, y, z
     pub fn tile_cached(&self, tileset: &str, xtile: u32, ytile: u32, zoom: u8, _gzip: bool) -> Vec<u8> {
-        let path = format!("{}/{}/{}/{}.pbf", tileset, zoom, xtile, ytile);
+        // Reverse y for XYZ scheme (TODO: protocol instead of CRS dependent?)
+        let y = if self.grid.srid == 3857 {
+            self.grid.ytile_from_xyz(ytile, zoom)
+        } else {
+            ytile
+        };
+        let path = format!("{}/{}/{}/{}.pbf", tileset, zoom, xtile, y);
 
         let mut tile: Option<Vec<u8>> = None;
         self.cache.read(&path, |mut f| {
@@ -275,7 +277,7 @@ impl MvtService {
             return tile.unwrap()
         }
 
-        let mvt_tile = self.tile(tileset, xtile, ytile, zoom);
+        let mvt_tile = self.tile(tileset, xtile, y, zoom);
 
         let mut tilegz = Vec::new();
         Tile::write_gz_to(&mut tilegz, &mvt_tile);
@@ -304,6 +306,7 @@ impl MvtService {
         let nodes = nodes.unwrap_or(1) as u64;
         let nodeno = nodeno.unwrap_or(0) as u64;
         let mut tileno: u64 = 0;
+        debug!("tile limits: {:?}", extent);
         let limits = self.grid.tile_limits(extent, 0);
         for tileset in &self.tilesets {
             if tileset_name.is_some() &&
@@ -313,6 +316,7 @@ impl MvtService {
             if progress { println!("Generating tileset '{}'...", tileset.name); }
             for zoom in minzoom..(maxzoom+1) {
                 let ref limit = limits[zoom as usize];
+                debug!("level {}: {:?}", zoom, limit);
                 let mut pb = self.progress_bar(&format!("Level {}: ", zoom), &limit);
                 if progress { pb.tick(); }
                 for xtile in limit.minx..limit.maxx {
@@ -457,7 +461,7 @@ pub fn test_tile_query() {
                               tilesets: vec![tileset], cache: Tilecache::Nocache(Nocache)};
     service.prepare_feature_queries();
 
-    let mvt_tile = service.tile("points", 33, 22, 6);
+    let mvt_tile = service.tile("points", 33, 41, 6);
     println!("{:#?}", mvt_tile);
     let expected = r#"Tile {
     layers: [

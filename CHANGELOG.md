@@ -8,7 +8,7 @@
 
 #### Bug Fixes
 
-* Fix parsing of `extent` option in `generate` command
+* Fix `generate` command with `extent` option
 
 <a name="0.7.0"></a>
 ## 0.7.0 (2017-03-12)
