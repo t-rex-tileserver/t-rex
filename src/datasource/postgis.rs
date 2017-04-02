@@ -5,7 +5,7 @@
 
 use datasource::DatasourceInput;
 use postgres::rows::Row;
-use postgres::types::{Type, FromSql, ToSql, SessionInfo};
+use postgres::types::{Type, FromSql, ToSql};
 use postgres;
 use r2d2;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
@@ -61,22 +61,22 @@ impl FromSql for FeatureAttrValType {
             _ => false
         }
     }
-    fn from_sql(ty: &Type, raw: &[u8], _ctx: &SessionInfo) -> Result<Self, Box<std::error::Error + Sync + Send>> {
+    fn from_sql(ty: &Type, raw: &[u8]) -> Result<Self, Box<std::error::Error + Sync + Send>> {
         match ty {
             &Type::Varchar | &Type::Text | &Type::CharArray
-                => <String>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::String(v))),
+                => <String>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::String(v))),
             &Type::Float4
-                => <f32>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::Float(v))),
+                => <f32>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Float(v))),
             &Type::Float8
-                => <f64>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::Double(v))),
+                => <f64>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Double(v))),
             &Type::Int2
-                => <i16>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::Int(v as i64))),
+                => <i16>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Int(v as i64))),
             &Type::Int4
-                => <i32>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::Int(v as i64))),
+                => <i32>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Int(v as i64))),
             &Type::Int8
-                => <i64>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::Int(v))),
+                => <i64>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Int(v))),
             &Type::Bool
-                => <bool>::from_sql(ty, raw, _ctx).and_then(|v| Ok(FeatureAttrValType::Bool(v))),
+                => <bool>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Bool(v))),
             _ => {
                 let err: Box<std::error::Error + Sync + Send> = format!("cannot convert {} to FeatureAttrValType", ty).into();
                 Err(err)

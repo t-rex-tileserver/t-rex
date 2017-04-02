@@ -1,17 +1,17 @@
 [package]
 name = "t-rex"
-version = "0.7.1"
+version = "0.7.2-dev"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 
 [[bin]]
 name = "t_rex"
 
 [dependencies]
-toml = "*"
+toml = "~0.2.0"
 postgres = "*"
 r2d2 = "*"
 r2d2_postgres = "*"
-postgis = "~0.3.0"
+postgis = "~0.4.0"
 protobuf = "*"
 nickel = "*"
 rustc-serialize = "*"
