@@ -5,3 +5,6 @@
 
 pub mod mvt;
 pub mod glstyle_converter;
+
+#[cfg(test)] mod test_mvt;
+#[cfg(test)] mod test_glstyle_converter;

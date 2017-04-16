@@ -5,6 +5,7 @@
 
 pub mod datasource;
 pub mod postgis;
+#[cfg(test)] mod test_postgis;
 
 pub use self::datasource::DatasourceInput;
 pub use self::postgis::PostgisInput;

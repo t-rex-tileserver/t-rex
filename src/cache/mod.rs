@@ -6,6 +6,8 @@
 pub mod cache;
 pub mod filecache;
 
+#[cfg(test)] mod test_filecache;
+
 pub use self::cache::Cache;
 pub use self::cache::Nocache;
 pub use self::filecache::Filecache;

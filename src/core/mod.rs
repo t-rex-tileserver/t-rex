@@ -11,3 +11,8 @@ pub mod feature;
 pub mod config;
 
 pub use self::config::{Config,read_config,parse_config};
+
+#[cfg(test)] mod test_geom;
+#[cfg(test)] mod test_grid;
+#[cfg(test)] mod test_layer;
+#[cfg(test)] mod test_config;
