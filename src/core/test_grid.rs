@@ -165,7 +165,10 @@ fn test_merc_tile_extent() {
 #[test]
 fn test_merc_tile_bounds() {
     let bbox = tile_bounds(486, 332, 10);
+    #[cfg(not(target_os = "macos"))]
     assert_eq!(bbox, Extent {minx: -9.140625, miny: 53.120405283106564, maxx: -8.7890625, maxy: 53.33087298301705});
+    #[cfg(target_os = "macos")]
+    assert_eq!(bbox, Extent {minx: -9.140625, miny: 53.12040528310657, maxx: -8.7890625, maxy: 53.33087298301705});
 }
 
 }
