@@ -3,8 +3,6 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use toml;
-use rustc_serialize::Decodable;
 use core::layer::Layer;
 
 
@@ -44,12 +42,12 @@ fn test_toml_decode() {
         "#;
 
     let tomlcfg = parse_config(toml.to_string(), "").unwrap();
-    let layers = tomlcfg.lookup("tileset.layer").unwrap().as_slice().unwrap();
+    let layers = tomlcfg["tileset.layer"].as_array().unwrap();
 
     // Layer config with zoom level dependent queries
     let ref layer = layers[0];
-    let mut decoder = toml::Decoder::new(layer.clone());
-    let cfg = Layer::decode(&mut decoder).unwrap();
+    let cfg: Layer = layer.clone().try_into().unwrap();
+
     println!("{:?}", cfg);
     assert_eq!(cfg.name, "points");
     assert_eq!(cfg.table_name, Some("ne_10m_populated_places".to_string()));
@@ -71,8 +69,8 @@ fn test_toml_decode() {
 
     // Minimal config
     let ref layer = layers[1];
-    let mut decoder = toml::Decoder::new(layer.clone());
-    let cfg = Layer::decode(&mut decoder).unwrap();
+    let cfg: Layer = layer.clone().try_into().unwrap();
+
     println!("{:?}", cfg);
     assert_eq!(cfg.name, "points2");
     assert_eq!(cfg.table_name, None);
@@ -82,24 +80,21 @@ fn test_toml_decode() {
 
     // Invalid config: missing required field
     let ref layer = layers[2];
-    let mut decoder = toml::Decoder::new(layer.clone());
-    let cfg = Layer::decode(&mut decoder);
+    let cfg = layer.clone().try_into::<Layer>();
     println!("{:?}", cfg);
     assert_eq!(format!("{}", cfg.err().unwrap()),
         "expected a value of type `string` for the key `name`");
 
     // Invalid config: wrong field name
     let ref layer = layers[3];
-    let mut decoder = toml::Decoder::new(layer.clone());
-    let cfg = Layer::decode(&mut decoder);
+    let cfg = layer.clone().try_into::<Layer>();
     println!("{:?}", cfg);
     // toml::Decoder ignores unknown keys!
-    assert_eq!(cfg.err(), None);
+    assert!(cfg.err().is_none());
 
     // Invalid config: wrong field type
     let ref layer = layers[4];
-    let mut decoder = toml::Decoder::new(layer.clone());
-    let cfg = Layer::decode(&mut decoder);
+    let cfg = layer.clone().try_into::<Layer>();
     println!("{:?}", cfg);
     assert_eq!(format!("{}", cfg.err().unwrap()),
         "expected a value of type `string`, but found a value of type `integer` for the key `table_name`");
@@ -129,7 +124,7 @@ fn test_layers_from_config() {
 
     let config = parse_config(toml.to_string(), "").unwrap();
 
-    let tilesets = config.lookup("tileset").unwrap().as_slice().unwrap();
+    let tilesets = config["tileset"].as_array().unwrap();
     let layers = Layer::layers_from_config(&tilesets[0]).unwrap();
     assert_eq!(layers.len(), 2);
     assert_eq!(layers[0].name, "points");

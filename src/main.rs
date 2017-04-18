@@ -8,6 +8,9 @@ extern crate log;
 extern crate env_logger;
 extern crate toml;
 #[macro_use] extern crate nickel;
+extern crate serde;
+#[macro_use] extern crate serde_derive;
+extern crate serde_json;
 extern crate rustc_serialize;
 #[macro_use] extern crate hyper;
 extern crate r2d2;
@@ -61,7 +64,7 @@ fn init_logger() {
 
 fn generate(args: &ArgMatches) {
     let (mut service, config) = webserver::server::service_from_args(args);
-    let _ = config.lookup("cache.file.base")
+    let _ = config.get("cache.file.base")
         .ok_or("Missing configuration entry base in [cache.file]".to_string())
         .unwrap_or_else(|err| {
             println!("Error reading configuration - {} ", err);

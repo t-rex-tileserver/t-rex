@@ -359,9 +359,9 @@ impl MvtService {
 
 impl Tileset {
     pub fn tilesets_from_config(config: &toml::Value) -> Result<Vec<Self>, String> {
-        config.lookup("tileset")
+        config.get("tileset")
               .ok_or("Missing configuration entry [[tileset]]".to_string())
-              .and_then(|tarr| tarr.as_slice().ok_or("Array type for [[tileset]] entry expected".to_string()))
+              .and_then(|tarr| tarr.as_array().ok_or("Array type for [[tileset]] entry expected".to_string()))
               .and_then(|tilesets| {
                   Ok(tilesets.iter().map(|tileset| Tileset::from_config(tileset).unwrap()).collect())
               })
@@ -377,7 +377,7 @@ impl Tileset {
 
 impl Config<Tileset> for Tileset {
     fn from_config(config: &toml::Value) -> Result<Self, String> {
-        let name = config.lookup("name")
+        let name = config.get("name")
                          .ok_or("Missing configuration entry name in [[tileset]]".to_string())
                          .and_then(|val| val.as_str().ok_or("tileset.name entry is not a string".to_string()))
                          .map(|v| v.to_string());

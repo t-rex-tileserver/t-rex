@@ -20,7 +20,7 @@ pub enum Datasource {
 
 impl Config<Datasource> for Datasource {
     fn from_config(config: &toml::Value) -> Result<Self, String> {
-        config.lookup("datasource.type")
+        config.get("datasource.type")
             .ok_or("Missing configuration entry 'datasource.type'".to_string())
             .and_then(|val| val.as_str().ok_or("url entry is not a string".to_string()))
             .and_then(|tn| {

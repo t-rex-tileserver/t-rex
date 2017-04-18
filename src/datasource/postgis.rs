@@ -542,7 +542,7 @@ impl DatasourceInput for PostgisInput {
 
 impl Config<PostgisInput> for PostgisInput {
     fn from_config(config: &toml::Value) -> Result<Self, String> {
-        config.lookup("datasource.url")
+        config.get("datasource.url")
             .ok_or("Missing configuration entry 'datasource.url'".to_string())
             .and_then(|val| val.as_str().ok_or("url entry is not a string".to_string()))
             .and_then(|url| Ok(PostgisInput::new(url)))

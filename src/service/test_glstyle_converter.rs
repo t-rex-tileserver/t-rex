@@ -8,15 +8,14 @@ use service::glstyle_converter::toml_style_to_gljson;
 
 #[test]
 pub fn color_stops() {
-    use toml::{Value, Parser};
+    use toml::Value;
 
     let style = r##"
         [circle-color]
         property = "temperature"
         stops = [{ in = 0, out = "blue" }, { in = 100, out = "red" }]"##;
 
-    let mut parser = Parser::new(style);
-    let toml = Value::Table(parser.parse().unwrap());
+    let toml = style.parse::<Value>().unwrap();
 
     let configjson = toml_style_to_gljson(&toml);
     println!("{}", configjson);
@@ -50,8 +49,7 @@ pub fn color_stops() {
         base = 1
         stops = [{ in = 15, out = [0,0] }, { in = 16, out = [-2,-2] }]"##;
 
-    let mut parser = Parser::new(style);
-    let toml = Value::Table(parser.parse().unwrap());
+    let toml = style.parse::<Value>().unwrap();
 
     let configjson = toml_style_to_gljson(&toml);
     println!("{}", configjson);
@@ -100,7 +98,7 @@ pub fn color_stops() {
 
 #[test]
 pub fn filters() {
-    use toml::{Value, Parser};
+    use toml::Value;
 
     let style = r##"
         [[layers]]
@@ -111,8 +109,7 @@ pub fn filters() {
         filter = [["all"], ["==", "$type", "LineString"], [["all"], ["==", "structure", "tunnel"], ["in", "class", "path", "pedestrian"]]]
         interactive = true"##;
 
-    let mut parser = Parser::new(style);
-    let toml = Value::Table(parser.parse().unwrap());
+    let toml = style.parse::<Value>().unwrap();
 
     let configjson = toml_style_to_gljson(&toml);
     println!("{}", configjson);
@@ -189,9 +186,9 @@ pub fn layer_style_from_cfg() {
 
     let config = read_config("src/test/example.cfg").unwrap();
 
-    let style = config.lookup("tileset.0.style").unwrap();
+    let ref style = config["tileset.0.style"];
 
-    let configjson = toml_style_to_gljson(style);
+    let configjson = toml_style_to_gljson(&style);
     println!("{}", configjson);
     let expected= r##"{
   "paint": {
@@ -201,9 +198,9 @@ pub fn layer_style_from_cfg() {
 }"##;
     assert_eq!(configjson, expected);
 
-    let style = config.lookup("tileset.0.layer.2.style").unwrap();
+    let ref style = config["tileset.0.layer.2.style"];
 
-    let configjson = toml_style_to_gljson(style);
+    let configjson = toml_style_to_gljson(&style);
     println!("{}", configjson);
     let expected= r##"{
   "paint": {

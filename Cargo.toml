@@ -7,13 +7,16 @@ authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 name = "t_rex"
 
 [dependencies]
-toml = "~0.2.0"
+toml = "*"
 postgres = "*"
 r2d2 = "*"
 r2d2_postgres = "*"
 postgis = "~0.4.0"
 protobuf = "*"
 nickel = "*"
+serde = "*"
+serde_derive = "*"
+serde_json = "*"
 rustc-serialize = "*"
 clap = "*"
 log = "*"

@@ -6,19 +6,18 @@
 use core::Config;
 use service::glstyle_converter::toml_style_to_gljson;
 use toml;
-use rustc_serialize::Decodable;
 use std::collections::HashMap;
 use datasource::PostgisInput;
 
 
-#[derive(RustcDecodable, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct LayerQuery {
     pub minzoom: Option<u8>,
     pub maxzoom: Option<u8>,
     pub sql: Option<String>,
 }
 
-#[derive(Default, RustcDecodable, Debug)]
+#[derive(Default, Serialize, Deserialize, Debug)]
 pub struct Layer {
     pub name: String,
     pub geometry_field: Option<String>,
@@ -53,9 +52,9 @@ impl Layer {
         Layer { name: String::from(name), ..Default::default() }
     }
     pub fn layers_from_config(config: &toml::Value) -> Result<Vec<Self>, String> {
-        config.lookup("layer")
+        config.get("layer")
               .ok_or("Missing configuration entry [[tileset.layer]]".to_string())
-              .and_then(|larr| larr.as_slice().ok_or("Array type for [[tileset.layer]] entry expected".to_string()))
+              .and_then(|larr| larr.as_array().ok_or("Array type for [[tileset.layer]] entry expected".to_string()))
               .and_then(|layers| {
                  Ok(layers.iter().map(|layer| Layer::from_config(layer).unwrap()).collect())
                })
@@ -103,8 +102,7 @@ impl Config<Layer> for Layer {
         // Remove TOML style - will be converted separately
         let mut layercfg = layerval.as_table().unwrap().clone();
         let layerstyle = layercfg.remove("style");
-        let mut decoder = toml::Decoder::new(toml::Value::Table(layercfg));
-        let layer = Layer::decode(&mut decoder);
+        let layer = toml::Value::Table(layercfg).try_into::<Layer>();
         layer.and_then(|mut lyr| {
             // Convert extracted TOML style to JSON
             if let Some(ref style) = layerstyle {

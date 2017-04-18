@@ -4,7 +4,8 @@
 //
 
 use std::collections::BTreeMap;
-use rustc_serialize::json::{ToJson, Json};
+use serde_json;
+use serde_json::value::ToJson;
 use toml;
 use std;
 
@@ -15,7 +16,7 @@ use toml::Value::{self, String, Integer, Float, Boolean, Datetime, Array, Table}
 pub fn toml_style_to_gljson(toml: &toml::Value) -> std::string::String {
     let converter = TomlConverter::new();
     let json = converter.convert_value(toml);
-    json.pretty().to_string()
+    serde_json::to_string_pretty(&json).unwrap()
 }
 
 
@@ -25,9 +26,9 @@ impl TomlConverter {
         TomlConverter
     }
 
-    pub fn convert_value(&self, toml: &toml::Value) -> Json {
-        match *toml {
-            Table(ref value) => self.convert_table(value),
+    pub fn convert_value(&self, toml: &toml::Value) -> serde_json::Value {
+        let json = match *toml {
+            Table(ref value) => self.convert_table(value).to_json(),
 
             Array(ref array) => {
                 let mut vec = Vec::new();
@@ -42,11 +43,12 @@ impl TomlConverter {
             Float(ref value) => value.to_json(),
             Boolean(ref value) => value.to_json(),
             Datetime(ref value) => value.to_json(),
-        }
+        };
+        json.unwrap()
     }
 
-    pub fn convert_table(&self, table: &BTreeMap<std::string::String, Value>) -> Json {
-        let mut json: BTreeMap<std::string::String, Json> = BTreeMap::new();
+    pub fn convert_table(&self, table: &BTreeMap<std::string::String, Value>) -> serde_json::Value {
+        let mut json: BTreeMap<std::string::String, serde_json::Value> = BTreeMap::new();
         for (key, value) in table.iter() {
             if key == "stops" {
                 let mut stops = Vec::new();
@@ -67,11 +69,11 @@ impl TomlConverter {
                     }
 
                 }
-                json.insert(key.to_string(), stops.to_json());
+                json.insert(key.to_string(), stops.to_json().unwrap());
             } else {
                 json.insert(key.to_string(), self.convert_value(value));
             }
         }
-        json.to_json()
+        json.to_json().unwrap()
     }
 }

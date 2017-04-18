@@ -5,10 +5,9 @@
 
 use core::Config;
 use toml;
-use rustc_serialize::{Decodable, Decoder};
 
 
-#[derive(PartialEq, RustcDecodable, Debug)]
+#[derive(PartialEq, Deserialize, Debug)]
 pub struct Extent {
     pub minx: f64,
     pub miny: f64,
@@ -25,12 +24,12 @@ pub struct ExtentInt {
     pub maxy: u32,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Deserialize, Debug)]
 pub enum Origin {
     TopLeft, BottomLeft //TopRight, BottomRight
 }
 
-impl Decodable for Origin {
+/*impl Decodable for Origin {
     fn decode<D: Decoder>(d: &mut D) -> Result<Origin, D::Error> {
         let val = try!(d.read_str());
         match &val as &str {
@@ -40,13 +39,13 @@ impl Decodable for Origin {
         }
     }
 }
-
-#[derive(PartialEq, Debug)]
+*/
+#[derive(PartialEq, Deserialize, Debug)]
 pub enum Unit {
     M, DD, Ft
 }
 
-impl Decodable for Unit {
+/*impl Decodable for Unit {
     fn decode<D: Decoder>(d: &mut D) -> Result<Unit, D::Error> {
         let val = try!(d.read_str());
         match &val as &str {
@@ -57,9 +56,9 @@ impl Decodable for Unit {
         }
     }
 }
-
+*/
 // Credits: MapCache by Thomas Bonfort (http://mapserver.org/mapcache/)
-#[derive(RustcDecodable, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct Grid {
     /// The width and height of an individual tile, in pixels.
     width: u16,
@@ -242,10 +241,10 @@ impl Grid {
 
 impl Config<Grid> for Grid {
     fn from_config(config: &toml::Value) -> Result<Self, String> {
-        if config.lookup("grid").is_none() {
+        if config.get("grid").is_none() {
             return Err("Missing configuration entry [grid]".to_string())
         }
-        if let Some(predef) = config.lookup("grid.predefined") {
+        if let Some(predef) = config.get("grid.predefined") {
             predef.as_str().ok_or("grid.predefined entry is not a string".to_string())
                 .and_then(|gridname| {
                     match gridname {
@@ -255,9 +254,8 @@ impl Config<Grid> for Grid {
                     }
             })
         } else {
-            let gridcfg = config.lookup("grid").unwrap();
-            let mut decoder = toml::Decoder::new(gridcfg.clone());
-            let grid = Grid::decode(&mut decoder);
+            let ref gridcfg = config["grid"];
+            let grid = gridcfg.clone().try_into::<Grid>();
             grid.map_err(|e| format!("Error reading configuration - {}", e))
         }
     }

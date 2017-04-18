@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use toml::{Value, Parser};
+use toml::Value;
 use std::io::prelude::*;
 use std::fs::File;
 
@@ -37,8 +37,8 @@ pub fn read_config(path: &str) -> Result<Value, String> {
 
 /// Parse the configuration into Toml table structure.
 pub fn parse_config(config_toml: String, path: &str) -> Result<Value, String> {
-    let mut parser = Parser::new(&config_toml);
-    let toml = parser.parse();
+    let toml = config_toml.parse::<Value>();
+    /* FIXME:
     if toml.is_none() {
         let mut errors = Vec::new();
         for err in &parser.errors {
@@ -48,7 +48,7 @@ pub fn parse_config(config_toml: String, path: &str) -> Result<Value, String> {
                      path, loline, locol, hiline, hicol, err.desc));
         }
         return Err(errors.join("\n"));
-    }
+    }*/
 
-    Ok(Value::Table(toml.unwrap()))
+    Ok(toml.unwrap())
  }

@@ -173,25 +173,25 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
 pub fn webserver(args: &ArgMatches) {
     let (mut service, config) = service_from_args(args);
 
-    let mvt_config = config.lookup("service.mvt")
+    let mvt_config = config.get("service.mvt")
         .ok_or("Missing configuration entry [service.mvt]".to_string())
         .unwrap_or_else(|err| {
             println!("Error reading configuration - {} ", err);
             process::exit(1)
         });
-    let mvt_viewer = mvt_config.lookup("viewer")
+    let mvt_viewer = mvt_config.get("viewer")
         .map_or(true, |val| val.as_bool().unwrap_or(true));
-    let http_config = config.lookup("webserver")
+    let http_config = config.get("webserver")
         .ok_or("Missing configuration entry [webserver]".to_string())
         .unwrap_or_else(|err| {
             println!("Error reading configuration - {} ", err);
             process::exit(1)
         });
-    let bind = http_config.lookup("bind")
+    let bind = http_config.get("bind")
         .map_or("127.0.0.1", |val| val.as_str().unwrap_or("127.0.0.1"));
-    let port = http_config.lookup("port")
+    let port = http_config.get("port")
         .map_or(6767, |val| val.as_integer().unwrap_or(6767)) as u16;
-    let threads = http_config.lookup("threads")
+    let threads = http_config.get("threads")
         .map_or(4, |val| val.as_integer().unwrap_or(4)) as usize;
 
     service.prepare_feature_queries();

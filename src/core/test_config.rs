@@ -78,7 +78,7 @@ fn test_parse_config() {
     assert!(format!("{:#?}", config.as_table().unwrap()).starts_with(expected_begin));
     assert!(format!("{:#?}", config.as_table().unwrap()).ends_with(expected_end));
 
-    assert_eq!(config.lookup("datasource.type").unwrap().as_str(), Some("postgis"));
+    assert_eq!(config["datasource.type"].as_str(), Some("postgis"));
 }
 
 #[test]
