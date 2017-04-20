@@ -4,7 +4,11 @@
 //
 
 use core::Config;
+use core::enum_serializer::{EnumString};
 use toml;
+use serde;
+use serde::de::{Deserialize, Deserializer};
+use std::fmt;
 
 
 #[derive(PartialEq, Deserialize, Debug)]
@@ -24,39 +28,56 @@ pub struct ExtentInt {
     pub maxy: u32,
 }
 
-#[derive(PartialEq, Deserialize, Debug)]
+
+#[derive(PartialEq, Debug)]
 pub enum Origin {
     TopLeft, BottomLeft //TopRight, BottomRight
 }
 
-/*impl Decodable for Origin {
-    fn decode<D: Decoder>(d: &mut D) -> Result<Origin, D::Error> {
-        let val = try!(d.read_str());
-        match &val as &str {
+impl EnumString<Origin> for Origin {
+    fn from_str(val: &str) -> Result<Origin, String> {
+        match val {
             "TopLeft" => Ok(Origin::TopLeft),
             "BottomLeft" => Ok(Origin::BottomLeft),
-            _ => Err(d.error(&*format!("Unknown value `{}`", val)))
+            _ => Err(format!("Unexpected enum value '{}'", val))
+        }
+    }
+    fn as_str(&self) -> &'static str {
+        match *self {
+            Origin::TopLeft => "TopLeft",
+            Origin::BottomLeft => "BottomLeft",
         }
     }
 }
-*/
-#[derive(PartialEq, Deserialize, Debug)]
+
+enum_string_serialization!(Origin OriginVisitor);
+
+
+#[derive(PartialEq, Debug)]
 pub enum Unit {
     M, DD, Ft
 }
 
-/*impl Decodable for Unit {
-    fn decode<D: Decoder>(d: &mut D) -> Result<Unit, D::Error> {
-        let val = try!(d.read_str());
-        match &val as &str {
+impl EnumString<Unit> for Unit {
+    fn from_str(val: &str) -> Result<Unit, String> {
+        match val {
             "M" => Ok(Unit::M),
             "DD" => Ok(Unit::DD),
             "Ft" => Ok(Unit::Ft),
-            _ => Err(d.error(&*format!("Unknown value `{}`", val)))
+            _ => Err(format!("Unexpected enum value '{}'", val))
+        }
+    }
+    fn as_str(&self) -> &'static str {
+        match *self {
+            Unit::M => "M",
+            Unit::DD => "DD",
+            Unit::Ft => "Ft",
         }
     }
 }
-*/
+
+enum_string_serialization!(Unit UnitVisitor);
+
 // Credits: MapCache by Thomas Bonfort (http://mapserver.org/mapcache/)
 #[derive(Deserialize, Debug)]
 pub struct Grid {
@@ -244,7 +265,7 @@ impl Config<Grid> for Grid {
         if config.get("grid").is_none() {
             return Err("Missing configuration entry [grid]".to_string())
         }
-        if let Some(predef) = config.get("grid.predefined") {
+        if let Some(predef) = config.get("grid").and_then(|g| g.get("predefined")) {
             predef.as_str().ok_or("grid.predefined entry is not a string".to_string())
                 .and_then(|gridname| {
                     match gridname {

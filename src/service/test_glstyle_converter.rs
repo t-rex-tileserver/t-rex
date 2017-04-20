@@ -186,7 +186,7 @@ pub fn layer_style_from_cfg() {
 
     let config = read_config("src/test/example.cfg").unwrap();
 
-    let ref style = config["tileset.0.style"];
+    let ref style = config["tileset"][0]["style"];
 
     let configjson = toml_style_to_gljson(&style);
     println!("{}", configjson);
@@ -198,7 +198,7 @@ pub fn layer_style_from_cfg() {
 }"##;
     assert_eq!(configjson, expected);
 
-    let ref style = config["tileset.0.layer.2.style"];
+    let ref style = config["tileset"][0]["layer"][2]["style"];
 
     let configjson = toml_style_to_gljson(&style);
     println!("{}", configjson);

@@ -3,6 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
+#[macro_use] mod enum_serializer;
 pub mod geom;
 pub mod screen;
 pub mod grid;

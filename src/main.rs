@@ -64,7 +64,7 @@ fn init_logger() {
 
 fn generate(args: &ArgMatches) {
     let (mut service, config) = webserver::server::service_from_args(args);
-    let _ = config.get("cache.file.base")
+    let _ = config.get("cache").and_then(|c| c.get("file")).and_then(|c| c.get("base"))
         .ok_or("Missing configuration entry base in [cache.file]".to_string())
         .unwrap_or_else(|err| {
             println!("Error reading configuration - {} ", err);

@@ -3,8 +3,35 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
+use toml;
 use core::Config;
 use core::grid::{Grid, Origin, Extent, ExtentInt};
+
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct TestGrid {
+    pub srid: i32,
+    pub origin: Origin,
+}
+
+#[test]
+fn test_ser() {
+    let grid = TestGrid {
+            srid: 4236,
+            origin: Origin::BottomLeft,
+        };
+    assert_eq!(toml::to_string(&grid), Ok("srid = 4236\norigin = \"BottomLeft\"\n".to_string()));
+    let value = toml::Value::try_from(&grid);
+    println!("{:?}", value);
+    let toml = toml::from_str::<TestGrid>("srid = 4236\norigin = \"BottomLeft\"\n");
+    println!("{:?}", toml);
+    let value = "srid = 4236\norigin = \"BottomLeft\"\n".parse::<toml::Value>().unwrap();
+    println!("{:?}", value);
+    let toml2 = value.try_into::<TestGrid>();
+    println!("{:?}", toml2);
+    assert_eq!(toml2.unwrap(), grid);
+    assert_eq!(toml.unwrap(), grid);
+}
 
 
 #[test]

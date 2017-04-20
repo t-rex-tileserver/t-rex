@@ -78,13 +78,13 @@ fn test_parse_config() {
     assert!(format!("{:#?}", config.as_table().unwrap()).starts_with(expected_begin));
     assert!(format!("{:#?}", config.as_table().unwrap()).ends_with(expected_end));
 
-    assert_eq!(config["datasource.type"].as_str(), Some("postgis"));
+    assert_eq!(config["datasource"]["type"].as_str(), Some("postgis"));
 }
 
 #[test]
 fn test_parse_error() {
     let config = read_config("src/core/mod.rs");
-    assert_eq!("src/core/mod.rs:0:0-0:0 error: expected a key but found an empty string", config.err().unwrap());
+    assert_eq!("src/core/mod.rs - unexpected character found: `/` at line 1", config.err().unwrap());
 
     let config = read_config("wrongfile");
     assert_eq!("Could not find config file!", config.err().unwrap());

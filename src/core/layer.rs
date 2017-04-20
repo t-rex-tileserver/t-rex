@@ -29,6 +29,7 @@ pub struct Layer {
     pub table_name: Option<String>,
     pub query_limit: Option<u32>,
     // Explicit queries
+    #[serde(default)]
     pub query: Vec<LayerQuery>,
     /// Simplify geometry (lines and polygons)
     pub simplify: Option<bool>,

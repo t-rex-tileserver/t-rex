@@ -42,7 +42,7 @@ fn test_toml_decode() {
         "#;
 
     let tomlcfg = parse_config(toml.to_string(), "").unwrap();
-    let layers = tomlcfg["tileset.layer"].as_array().unwrap();
+    let layers = tomlcfg["tileset"]["layer"].as_array().unwrap();
 
     // Layer config with zoom level dependent queries
     let ref layer = layers[0];
@@ -82,8 +82,7 @@ fn test_toml_decode() {
     let ref layer = layers[2];
     let cfg = layer.clone().try_into::<Layer>();
     println!("{:?}", cfg);
-    assert_eq!(format!("{}", cfg.err().unwrap()),
-        "expected a value of type `string` for the key `name`");
+    assert_eq!(format!("{}", cfg.err().unwrap()), "missing field `name`");
 
     // Invalid config: wrong field name
     let ref layer = layers[3];
@@ -97,7 +96,7 @@ fn test_toml_decode() {
     let cfg = layer.clone().try_into::<Layer>();
     println!("{:?}", cfg);
     assert_eq!(format!("{}", cfg.err().unwrap()),
-        "expected a value of type `string`, but found a value of type `integer` for the key `table_name`");
+        "invalid type: integer `0`, expected a string for key `table_name`");
 }
 
 #[test]
@@ -114,12 +113,13 @@ fn test_layers_from_config() {
         geometry_type = "POINT"
         fid_field = "id"
         query_limit = 100
-        buffer-size = 10
+        buffer_size = 10
         [[tileset.layer.query]]
         sql = "SELECT name,wkb_geometry FROM ne_10m_populated_places"
 
         [[tileset.layer]]
         name = "layer2"
+        buffer-size = 10
         "#;
 
     let config = parse_config(toml.to_string(), "").unwrap();
@@ -131,6 +131,7 @@ fn test_layers_from_config() {
     assert_eq!(layers[0].table_name, Some("ne_10m_populated_places".to_string()));
     assert_eq!(layers[0].buffer_size, Some(10));
     assert_eq!(layers[1].table_name, None);
+    assert_eq!(layers[1].buffer_size, None); // toml deserialization bug!!
 
     // errors
     let emptyconfig = parse_config("".to_string(), "").unwrap();

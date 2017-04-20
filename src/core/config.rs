@@ -37,18 +37,5 @@ pub fn read_config(path: &str) -> Result<Value, String> {
 
 /// Parse the configuration into Toml table structure.
 pub fn parse_config(config_toml: String, path: &str) -> Result<Value, String> {
-    let toml = config_toml.parse::<Value>();
-    /* FIXME:
-    if toml.is_none() {
-        let mut errors = Vec::new();
-        for err in &parser.errors {
-            let (loline, locol) = parser.to_linecol(err.lo);
-            let (hiline, hicol) = parser.to_linecol(err.hi);
-            errors.push(format!("{}:{}:{}-{}:{} error: {}",
-                     path, loline, locol, hiline, hicol, err.desc));
-        }
-        return Err(errors.join("\n"));
-    }*/
-
-    Ok(toml.unwrap())
+    config_toml.parse::<Value>().map_err(|err| format!("{} - {}", path, err))
  }
