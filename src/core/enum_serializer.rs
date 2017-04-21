@@ -22,7 +22,7 @@ macro_rules! enum_string_serialization {
             }
         }
 
-        impl serde::de::Visitor for $visitor
+        impl<'de> serde::de::Visitor<'de> for $visitor
         {
             type Value = $enumtype;
 
@@ -38,9 +38,9 @@ macro_rules! enum_string_serialization {
 
         }
 
-        impl Deserialize for $enumtype {
+        impl<'de> Deserialize<'de> for $enumtype {
             fn deserialize<D>(deserializer: D) -> Result<$enumtype, D::Error>
-                where D: Deserializer
+                where D: Deserializer<'de>
             {
                 deserializer.deserialize_str($visitor)
             }

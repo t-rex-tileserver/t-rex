@@ -5,7 +5,6 @@
 
 use std::collections::BTreeMap;
 use serde_json;
-use serde_json::value::ToJson;
 use toml;
 use std;
 
@@ -28,21 +27,21 @@ impl TomlConverter {
 
     pub fn convert_value(&self, toml: &toml::Value) -> serde_json::Value {
         let json = match *toml {
-            Table(ref value) => self.convert_table(value).to_json(),
+            Table(ref value) => serde_json::to_value(self.convert_table(value)),
 
             Array(ref array) => {
                 let mut vec = Vec::new();
                 for value in array.iter() {
                     vec.push(self.convert_value(value));
                 }
-                vec.to_json()
+                serde_json::to_value(vec)
             }
 
-            String(ref value) => value.to_json(),
-            Integer(ref value) => value.to_json(),
-            Float(ref value) => value.to_json(),
-            Boolean(ref value) => value.to_json(),
-            Datetime(ref value) => value.to_json(),
+            String(ref value) => serde_json::to_value(value),
+            Integer(ref value) => serde_json::to_value(value),
+            Float(ref value) => serde_json::to_value(value),
+            Boolean(ref value) => serde_json::to_value(value),
+            Datetime(ref value) => serde_json::to_value(value),
         };
         json.unwrap()
     }
@@ -69,11 +68,11 @@ impl TomlConverter {
                     }
 
                 }
-                json.insert(key.to_string(), stops.to_json().unwrap());
+                json.insert(key.to_string(), serde_json::to_value(stops).unwrap());
             } else {
                 json.insert(key.to_string(), self.convert_value(value));
             }
         }
-        json.to_json().unwrap()
+        serde_json::to_value(json).unwrap()
     }
 }
