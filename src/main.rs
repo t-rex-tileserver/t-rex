@@ -10,7 +10,7 @@ extern crate toml;
 #[macro_use] extern crate nickel;
 extern crate serde;
 #[macro_use] extern crate serde_derive;
-extern crate serde_json;
+#[macro_use] extern crate serde_json;
 extern crate rustc_serialize;
 #[macro_use] extern crate hyper;
 extern crate r2d2;

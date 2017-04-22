@@ -10,6 +10,7 @@ use mvt::vector_tile;
 use service::mvt::{MvtService,Tileset};
 use core::{Config,read_config,parse_config};
 use toml;
+use serde_json;
 use cache::{Tilecache,Nocache,Filecache};
 
 use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult, StaticFilesHandler};
@@ -173,7 +174,7 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
 pub fn webserver(args: &ArgMatches) {
     let (mut service, config) = service_from_args(args);
 
-    let mvt_config = config.get("service.mvt")
+    let mvt_config = config.get("service").and_then(|s| s.get("mvt"))
         .ok_or("Missing configuration entry [service.mvt]".to_string())
         .unwrap_or_else(|err| {
             println!("Error reading configuration - {} ", err);
@@ -212,7 +213,8 @@ pub fn webserver(args: &ArgMatches) {
         res.set(MediaType::Json);
         res.set(AccessControlAllowMethods(vec![Method::Get]));
         res.set(AccessControlAllowOrigin::Any);
-        service.get_mvt_metadata()
+        let json = service.get_mvt_metadata();
+        serde_json::to_vec(&json).unwrap()
     });
 
     // Font list for Maputnik

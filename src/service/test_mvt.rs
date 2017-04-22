@@ -8,9 +8,14 @@ use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
 use cache::{Tilecache,Nocache};
-use rustc_serialize::json::Json;
+use serde_json;
 use service::mvt::{Tileset, MvtService};
 
+
+fn pretty(jsonstr: String) -> String {
+    let json: serde_json::Value = serde_json::from_str(&jsonstr).unwrap();
+    format!("{:#}", json)
+}
 
 #[test]
 #[ignore]
@@ -172,7 +177,7 @@ pub fn test_mvt_metadata() {
     let config = read_config("src/test/example.cfg").unwrap();
     let service = MvtService::from_config(&config).unwrap();
 
-    let metadata = format!("{}", service.get_mvt_metadata().pretty());
+    let metadata = format!("{:#}", service.get_mvt_metadata());
     let expected = r#"{
   "tilesets": [
     {
@@ -216,8 +221,7 @@ pub fn test_tilejson() {
     service.connect();
     service.prepare_feature_queries();
 
-    let metadata = service.get_tilejson("http://127.0.0.1", "osm");
-    let metadata = Json::from_str(&metadata).unwrap().pretty().to_string();
+    let metadata = pretty(service.get_tilejson("http://127.0.0.1", "osm"));
     println!("{}", metadata);
     let expected = r#"{
   "attribution": "",
@@ -277,8 +281,7 @@ pub fn test_stylejson() {
 
     let config = read_config("src/test/example.cfg").unwrap();
     let service = MvtService::from_config(&config).unwrap();
-    let json = service.get_stylejson("http://127.0.0.1", "osm");
-    let json = Json::from_str(&json).unwrap().pretty().to_string();
+    let json = pretty(service.get_stylejson("http://127.0.0.1", "osm"));
     println!("{}", json);
     let expected= r#"
   "name": "t-rex",
@@ -329,8 +332,7 @@ pub fn test_mbtiles_metadata() {
     let config = read_config("src/test/example.cfg").unwrap();
     let mut service = MvtService::from_config(&config).unwrap();
     service.connect();
-    let metadata = service.get_mbtiles_metadata("osm");
-    let metadata = Json::from_str(&metadata).unwrap().pretty().to_string();
+    let metadata = pretty(service.get_mbtiles_metadata("osm"));
     println!("{}", metadata);
     let expected = r#"{
   "attribution": "",

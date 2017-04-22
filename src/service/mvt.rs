@@ -11,12 +11,11 @@ use core::Config;
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use cache::{Cache,Tilecache};
-use std::collections::BTreeMap;
 use std::path::Path;
 use std::fs::{self,File};
 use std::io::Write;
 use toml;
-use rustc_serialize::json::{self, Json, ToJson};
+use serde_json;
 use pbr::ProgressBar;
 use std::io::Stdout;
 
@@ -47,12 +46,12 @@ impl MvtService {
         }
     }
     /// Service metadata for backend web application
-    pub fn get_mvt_metadata(&self) -> Json {
-        #[derive(RustcEncodable)]
+    pub fn get_mvt_metadata(&self) -> serde_json::Value {
+        #[derive(Serialize)]
         struct MvtInfo {
             tilesets: Vec<TilesetInfo>,
         }
-        #[derive(RustcEncodable)]
+        #[derive(Serialize)]
         struct TilesetInfo {
             name: String,
             tilejson: String,
@@ -60,7 +59,7 @@ impl MvtService {
             layers: Vec<LayerInfo>,
             supported: bool,
         }
-        #[derive(RustcEncodable)]
+        #[derive(Serialize)]
         struct LayerInfo {
             name: String,
             geometry_type: Option<String>,
@@ -84,15 +83,13 @@ impl MvtService {
         }).collect();
         tileset_infos.sort_by_key(|ti| ti.name.clone());
         let mvt_info = MvtInfo { tilesets: tileset_infos };
-        let encoded = json::encode(&mvt_info).unwrap();
-        Json::from_str(&encoded).unwrap()
+        serde_json::to_value(mvt_info).unwrap()
     }
-    fn get_tilejson_metadata(&self, tileset: &str) -> Json {
-        Json::from_str(&format!(r#"
-        {{
-            "id": "{}",
-            "name": "{}",
-            "description": "{}",
+    fn get_tilejson_metadata(&self, tileset: &str) -> serde_json::Value {
+        json!({
+            "id": tileset,
+            "name": tileset,
+            "description": tileset,
             "attribution": "",
             "format": "pbf",
             "version": "2.0.0",
@@ -101,10 +98,10 @@ impl MvtService {
             "minzoom": 0,
             "maxzoom": 14,
             "center": "[0.0, 0.0, 2]",
-            "basename": "{}"
-        }}"#, tileset, tileset, tileset, tileset)).unwrap()
+            "basename": tileset
+        })
     }
-    fn get_tilejson_layers(&self, tileset: &str) -> Json {
+    fn get_tilejson_layers(&self, tileset: &str) -> serde_json::Value {
         let layers = self.get_tileset(tileset);
         let layers_metadata: Vec<String> = layers.iter().map(|layer| {
             let meta = layer.metadata();
@@ -128,9 +125,9 @@ impl MvtService {
                 meta.get("srs").unwrap(), meta.get("minzoom").unwrap(), meta.get("maxzoom").unwrap(),
                 meta.get("buffer-size").unwrap(), fields_json.join(","))
         }).collect();
-        Json::from_str(&format!("[{}]", layers_metadata.join(","))).unwrap()
+        serde_json::from_str(&format!("[{}]", layers_metadata.join(","))).unwrap()
     }
-    fn get_tilejson_vector_layers(&self, tileset: &str) -> Json {
+    fn get_tilejson_vector_layers(&self, tileset: &str) -> serde_json::Value {
         let layers = self.get_tileset(tileset);
         let vector_layers: Vec<String> = layers.iter().map(|layer| {
             let meta = layer.metadata();
@@ -148,38 +145,38 @@ impl MvtService {
                 }}"#, meta.get("id").unwrap(), meta.get("description").unwrap(),
                 meta.get("minzoom").unwrap(), meta.get("maxzoom").unwrap(), fields_json.join(","))
         }).collect();
-        Json::from_str(&format!("[{}]", vector_layers.join(","))).unwrap()
+        serde_json::from_str(&format!("[{}]", vector_layers.join(","))).unwrap()
     }
     /// TileJSON metadata (https://github.com/mapbox/tilejson-spec)
     pub fn get_tilejson(&self, baseurl: &str, tileset: &str) -> String {
         let mut metadata = self.get_tilejson_metadata(tileset);
         let vector_layers = self.get_tilejson_vector_layers(tileset);
         let mut obj = metadata.as_object_mut().unwrap();
-        let url = Json::from_str(&format!("[\"{}/{}/{{z}}/{{x}}/{{y}}.pbf\"]", baseurl, tileset)).unwrap();
+        let url = serde_json::from_str(&format!("[\"{}/{}/{{z}}/{{x}}/{{y}}.pbf\"]", baseurl, tileset)).unwrap();
         obj.insert("tiles".to_string(), url);
         obj.insert("vector_layers".to_string(), vector_layers);
-        obj.to_json().to_string()
+        serde_json::to_string(obj).unwrap()
     }
     /// MapboxGL Style JSON (https://www.mapbox.com/mapbox-gl-style-spec/)
     pub fn get_stylejson(&self, baseurl: &str, tileset: &str) -> String {
-        let mut stylejson = Json::from_str(&format!(r#"
-        {{
+        let mut stylejson = json!(
+        {
             "version": 8,
             "name": "t-rex",
-            "metadata": {{
+            "metadata": {
                 "mapbox:autocomposite": false,
                 "mapbox:type": "template",
                 "maputnik:renderer": "mbgljs",
                 "openmaptiles:version": "3.x"
-            }},
-            "glyphs": "{}/fonts/{{fontstack}}/{{range}}.pbf",
-            "sources": {{
-                "{}": {{
-                    "url": "{}/{}.json",
+            },
+            "glyphs": format!("{}/fonts/{{fontstack}}/{{range}}.pbf", baseurl),
+            "sources": {
+                tileset: {
+                    "url": format!("{}/{}.json", baseurl, tileset),
                     "type": "vector"
-                }}
-            }}
-        }}"#, baseurl, tileset, baseurl, tileset)).unwrap();
+                }
+            }
+        });
         let background_layer = r#"{
           "id": "background_",
           "type": "background",
@@ -190,13 +187,13 @@ impl MvtService {
         let layers = self.get_tileset(tileset);
         let mut layer_styles: Vec<String> = layers.iter().map(|layer| {
             let mut layerjson = if let Some(ref style) = layer.style {
-                Json::from_str(&style).unwrap()
+                serde_json::from_str(&style).unwrap()
             } else {
-                Json::Object(BTreeMap::new())
+                json!({})
             };
-            layerjson.as_object_mut().unwrap().insert("id".to_string(), Json::String(layer.name.clone()));
-            layerjson.as_object_mut().unwrap().insert("source".to_string(), Json::String(tileset.to_string()));
-            layerjson.as_object_mut().unwrap().insert("source-layer".to_string(), Json::String(layer.name.clone()));
+            layerjson.as_object_mut().unwrap().insert("id".to_string(), json!(layer.name));
+            layerjson.as_object_mut().unwrap().insert("source".to_string(), json!(tileset));
+            layerjson.as_object_mut().unwrap().insert("source-layer".to_string(), json!(layer.name));
             // TODO: support source-layer referencing other layers
             // Default paint type
             let default_type = if let Some(ref geomtype) = layer.geometry_type {
@@ -207,16 +204,16 @@ impl MvtService {
             } else {
                 "line"
             }.to_string();
-            layerjson.as_object_mut().unwrap().entry("type".to_string()).or_insert(Json::String(default_type));
+            layerjson.as_object_mut().unwrap().entry("type".to_string()).or_insert(json!(default_type));
 
             layerjson.to_string()
         }).collect();
         layer_styles.insert(0, background_layer.to_string());
         // Insert layers in stylejson
         let mut obj = stylejson.as_object_mut().unwrap();
-        let layer_styles_json = Json::from_str(&format!("[{}]", layer_styles.join(","))).unwrap();
+        let layer_styles_json = serde_json::from_str(&format!("[{}]", layer_styles.join(","))).unwrap();
         obj.insert("layers".to_string(), layer_styles_json);
-        obj.to_json().to_string()
+        serde_json::to_string(obj).unwrap()
     }
 
     /// MBTiles metadata.json
@@ -229,10 +226,10 @@ impl MvtService {
           "Layer": {},
           "vector_layers": {}
         }}"#, layers.to_string(), vector_layers.to_string());
-        let metadata_vector_layers = Json::from_str(&json_str).unwrap();
+        let metadata_vector_layers: serde_json::Value = serde_json::from_str(&json_str).unwrap();
         let mut obj = metadata.as_object_mut().unwrap();
-        obj.insert("json".to_string(), metadata_vector_layers.to_string().to_json());
-        obj.to_json().to_string()
+        obj.insert("json".to_string(), json!(metadata_vector_layers.to_string()));
+        serde_json::to_string(obj).unwrap()
     }
     /// Prepare datasource queries. Must be called before requesting tiles.
     pub fn prepare_feature_queries(&mut self) {
