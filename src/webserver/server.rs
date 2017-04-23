@@ -213,7 +213,7 @@ pub fn webserver(args: &ArgMatches) {
         res.set(MediaType::Json);
         res.set(AccessControlAllowMethods(vec![Method::Get]));
         res.set(AccessControlAllowOrigin::Any);
-        let json = service.get_mvt_metadata();
+        let json = service.get_mvt_metadata().unwrap();
         serde_json::to_vec(&json).unwrap()
     });
 
@@ -233,7 +233,8 @@ pub fn webserver(args: &ArgMatches) {
         res.set(AccessControlAllowOrigin::Any);
         let host = req.origin.headers.get::<header::Host>().unwrap();
         let baseurl = format!("http://{}:{}", host.hostname, host.port.unwrap_or(80));
-        service.get_tilejson(&baseurl, &tileset)
+        let json = service.get_tilejson(&baseurl, &tileset).unwrap();
+        serde_json::to_vec(&json).unwrap()
     });
 
     server.get("/:tileset.style.json", middleware! { |req, mut res|
@@ -244,14 +245,16 @@ pub fn webserver(args: &ArgMatches) {
         res.set(AccessControlAllowOrigin::Any);
         let host = req.origin.headers.get::<header::Host>().unwrap();
         let baseurl = format!("http://{}:{}", host.hostname, host.port.unwrap_or(80));
-        service.get_stylejson(&baseurl, &tileset)
+        let json = service.get_stylejson(&baseurl, &tileset).unwrap();
+        serde_json::to_vec(&json).unwrap()
     });
 
     server.get("/:tileset/metadata.json", middleware! { |req, mut res|
         let service: &MvtService = res.server_data();
         let tileset = req.param("tileset").unwrap();
         res.set(MediaType::Json);
-        service.get_mbtiles_metadata(&tileset)
+        let json = service.get_mbtiles_metadata(&tileset).unwrap();
+        serde_json::to_vec(&json).unwrap()
     });
 
     server.get("/:tileset/:z/:x/:y.pbf", middleware! { |req, mut res|

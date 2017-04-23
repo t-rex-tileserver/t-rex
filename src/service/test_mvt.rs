@@ -8,14 +8,8 @@ use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
 use cache::{Tilecache,Nocache};
-use serde_json;
 use service::mvt::{Tileset, MvtService};
 
-
-fn pretty(jsonstr: String) -> String {
-    let json: serde_json::Value = serde_json::from_str(&jsonstr).unwrap();
-    format!("{:#}", json)
-}
 
 #[test]
 #[ignore]
@@ -177,7 +171,7 @@ pub fn test_mvt_metadata() {
     let config = read_config("src/test/example.cfg").unwrap();
     let service = MvtService::from_config(&config).unwrap();
 
-    let metadata = format!("{:#}", service.get_mvt_metadata());
+    let metadata = format!("{:#}", service.get_mvt_metadata().unwrap());
     let expected = r#"{
   "tilesets": [
     {
@@ -220,8 +214,7 @@ pub fn test_tilejson() {
     let mut service = MvtService::from_config(&config).unwrap();
     service.connect();
     service.prepare_feature_queries();
-
-    let metadata = pretty(service.get_tilejson("http://127.0.0.1", "osm"));
+    let metadata = format!("{:#}", service.get_tilejson("http://127.0.0.1", "osm").unwrap());
     println!("{}", metadata);
     let expected = r#"{
   "attribution": "",
@@ -281,7 +274,7 @@ pub fn test_stylejson() {
 
     let config = read_config("src/test/example.cfg").unwrap();
     let service = MvtService::from_config(&config).unwrap();
-    let json = pretty(service.get_stylejson("http://127.0.0.1", "osm"));
+    let json = format!("{:#}", service.get_stylejson("http://127.0.0.1", "osm").unwrap());
     println!("{}", json);
     let expected= r#"
   "name": "t-rex",
@@ -332,7 +325,7 @@ pub fn test_mbtiles_metadata() {
     let config = read_config("src/test/example.cfg").unwrap();
     let mut service = MvtService::from_config(&config).unwrap();
     service.connect();
-    let metadata = pretty(service.get_mbtiles_metadata("osm"));
+    let metadata = format!("{:#}", service.get_mbtiles_metadata("osm").unwrap());
     println!("{}", metadata);
     let expected = r#"{
   "attribution": "",
