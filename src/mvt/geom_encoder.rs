@@ -14,8 +14,8 @@ use core::screen;
 struct CommandInteger(u32);
 
 enum Command {
-    MoveTo    = 1,
-    LineTo    = 2,
+    MoveTo = 1,
+    LineTo = 2,
     ClosePath = 7,
 }
 
@@ -86,17 +86,15 @@ impl CommandSequence {
 #[test]
 fn test_sequence() {
     let mut seq = CommandSequence::new();
-    seq.push(CommandInteger::new(
-        Command::MoveTo, 1).0);
+    seq.push(CommandInteger::new(Command::MoveTo, 1).0);
     seq.push(ParameterInteger::new(25).0);
     seq.push(ParameterInteger::new(17).0);
-    assert_eq!(seq.0, &[9,50,34]);
+    assert_eq!(seq.0, &[9, 50, 34]);
 
     let mut seq2 = CommandSequence::new();
-    seq2.push(CommandInteger::new(
-        Command::MoveTo, 1).0);
+    seq2.push(CommandInteger::new(Command::MoveTo, 1).0);
     seq.append(&mut seq2);
-    assert_eq!(seq.0, &[9,50,34,9]);
+    assert_eq!(seq.0, &[9, 50, 34, 9]);
 }
 
 pub trait EncodableGeom {
@@ -110,8 +108,7 @@ pub trait EncodableGeom {
 
 impl EncodableGeom for screen::Point {
     fn encode_from(&self, startpos: &screen::Point, seq: &mut CommandSequence) {
-        seq.push(CommandInteger::new(
-            Command::MoveTo, 1).0);
+        seq.push(CommandInteger::new(Command::MoveTo, 1).0);
         seq.push(ParameterInteger::new(self.x.saturating_sub(startpos.x)).0);
         seq.push(ParameterInteger::new(self.y.saturating_sub(startpos.y)).0);
     }
@@ -119,8 +116,7 @@ impl EncodableGeom for screen::Point {
 
 impl EncodableGeom for screen::MultiPoint {
     fn encode_from(&self, startpos: &screen::Point, seq: &mut CommandSequence) {
-        seq.push(CommandInteger::new(
-            Command::MoveTo, self.points.len() as u32).0);
+        seq.push(CommandInteger::new(Command::MoveTo, self.points.len() as u32).0);
         let (mut posx, mut posy) = (startpos.x, startpos.y);
         for point in &self.points {
             seq.push(ParameterInteger::new(point.x.saturating_sub(posx)).0);
@@ -135,10 +131,9 @@ impl EncodableGeom for screen::LineString {
     fn encode_from(&self, startpos: &screen::Point, seq: &mut CommandSequence) {
         if self.points.len() > 0 {
             self.points[0].encode_from(startpos, seq);
-            seq.push(CommandInteger::new(
-                Command::LineTo, (self.points.len()-1) as u32).0);
+            seq.push(CommandInteger::new(Command::LineTo, (self.points.len() - 1) as u32).0);
             for i in 1..self.points.len() {
-                let ref pos = &self.points[i-1];
+                let ref pos = &self.points[i - 1];
                 let ref point = &self.points[i];
                 seq.push(ParameterInteger::new(point.x.saturating_sub(pos.x)).0);
                 seq.push(ParameterInteger::new(point.y.saturating_sub(pos.y)).0);
@@ -151,10 +146,9 @@ impl screen::LineString {
         // almost same as LineString.encode_from, with ClosePath instead of last point
         if self.points.len() > 0 {
             self.points[0].encode_from(startpos, seq);
-            seq.push(CommandInteger::new(
-                Command::LineTo, (self.points.len()-2) as u32).0);
-            for i in 1..self.points.len()-1 {
-                let ref pos = &self.points[i-1];
+            seq.push(CommandInteger::new(Command::LineTo, (self.points.len() - 2) as u32).0);
+            for i in 1..self.points.len() - 1 {
+                let ref pos = &self.points[i - 1];
                 let ref point = &self.points[i];
                 seq.push(ParameterInteger::new(point.x.saturating_sub(pos.x)).0);
                 seq.push(ParameterInteger::new(point.y.saturating_sub(pos.y)).0);
@@ -170,7 +164,7 @@ impl EncodableGeom for screen::MultiLineString {
         for line in &self.lines {
             if line.points.len() > 0 {
                 line.encode_from(&pos, seq);
-                pos = &line.points[line.points.len()-1];
+                pos = &line.points[line.points.len() - 1];
             }
         }
     }
@@ -182,7 +176,7 @@ impl EncodableGeom for screen::Polygon {
         for line in &self.rings {
             if line.points.len() > 1 {
                 line.encode_ring_from(&pos, seq);
-                pos = &line.points[line.points.len()-2];
+                pos = &line.points[line.points.len() - 2];
             }
         }
     }
@@ -195,7 +189,7 @@ impl EncodableGeom for screen::MultiPolygon {
             for line in &polygon.rings {
                 if line.points.len() > 1 {
                     line.encode_ring_from(&pos, seq);
-                    pos = &line.points[line.points.len()-2];
+                    pos = &line.points[line.points.len() - 2];
                 }
             }
         }

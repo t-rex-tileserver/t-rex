@@ -6,7 +6,8 @@
 pub mod cache;
 pub mod filecache;
 
-#[cfg(test)] mod test_filecache;
+#[cfg(test)]
+mod test_filecache;
 
 pub use self::cache::Cache;
 pub use self::cache::Nocache;
@@ -24,24 +25,22 @@ pub enum Tilecache {
 
 impl Cache for Tilecache {
     fn read<F>(&self, path: &str, read: F) -> bool
-        where F : FnMut(&mut Read)
+        where F: FnMut(&mut Read)
     {
         match self {
-            &Tilecache::Nocache(ref cache)   => cache.read(path, read),
+            &Tilecache::Nocache(ref cache) => cache.read(path, read),
             &Tilecache::Filecache(ref cache) => cache.read(path, read),
         }
     }
-    fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error>
-    {
+    fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error> {
         match self {
-            &Tilecache::Nocache(ref cache)   => cache.write(path, obj),
+            &Tilecache::Nocache(ref cache) => cache.write(path, obj),
             &Tilecache::Filecache(ref cache) => cache.write(path, obj),
         }
     }
-    fn exists(&self, path: &str) -> bool
-    {
+    fn exists(&self, path: &str) -> bool {
         match self {
-            &Tilecache::Nocache(ref cache)   => cache.exists(path),
+            &Tilecache::Nocache(ref cache) => cache.exists(path),
             &Tilecache::Filecache(ref cache) => cache.exists(path),
         }
     }
@@ -49,10 +48,13 @@ impl Cache for Tilecache {
 
 impl Config<Tilecache> for Tilecache {
     fn from_config(config: &toml::Value) -> Result<Self, String> {
-        config.get("cache.file.base")
+        config
+            .get("cache.file.base")
             .and_then(|val| val.as_str().or(None))
-            .and_then(|basedir| Some(Tilecache::Filecache(Filecache {basepath: basedir.to_string() })))
-            .or( Some(Tilecache::Nocache(Nocache)) )
+            .and_then(|basedir| {
+                          Some(Tilecache::Filecache(Filecache { basepath: basedir.to_string() }))
+                      })
+            .or(Some(Tilecache::Nocache(Nocache)))
             .ok_or("config error".to_string())
     }
     fn gen_config() -> String {

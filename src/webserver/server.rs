@@ -7,14 +7,16 @@ use datasource::postgis::PostgisInput;
 use core::grid::Grid;
 use mvt::tile::Tile;
 use mvt::vector_tile;
-use service::mvt::{MvtService,Tileset};
-use core::{Config,read_config,parse_config};
+use service::mvt::{MvtService, Tileset};
+use core::{Config, read_config, parse_config};
 use toml;
 use serde_json;
-use cache::{Tilecache,Nocache,Filecache};
+use cache::{Tilecache, Nocache, Filecache};
 
-use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response, MiddlewareResult, StaticFilesHandler};
-use hyper::header::{CacheControl, CacheDirective, AccessControlAllowOrigin, AccessControlAllowMethods, ContentEncoding, Encoding};
+use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response,
+             MiddlewareResult, StaticFilesHandler};
+use hyper::header::{CacheControl, CacheDirective, AccessControlAllowOrigin,
+                    AccessControlAllowMethods, ContentEncoding, Encoding};
 use hyper::method::Method;
 use hyper::header;
 use std::collections::HashMap;
@@ -24,20 +26,22 @@ use std::str;
 use std::process;
 
 
-fn log_request<'mw>(req: &mut Request<MvtService>, res: Response<'mw,MvtService>) -> MiddlewareResult<'mw,MvtService> {
+fn log_request<'mw>(req: &mut Request<MvtService>,
+                    res: Response<'mw, MvtService>)
+                    -> MiddlewareResult<'mw, MvtService> {
     info!("{} {}", req.origin.method, req.origin.uri);
     res.next_middleware()
 }
 
 #[allow(dead_code)]
 fn enable_cors<'mw>(_req: &mut Request, mut res: Response<'mw>) -> MiddlewareResult<'mw> {
-  // access-control-allow-methods: GET
-  // access-control-allow-origin: *
-  // see also https://github.com/nickel-org/nickel.rs/blob/master/examples/enable_cors.rs
-  res.set(AccessControlAllowMethods(vec![Method::Get]));
-  res.set(AccessControlAllowOrigin::Any);
+    // access-control-allow-methods: GET
+    // access-control-allow-origin: *
+    // see also https://github.com/nickel-org/nickel.rs/blob/master/examples/enable_cors.rs
+    res.set(AccessControlAllowMethods(vec![Method::Get]));
+    res.set(AccessControlAllowOrigin::Any);
 
-  res.next_middleware()
+    res.next_middleware()
 }
 
 header! { (ContentType, "Content-Type") => [String] }
@@ -62,15 +66,25 @@ struct TilesetInfo {
 impl TilesetInfo {
     fn from_tileset(set: &Tileset) -> TilesetInfo {
         let mut hasviewer = true;
-        let layerinfos: Vec<String> = set.layers.iter().map(|l| {
+        let layerinfos: Vec<String> = set.layers
+            .iter()
+            .map(|l| {
                 let geom_type = l.geometry_type.clone().unwrap_or("UNKNOWN".to_string());
-                hasviewer = hasviewer && ["POINT","LINESTRING","POLYGON","MULTPOINT","MULTILINESTRING","MULTIPOLYGON"].contains(&(&geom_type as &str));
+                hasviewer = hasviewer &&
+                            ["POINT",
+                             "LINESTRING",
+                             "POLYGON",
+                             "MULTPOINT",
+                             "MULTILINESTRING",
+                             "MULTIPOLYGON"]
+                                    .contains(&(&geom_type as &str));
                 format!("{} [{}]", &l.name, &geom_type)
-            }).collect();
+            })
+            .collect();
         TilesetInfo {
             name: set.name.clone(),
             layerinfos: format!("{}", layerinfos.join(", ")),
-            hasviewer: hasviewer
+            hasviewer: hasviewer,
         }
     }
 }
@@ -82,15 +96,33 @@ struct StaticFiles {
 impl StaticFiles {
     fn init() -> StaticFiles {
         let mut static_files = StaticFiles { files: HashMap::new() };
-        static_files.add("index.html", include_bytes!("static/index.html"), MediaType::Html);
-        static_files.add("viewer.js", include_bytes!("static/viewer.js"), MediaType::Js);
-        static_files.add("viewer.css", include_bytes!("static/viewer.css"), MediaType::Css);
-        static_files.add("maputnik.html", include_bytes!("static/maputnik.html"), MediaType::Html);
-        static_files.add("maputnik.js", include_bytes!("static/maputnik.js"), MediaType::Js);
-        static_files.add("maputnik-vendor.js", include_bytes!("static/maputnik-vendor.js"), MediaType::Js);
-        static_files.add("img/maputnik.png", include_bytes!("static/img/maputnik.png"), MediaType::Png);
-        static_files.add("fonts/Roboto-Regular.ttf", include_bytes!("static/fonts/Roboto-Regular.ttf"), MediaType::Ttf);
-        static_files.add("fonts/Roboto-Medium.ttf", include_bytes!("static/fonts/Roboto-Medium.ttf"), MediaType::Ttf);
+        static_files.add("index.html",
+                         include_bytes!("static/index.html"),
+                         MediaType::Html);
+        static_files.add("viewer.js",
+                         include_bytes!("static/viewer.js"),
+                         MediaType::Js);
+        static_files.add("viewer.css",
+                         include_bytes!("static/viewer.css"),
+                         MediaType::Css);
+        static_files.add("maputnik.html",
+                         include_bytes!("static/maputnik.html"),
+                         MediaType::Html);
+        static_files.add("maputnik.js",
+                         include_bytes!("static/maputnik.js"),
+                         MediaType::Js);
+        static_files.add("maputnik-vendor.js",
+                         include_bytes!("static/maputnik-vendor.js"),
+                         MediaType::Js);
+        static_files.add("img/maputnik.png",
+                         include_bytes!("static/img/maputnik.png"),
+                         MediaType::Png);
+        static_files.add("fonts/Roboto-Regular.ttf",
+                         include_bytes!("static/fonts/Roboto-Regular.ttf"),
+                         MediaType::Ttf);
+        static_files.add("fonts/Roboto-Medium.ttf",
+                         include_bytes!("static/fonts/Roboto-Medium.ttf"),
+                         MediaType::Ttf);
         static_files
     }
     fn add(&mut self, name: &'static str, data: &'static [u8], media_type: MediaType) {
@@ -124,21 +156,21 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
     if let Some(cfgpath) = args.value_of("config") {
         info!("Reading configuration from '{}'", cfgpath);
         let config = read_config(cfgpath).unwrap_or_else(|err| {
-                println!("Error reading configuration - {} ", err);
-                process::exit(1)
-            });
-        let mut svc = MvtService::from_config(&config)
-            .unwrap_or_else(|err| {
-                println!("Error reading configuration - {} ", err);
-                process::exit(1)
-            });
+                                                             println!("Error reading configuration - {} ", err);
+                                                             process::exit(1)
+                                                         });
+        let mut svc =
+            MvtService::from_config(&config).unwrap_or_else(|err| {
+                                                                println!("Error reading configuration - {} ", err);
+                                                                process::exit(1)
+                                                            });
         svc.connect();
         (svc, config)
     } else {
         let config = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
         let cache = match args.value_of("cache") {
             None => Tilecache::Nocache(Nocache),
-            Some(dir) => Tilecache::Filecache(Filecache { basepath: dir.to_string() })
+            Some(dir) => Tilecache::Filecache(Filecache { basepath: dir.to_string() }),
         };
         let simplify = bool::from_str(args.value_of("simplify").unwrap_or("true")).unwrap_or(false);
         let clip = bool::from_str(args.value_of("clip").unwrap_or("true")).unwrap_or(false);
@@ -152,16 +184,28 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
                 l.simplify = Some(simplify);
                 l.buffer_size = match l.geometry_type {
                     Some(ref geom) => {
-                        let types = vec!["LINESTRING", "MULTILINESTRING", "POLYGON", "MULTIPOLYGON"];
-                        if clip && types.contains(&(geom as &str)) { Some(1) } else { None }
+                        let types =
+                            vec!["LINESTRING", "MULTILINESTRING", "POLYGON", "MULTIPOLYGON"];
+                        if clip && types.contains(&(geom as &str)) {
+                            Some(1)
+                        } else {
+                            None
+                        }
                     }
                     None => None,
                 };
-                let tileset = Tileset{name: l.name.clone(), layers: vec![l]};
+                let tileset = Tileset {
+                    name: l.name.clone(),
+                    layers: vec![l],
+                };
                 tilesets.push(tileset);
             }
-            let svc = MvtService {input: pg, grid: grid,
-                tilesets: tilesets, cache: cache};
+            let svc = MvtService {
+                input: pg,
+                grid: grid,
+                tilesets: tilesets,
+                cache: cache,
+            };
             (svc, config)
         } else {
             println!("Either 'config' or 'dbconn' is required");
@@ -174,41 +218,50 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
 pub fn webserver(args: &ArgMatches) {
     let (mut service, config) = service_from_args(args);
 
-    let mvt_config = config.get("service").and_then(|s| s.get("mvt"))
+    let mvt_config = config
+        .get("service")
+        .and_then(|s| s.get("mvt"))
         .ok_or("Missing configuration entry [service.mvt]".to_string())
         .unwrap_or_else(|err| {
-            println!("Error reading configuration - {} ", err);
-            process::exit(1)
-        });
-    let mvt_viewer = mvt_config.get("viewer")
+                            println!("Error reading configuration - {} ", err);
+                            process::exit(1)
+                        });
+    let mvt_viewer = mvt_config
+        .get("viewer")
         .map_or(true, |val| val.as_bool().unwrap_or(true));
-    let http_config = config.get("webserver")
+    let http_config = config
+        .get("webserver")
         .ok_or("Missing configuration entry [webserver]".to_string())
         .unwrap_or_else(|err| {
-            println!("Error reading configuration - {} ", err);
-            process::exit(1)
-        });
-    let bind = http_config.get("bind")
+                            println!("Error reading configuration - {} ", err);
+                            process::exit(1)
+                        });
+    let bind = http_config
+        .get("bind")
         .map_or("127.0.0.1", |val| val.as_str().unwrap_or("127.0.0.1"));
-    let port = http_config.get("port")
+    let port = http_config
+        .get("port")
         .map_or(6767, |val| val.as_integer().unwrap_or(6767)) as u16;
-    let threads = http_config.get("threads")
+    let threads = http_config
+        .get("threads")
         .map_or(4, |val| val.as_integer().unwrap_or(4)) as usize;
 
     service.prepare_feature_queries();
     service.init_cache();
 
-    let mut tileset_infos: Vec<TilesetInfo> = service.tilesets.iter().map(|set| {
-        TilesetInfo::from_tileset(&set)
-    }).collect();
+    let mut tileset_infos: Vec<TilesetInfo> = service
+        .tilesets
+        .iter()
+        .map(|set| TilesetInfo::from_tileset(&set))
+        .collect();
     tileset_infos.sort_by_key(|ti| ti.name.clone());
 
     let mut server = Nickel::with_data(service);
-    server.options = Options::default()
-                     .thread_count(Some(threads));
+    server.options = Options::default().thread_count(Some(threads));
     server.utilize(log_request);
 
-    server.get("/index.json", middleware! { |_req, mut res|
+    server.get("/index.json",
+               middleware! { |_req, mut res|
         let service: &MvtService = res.server_data();
         res.set(MediaType::Json);
         res.set(AccessControlAllowMethods(vec![Method::Get]));
@@ -218,14 +271,16 @@ pub fn webserver(args: &ArgMatches) {
     });
 
     // Font list for Maputnik
-    server.get("/fontstacks.json", middleware! { |_req, mut res|
+    server.get("/fontstacks.json",
+               middleware! { |_req, mut res|
         res.set(MediaType::Json);
         res.set(AccessControlAllowMethods(vec![Method::Get]));
         res.set(AccessControlAllowOrigin::Any);
         "[]"
     });
 
-    server.get("/:tileset.json", middleware! { |req, mut res|
+    server.get("/:tileset.json",
+               middleware! { |req, mut res|
         let service: &MvtService = res.server_data();
         let tileset = req.param("tileset").unwrap();
         res.set(MediaType::Json);
@@ -237,7 +292,8 @@ pub fn webserver(args: &ArgMatches) {
         serde_json::to_vec(&json).unwrap()
     });
 
-    server.get("/:tileset.style.json", middleware! { |req, mut res|
+    server.get("/:tileset.style.json",
+               middleware! { |req, mut res|
         let service: &MvtService = res.server_data();
         let tileset = req.param("tileset").unwrap();
         res.set(MediaType::Json);
@@ -249,7 +305,8 @@ pub fn webserver(args: &ArgMatches) {
         serde_json::to_vec(&json).unwrap()
     });
 
-    server.get("/:tileset/metadata.json", middleware! { |req, mut res|
+    server.get("/:tileset/metadata.json",
+               middleware! { |req, mut res|
         let service: &MvtService = res.server_data();
         let tileset = req.param("tileset").unwrap();
         res.set(MediaType::Json);
@@ -257,7 +314,8 @@ pub fn webserver(args: &ArgMatches) {
         serde_json::to_vec(&json).unwrap()
     });
 
-    server.get("/:tileset/:z/:x/:y.pbf", middleware! { |req, mut res|
+    server.get("/:tileset/:z/:x/:y.pbf",
+               middleware! { |req, mut res|
         let service: &MvtService = res.server_data();
 
         let tileset = req.param("tileset").unwrap();
@@ -281,7 +339,8 @@ pub fn webserver(args: &ArgMatches) {
 
     if mvt_viewer {
         let static_files = StaticFiles::init();
-        server.get("/(:base/)?:static", middleware! { |req, mut res|
+        server.get("/(:base/)?:static",
+                   middleware! { |req, mut res|
             let mut name = req.param("static").unwrap().to_string();
             if let Some(format) = req.param("format") {
                 name = format!("{}.{}", name, format);
@@ -295,11 +354,13 @@ pub fn webserver(args: &ArgMatches) {
 
     server.get("/**", StaticFilesHandler::new("public/"));
 
-    let _listening = server.listen((bind, port)).expect("Failed to launch server");
+    let _listening = server
+        .listen((bind, port))
+        .expect("Failed to launch server");
 }
 
 pub fn gen_config(args: &ArgMatches) -> String {
-        let toml = r#"
+    let toml = r#"
 [webserver]
 # Bind address. Use 0.0.0.0 to listen on all adresses.
 bind = "127.0.0.1"
@@ -343,8 +404,8 @@ fn test_runtime_config() {
         panic!("DBCONN undefined");
     }
     let args = App::new("test")
-                .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'")
-                .get_matches_from(vec!["", "--dbconn", &env::var("DBCONN").unwrap()]);
+        .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'")
+        .get_matches_from(vec!["", "--dbconn", &env::var("DBCONN").unwrap()]);
     let toml = gen_config(&args);
     println!("{}", toml);
     assert_eq!(Some("# t-rex configuration"), toml.lines().next());

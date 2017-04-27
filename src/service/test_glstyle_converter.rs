@@ -19,7 +19,7 @@ pub fn color_stops() {
 
     let configjson = toml_style_to_gljson(&toml);
     println!("{}", configjson);
-    let expected= r##"{
+    let expected = r##"{
   "circle-color": {
     "property": "temperature",
     "stops": [
@@ -53,7 +53,7 @@ pub fn color_stops() {
 
     let configjson = toml_style_to_gljson(&toml);
     println!("{}", configjson);
-    let expected= r##"{
+    let expected = r##"{
   "layers": {
     "paint": {
       "fill-color": "#f2eae2",
@@ -113,7 +113,7 @@ pub fn filters() {
 
     let configjson = toml_style_to_gljson(&toml);
     println!("{}", configjson);
-    let expected= r##"{
+    let expected = r##"{
   "layers": [
     {
       "filter": [
@@ -190,7 +190,7 @@ pub fn layer_style_from_cfg() {
 
     let configjson = toml_style_to_gljson(&style);
     println!("{}", configjson);
-    let expected= r##"{
+    let expected = r##"{
   "paint": {
     "background-color": "#f8f4f0"
   },
@@ -202,7 +202,7 @@ pub fn layer_style_from_cfg() {
 
     let configjson = toml_style_to_gljson(&style);
     println!("{}", configjson);
-    let expected= r##"{
+    let expected = r##"{
   "paint": {
     "fill-color": "#d8e8c8",
     "fill-opacity": 0.5

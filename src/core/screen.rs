@@ -11,34 +11,36 @@ use std::vec::Vec;
 #[derive(PartialEq,Debug)]
 pub struct Point {
     pub x: i32,
-    pub y: i32
+    pub y: i32,
 }
 
 impl Point {
-    pub fn origin() -> Point { Point { x: 0, y: 0 } }
+    pub fn origin() -> Point {
+        Point { x: 0, y: 0 }
+    }
 }
 
 #[derive(PartialEq,Debug)]
 pub struct MultiPoint {
-    pub points: Vec<Point>
+    pub points: Vec<Point>,
 }
 
 #[derive(PartialEq,Debug)]
 pub struct LineString {
-    pub points: Vec<Point>
+    pub points: Vec<Point>,
 }
 
 #[derive(PartialEq,Debug)]
 pub struct MultiLineString {
-    pub lines: Vec<LineString>
+    pub lines: Vec<LineString>,
 }
 
 #[derive(PartialEq,Debug)]
 pub struct Polygon {
-    pub rings: Vec<LineString>
+    pub rings: Vec<LineString>,
 }
 
 #[derive(PartialEq,Debug)]
 pub struct MultiPolygon {
-    pub polygons: Vec<Polygon>
+    pub polygons: Vec<Polygon>,
 }

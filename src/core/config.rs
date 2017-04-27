@@ -23,7 +23,7 @@ pub trait Config<T> {
 pub fn read_config(path: &str) -> Result<Value, String> {
     let mut file = match File::open(path) {
         Ok(file) => file,
-        Err(_)  => {
+        Err(_) => {
             return Err("Could not find config file!".to_string());
         }
     };
@@ -37,5 +37,7 @@ pub fn read_config(path: &str) -> Result<Value, String> {
 
 /// Parse the configuration into Toml table structure.
 pub fn parse_config(config_toml: String, path: &str) -> Result<Value, String> {
-    config_toml.parse::<Value>().map_err(|err| format!("{} - {}", path, err))
- }
+    config_toml
+        .parse::<Value>()
+        .map_err(|err| format!("{} - {}", path, err))
+}

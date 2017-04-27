@@ -50,29 +50,52 @@ impl LayerQuery {
 
 impl Layer {
     pub fn new(name: &str) -> Layer {
-        Layer { name: String::from(name), ..Default::default() }
+        Layer {
+            name: String::from(name),
+            ..Default::default()
+        }
     }
     pub fn layers_from_config(config: &toml::Value) -> Result<Vec<Self>, String> {
-        config.get("layer")
-              .ok_or("Missing configuration entry [[tileset.layer]]".to_string())
-              .and_then(|larr| larr.as_array().ok_or("Array type for [[tileset.layer]] entry expected".to_string()))
-              .and_then(|layers| {
-                 Ok(layers.iter().map(|layer| Layer::from_config(layer).unwrap()).collect())
-               })
+        config
+            .get("layer")
+            .ok_or("Missing configuration entry [[tileset.layer]]".to_string())
+            .and_then(|larr| {
+                          larr.as_array()
+                              .ok_or("Array type for [[tileset.layer]] entry expected"
+                                         .to_string())
+                      })
+            .and_then(|layers| {
+                          Ok(layers
+                                 .iter()
+                                 .map(|layer| Layer::from_config(layer).unwrap())
+                                 .collect())
+                      })
     }
     pub fn minzoom(&self) -> u8 {
-        self.query.iter().map(|q| q.minzoom()).min().unwrap_or(0)
+        self.query
+            .iter()
+            .map(|q| q.minzoom())
+            .min()
+            .unwrap_or(0)
     }
     pub fn maxzoom(&self) -> u8 {
-        self.query.iter().map(|q| q.maxzoom()).max().unwrap_or(99)
+        self.query
+            .iter()
+            .map(|q| q.maxzoom())
+            .max()
+            .unwrap_or(99)
     }
     // SQL query for zoom level
     pub fn query(&self, level: u8) -> Option<&String> {
-        let mut queries = self.query.iter().map(|ref q|
-            (q.minzoom(), q.maxzoom(), q.sql.as_ref().and_then(|sql| Some(sql)))
-        ).collect::<Vec<_>>();
+        let mut queries = self.query
+            .iter()
+            .map(|ref q| (q.minzoom(), q.maxzoom(), q.sql.as_ref().and_then(|sql| Some(sql))))
+            .collect::<Vec<_>>();
         queries.sort_by_key(|ref t| t.0);
-        let query = queries.iter().rev().find(|ref q| level >= q.0 && level <= q.1);
+        let query = queries
+            .iter()
+            .rev()
+            .find(|ref q| level >= q.0 && level <= q.1);
         query.and_then(|ref q| q.2)
     }
     /// Layer properties needed e.g. for metadata.json
@@ -104,14 +127,16 @@ impl Config<Layer> for Layer {
         let mut layercfg = layerval.as_table().unwrap().clone();
         let layerstyle = layercfg.remove("style");
         let layer = toml::Value::Table(layercfg).try_into::<Layer>();
-        layer.and_then(|mut lyr| {
-            // Convert extracted TOML style to JSON
-            if let Some(ref style) = layerstyle {
-                let gljson = toml_style_to_gljson(&style);
-                lyr.style = Some(gljson);
-            }
-            Ok(lyr)
-        }).map_err(|e| format!("Error reading configuration - {}", e))
+        layer
+            .and_then(|mut lyr| {
+                          // Convert extracted TOML style to JSON
+                          if let Some(ref style) = layerstyle {
+                              let gljson = toml_style_to_gljson(&style);
+                              lyr.style = Some(gljson);
+                          }
+                          Ok(lyr)
+                      })
+            .map_err(|e| format!("Error reading configuration - {}", e))
     }
 
     fn gen_config() -> String {
@@ -141,51 +166,45 @@ geometry_type = "POINT"
         lines.push("\n[[tileset.layer]]".to_string());
         lines.push(format!(r#"name = "{}""#, self.name));
         match self.table_name {
-            Some(ref table_name)
-                => lines.push(format!(r#"table_name = "{}""#, table_name)),
-            _   => lines.push(r#"#table_name = "mytable""#.to_string())
+            Some(ref table_name) => lines.push(format!(r#"table_name = "{}""#, table_name)),
+            _ => lines.push(r#"#table_name = "mytable""#.to_string()),
         }
         match self.geometry_field {
-            Some(ref geometry_field)
-                => lines.push(format!("geometry_field = \"{}\"", geometry_field)),
-            _   => lines.push("#geometry_field = \"wkb_geometry\"".to_string())
+            Some(ref geometry_field) => {
+                lines.push(format!("geometry_field = \"{}\"", geometry_field))
+            }
+            _ => lines.push("#geometry_field = \"wkb_geometry\"".to_string()),
         }
         match self.geometry_type {
-            Some(ref geometry_type)
-                => lines.push(format!("geometry_type = \"{}\"", geometry_type)),
-            _   => lines.push("#geometry_type = \"POINT\"".to_string())
+            Some(ref geometry_type) => lines.push(format!("geometry_type = \"{}\"", geometry_type)),
+            _ => lines.push("#geometry_type = \"POINT\"".to_string()),
         }
         match self.srid {
-            Some(ref srid)
-                => lines.push(format!("srid = {}", srid)),
-            _   => lines.push("#srid = 3857".to_string())
+            Some(ref srid) => lines.push(format!("srid = {}", srid)),
+            _ => lines.push("#srid = 3857".to_string()),
         }
         match self.fid_field {
-            Some(ref fid_field)
-                => lines.push(format!("fid_field = \"{}\"", fid_field)),
-            _   => lines.push("#fid_field = \"id\"".to_string())
+            Some(ref fid_field) => lines.push(format!("fid_field = \"{}\"", fid_field)),
+            _ => lines.push("#fid_field = \"id\"".to_string()),
         }
         match self.query_limit {
-            Some(ref query_limit)
-                => lines.push(format!("query_limit = {}", query_limit)),
-            _   => {}
+            Some(ref query_limit) => lines.push(format!("query_limit = {}", query_limit)),
+            _ => {}
         }
         match self.buffer_size {
-            Some(ref buffer_size)
-                => lines.push(format!("buffer-size = {}", buffer_size)),
-            _   => lines.push(format!("#buffer-size = 10")),
+            Some(ref buffer_size) => lines.push(format!("buffer-size = {}", buffer_size)),
+            _ => lines.push(format!("#buffer-size = 10")),
         }
         match self.simplify {
-            Some(ref simplify)
-                => lines.push(format!("simplify = {}", simplify)),
-            _   => lines.push(format!("#simplify = true")),
+            Some(ref simplify) => lines.push(format!("simplify = {}", simplify)),
+            _ => lines.push(format!("#simplify = true")),
         }
         match self.query(0) {
             Some(ref query) => {
                 lines.push("[[tileset.layer.query]]".to_string());
                 lines.push(format!("sql = \"{}\"", query))
-            },
-            _   => {
+            }
+            _ => {
                 lines.push("#[[tileset.layer.query]]".to_string());
             }
         }

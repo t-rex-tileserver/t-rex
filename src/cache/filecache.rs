@@ -4,8 +4,8 @@
 //
 
 use cache::cache::Cache;
-use std::fs::{self,File};
-use std::io::{self,Read,Write};
+use std::fs::{self, File};
+use std::io::{self, Read, Write};
 use std::path::Path;
 
 
@@ -15,17 +15,19 @@ pub struct Filecache {
 
 impl Cache for Filecache {
     fn read<F>(&self, path: &str, mut read: F) -> bool
-        where F : FnMut(&mut Read)
+        where F: FnMut(&mut Read)
     {
         let fullpath = format!("{}/{}", self.basepath, path);
         debug!("Filecache.read {}", fullpath);
         match File::open(&fullpath) {
-            Ok(mut f) => { read(&mut f); true },
-            Err(_e) => false
+            Ok(mut f) => {
+                read(&mut f);
+                true
+            }
+            Err(_e) => false,
         }
     }
-    fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error>
-    {
+    fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error> {
         let fullpath = format!("{}/{}", self.basepath, path);
         debug!("Filecache.write {}", fullpath);
         let p = Path::new(&fullpath);

@@ -24,14 +24,14 @@ pub enum GeometryType {
     MultiPoint(MultiPoint),
     MultiLineString(MultiLineString),
     MultiPolygon(MultiPolygon),
-    GeometryCollection(GeometryCollection)
+    GeometryCollection(GeometryCollection),
 }
 
 impl Clone for GeometryType {
     fn clone(&self) -> Self {
         match self {
             &GeometryType::Point(ref p) => GeometryType::Point(Point::new(p.x, p.y, None)),
-            _ => panic!("Not implemented yet") // TODO: either implement other types or don't clone (FeatureStruct)...
+            _ => panic!("Not implemented yet"), // TODO: either implement other types or don't clone (FeatureStruct)...
         }
     }
 }
@@ -44,7 +44,7 @@ impl GeometryType {
             &GeometryType::MultiPoint(ref p) => p.points.len() == 0,
             &GeometryType::MultiLineString(ref p) => p.lines.len() == 0,
             &GeometryType::MultiPolygon(ref p) => p.polygons.len() == 0,
-            _ => false
+            _ => false,
         }
     }
 }

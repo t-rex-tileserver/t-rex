@@ -56,12 +56,10 @@ impl TomlConverter {
                         if let Table(ref stops_tbl) = *stop {
                             if stops_tbl.contains_key("in") {
                                 if stops_tbl.contains_key("out") {
-                                    stops.push(vec![
-                                        self.convert_value(&stops_tbl["in"]),
-                                        self.convert_value(&stops_tbl["out"])]);
+                                    stops.push(vec![self.convert_value(&stops_tbl["in"]),
+                                                    self.convert_value(&stops_tbl["out"])]);
                                 } else {
-                                    stops.push(vec![
-                                        self.convert_value(&stops_tbl["in"])]);
+                                    stops.push(vec![self.convert_value(&stops_tbl["in"])]);
                                 }
                             }
                         }

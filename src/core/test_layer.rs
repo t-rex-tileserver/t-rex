@@ -57,15 +57,21 @@ fn test_toml_decode() {
     assert_eq!(cfg.query[1].minzoom, Some(10));
     assert_eq!(cfg.query[1].minzoom(), 10);
     assert_eq!(cfg.query[1].maxzoom(), 14);
-    assert_eq!(cfg.query[1].sql, Some("SELECT name,wkb_geometry FROM places_z10".to_string()));
+    assert_eq!(cfg.query[1].sql,
+               Some("SELECT name,wkb_geometry FROM places_z10".to_string()));
     assert_eq!(cfg.minzoom(), 2);
     assert_eq!(cfg.maxzoom(), 99);
     assert_eq!(cfg.query(1), None);
-    assert_eq!(cfg.query(2), Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
-    assert_eq!(cfg.query(9), Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
-    assert_eq!(cfg.query(10), Some(&"SELECT name,wkb_geometry FROM places_z10".to_string()));
-    assert_eq!(cfg.query(14), Some(&"SELECT name,wkb_geometry FROM places_z10".to_string()));
-    assert_eq!(cfg.query(15), Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
+    assert_eq!(cfg.query(2),
+               Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
+    assert_eq!(cfg.query(9),
+               Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
+    assert_eq!(cfg.query(10),
+               Some(&"SELECT name,wkb_geometry FROM places_z10".to_string()));
+    assert_eq!(cfg.query(14),
+               Some(&"SELECT name,wkb_geometry FROM places_z10".to_string()));
+    assert_eq!(cfg.query(15),
+               Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
 
     // Minimal config
     let ref layer = layers[1];
@@ -96,7 +102,7 @@ fn test_toml_decode() {
     let cfg = layer.clone().try_into::<Layer>();
     println!("{:?}", cfg);
     assert_eq!(format!("{}", cfg.err().unwrap()),
-        "invalid type: integer `0`, expected a string for key `table_name`");
+               "invalid type: integer `0`, expected a string for key `table_name`");
 }
 
 #[test]
@@ -128,7 +134,8 @@ fn test_layers_from_config() {
     let layers = Layer::layers_from_config(&tilesets[0]).unwrap();
     assert_eq!(layers.len(), 2);
     assert_eq!(layers[0].name, "points");
-    assert_eq!(layers[0].table_name, Some("ne_10m_populated_places".to_string()));
+    assert_eq!(layers[0].table_name,
+               Some("ne_10m_populated_places".to_string()));
     assert_eq!(layers[0].buffer_size, Some(10));
     assert_eq!(layers[1].table_name, None);
     assert_eq!(layers[1].buffer_size, None); // toml deserialization bug!!
@@ -136,5 +143,6 @@ fn test_layers_from_config() {
     // errors
     let emptyconfig = parse_config("".to_string(), "").unwrap();
     let layers = Layer::layers_from_config(&emptyconfig);
-    assert_eq!(layers.err(), Some("Missing configuration entry [[tileset.layer]]".to_string()));
+    assert_eq!(layers.err(),
+               Some("Missing configuration entry [[tileset.layer]]".to_string()));
 }

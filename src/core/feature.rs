@@ -8,13 +8,13 @@ use core::geom::GeometryType;
 /// Supported feature attribute value types
 #[derive(Clone,PartialEq,Debug)]
 pub enum FeatureAttrValType {
-    String(String),  //TODO: use ref
+    String(String), //TODO: use ref
     Float(f32),
     Double(f64),
     Int(i64),
     UInt(u64),
     SInt(i64),
-    Bool(bool)
+    Bool(bool),
 }
 
 pub trait Feature {
@@ -26,7 +26,7 @@ pub trait Feature {
 #[derive(Clone,Debug)]
 pub struct FeatureAttr {
     pub key: String,
-    pub value: FeatureAttrValType
+    pub value: FeatureAttrValType,
 }
 
 
@@ -38,7 +38,13 @@ pub struct FeatureStruct {
 }
 
 impl Feature for FeatureStruct {
-    fn fid(&self) -> Option<u64> { self.fid }
-    fn attributes(&self) -> Vec<FeatureAttr> { self.attributes.clone() }
-    fn geometry(&self) -> Result<GeometryType, String> { Ok(self.geometry.clone()) }
+    fn fid(&self) -> Option<u64> {
+        self.fid
+    }
+    fn attributes(&self) -> Vec<FeatureAttr> {
+        self.attributes.clone()
+    }
+    fn geometry(&self) -> Result<GeometryType, String> {
+        Ok(self.geometry.clone())
+    }
 }

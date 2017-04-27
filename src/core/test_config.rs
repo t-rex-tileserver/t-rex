@@ -84,7 +84,8 @@ fn test_parse_config() {
 #[test]
 fn test_parse_error() {
     let config = read_config("src/core/mod.rs");
-    assert_eq!("src/core/mod.rs - unexpected character found: `/` at line 1", config.err().unwrap());
+    assert_eq!("src/core/mod.rs - unexpected character found: `/` at line 1",
+               config.err().unwrap());
 
     let config = read_config("wrongfile");
     assert_eq!("Could not find config file!", config.err().unwrap());

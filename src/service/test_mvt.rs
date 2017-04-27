@@ -7,7 +7,7 @@ use datasource::PostgisInput;
 use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
-use cache::{Tilecache,Nocache};
+use cache::{Tilecache, Nocache};
 use service::mvt::{Tileset, MvtService};
 
 
@@ -17,18 +17,26 @@ pub fn test_tile_query() {
     use std::env;
 
     let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
-        Result::Err(_) => { panic!("DBCONN undefined") }
-    }.unwrap();
+            Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+            Result::Err(_) => panic!("DBCONN undefined"),
+        }
+        .unwrap();
     let grid = Grid::web_mercator();
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("ne_10m_populated_places"));
     layer.geometry_field = Some(String::from("wkb_geometry"));
     layer.geometry_type = Some(String::from("POINT"));
     layer.query_limit = Some(1);
-    let tileset = Tileset{name: "points".to_string(), layers: vec![layer]};
-    let mut service = MvtService {input: pg, grid: grid,
-                              tilesets: vec![tileset], cache: Tilecache::Nocache(Nocache)};
+    let tileset = Tileset {
+        name: "points".to_string(),
+        layers: vec![layer],
+    };
+    let mut service = MvtService {
+        input: pg,
+        grid: grid,
+        tilesets: vec![tileset],
+        cache: Tilecache::Nocache(Nocache),
+    };
     service.prepare_feature_queries();
 
     let mvt_tile = service.tile("points", 33, 41, 6);
@@ -276,7 +284,7 @@ pub fn test_stylejson() {
     let service = MvtService::from_config(&config).unwrap();
     let json = format!("{:#}", service.get_stylejson("http://127.0.0.1", "osm").unwrap());
     println!("{}", json);
-    let expected= r#"
+    let expected = r#"
   "name": "t-rex",
   "sources": {
     "osm": {
@@ -287,7 +295,7 @@ pub fn test_stylejson() {
   "version": 8
 "#;
     assert!(json.contains(expected));
-    let expected= r#"
+    let expected = r#"
   "layers": [
     {
       "id": "background_",
@@ -300,14 +308,14 @@ pub fn test_stylejson() {
       "id": "points","#;
     assert!(json.contains(expected));
 
-    let expected= r##"
+    let expected = r##"
       "paint": {
         "fill-color": "#d8e8c8",
         "fill-opacity": 0.5
       },"##;
     assert!(json.contains(expected));
 
-    let expected= r#"
+    let expected = r#"
       "id": "buildings","#;
     assert!(json.contains(expected));
 }
