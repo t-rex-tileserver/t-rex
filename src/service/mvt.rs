@@ -107,10 +107,10 @@ impl MvtService {
             "format": "pbf",
             "version": "2.0.0",
             "scheme": "xyz",
-            "bounds": "[-180.0,-90.0,180.0,90.0]",
-            "minzoom": 0,
-            "maxzoom": 14,
-            "center": "[0.0, 0.0, 2]",
+            "bounds": [-180.0,-90.0,180.0,90.0], //TODO: bbox from data
+            "minzoom": 0,  //TODO: make configurable
+            "maxzoom": 14,  //TODO: make configurable
+            "center": [0.0, 0.0, 2], //TODO: make configurable
             "basename": tileset
         }))
     }
@@ -262,6 +262,8 @@ impl MvtService {
     /// MBTiles metadata.json
     pub fn get_mbtiles_metadata(&self, tileset: &str) -> JsonResult {
         let mut metadata = self.get_tilejson_metadata(tileset)?;
+        metadata["bounds"] = json!(metadata["bounds"].to_string());
+        metadata["center"] = json!(metadata["center"].to_string());
         let layers = self.get_tilejson_layers(tileset)?;
         let vector_layers = self.get_tilejson_vector_layers(tileset)?;
         let metadata_vector_layers = json!({
