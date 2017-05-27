@@ -49,7 +49,9 @@ impl Cache for Tilecache {
 impl Config<Tilecache> for Tilecache {
     fn from_config(config: &toml::Value) -> Result<Self, String> {
         config
-            .get("cache.file.base")
+            .get("cache")
+            .and_then(|c| c.get("file"))
+            .and_then(|c| c.get("base"))
             .and_then(|val| val.as_str().or(None))
             .and_then(|basedir| {
                           Some(Tilecache::Filecache(Filecache { basepath: basedir.to_string() }))
