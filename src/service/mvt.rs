@@ -359,7 +359,7 @@ impl MvtService {
                     progress: bool) {
         self.init_cache();
         let minzoom = minzoom.unwrap_or(0);
-        let maxzoom = maxzoom.unwrap_or(self.grid.nlevels());
+        let maxzoom = maxzoom.unwrap_or(self.grid.maxzoom());
         let extent = extent.unwrap_or(self.grid.tile_extent(0, 0, 0));
         let nodes = nodes.unwrap_or(1) as u64;
         let nodeno = nodeno.unwrap_or(0) as u64;
@@ -374,6 +374,10 @@ impl MvtService {
                 println!("Generating tileset '{}'...", tileset.name);
             }
             for zoom in minzoom..(maxzoom + 1) {
+                if zoom > self.grid.maxzoom() {
+                    warn!("Zoom level exceeds maximal zoom level of grid ({}) - skipping", self.grid.maxzoom());
+                    continue;
+                }
                 let ref limit = limits[zoom as usize];
                 debug!("level {}: {:?}", zoom, limit);
                 let mut pb = self.progress_bar(&format!("Level {}: ", zoom), &limit);

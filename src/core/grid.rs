@@ -183,6 +183,9 @@ impl Grid {
     pub fn nlevels(&self) -> u8 {
         self.resolutions.len() as u8
     }
+    pub fn maxzoom(&self) -> u8 {
+        self.nlevels() - 1
+    }
     pub fn pixel_width(&self, zoom: u8) -> f64 {
         self.resolutions[zoom as usize] //TODO: assumes grid unit 'm'
     }
