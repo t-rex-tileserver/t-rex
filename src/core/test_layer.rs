@@ -53,14 +53,14 @@ fn test_toml_decode() {
     assert_eq!(cfg.table_name, Some("ne_10m_populated_places".to_string()));
     assert_eq!(cfg.query.len(), 2);
     assert_eq!(cfg.query[0].minzoom(), 2);
-    assert_eq!(cfg.query[0].maxzoom(), 99);
+    assert_eq!(cfg.query[0].maxzoom(), 22);
     assert_eq!(cfg.query[1].minzoom, Some(10));
     assert_eq!(cfg.query[1].minzoom(), 10);
     assert_eq!(cfg.query[1].maxzoom(), 14);
     assert_eq!(cfg.query[1].sql,
                Some("SELECT name,wkb_geometry FROM places_z10".to_string()));
     assert_eq!(cfg.minzoom(), 2);
-    assert_eq!(cfg.maxzoom(), 99);
+    assert_eq!(cfg.maxzoom(), 22);
     assert_eq!(cfg.query(1), None);
     assert_eq!(cfg.query(2),
                Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
@@ -82,7 +82,7 @@ fn test_toml_decode() {
     assert_eq!(cfg.table_name, None);
     assert_eq!(cfg.query.len(), 0);
     assert_eq!(cfg.minzoom(), 0);
-    assert_eq!(cfg.maxzoom(), 99);
+    assert_eq!(cfg.maxzoom(), 22);
 
     // Invalid config: missing required field
     let ref layer = layers[2];

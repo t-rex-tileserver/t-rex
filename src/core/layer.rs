@@ -44,7 +44,7 @@ impl LayerQuery {
         self.minzoom.unwrap_or(0)
     }
     pub fn maxzoom(&self) -> u8 {
-        self.maxzoom.unwrap_or(99)
+        self.maxzoom.unwrap_or(22)
     }
 }
 
@@ -83,7 +83,7 @@ impl Layer {
             .iter()
             .map(|q| q.maxzoom())
             .max()
-            .unwrap_or(99)
+            .unwrap_or(22)
     }
     // SQL query for zoom level
     pub fn query(&self, level: u8) -> Option<&String> {

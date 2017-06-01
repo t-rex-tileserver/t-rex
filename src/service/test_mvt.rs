@@ -258,14 +258,14 @@ pub fn test_tilejson() {
         "scalerank": ""
       },
       "id": "points",
-      "maxzoom": 99,
+      "maxzoom": 22,
       "minzoom": 0
     },
     {
       "description": "",
       "fields": {},
       "id": "buildings",
-      "maxzoom": 99,
+      "maxzoom": 22,
       "minzoom": 0
     },
     {
@@ -276,7 +276,7 @@ pub fn test_tilejson() {
         "name": ""
       },
       "id": "admin_0_countries",
-      "maxzoom": 99,
+      "maxzoom": 22,
       "minzoom": 0
     }
   ],
@@ -352,7 +352,7 @@ pub fn test_mbtiles_metadata() {
   "description": "osm",
   "format": "pbf",
   "id": "osm",
-  "json": "{\"Layer\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"name\":\"points\",\"properties\":{\"buffer-size\":0,\"maxzoom\":99,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"name\":\"buildings\",\"properties\":{\"buffer-size\":0,\"maxzoom\":99,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{\"fid\":\"\",\"iso_a3\":\"\",\"name\":\"\"},\"id\":\"admin_0_countries\",\"name\":\"admin_0_countries\",\"properties\":{\"buffer-size\":0,\"maxzoom\":99,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"}],\"vector_layers\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"maxzoom\":99,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"maxzoom\":99,\"minzoom\":0},{\"description\":\"\",\"fields\":{\"fid\":\"\",\"iso_a3\":\"\",\"name\":\"\"},\"id\":\"admin_0_countries\",\"maxzoom\":99,\"minzoom\":0}]}",
+  "json": "{\"Layer\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"name\":\"points\",\"properties\":{\"buffer-size\":0,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"name\":\"buildings\",\"properties\":{\"buffer-size\":0,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{\"fid\":\"\",\"iso_a3\":\"\",\"name\":\"\"},\"id\":\"admin_0_countries\",\"name\":\"admin_0_countries\",\"properties\":{\"buffer-size\":0,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"}],\"vector_layers\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{\"fid\":\"\",\"iso_a3\":\"\",\"name\":\"\"},\"id\":\"admin_0_countries\",\"maxzoom\":22,\"minzoom\":0}]}",
   "maxzoom": 14,
   "minzoom": 0,
   "name": "osm",
