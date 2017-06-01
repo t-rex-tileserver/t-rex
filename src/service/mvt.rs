@@ -314,7 +314,7 @@ impl MvtService {
         } else {
             ytile
         };
-        let path = format!("{}/{}/{}/{}.pbf", tileset, zoom, xtile, y);
+        let path = format!("{}/{}/{}/{}.pbf", tileset, zoom, xtile, ytile);
 
         let mut tile: Option<Vec<u8>> = None;
         self.cache
@@ -392,7 +392,9 @@ impl MvtService {
                             continue;
                         }
 
-                        let path = format!("{}/{}/{}/{}.pbf", &tileset.name, zoom, xtile, ytile);
+                        // store in xyz schema. TODO: make configurable
+                        let y = self.grid.ytile_from_xyz(ytile, zoom);
+                        let path = format!("{}/{}/{}/{}.pbf", &tileset.name, zoom, xtile, y);
 
                         if !self.cache.exists(&path) {
                             // Entry doesn't exist, so generate it

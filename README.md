@@ -214,7 +214,7 @@ To create MBTiles files with vector tiles from a local cache you can use [MBUtil
 
 Example:
 
-    mb-util --image_format=pbf --scheme=tms /tmp/mvtcache/streets streets.mbtiles
+    mb-util --image_format=pbf /tmp/mvtcache/streets streets.mbtiles
 
 
 Installation
