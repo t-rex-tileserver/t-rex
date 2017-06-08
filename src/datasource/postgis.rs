@@ -503,7 +503,7 @@ impl PostgisInput {
         };
         expr
     }
-    /// Build feature query SQL.
+    /// Build feature query SQL (also used for generated config).
     pub fn build_query_sql(&self,
                            layer: &Layer,
                            grid_srid: i32,
@@ -540,9 +540,6 @@ impl PostgisInput {
             query.push_str(&intersect_clause);
         };
 
-        if let Some(n) = layer.query_limit {
-            query.push_str(&format!(" LIMIT {}", n));
-        }
         Some(query)
     }
     pub fn build_query(&self,
@@ -554,9 +551,13 @@ impl PostgisInput {
         if sqlquery.is_none() {
             return None;
         }
+        let mut sqlquery = sqlquery.unwrap();
+        if let Some(n) = layer.query_limit {
+            sqlquery.push_str(&format!(" LIMIT {}", n));
+        }
         let bbox_expr = self.build_bbox_expr(layer, grid_srid);
         let mut query = SqlQuery {
-            sql: sqlquery.unwrap(),
+            sql: sqlquery,
             params: Vec::new(),
         };
         query.replace_params(bbox_expr);

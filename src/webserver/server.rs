@@ -182,6 +182,10 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
             let mut tilesets = Vec::new();
             while let Some(mut l) = layers.pop() {
                 l.simplify = Some(simplify);
+                if simplify {
+                    // Limit features by default unless simplify is set to false
+                    l.query_limit = Some(1000);
+                }
                 l.buffer_size = match l.geometry_type {
                     Some(ref geom) => {
                         let types =

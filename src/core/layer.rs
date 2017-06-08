@@ -187,17 +187,19 @@ geometry_type = "POINT"
             Some(ref fid_field) => lines.push(format!("fid_field = \"{}\"", fid_field)),
             _ => lines.push("#fid_field = \"id\"".to_string()),
         }
-        match self.query_limit {
-            Some(ref query_limit) => lines.push(format!("query_limit = {}", query_limit)),
-            _ => {}
-        }
         match self.buffer_size {
             Some(ref buffer_size) => lines.push(format!("buffer-size = {}", buffer_size)),
             _ => lines.push(format!("#buffer-size = 10")),
         }
-        match self.simplify {
-            Some(ref simplify) => lines.push(format!("simplify = {}", simplify)),
-            _ => lines.push(format!("#simplify = true")),
+        if self.geometry_type != Some("POINT".to_string()) { // simplify is ignored for points
+            match self.simplify {
+                Some(ref simplify) => lines.push(format!("simplify = {}", simplify)),
+                _ => lines.push(format!("#simplify = true")),
+            }
+        }
+        match self.query_limit {
+            Some(ref query_limit) => lines.push(format!("query_limit = {}", query_limit)),
+            _ => lines.push("#query_limit = 1000".to_string()),
         }
         match self.query(0) {
             Some(ref query) => {
