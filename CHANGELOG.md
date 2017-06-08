@@ -1,3 +1,17 @@
+<a name="0.7.2"></a>
+## 0.7.2 (2017-06-08)
+
+#### Features
+
+* Change file cache scheme from TMS to XYZ
+* Extent Web Mercator grid to level 22
+* Limit features per tile to 1000 by default
+
+#### Bug Fixes
+
+* Fix TileJSON compatibility
+* Fix generation of zoom levels greater than maximal grid zoom level
+
 <a name="0.7.1"></a>
 ## 0.7.1 (2017-04-01)
 
