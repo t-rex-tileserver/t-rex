@@ -15,10 +15,10 @@ pub mod config;
 pub use self::config::{Config, read_config, parse_config};
 
 #[cfg(test)]
-mod test_geom;
+mod geom_test;
 #[cfg(test)]
-mod test_grid;
+mod grid_test;
 #[cfg(test)]
-mod test_layer;
+mod layer_test;
 #[cfg(test)]
-mod test_config;
+mod config_test;
