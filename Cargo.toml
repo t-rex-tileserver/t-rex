@@ -14,6 +14,7 @@ r2d2_postgres = "*"
 postgis = "~0.4.0"
 protobuf = "*"
 nickel = "*"
+hyper = "*"
 serde = "*"
 serde_derive = "*"
 serde_json = "*"
@@ -24,7 +25,3 @@ env_logger = "*"
 time = "*"
 flate2 = "*"
 pbr = "*"
-
-[dependencies.hyper]
-version = "0.9.18" # Same version as nickel 0.9.0
-default-features = false
