@@ -24,6 +24,7 @@ use std::str::FromStr;
 use clap::ArgMatches;
 use std::str;
 use std::process;
+use std::time::Duration;
 
 
 fn log_request<'mw>(req: &mut Request<MvtService>,
@@ -248,7 +249,7 @@ pub fn webserver(args: &ArgMatches) {
         .map_or(6767, |val| val.as_integer().unwrap_or(6767)) as u16;
     let threads = http_config
         .get("threads")
-        .map_or(4, |val| val.as_integer().unwrap_or(4)) as usize;
+        .map_or(8, |val| val.as_integer().unwrap_or(8)) as usize;
 
     service.prepare_feature_queries();
     service.init_cache();
@@ -262,6 +263,8 @@ pub fn webserver(args: &ArgMatches) {
 
     let mut server = Nickel::with_data(service);
     server.options = Options::default().thread_count(Some(threads));
+    // reduce thread exhaustion caused by hypers keep_alive handling (https://github.com/hyperium/hyper/issues/368)
+    server.keep_alive_timeout(Some(Duration::from_secs(5)));
     server.utilize(log_request);
 
     server.get("/index.json",

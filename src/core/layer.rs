@@ -191,7 +191,8 @@ geometry_type = "POINT"
             Some(ref buffer_size) => lines.push(format!("buffer-size = {}", buffer_size)),
             _ => lines.push(format!("#buffer-size = 10")),
         }
-        if self.geometry_type != Some("POINT".to_string()) { // simplify is ignored for points
+        if self.geometry_type != Some("POINT".to_string()) {
+            // simplify is ignored for points
             match self.simplify {
                 Some(ref simplify) => lines.push(format!("simplify = {}", simplify)),
                 _ => lines.push(format!("#simplify = true")),
