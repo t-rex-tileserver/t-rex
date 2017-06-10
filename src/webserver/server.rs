@@ -97,6 +97,9 @@ struct StaticFiles {
 impl StaticFiles {
     fn init() -> StaticFiles {
         let mut static_files = StaticFiles { files: HashMap::new() };
+        static_files.add("favicon.ico",
+                         include_bytes!("static/favicon.ico"),
+                         MediaType::Ico);
         static_files.add("index.html",
                          include_bytes!("static/index.html"),
                          MediaType::Html);
