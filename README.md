@@ -175,12 +175,14 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-        --cache <DIR>              Use tile cache in DIR
-        --clip <true|false>        Clip geometries
-    -c, --config <FILE>            Load from custom config file
+        --cache <DIR>                 Use tile cache in DIR
+        --clip <true|false>           Clip geometries
+    -c, --config <FILE>               Load from custom config file
         --dbconn <SPEC>
             PostGIS connection postgresql://USER@HOST/DBNAME
-        --simplify <true|false>    Simplify geometries
+
+        --openbrowser <true|false>    Open backend URL in browser
+        --simplify <true|false>       Simplify geometries
 ```
 
 

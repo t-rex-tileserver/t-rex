@@ -27,6 +27,7 @@ extern crate clap;
 extern crate time;
 extern crate flate2;
 extern crate pbr;
+extern crate open;
 
 pub mod core;
 mod datasource;
@@ -139,7 +140,8 @@ fn main() {
                                               --simplify=[true|false] 'Simplify geometries'
                                               --clip=[true|false] 'Clip geometries'
                                               --cache=[DIR] 'Use tile cache in DIR'
-                                              -c, --config=[FILE] 'Load from custom config file'")
+                                              -c, --config=[FILE] 'Load from custom config file'
+                                              --openbrowser=[true|false] 'Open backend URL in browser'")
                         .about("Start web server and serve MVT vector tiles"))
         .subcommand(SubCommand::with_name("genconfig")
                         .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'

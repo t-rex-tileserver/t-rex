@@ -25,6 +25,7 @@ use clap::ArgMatches;
 use std::str;
 use std::process;
 use std::time::Duration;
+use open;
 
 
 fn log_request<'mw>(req: &mut Request<MvtService>,
@@ -153,7 +154,7 @@ viewer = true
 [webserver]
 bind = "127.0.0.1"
 port = 6767
-threads = 4
+threads = 8
 "#;
 
 pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
@@ -367,6 +368,12 @@ pub fn webserver(args: &ArgMatches) {
     let _listening = server
         .listen((bind, port))
         .expect("Failed to launch server");
+
+    let openbrowser = bool::from_str(args.value_of("openbrowser").unwrap_or("true"))
+        .unwrap_or(false);
+    if openbrowser && mvt_viewer {
+        let _res = open::that(format!("http://{}:{}", bind, port));
+    }
 }
 
 pub fn gen_config(args: &ArgMatches) -> String {
@@ -375,7 +382,7 @@ pub fn gen_config(args: &ArgMatches) -> String {
 # Bind address. Use 0.0.0.0 to listen on all adresses.
 bind = "127.0.0.1"
 port = 6767
-threads = 4
+threads = 8
 "#;
     let mut config;
     if let Some(_dbconn) = args.value_of("dbconn") {
