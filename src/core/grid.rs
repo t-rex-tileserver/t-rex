@@ -120,7 +120,7 @@ impl Grid {
                 maxx: 180.0,
                 maxy: 90.0,
             },
-            srid: 4236,
+            srid: 4326,
             units: Unit::DD,
             resolutions: vec![0.703125000000000,
                               0.351562500000000,
