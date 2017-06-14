@@ -1,3 +1,16 @@
+<a name="0.7.3"></a>
+## 0.7.3 (UNRELEASED)
+
+#### Features
+
+* Update built-in Mapbox GL viewer to 0.38.0
+* Open backend URL in browser when starting server
+* Serve favicon
+
+#### Bug Fixes
+
+* Turn off HTTP keep alive to avoid missing tiles in browser
+
 <a name="0.7.2"></a>
 ## 0.7.2 (2017-06-08)
 

@@ -24,7 +24,6 @@ use std::str::FromStr;
 use clap::ArgMatches;
 use std::str;
 use std::process;
-use std::time::Duration;
 use open;
 
 
@@ -154,7 +153,7 @@ viewer = true
 [webserver]
 bind = "127.0.0.1"
 port = 6767
-threads = 8
+threads = 4
 "#;
 
 pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
@@ -253,7 +252,7 @@ pub fn webserver(args: &ArgMatches) {
         .map_or(6767, |val| val.as_integer().unwrap_or(6767)) as u16;
     let threads = http_config
         .get("threads")
-        .map_or(8, |val| val.as_integer().unwrap_or(8)) as usize;
+        .map_or(4, |val| val.as_integer().unwrap_or(4)) as usize;
 
     service.prepare_feature_queries();
     service.init_cache();
@@ -267,8 +266,8 @@ pub fn webserver(args: &ArgMatches) {
 
     let mut server = Nickel::with_data(service);
     server.options = Options::default().thread_count(Some(threads));
-    // reduce thread exhaustion caused by hypers keep_alive handling (https://github.com/hyperium/hyper/issues/368)
-    server.keep_alive_timeout(Some(Duration::from_secs(5)));
+    // Avoid thread exhaustion caused by hypers keep_alive handling (https://github.com/hyperium/hyper/issues/368)
+    server.keep_alive_timeout(None);
     server.utilize(log_request);
 
     server.get("/index.json",
@@ -382,7 +381,7 @@ pub fn gen_config(args: &ArgMatches) -> String {
 # Bind address. Use 0.0.0.0 to listen on all adresses.
 bind = "127.0.0.1"
 port = 6767
-threads = 8
+threads = 4
 "#;
     let mut config;
     if let Some(_dbconn) = args.value_of("dbconn") {
