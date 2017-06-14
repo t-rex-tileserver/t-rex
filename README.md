@@ -87,7 +87,7 @@ geometry_field = "geometry"
 geometry_type = "POLYGON"
 fid_field = "osm_id"
 # Clip polygons with a buffer
-buffer-size = 10
+buffer_size = 10
 simplify = true
   # Queries for different zoom levels:
   [[tileset.layer.query]]

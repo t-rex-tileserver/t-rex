@@ -386,7 +386,7 @@ impl PostgisInput {
 
         if !raw_geom {
             // Clipping
-            if let Some(_) = layer.buffer_size {
+            if layer.buffer_size.is_some() {
                 match layer
                           .geometry_type
                           .as_ref()

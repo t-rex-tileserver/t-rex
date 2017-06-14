@@ -151,7 +151,7 @@ geometry_field = "wkb_geometry"
 geometry_type = "POINT"
 #fid_field = "id"
 #simplify = true
-#buffer-size = 10
+#buffer_size = 10
 #[[tileset.layer.query]]
 #minzoom = 0
 #maxzoom = 22
@@ -188,8 +188,8 @@ geometry_type = "POINT"
             _ => lines.push("#fid_field = \"id\"".to_string()),
         }
         match self.buffer_size {
-            Some(ref buffer_size) => lines.push(format!("buffer-size = {}", buffer_size)),
-            _ => lines.push(format!("#buffer-size = 10")),
+            Some(ref buffer_size) => lines.push(format!("buffer_size = {}", buffer_size)),
+            _ => lines.push(format!("#buffer_size = 10")),
         }
         if self.geometry_type != Some("POINT".to_string()) {
             // simplify is ignored for points

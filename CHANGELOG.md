@@ -11,6 +11,10 @@
 
 * Turn off HTTP keep alive to avoid missing tiles in browser
 
+#### Breaking changes
+
+* Use `buffer_size` instead of `buffer-size` in config
+
 <a name="0.7.2"></a>
 ## 0.7.2 (2017-06-08)
 

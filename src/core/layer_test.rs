@@ -138,7 +138,7 @@ fn test_layers_from_config() {
                Some("ne_10m_populated_places".to_string()));
     assert_eq!(layers[0].buffer_size, Some(10));
     assert_eq!(layers[1].table_name, None);
-    assert_eq!(layers[1].buffer_size, None); // toml deserialization bug!!
+    assert_eq!(layers[1].buffer_size, None); // serde distincts between '-' and '_'
 
     // errors
     let emptyconfig = parse_config("".to_string(), "").unwrap();
