@@ -39,15 +39,15 @@ Use a tile cache:
 
 Generate a configuration template:
 
-    t_rex genconfig --dbconn postgresql://user:pass@localhost/osm2vectortiles
+    t_rex genconfig --dbconn postgresql://user:pass@localhost/osm2vectortiles | tee osm2vectortiles.toml
 
 Run server with configuration file:
 
-    t_rex serve --config osm2vectortiles.cfg
+    t_rex serve --config osm2vectortiles.toml
 
 Generate tiles for cache:
 
-    t_rex generate --config osm2vectortiles.cfg
+    t_rex generate --config osm2vectortiles.toml
 
 
 Configuration

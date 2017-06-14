@@ -176,7 +176,7 @@ pub fn test_tile_query() {
 pub fn test_mvt_metadata() {
     use core::read_config;
 
-    let config = read_config("src/test/example.cfg").unwrap();
+    let config = read_config("src/test/example.toml").unwrap();
     let service = MvtService::from_config(&config).unwrap();
 
     let metadata = format!("{:#}", service.get_mvt_metadata().unwrap());
@@ -218,7 +218,7 @@ pub fn test_tilejson() {
         panic!("DBCONN undefined");
     }
 
-    let config = read_config("src/test/example.cfg").unwrap();
+    let config = read_config("src/test/example.toml").unwrap();
     let mut service = MvtService::from_config(&config).unwrap();
     service.connect();
     service.prepare_feature_queries();
@@ -289,7 +289,7 @@ pub fn test_tilejson() {
 pub fn test_stylejson() {
     use core::read_config;
 
-    let config = read_config("src/test/example.cfg").unwrap();
+    let config = read_config("src/test/example.toml").unwrap();
     let service = MvtService::from_config(&config).unwrap();
     let json = format!("{:#}", service.get_stylejson("http://127.0.0.1", "osm").unwrap());
     println!("{}", json);
@@ -339,7 +339,7 @@ pub fn test_mbtiles_metadata() {
         panic!("DBCONN undefined");
     }
 
-    let config = read_config("src/test/example.cfg").unwrap();
+    let config = read_config("src/test/example.toml").unwrap();
     let mut service = MvtService::from_config(&config).unwrap();
     service.connect();
     let metadata = format!("{:#}", service.get_mbtiles_metadata("osm").unwrap());

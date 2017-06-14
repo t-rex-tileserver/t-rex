@@ -184,7 +184,7 @@ pub fn filters() {
 pub fn layer_style_from_cfg() {
     use core::read_config;
 
-    let config = read_config("src/test/example.cfg").unwrap();
+    let config = read_config("src/test/example.toml").unwrap();
 
     let ref style = config["tileset"][0]["style"];
 

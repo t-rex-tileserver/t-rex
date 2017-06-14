@@ -8,7 +8,7 @@ use core::config::read_config;
 
 #[test]
 fn test_parse_config() {
-    let config = read_config("src/test/example.cfg").unwrap();
+    let config = read_config("src/test/example.toml").unwrap();
     println!("{:#?}", config.as_table().unwrap());
     let expected_begin = r#"{
     "datasource": Table(
