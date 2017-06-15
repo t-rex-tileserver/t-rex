@@ -21,7 +21,16 @@ Features
 
 ### Presentations
 
+* Von WMS zu WMTS zu Vektor-Tiles [FOSSGIS 2017](https://www.fossgis-konferenz.de/2017/programm/event.php?id=5233) - [Video](https://av.tib.eu/media/30549)
 * Workshop "Vector Tiles", GEOSummit Bern 7.6.16: [slides](doc/t-rex_vector_tile_server.pdf)
+
+
+Installation
+------------
+
+Pre-built binaries are available for 64 bit Linux, Mac OS X and Windows. Download your binary from [github.com/pka/t-rex/releases](https://github.com/pka/t-rex/releases) and unpack it.
+
+`t_rex` is an executable with very few dependencies, essentially `libgcc_s.so.1` on Linux and `msvcr120.dll` on Windows. If `msvcr120.dll` is missing, install `vcredist_x64.exe` from [here](https://www.microsoft.com/download/details.aspx?id=40784).
 
 
 Usage
@@ -219,15 +228,6 @@ To create MBTiles files with vector tiles from a local cache you can use [MBUtil
 Example:
 
     mb-util --image_format=pbf /tmp/mvtcache/streets streets.mbtiles
-
-
-Installation
-------------
-
-Pre-built binaries are available for 64 bit Linux and Windows. Download your binary from [github.com/pka/t-rex/releases](https://github.com/pka/t-rex/releases) and unpack it.
-
-`t_rex` is an executable with very few dependencies, essentially `libgcc_s.so.1` on Linux and `msvcr120.dll` on Windows. If `msvcr120.dll` is missing, install `vcredist_x64.exe` from [here](https://www.microsoft.com/download/details.aspx?id=40784).
-
 
 
 For developers

@@ -25,7 +25,7 @@
 #### Features
 
 * Change file cache scheme from TMS to XYZ
-* Extent Web Mercator grid to level 22
+* Extend Web Mercator grid to level 22
 * Limit features per tile to 1000 by default
 
 #### Bug Fixes
