@@ -7,13 +7,13 @@
 * Open backend URL in browser when starting server
 * Add support for the environment variable TREX_DATASOURCE_URL to
   override the datasource.url config field (Thanks @kiambogo!)
-* Fix WGS84 grid definition (Thanks @Wykks!)
 * Serve favicon
 * Emit info message when features are limited by `query_limit`
 
 #### Bug Fixes
 
 * Turn off HTTP keep alive to avoid missing tiles in browser
+* Fix WGS84 grid definition (Thanks @Wykks!)
 
 #### Breaking changes
 
