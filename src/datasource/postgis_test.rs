@@ -130,7 +130,8 @@ pub fn test_feature_query() {
     layer.simplify = Some(false);
     layer.query_limit = Some(1);
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
-               "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857) LIMIT 1");
+               // No LIMIT clause added - limited when retrieving records
+               "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
     // user queries
     layer.query = vec![LayerQuery {

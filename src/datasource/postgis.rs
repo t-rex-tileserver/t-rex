@@ -6,6 +6,7 @@
 use datasource::DatasourceInput;
 use postgres::rows::Row;
 use postgres::types::{Type, FromSql, ToSql};
+use fallible_iterator::FallibleIterator;
 use postgres;
 use r2d2;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
@@ -551,13 +552,9 @@ impl PostgisInput {
         if sqlquery.is_none() {
             return None;
         }
-        let mut sqlquery = sqlquery.unwrap();
-        if let Some(n) = layer.query_limit {
-            sqlquery.push_str(&format!(" LIMIT {}", n));
-        }
         let bbox_expr = self.build_bbox_expr(layer, grid_srid);
         let mut query = SqlQuery {
-            sql: sqlquery,
+            sql: sqlquery.unwrap(),
             params: Vec::new(),
         };
         query.replace_params(bbox_expr);
@@ -645,7 +642,8 @@ impl DatasourceInput for PostgisInput {
         }
 
         let stmt = stmt.unwrap();
-        let rows = stmt.query(&params.as_slice());
+        let trans = conn.transaction().unwrap();
+        let rows = stmt.lazy_query(&trans, &params.as_slice(), 50);
         if let Err(err) = rows {
             error!("Layer '{}': {}", layer.name, err);
             error!("Query: {}", query.sql);
@@ -653,14 +651,25 @@ impl DatasourceInput for PostgisInput {
             error!("Param values: {:?}", params);
             return;
         };
-        debug!("Reading features in layer {}", layer.name); // rust_postgis may panic with unexpected geometry data
-        for row in &rows.unwrap() {
+        debug!("Reading features in layer {}", layer.name);
+        let mut cnt = 0;
+        let query_limit = match layer.query_limit {
+           Some(n) => n,
+           None => 0
+        };
+        for row in rows.unwrap().iterator() {
             let feature = FeatureRow {
                 layer: layer,
-                row: &row,
+                row: &row.unwrap(),
             };
             read(&feature);
+            cnt += 1;
+            if cnt == query_limit {
+                info!("Feature count limited (query_limit={})", cnt);
+                break;
+            }
         }
+        debug!("Feature count: {}", cnt);
     }
 }
 

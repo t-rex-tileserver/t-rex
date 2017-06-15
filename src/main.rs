@@ -20,6 +20,7 @@ extern crate hyper;
 extern crate r2d2;
 extern crate r2d2_postgres;
 extern crate postgres;
+extern crate fallible_iterator;
 extern crate postgis;
 extern crate protobuf;
 #[macro_use]
