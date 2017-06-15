@@ -115,6 +115,8 @@ port = 8080
 threads = 4
 ```
 
+The datasource url can be overridden by the environment variable `TREX_DATASOURCE_URL`, which takes precedence.
+
 ### Layer configuration
 
 Custom queries can be configured as PostGIS SQL queries.
@@ -258,7 +260,7 @@ Decode a vector tile:
 
 Unit tests which need a PostgreSQL connection are ignored by default.
 
-To run the database tests, declare the [connection](https://github.com/sfackler/rust-postgres#connecting) in an 
+To run the database tests, declare the [connection](https://github.com/sfackler/rust-postgres#connecting) in an
 environment variable `DBCONN`. Example:
 
     export DBCONN=postgresql://user:pass@localhost/natural_earth_vectors
