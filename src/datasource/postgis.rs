@@ -654,10 +654,7 @@ impl DatasourceInput for PostgisInput {
         };
         debug!("Reading features in layer {}", layer.name);
         let mut cnt = 0;
-        let query_limit = match layer.query_limit {
-           Some(n) => n,
-           None => 0
-        };
+        let query_limit = layer.query_limit.unwrap_or(0);
         for row in rows.unwrap().iterator() {
             let feature = FeatureRow {
                 layer: layer,
@@ -676,18 +673,20 @@ impl DatasourceInput for PostgisInput {
 
 impl Config<PostgisInput> for PostgisInput {
     fn from_config(config: &toml::Value) -> Result<Self, String> {
-      match env::var("TREX_DATASOURCE_URL") {
-        Ok(url) => Ok(PostgisInput::new(url.as_str())),
-        Err(_) => config
-          .get("datasource")
-          .and_then(|d| d.get("url"))
-          .ok_or("Missing configuration entry 'datasource.url'".to_string())
-          .and_then(|val| {
-              val.as_str()
-              .ok_or("url entry is not a string".to_string())
-              })
-          .and_then(|url| Ok(PostgisInput::new(url)))
-      }
+        match env::var("TREX_DATASOURCE_URL") {
+            Ok(url) => Ok(PostgisInput::new(url.as_str())),
+            Err(_) => {
+                config
+                    .get("datasource")
+                    .and_then(|d| d.get("url"))
+                    .ok_or("Missing configuration entry 'datasource.url'".to_string())
+                    .and_then(|val| {
+                                  val.as_str()
+                                      .ok_or("url entry is not a string".to_string())
+                              })
+                    .and_then(|url| Ok(PostgisInput::new(url)))
+            }
+        }
     }
 
     fn gen_config() -> String {
