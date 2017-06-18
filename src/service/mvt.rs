@@ -356,7 +356,8 @@ impl MvtService {
                     extent: Option<Extent>,
                     nodes: Option<u8>,
                     nodeno: Option<u8>,
-                    progress: bool) {
+                    progress: bool,
+                    ignore_cache: bool) {
         self.init_cache();
         let minzoom = minzoom.unwrap_or(0);
         let maxzoom = maxzoom.unwrap_or(self.grid.maxzoom());
@@ -396,8 +397,8 @@ impl MvtService {
                         let y = self.grid.ytile_from_xyz(ytile, zoom);
                         let path = format!("{}/{}/{}/{}.pbf", &tileset.name, zoom, xtile, y);
 
-                        if !self.cache.exists(&path) {
-                            // Entry doesn't exist, so generate it
+                        if !self.cache.exists(&path) || ignore_cache {
+                            // Entry doesn't exist, or we're ignoring it, so generate it
                             let mvt_tile =
                                 self.tile(&tileset.name, xtile as u32, ytile as u32, zoom);
                             let mut tilegz = Vec::new();

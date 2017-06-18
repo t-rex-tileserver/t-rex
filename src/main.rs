@@ -124,8 +124,13 @@ fn generate(args: &ArgMatches) {
             s.parse::<bool>()
                 .expect("Error parsing 'progress' as boolean value")
         });
+    let ignore_cache = args.value_of("ignore_cache")
+        .map_or(true, |s| {
+            s.parse::<bool>()
+                .expect("Error parsing 'ignore_cache' as boolean value")
+        });
     service.prepare_feature_queries();
-    service.generate(tileset, minzoom, maxzoom, extent, nodes, nodeno, progress);
+    service.generate(tileset, minzoom, maxzoom, extent, nodes, nodeno, progress, ignore_cache);
 }
 
 fn main() {
@@ -158,7 +163,8 @@ fn main() {
                                               --extent=[minx,miny,maxx,maxy] 'Extent of tiles'
                                               --nodes=[NUM] 'Number of generator nodes'
                                               --nodeno=[NUM] 'Number of this nodes (0 <= n < nodes)'
-                                              --progress=[true|false] 'Show progress bar'")
+                                              --progress=[true|false] 'Show progress bar')
+                                              --ignore_cache=[true|false] 'Ignore previously cached tiles'")
                         .about("Generate tiles for cache"));
 
     match app.get_matches_from_safe_borrow(env::args()) { //app.get_matches() prohibits later call of app.print_help()
