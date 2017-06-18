@@ -1,3 +1,10 @@
+<a name="0.7.4"></a>
+## 0.7.4 (UNRELEASED)
+
+#### Features
+
+* New seeding option `overwrite` (Thanks @kiambogo!)
+
 <a name="0.7.3"></a>
 ## 0.7.3 (2017-06-15)
 

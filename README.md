@@ -218,7 +218,7 @@ OPTIONS:
         --nodeno <NUM>                    Number of this nodes (0 <= n < nodes)
         --nodes <NUM>                     Number of generator nodes
         --progress <true|false>           Show progress bar
-        --ignore_cache <true|false>       Whether to re-render tile even if it already exists in the cache
+        --overwrite <false|true>          Re-render tile even if it already exists in the cache
         --tileset <NAME>                  Tileset name
 ```
 

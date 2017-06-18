@@ -146,6 +146,7 @@ impl MvtService {
             .collect();
         Ok(json!(layers_metadata))
     }
+    /// TileJSON MVT vector layer extension (https://github.com/mapbox/tilejson-spec/issues/14)
     fn get_tilejson_vector_layers(&self, tileset: &str) -> JsonResult {
         let layers = self.get_tileset(tileset);
         let vector_layers: Vec<serde_json::Value> = layers
@@ -357,7 +358,7 @@ impl MvtService {
                     nodes: Option<u8>,
                     nodeno: Option<u8>,
                     progress: bool,
-                    ignore_cache: bool) {
+                    overwrite: bool) {
         self.init_cache();
         let minzoom = minzoom.unwrap_or(0);
         let maxzoom = maxzoom.unwrap_or(self.grid.maxzoom());
@@ -397,7 +398,7 @@ impl MvtService {
                         let y = self.grid.ytile_from_xyz(ytile, zoom);
                         let path = format!("{}/{}/{}/{}.pbf", &tileset.name, zoom, xtile, y);
 
-                        if !self.cache.exists(&path) || ignore_cache {
+                        if overwrite || !self.cache.exists(&path) {
                             // Entry doesn't exist, or we're ignoring it, so generate it
                             let mvt_tile =
                                 self.tile(&tileset.name, xtile as u32, ytile as u32, zoom);
