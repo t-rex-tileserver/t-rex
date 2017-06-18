@@ -397,6 +397,9 @@ impl PostgisInput {
                         geom_expr = format!("ST_Buffer(ST_Intersection(ST_MakeValid({}),!bbox!), 0.0)",
                                             geom_expr);
                     }
+                    "POINT" => {
+                        // ST_Intersection not necessary - bbox query in WHERE clause is sufficient
+                    }
                     _ => {
                         geom_expr = format!("ST_Intersection(ST_MakeValid({}),!bbox!)", geom_expr);
                     }
@@ -498,7 +501,9 @@ impl PostgisInput {
         let mut expr;
         expr = format!("ST_MakeEnvelope($1,$2,$3,$4,{})", env_srid);
         if let Some(pixels) = layer.buffer_size {
-            expr = format!("ST_Buffer({},{}*!pixel_width!)", expr, pixels);
+            if pixels != 0 {
+                expr = format!("ST_Buffer({},{}*!pixel_width!)", expr, pixels);
+            }
         }
         if layer_srid > 0 && layer_srid != grid_srid {
             expr = format!("ST_Transform({},{})", expr, layer_srid);

@@ -192,8 +192,12 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
                 }
                 l.buffer_size = match l.geometry_type {
                     Some(ref geom) => {
-                        if clip && !geom.contains("POINT") {
-                            Some(1)
+                        if clip {
+                            if geom.contains("POLYGON") {
+                                Some(1)
+                            } else {
+                                Some(0)
+                            }
                         } else {
                             None
                         }

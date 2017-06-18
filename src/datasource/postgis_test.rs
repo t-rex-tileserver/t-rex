@@ -114,7 +114,15 @@ pub fn test_feature_query() {
     layer.geometry_type = Some("POLYGON".to_string());
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
                "SELECT ST_Multi(ST_Buffer(ST_Intersection(ST_MakeValid(geometry),ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)), 0.0)) AS geometry FROM osm_place_point WHERE geometry && ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)");
+    layer.geometry_type = Some("POINT".to_string());
+    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+               "SELECT geometry FROM osm_place_point WHERE geometry && ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)");
+    layer.buffer_size = Some(0);
+    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+               "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+
     layer.buffer_size = None;
+    layer.geometry_type = Some("POLYGON".to_string());
 
     // simplification
     layer.simplify = Some(true);
