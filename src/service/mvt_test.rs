@@ -396,6 +396,7 @@ geometry_type = "POINT"
 
 #[cache.file]
 #base = "/tmp/mvtcache"
+#baseurl = "http://example.com/tiles"
 "#;
     println!("{}", &MvtService::gen_config());
     assert_eq!(expected, &MvtService::gen_config());

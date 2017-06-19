@@ -11,8 +11,6 @@ use core::Config;
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use cache::{Cache, Tilecache};
-use std::path::Path;
-use std::fs::{self, File};
 use toml;
 use serde_json;
 use pbr::ProgressBar;
@@ -419,16 +417,27 @@ impl MvtService {
         }
     }
     pub fn init_cache(&self) {
-        if let Tilecache::Filecache(ref fc) = self.cache {
-            info!("Tile cache directory: {}", fc.basepath);
-            // Write metadata.json for each tileset
-            for tileset in &self.tilesets {
-                let path = Path::new(&fc.basepath).join(&tileset.name);
-                fs::create_dir_all(&path).unwrap();
-                let f = File::create(&path.join("metadata.json")).unwrap();
-                let _ = serde_json::to_writer(f,
-                                              &self.get_mbtiles_metadata(&tileset.name).unwrap());
-            }
+        info!("{}", &self.cache.info());
+        for tileset in &self.tilesets {
+            // :tileset.json
+            let json = self.get_tilejson(&self.cache.baseurl(), &tileset.name)
+                .unwrap();
+            let _ = self.cache
+                .write(&format!("{}.json", &tileset.name),
+                       &serde_json::to_vec(&json).unwrap());
+
+            // :tileset.style.json
+            let json = self.get_stylejson(&self.cache.baseurl(), &tileset.name)
+                .unwrap();
+            let _ = self.cache
+                .write(&format!("{}.style.json", &tileset.name),
+                       &serde_json::to_vec(&json).unwrap());
+
+            // :tileset/metadata.json
+            let json = self.get_mbtiles_metadata(&tileset.name).unwrap();
+            let _ = self.cache
+                .write(&format!("{}/metadata.json", &tileset.name),
+                       &serde_json::to_vec(&json).unwrap());
         }
     }
 }

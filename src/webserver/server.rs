@@ -174,7 +174,12 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
         let config = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
         let cache = match args.value_of("cache") {
             None => Tilecache::Nocache(Nocache),
-            Some(dir) => Tilecache::Filecache(Filecache { basepath: dir.to_string() }),
+            Some(dir) => {
+                Tilecache::Filecache(Filecache {
+                                         basepath: dir.to_string(),
+                                         baseurl: None,
+                                     })
+            }
         };
         let simplify = bool::from_str(args.value_of("simplify").unwrap_or("true")).unwrap_or(false);
         let clip = bool::from_str(args.value_of("clip").unwrap_or("true")).unwrap_or(false);

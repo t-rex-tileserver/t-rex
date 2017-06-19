@@ -24,6 +24,18 @@ pub enum Tilecache {
 }
 
 impl Cache for Tilecache {
+    fn info(&self) -> String {
+        match self {
+            &Tilecache::Nocache(ref cache) => cache.info(),
+            &Tilecache::Filecache(ref cache) => cache.info(),
+        }
+    }
+    fn baseurl(&self) -> String {
+        match self {
+            &Tilecache::Nocache(ref cache) => cache.baseurl(),
+            &Tilecache::Filecache(ref cache) => cache.baseurl(),
+        }
+    }
     fn read<F>(&self, path: &str, read: F) -> bool
         where F: FnMut(&mut Read)
     {
@@ -48,21 +60,20 @@ impl Cache for Tilecache {
 
 impl Config<Tilecache> for Tilecache {
     fn from_config(config: &toml::Value) -> Result<Self, String> {
-        config
-            .get("cache")
-            .and_then(|c| c.get("file"))
-            .and_then(|c| c.get("base"))
-            .and_then(|val| val.as_str().or(None))
-            .and_then(|basedir| {
-                          Some(Tilecache::Filecache(Filecache { basepath: basedir.to_string() }))
-                      })
-            .or(Some(Tilecache::Nocache(Nocache)))
-            .ok_or("config error".to_string())
+        if let Some(cfg) = config.get("cache").and_then(|c| c.get("file")) {
+            cfg.clone()
+                .try_into::<Filecache>()
+                .and_then(|cache| Ok(Tilecache::Filecache(cache)))
+                .map_err(|e| format!("Error reading configuration - {}", e))
+        } else {
+            Ok(Tilecache::Nocache(Nocache))
+        }
     }
     fn gen_config() -> String {
         let toml = r#"
 #[cache.file]
 #base = "/tmp/mvtcache"
+#baseurl = "http://example.com/tiles"
 "#;
         toml.to_string()
     }

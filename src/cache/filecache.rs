@@ -9,11 +9,22 @@ use std::io::{self, Read, Write};
 use std::path::Path;
 
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Filecache {
+    #[serde(rename = "base")]
     pub basepath: String,
+    pub baseurl: Option<String>,
 }
 
 impl Cache for Filecache {
+    fn info(&self) -> String {
+        format!("Tile cache directory: {}", self.basepath)
+    }
+    fn baseurl(&self) -> String {
+        self.baseurl
+            .clone()
+            .unwrap_or("http://localhost:6767".to_string())
+    }
     fn read<F>(&self, path: &str, mut read: F) -> bool
         where F: FnMut(&mut Read)
     {

@@ -18,7 +18,10 @@ fn test_dircache() {
     let basepath = format!("{}", &dir.display());
     let _ = fs::remove_dir_all(&basepath);
 
-    let cache = Filecache { basepath: basepath };
+    let cache = Filecache {
+        basepath: basepath,
+        baseurl: Some("http://localhost:6767".to_string()),
+    };
     let path = "tileset/0/1/2.pbf";
     let fullpath = format!("{}/{}", cache.basepath, path);
     let obj = "0123456789";
