@@ -40,7 +40,6 @@ mod webserver;
 use core::grid::Extent;
 use clap::{App, SubCommand, ArgMatches, AppSettings};
 use std::env;
-use std::process;
 use log::{LogRecord, LogLevelFilter};
 use env_logger::LogBuilder;
 
@@ -73,15 +72,9 @@ fn init_logger() {
 
 fn generate(args: &ArgMatches) {
     let (mut service, config) = webserver::server::service_from_args(args);
-    let _ = config
-        .get("cache")
-        .and_then(|c| c.get("file"))
-        .and_then(|c| c.get("base"))
-        .ok_or("Missing configuration entry base in [cache.file]".to_string())
-        .unwrap_or_else(|err| {
-                            println!("Error reading configuration - {} ", err);
-                            process::exit(1)
-                        });
+    config
+        .cache
+        .expect("Missing configuration entry base in [cache.file]");
     let tileset = args.value_of("tileset");
     let minzoom = args.value_of("minzoom")
         .map(|s| {

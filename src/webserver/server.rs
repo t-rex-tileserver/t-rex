@@ -3,13 +3,13 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
+use core::config::ApplicationCfg;
 use datasource::postgis::PostgisInput;
 use core::grid::Grid;
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use service::mvt::{MvtService, Tileset};
-use core::{Config, read_config, parse_config};
-use toml;
+use core::{Config, read_cfg, parse_cfg, read_config};
 use serde_json;
 use cache::{Tilecache, Nocache, Filecache};
 
@@ -150,13 +150,26 @@ const DEFAULT_CONFIG: &'static str = r#"
 [service.mvt]
 viewer = true
 
+[datasource]
+type = "postgis"
+url = ""
+
+[grid]
+predefined = "web_mercator"
+
+[[tileset]]
+name = ""
+
+[[tileset.layer]]
+name = ""
+
 [webserver]
 bind = "127.0.0.1"
 port = 6767
 threads = 4
 "#;
 
-pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
+pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
     if let Some(cfgpath) = args.value_of("config") {
         info!("Reading configuration from '{}'", cfgpath);
         let config = read_config(cfgpath).unwrap_or_else(|err| {
@@ -169,9 +182,14 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
                                                                 process::exit(1)
                                                             });
         svc.connect();
+        let config =
+            read_cfg(cfgpath).unwrap_or_else(|err| {
+                                                 println!("Error reading configuration - {} ", err);
+                                                 process::exit(1)
+                                             });
         (svc, config)
     } else {
-        let config = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
+        let config = parse_cfg(DEFAULT_CONFIG.to_string(), "").unwrap();
         let cache = match args.value_of("cache") {
             None => Tilecache::Nocache(Nocache),
             Some(dir) => {
@@ -233,33 +251,10 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, toml::Value) {
 pub fn webserver(args: &ArgMatches) {
     let (mut service, config) = service_from_args(args);
 
-    let mvt_config = config
-        .get("service")
-        .and_then(|s| s.get("mvt"))
-        .ok_or("Missing configuration entry [service.mvt]".to_string())
-        .unwrap_or_else(|err| {
-                            println!("Error reading configuration - {} ", err);
-                            process::exit(1)
-                        });
-    let mvt_viewer = mvt_config
-        .get("viewer")
-        .map_or(true, |val| val.as_bool().unwrap_or(true));
-    let http_config = config
-        .get("webserver")
-        .ok_or("Missing configuration entry [webserver]".to_string())
-        .unwrap_or_else(|err| {
-                            println!("Error reading configuration - {} ", err);
-                            process::exit(1)
-                        });
-    let bind = http_config
-        .get("bind")
-        .map_or("127.0.0.1", |val| val.as_str().unwrap_or("127.0.0.1"));
-    let port = http_config
-        .get("port")
-        .map_or(6767, |val| val.as_integer().unwrap_or(6767)) as u16;
-    let threads = http_config
-        .get("threads")
-        .map_or(4, |val| val.as_integer().unwrap_or(4)) as usize;
+    let mvt_viewer = config.service.mvt.viewer;
+    let bind: &str = &config.webserver.bind.unwrap_or("127.0.0.1".to_string());
+    let port = config.webserver.port.unwrap_or(6767);
+    let threads = config.webserver.threads.unwrap_or(4) as usize;
 
     service.prepare_feature_queries();
     service.init_cache();

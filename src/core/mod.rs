@@ -12,7 +12,7 @@ pub mod layer;
 pub mod feature;
 pub mod config;
 
-pub use self::config::{Config, read_config, parse_config};
+pub use self::config::{ApplicationCfg, Config, read_cfg, parse_cfg, read_config, parse_config};
 
 #[cfg(test)]
 mod geom_test;

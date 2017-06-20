@@ -14,6 +14,7 @@ pub use self::cache::Nocache;
 pub use self::filecache::Filecache;
 use std::io::Read;
 use std::io;
+use core::ApplicationCfg;
 use core::Config;
 use toml;
 
@@ -59,6 +60,18 @@ impl Cache for Tilecache {
 }
 
 impl Config<Tilecache> for Tilecache {
+    fn from_cfg(config: &ApplicationCfg) -> Result<Self, String> {
+        config.cache.as_ref()
+            .map(|cache| {
+                     let fc = Filecache {
+                         basepath: cache.file.base.clone(),
+                         baseurl: cache.file.baseurl.clone(),
+                     };
+                     Tilecache::Filecache(fc)
+                 })
+            .or(Some(Tilecache::Nocache(Nocache)))
+            .ok_or("".to_string())
+    }
     fn from_config(config: &toml::Value) -> Result<Self, String> {
         if let Some(cfg) = config.get("cache").and_then(|c| c.get("file")) {
             cfg.clone()
