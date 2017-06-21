@@ -7,6 +7,7 @@ use toml::Value;
 use std::io::prelude::*;
 use std::fs::File;
 use core::grid::Extent;
+use serde::Deserialize;
 
 
 pub trait Config<T> {
@@ -158,7 +159,7 @@ pub fn parse_config(config_toml: String, path: &str) -> Result<Value, String> {
 }
 
 /// Load and parse the config file into an application config struct.
-pub fn read_cfg(path: &str) -> Result<ApplicationCfg, String> {
+pub fn read_cfg<'a, T: Deserialize<'a>>(path: &str) -> Result<T, String> {
     let mut file = match File::open(path) {
         Ok(file) => file,
         Err(_) => {
@@ -174,9 +175,9 @@ pub fn read_cfg(path: &str) -> Result<ApplicationCfg, String> {
 }
 
 /// Parse the configuration into an application config struct.
-pub fn parse_cfg(config_toml: String, path: &str) -> Result<ApplicationCfg, String> {
+pub fn parse_cfg<'a, T: Deserialize<'a>>(config_toml: String, path: &str) -> Result<T, String> {
     config_toml
         .parse::<Value>()
-        .and_then(|cfg| cfg.try_into::<ApplicationCfg>())
+        .and_then(|cfg| cfg.try_into::<T>())
         .map_err(|err| format!("{} - {}", path, err))
 }
