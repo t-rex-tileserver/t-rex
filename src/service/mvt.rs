@@ -8,10 +8,11 @@ use datasource::PostgisInput;
 use core::grid::{Grid, Extent, ExtentInt};
 use core::layer::Layer;
 use core::Config;
+use core::ApplicationCfg;
+use core::config::TilesetCfg;
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use cache::{Cache, Tilecache};
-use toml;
 use serde_json;
 use pbr::ProgressBar;
 use std::io::Stdout;
@@ -444,21 +445,6 @@ impl MvtService {
 
 
 impl Tileset {
-    pub fn tilesets_from_config(config: &toml::Value) -> Result<Vec<Self>, String> {
-        config
-            .get("tileset")
-            .ok_or("Missing configuration entry [[tileset]]".to_string())
-            .and_then(|tarr| {
-                          tarr.as_array()
-                              .ok_or("Array type for [[tileset]] entry expected".to_string())
-                      })
-            .and_then(|tilesets| {
-                          Ok(tilesets
-                                 .iter()
-                                 .map(|tileset| Tileset::from_config(tileset).unwrap())
-                                 .collect())
-                      })
-    }
     pub fn gen_runtime_config_from_input(&self, input: &PostgisInput) -> String {
         let mut config = String::new();
         for layer in &self.layers {
@@ -468,23 +454,17 @@ impl Tileset {
     }
 }
 
-impl Config<Tileset> for Tileset {
-    fn from_config(config: &toml::Value) -> Result<Self, String> {
-        let name = config
-            .get("name")
-            .ok_or("Missing configuration entry name in [[tileset]]".to_string())
-            .and_then(|val| {
-                          val.as_str()
-                              .ok_or("tileset.name entry is not a string".to_string())
-                      })
-            .map(|v| v.to_string());
-        let layers = try!(Layer::layers_from_config(config));
-        name.and_then(|n| {
-                          Ok(Tileset {
-                                 name: n,
-                                 layers: layers,
-                             })
-                      })
+impl<'a> Config<'a, Tileset, TilesetCfg> for Tileset {
+    fn from_config(tileset_cfg: &TilesetCfg) -> Result<Self, String> {
+        let layers = tileset_cfg
+            .layers
+            .iter()
+            .map(|layer| Layer::from_config(layer).unwrap())
+            .collect();
+        Ok(Tileset {
+               name: tileset_cfg.name.clone(),
+               layers: layers,
+           })
     }
     fn gen_config() -> String {
         let mut config = String::new();
@@ -500,12 +480,16 @@ impl Config<Tileset> for Tileset {
     }
 }
 
-impl Config<MvtService> for MvtService {
-    fn from_config(config: &toml::Value) -> Result<Self, String> {
-        let pg = try!(PostgisInput::from_config(config));
-        let grid = try!(Grid::from_config(config));
-        let tilesets = try!(Tileset::tilesets_from_config(config));
-        let cache = try!(Tilecache::from_config(config));
+impl<'a> Config<'a, MvtService, ApplicationCfg> for MvtService {
+    fn from_config(config: &ApplicationCfg) -> Result<Self, String> {
+        let pg = PostgisInput::from_config(&config.datasource)?;
+        let grid = Grid::from_config(&config.grid)?;
+        let tilesets = config
+            .tilesets
+            .iter()
+            .map(|ts_cfg| Tileset::from_config(ts_cfg).unwrap())
+            .collect(); //FIXME: avoid unwrap
+        let cache = Tilecache::from_config(&config)?;
         Ok(MvtService {
                input: pg,
                grid: grid,

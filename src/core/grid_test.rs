@@ -5,6 +5,7 @@
 
 use toml;
 use core::Config;
+use core::config::GridCfg;
 use core::grid::{Grid, Origin, Extent, ExtentInt};
 
 
@@ -170,10 +171,10 @@ fn test_grid_from_config() {
     use core::parse_config;
 
     let toml = r#"
-        [grid]
+        #[grid]
         predefined = "web_mercator"
         "#;
-    let config = parse_config(toml.to_string(), "").unwrap();
+    let config: GridCfg = parse_config(toml.to_string(), "").unwrap();
     let grid = Grid::from_config(&config).unwrap();
     assert_eq!(grid.extent,
                Extent {
@@ -184,7 +185,7 @@ fn test_grid_from_config() {
                });
 
     let toml = r#"
-        [grid]
+        #[grid]
         width = 256
         height = 256
         extent = { minx = 2420000.0, miny = 1030000.0, maxx = 2900000.0, maxy = 1350000.0 }
@@ -193,7 +194,7 @@ fn test_grid_from_config() {
         resolutions = [4000.0,3750.0,3500.0,3250.0,3000.0,2750.0,2500.0,2250.0,2000.0,1750.0,1500.0,1250.0,1000.0,750.0,650.0,500.0,250.0,100.0,50.0,20.0,10.0,5.0,2.5,2.0,1.5,1.0,0.5,0.25,0.1]
         origin = "TopLeft"
         "#;
-    let config = parse_config(toml.to_string(), "").unwrap();
+    let config: GridCfg = parse_config(toml.to_string(), "").unwrap();
     let grid = Grid::from_config(&config).unwrap();
     assert_eq!(grid.extent,
                Extent {

@@ -4,14 +4,14 @@
 //
 
 use core::Config;
+use core::config::GridCfg;
 use core::enum_serializer::EnumString;
-use toml;
 use serde;
 use serde::de::{Deserialize, Deserializer};
 use std::fmt;
 
 
-#[derive(PartialEq, Deserialize, Debug)]
+#[derive(PartialEq, Deserialize, Clone, Debug)]
 pub struct Extent {
     pub minx: f64,
     pub miny: f64,
@@ -309,24 +309,28 @@ impl Grid {
     }
 }
 
-impl Config<Grid> for Grid {
-    fn from_config(config: &toml::Value) -> Result<Self, String> {
-        if config.get("grid").is_none() {
-            return Err("Missing configuration entry [grid]".to_string());
-        }
-        if let Some(predef) = config.get("grid").and_then(|g| g.get("predefined")) {
-            predef
-                .as_str()
-                .ok_or("grid.predefined entry is not a string".to_string())
-                .and_then(|gridname| match gridname {
-                              "wgs84" => Ok(Grid::wgs84()),
-                              "web_mercator" => Ok(Grid::web_mercator()),
-                              _ => Err(format!("Unkown grid '{}'", gridname)),
-                          })
-        } else {
-            let ref gridcfg = config["grid"];
-            let grid = gridcfg.clone().try_into::<Grid>();
-            grid.map_err(|e| format!("Error reading configuration - {}", e))
+impl<'a> Config<'a, Grid, GridCfg> for Grid {
+    fn from_config(grid_cfg: &GridCfg) -> Result<Self, String> {
+        match grid_cfg.predefined {
+            Some(ref gridname) => {
+                match gridname.as_str() {
+                    "wgs84" => Ok(Grid::wgs84()),
+                    "web_mercator" => Ok(Grid::web_mercator()),
+                    _ => Err(format!("Unkown grid '{}'", gridname)),
+                }
+            }
+            None => {
+                Ok(Grid {
+                       width: grid_cfg.width.expect("grid.width missing"),
+                       height: grid_cfg.height.expect("grid.height missing"),
+                       extent: grid_cfg.extent.clone().expect("grid.extent missing"),
+                       srid: grid_cfg.srid.expect("grid.srid missing"),
+                       units: Unit::from_str(&grid_cfg.units.clone().expect("grid.units missing"))?,
+                       resolutions: grid_cfg.resolutions.clone(),
+                       origin:
+                           Origin::from_str(&grid_cfg.origin.clone().expect("grid.origin missing"))?,
+                   })
+            }
         }
     }
     fn gen_config() -> String {

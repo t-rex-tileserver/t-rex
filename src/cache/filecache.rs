@@ -9,9 +9,7 @@ use std::io::{self, Read, Write};
 use std::path::Path;
 
 
-#[derive(Deserialize, Debug)]
 pub struct Filecache {
-    #[serde(rename = "base")]
     pub basepath: String,
     pub baseurl: Option<String>,
 }

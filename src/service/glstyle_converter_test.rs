@@ -181,14 +181,15 @@ pub fn filters() {
 }
 
 #[test]
-pub fn layer_style_from_cfg() {
+pub fn layer_style_from_config() {
     use core::read_config;
+    use core::config::ApplicationCfg;
 
-    let config = read_config("src/test/example.toml").unwrap();
+    let config: ApplicationCfg = read_config("src/test/example.toml").unwrap();
 
-    let ref style = config["tileset"][0]["style"];
+    let ref style = config.tilesets[0].style.clone().unwrap();
 
-    let configjson = toml_style_to_gljson(&style);
+    let configjson = toml_style_to_gljson(style);
     println!("{}", configjson);
     let expected = r##"{
   "paint": {
@@ -198,9 +199,9 @@ pub fn layer_style_from_cfg() {
 }"##;
     assert_eq!(configjson, expected);
 
-    let ref style = config["tileset"][0]["layer"][2]["style"];
+    let ref style = config.tilesets[0].layers[2].style.clone().unwrap();
 
-    let configjson = toml_style_to_gljson(&style);
+    let configjson = toml_style_to_gljson(style);
     println!("{}", configjson);
     let expected = r##"{
   "paint": {

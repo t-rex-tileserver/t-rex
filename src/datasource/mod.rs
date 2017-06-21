@@ -12,27 +12,21 @@ pub use self::datasource::DatasourceInput;
 pub use self::postgis::PostgisInput;
 
 use core::Config;
-use toml;
+use core::config::DatasourceCfg;
 
 
 pub enum Datasource {
     Postgis(PostgisInput),
 }
 
-impl Config<Datasource> for Datasource {
-    fn from_config(config: &toml::Value) -> Result<Self, String> {
-        config
-            .get("datasource")
-            .and_then(|d| d.get("type"))
-            .ok_or("Missing configuration entry 'datasource.type'".to_string())
-            .and_then(|val| {
-                          val.as_str()
-                              .ok_or("url entry is not a string".to_string())
-                      })
-            .and_then(|tn| match tn {
-                          "postgis" => PostgisInput::from_config(config).and_then(|pg| Ok(Datasource::Postgis(pg))),
-                          _ => Err(format!("Unsupported datasource '{}'", tn)),
-                      })
+impl<'a> Config<'a, Datasource, DatasourceCfg> for Datasource {
+    fn from_config(ds_cfg: &DatasourceCfg) -> Result<Self, String> {
+        match ds_cfg.dstype.as_str() {
+            "postgis" => {
+                PostgisInput::from_config(ds_cfg).and_then(|pg| Ok(Datasource::Postgis(pg)))
+            }
+            _ => Err(format!("Unsupported datasource '{}'", ds_cfg.dstype)),
+        }
     }
     fn gen_config() -> String {
         PostgisInput::gen_config()
@@ -49,14 +43,14 @@ impl Config<Datasource> for Datasource {
 fn ds_from_config(toml: &str) -> Result<Datasource, String> {
     use core::parse_config;
 
-    let config = parse_config(toml.to_string(), "").unwrap();
-    Datasource::from_config(&config)
+    let config = parse_config(toml.to_string(), "");
+    Datasource::from_config(&config?)
 }
 
 #[test]
 fn test_datasource_from_config() {
     let toml = r#"
-        [datasource]
+        #[datasource]
         type = "postgis"
         url = "postgresql://pi@localhost/natural_earth_vectors"
         "#;
@@ -69,25 +63,29 @@ fn test_datasource_from_config() {
 
 #[test]
 fn test_datasource_config_errors() {
-    assert_eq!(ds_from_config("").err().unwrap(),
-               "Missing configuration entry \'datasource.type\'");
+    assert_eq!(ds_from_config("").err(),
+               Some(" - missing field `type`".to_string()));
+
     let toml = r#"
-        [datasource]
+        #[datasource]
         url = "postgresql://pi@localhost/natural_earth_vectors"
         "#;
-    assert_eq!(ds_from_config(toml).err().unwrap(),
-               "Missing configuration entry \'datasource.type\'");
+    assert_eq!(ds_from_config(toml).err(),
+               Some(" - missing field `type`".to_string()));
+
     let toml = r#"
-        [datasource]
+        #[datasource]
         type = "postgis"
         "#;
-    assert_eq!(ds_from_config(toml).err().unwrap(),
-               "Missing configuration entry \'datasource.url\'");
+    assert_eq!(ds_from_config(toml).err(),
+               Some(" - missing field `url`".to_string()));
+
     let toml = r#"
-        [datasource]
+        #[datasource]
         type = "postgis"
         url = true
         "#;
-    assert_eq!(ds_from_config(toml).err().unwrap(),
-               "url entry is not a string");
+    assert_eq!(ds_from_config(toml).err(),
+               Some(" - invalid type: boolean `true`, expected a string for key `url`"
+                        .to_string()));
 }

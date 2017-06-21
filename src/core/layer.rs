@@ -4,20 +4,20 @@
 //
 
 use core::Config;
+use core::config::LayerCfg;
 use service::glstyle_converter::toml_style_to_gljson;
-use toml;
 use std::collections::HashMap;
 use datasource::PostgisInput;
 
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct LayerQuery {
     pub minzoom: Option<u8>,
     pub maxzoom: Option<u8>,
     pub sql: Option<String>,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug)]
+#[derive(Default, Debug)]
 pub struct Layer {
     pub name: String,
     pub geometry_field: Option<String>,
@@ -29,7 +29,6 @@ pub struct Layer {
     pub table_name: Option<String>,
     pub query_limit: Option<u32>,
     // Explicit queries
-    #[serde(default)]
     pub query: Vec<LayerQuery>,
     /// Simplify geometry (lines and polygons)
     pub simplify: Option<bool>,
@@ -54,22 +53,6 @@ impl Layer {
             name: String::from(name),
             ..Default::default()
         }
-    }
-    pub fn layers_from_config(config: &toml::Value) -> Result<Vec<Self>, String> {
-        config
-            .get("layer")
-            .ok_or("Missing configuration entry [[tileset.layer]]".to_string())
-            .and_then(|larr| {
-                          larr.as_array()
-                              .ok_or("Array type for [[tileset.layer]] entry expected"
-                                         .to_string())
-                      })
-            .and_then(|layers| {
-                          Ok(layers
-                                 .iter()
-                                 .map(|layer| Layer::from_config(layer).unwrap())
-                                 .collect())
-                      })
     }
     pub fn minzoom(&self) -> u8 {
         self.query
@@ -121,22 +104,39 @@ impl Layer {
     }
 }
 
-impl Config<Layer> for Layer {
-    fn from_config(layerval: &toml::Value) -> Result<Self, String> {
-        // Remove TOML style - will be converted separately
-        let mut layercfg = layerval.as_table().unwrap().clone();
-        let layerstyle = layercfg.remove("style");
-        let layer = toml::Value::Table(layercfg).try_into::<Layer>();
-        layer
-            .and_then(|mut lyr| {
-                          // Convert extracted TOML style to JSON
-                          if let Some(ref style) = layerstyle {
-                              let gljson = toml_style_to_gljson(&style);
-                              lyr.style = Some(gljson);
-                          }
-                          Ok(lyr)
-                      })
-            .map_err(|e| format!("Error reading configuration - {}", e))
+impl<'a> Config<'a, Layer, LayerCfg> for Layer {
+    fn from_config(layer_cfg: &LayerCfg) -> Result<Self, String> {
+        let queries = layer_cfg
+            .query
+            .iter()
+            .map(|lq| {
+                     LayerQuery {
+                         minzoom: lq.minzoom,
+                         maxzoom: lq.maxzoom,
+                         sql: lq.sql.clone(),
+                     }
+                 })
+            .collect();
+        let style = match layer_cfg.style {
+            Some(ref style) => {
+                let gljson = toml_style_to_gljson(&style);
+                Some(gljson)
+            }
+            None => None,
+        };
+        Ok(Layer {
+               name: layer_cfg.name.clone(),
+               geometry_field: layer_cfg.geometry_field.clone(),
+               geometry_type: layer_cfg.geometry_type.clone(),
+               srid: layer_cfg.srid,
+               fid_field: layer_cfg.fid_field.clone(),
+               table_name: layer_cfg.table_name.clone(),
+               query_limit: layer_cfg.query_limit,
+               query: queries,
+               simplify: layer_cfg.simplify,
+               buffer_size: layer_cfg.buffer_size,
+               style: style,
+           })
     }
 
     fn gen_config() -> String {

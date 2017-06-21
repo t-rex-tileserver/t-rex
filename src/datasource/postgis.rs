@@ -17,7 +17,7 @@ use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
-use toml;
+use core::config::DatasourceCfg;
 use std::collections::BTreeMap;
 use env;
 
@@ -676,21 +676,13 @@ impl DatasourceInput for PostgisInput {
     }
 }
 
-impl Config<PostgisInput> for PostgisInput {
-    fn from_config(config: &toml::Value) -> Result<Self, String> {
-        match env::var("TREX_DATASOURCE_URL") {
-            Ok(url) => Ok(PostgisInput::new(url.as_str())),
-            Err(_) => {
-                config
-                    .get("datasource")
-                    .and_then(|d| d.get("url"))
-                    .ok_or("Missing configuration entry 'datasource.url'".to_string())
-                    .and_then(|val| {
-                                  val.as_str()
-                                      .ok_or("url entry is not a string".to_string())
-                              })
-                    .and_then(|url| Ok(PostgisInput::new(url)))
-            }
+impl<'a> Config<'a, PostgisInput, DatasourceCfg> for PostgisInput {
+    fn from_config(ds_cfg: &DatasourceCfg) -> Result<Self, String> {
+        assert_eq!(ds_cfg.dstype, "postgis");
+        if let Ok(url) = env::var("TREX_DATASOURCE_URL") {
+            Ok(PostgisInput::new(url.as_str()))
+        } else {
+            Ok(PostgisInput::new(&ds_cfg.url))
         }
     }
 

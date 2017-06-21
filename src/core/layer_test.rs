@@ -4,13 +4,22 @@
 //
 
 use core::layer::Layer;
+use service::mvt::Tileset;
+use core::config::Config;
 
+
+fn layer_from_config(toml: &str) -> Result<Layer, String> {
+    use core::parse_config;
+
+    let config = parse_config(toml.to_string(), "");
+    Layer::from_config(&config?)
+}
 
 #[test]
 fn test_toml_decode() {
-    use core::parse_config;
+    // Layer config with zoom level dependent queries
     let toml = r#"
-        [[tileset.layer]]
+        #[[tileset.layer]]
         name = "points"
         table_name = "ne_10m_populated_places"
         geometry_field = "wkb_geometry"
@@ -18,35 +27,17 @@ fn test_toml_decode() {
         fid_field = "id"
         query_limit = 100
         #query = "SELECT name,wkb_geometry FROM ne_10m_populated_places"
-        [[tileset.layer.query]]
+        #[[tileset.layer.query]]
+        [[query]]
         minzoom = 2
         sql = "SELECT name,wkb_geometry FROM places_z2"
-        [[tileset.layer.query]]
+        #[[tileset.layer.query]]
+        [[query]]
         minzoom = 10
         maxzoom = 14
         sql = "SELECT name,wkb_geometry FROM places_z10"
-
-        [[tileset.layer]]
-        name = "points2"
-
-        [[tileset.layer]]
-        table_name = "missing_name"
-
-        [[tileset.layer]]
-        name = "points3"
-        tabel_name = "spelling error"
-
-        [[tileset.layer]]
-        name = "points4"
-        table_name = 0
         "#;
-
-    let tomlcfg = parse_config(toml.to_string(), "").unwrap();
-    let layers = tomlcfg["tileset"]["layer"].as_array().unwrap();
-
-    // Layer config with zoom level dependent queries
-    let ref layer = layers[0];
-    let cfg: Layer = layer.clone().try_into().unwrap();
+    let ref cfg = layer_from_config(toml).unwrap();
 
     println!("{:?}", cfg);
     assert_eq!(cfg.name, "points");
@@ -74,9 +65,11 @@ fn test_toml_decode() {
                Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
 
     // Minimal config
-    let ref layer = layers[1];
-    let cfg: Layer = layer.clone().try_into().unwrap();
-
+    let toml = r#"
+        #[[tileset.layer]]
+        name = "points2"
+        "#;
+    let cfg = layer_from_config(toml).unwrap();
     println!("{:?}", cfg);
     assert_eq!(cfg.name, "points2");
     assert_eq!(cfg.table_name, None);
@@ -85,34 +78,50 @@ fn test_toml_decode() {
     assert_eq!(cfg.maxzoom(), 22);
 
     // Invalid config: missing required field
-    let ref layer = layers[2];
-    let cfg = layer.clone().try_into::<Layer>();
+    let toml = r#"
+        #[[tileset.layer]]
+        table_name = "missing_name"
+        "#;
+    let cfg = layer_from_config(toml);
     println!("{:?}", cfg);
-    assert_eq!(format!("{}", cfg.err().unwrap()), "missing field `name`");
+    assert_eq!(cfg.err(), Some(" - missing field `name`".to_string()));
 
     // Invalid config: wrong field name
-    let ref layer = layers[3];
-    let cfg = layer.clone().try_into::<Layer>();
+    let toml = r#"
+        #[[tileset.layer]]
+        name = "points3"
+        tabel_name = "spelling error"
+        "#;
+    let cfg = layer_from_config(toml);
     println!("{:?}", cfg);
+
     // toml::Decoder ignores unknown keys!
     assert!(cfg.err().is_none());
 
     // Invalid config: wrong field type
-    let ref layer = layers[4];
-    let cfg = layer.clone().try_into::<Layer>();
+    let toml = r#"
+        #[[tileset.layer]]
+        name = "points4"
+        table_name = 0
+        "#;
+    let cfg = layer_from_config(toml);
     println!("{:?}", cfg);
-    assert_eq!(format!("{}", cfg.err().unwrap()),
-               "invalid type: integer `0`, expected a string for key `table_name`");
+    assert_eq!(cfg.err(),
+               Some(" - invalid type: integer `0`, expected a string for key `table_name`"
+                        .to_string()));
 }
 
 #[test]
 fn test_layers_from_config() {
     use core::parse_config;
+    use core::config::TilesetCfg;
+
     let toml = r#"
-        [[tileset]]
+        #[[tileset]]
         name = "ne"
 
-        [[tileset.layer]]
+        #[[tileset.layer]]
+        [[layer]]
         name = "points"
         table_name = "ne_10m_populated_places"
         geometry_field = "wkb_geometry"
@@ -123,15 +132,15 @@ fn test_layers_from_config() {
         [[tileset.layer.query]]
         sql = "SELECT name,wkb_geometry FROM ne_10m_populated_places"
 
-        [[tileset.layer]]
+        #[[tileset.layer]]
+        [[layer]]
         name = "layer2"
         buffer-size = 10
         "#;
 
-    let config = parse_config(toml.to_string(), "").unwrap();
-
-    let tilesets = config["tileset"].as_array().unwrap();
-    let layers = Layer::layers_from_config(&tilesets[0]).unwrap();
+    let config: TilesetCfg = parse_config(toml.to_string(), "").unwrap();
+    let tileset = Tileset::from_config(&config).unwrap();
+    let layers = tileset.layers;
     assert_eq!(layers.len(), 2);
     assert_eq!(layers[0].name, "points");
     assert_eq!(layers[0].table_name,
@@ -141,8 +150,7 @@ fn test_layers_from_config() {
     assert_eq!(layers[1].buffer_size, None); // serde distincts between '-' and '_'
 
     // errors
-    let emptyconfig = parse_config("".to_string(), "").unwrap();
-    let layers = Layer::layers_from_config(&emptyconfig);
-    assert_eq!(layers.err(),
-               Some("Missing configuration entry [[tileset.layer]]".to_string()));
+    let emptyconfig: Result<TilesetCfg, _> = parse_config("".to_string(), "");
+    assert_eq!(emptyconfig.err(),
+               Some(" - missing field `name`".to_string()));
 }

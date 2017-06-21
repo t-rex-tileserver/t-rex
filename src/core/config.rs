@@ -10,13 +10,9 @@ use core::grid::Extent;
 use serde::Deserialize;
 
 
-pub trait Config<T> {
+pub trait Config<'a, T, C: Deserialize<'a>> {
     /// Read configuration
-    fn from_cfg(_config: &ApplicationCfg) -> Result<T, String> {
-        Err("Not implemented yet".to_string())
-    }
-    /// Read configuration
-    fn from_config(config: &Value) -> Result<T, String>;
+    fn from_config(_config: &C) -> Result<T, String>;
     /// Generate configuration template
     fn gen_config() -> String;
     /// Generate configuration template with runtime information
@@ -56,6 +52,7 @@ pub struct DatasourceCfg {
 #[derive(Deserialize, Debug)]
 pub struct GridCfg {
     pub predefined: Option<String>,
+    // TODO: put custom grid into [grid.user] to get rid of Option types
     /// The width and height of an individual tile, in pixels.
     pub width: Option<u16>,
     pub height: Option<u16>,
@@ -86,6 +83,8 @@ pub struct TilesetCfg {
     pub name: String,
     #[serde(rename = "layer")]
     pub layers: Vec<LayerCfg>,
+    // Inline style
+    pub style: Option<Value>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -135,8 +134,31 @@ pub struct WebserverCfg {
     pub threads: Option<u8>,
 }
 
-/// Load and parse the config file into Toml table structure.
-pub fn read_config(path: &str) -> Result<Value, String> {
+pub const DEFAULT_CONFIG: &'static str = r#"
+[service.mvt]
+viewer = true
+
+[datasource]
+type = "postgis"
+url = ""
+
+[grid]
+predefined = "web_mercator"
+
+[[tileset]]
+name = ""
+
+[[tileset.layer]]
+name = ""
+
+[webserver]
+bind = "127.0.0.1"
+port = 6767
+threads = 4
+"#;
+
+/// Load and parse the config file into an config struct.
+pub fn read_config<'a, T: Deserialize<'a>>(path: &str) -> Result<T, String> {
     let mut file = match File::open(path) {
         Ok(file) => file,
         Err(_) => {
@@ -151,31 +173,8 @@ pub fn read_config(path: &str) -> Result<Value, String> {
     parse_config(config_toml, path)
 }
 
-/// Parse the configuration into Toml table structure.
-pub fn parse_config(config_toml: String, path: &str) -> Result<Value, String> {
-    config_toml
-        .parse::<Value>()
-        .map_err(|err| format!("{} - {}", path, err))
-}
-
-/// Load and parse the config file into an application config struct.
-pub fn read_cfg<'a, T: Deserialize<'a>>(path: &str) -> Result<T, String> {
-    let mut file = match File::open(path) {
-        Ok(file) => file,
-        Err(_) => {
-            return Err("Could not find config file!".to_string());
-        }
-    };
-    let mut config_toml = String::new();
-    if let Err(err) = file.read_to_string(&mut config_toml) {
-        return Err(format!("Error while reading config: [{}]", err));
-    };
-
-    parse_cfg(config_toml, path)
-}
-
-/// Parse the configuration into an application config struct.
-pub fn parse_cfg<'a, T: Deserialize<'a>>(config_toml: String, path: &str) -> Result<T, String> {
+/// Parse the configuration into an config struct.
+pub fn parse_config<'a, T: Deserialize<'a>>(config_toml: String, path: &str) -> Result<T, String> {
     config_toml
         .parse::<Value>()
         .and_then(|cfg| cfg.try_into::<T>())

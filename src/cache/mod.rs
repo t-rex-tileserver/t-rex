@@ -14,9 +14,8 @@ pub use self::cache::Nocache;
 pub use self::filecache::Filecache;
 use std::io::Read;
 use std::io;
-use core::ApplicationCfg;
 use core::Config;
-use toml;
+use core::ApplicationCfg;
 
 
 pub enum Tilecache {
@@ -59,9 +58,11 @@ impl Cache for Tilecache {
     }
 }
 
-impl Config<Tilecache> for Tilecache {
-    fn from_cfg(config: &ApplicationCfg) -> Result<Self, String> {
-        config.cache.as_ref()
+impl<'a> Config<'a, Tilecache, ApplicationCfg> for Tilecache {
+    fn from_config(config: &ApplicationCfg) -> Result<Self, String> {
+        config
+            .cache
+            .as_ref()
             .map(|cache| {
                      let fc = Filecache {
                          basepath: cache.file.base.clone(),
@@ -71,16 +72,6 @@ impl Config<Tilecache> for Tilecache {
                  })
             .or(Some(Tilecache::Nocache(Nocache)))
             .ok_or("".to_string())
-    }
-    fn from_config(config: &toml::Value) -> Result<Self, String> {
-        if let Some(cfg) = config.get("cache").and_then(|c| c.get("file")) {
-            cfg.clone()
-                .try_into::<Filecache>()
-                .and_then(|cache| Ok(Tilecache::Filecache(cache)))
-                .map_err(|e| format!("Error reading configuration - {}", e))
-        } else {
-            Ok(Tilecache::Nocache(Nocache))
-        }
     }
     fn gen_config() -> String {
         let toml = r#"

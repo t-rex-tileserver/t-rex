@@ -9,7 +9,8 @@ use core::grid::Grid;
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use service::mvt::{MvtService, Tileset};
-use core::{Config, read_cfg, parse_cfg, read_config};
+use core::{Config, read_config, parse_config};
+use core::config::DEFAULT_CONFIG;
 use serde_json;
 use cache::{Tilecache, Nocache, Filecache};
 
@@ -146,50 +147,23 @@ impl StaticFiles {
 }
 
 
-const DEFAULT_CONFIG: &'static str = r#"
-[service.mvt]
-viewer = true
-
-[datasource]
-type = "postgis"
-url = ""
-
-[grid]
-predefined = "web_mercator"
-
-[[tileset]]
-name = ""
-
-[[tileset.layer]]
-name = ""
-
-[webserver]
-bind = "127.0.0.1"
-port = 6767
-threads = 4
-"#;
-
 pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
     if let Some(cfgpath) = args.value_of("config") {
         info!("Reading configuration from '{}'", cfgpath);
-        let config = read_config(cfgpath).unwrap_or_else(|err| {
-                                                             println!("Error reading configuration - {} ", err);
-                                                             process::exit(1)
-                                                         });
+        let config =
+            read_config(cfgpath).unwrap_or_else(|err| {
+                                                 println!("Error reading configuration - {} ", err);
+                                                 process::exit(1)
+                                             });
         let mut svc =
             MvtService::from_config(&config).unwrap_or_else(|err| {
                                                                 println!("Error reading configuration - {} ", err);
                                                                 process::exit(1)
                                                             });
         svc.connect();
-        let config =
-            read_cfg(cfgpath).unwrap_or_else(|err| {
-                                                 println!("Error reading configuration - {} ", err);
-                                                 process::exit(1)
-                                             });
         (svc, config)
     } else {
-        let config = parse_cfg(DEFAULT_CONFIG.to_string(), "").unwrap();
+        let config = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
         let cache = match args.value_of("cache") {
             None => Tilecache::Nocache(Nocache),
             Some(dir) => {
