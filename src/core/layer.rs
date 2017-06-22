@@ -95,7 +95,21 @@ impl Layer {
         metadata
     }
     pub fn gen_runtime_config_from_input(&self, input: &PostgisInput) -> String {
-        let mut cfg = self.gen_runtime_config();
+        let extent = input.layer_extent(self);
+        let mut lines = vec!["\n[[tileset]]".to_string()];
+        lines.push(format!(r#"name = "{}""#, self.name));
+        if let Some(ext) = extent {
+            lines.push(format!(r#"extent = [{:.5}, {:.5}, {:.5}, {:.5}]"#,
+                               ext.minx,
+                               ext.miny,
+                               ext.maxx,
+                               ext.maxy));
+        } else {
+            lines.push("#extent = [-180.0,-90.0,180.0,90.0]".to_string());
+        }
+
+        let mut cfg = lines.join("\n") + "\n";
+        cfg.push_str(&self.gen_runtime_config());
         if self.query(0).is_none() {
             let query = input.build_query_sql(self, 3857, None, true).unwrap();
             cfg.push_str(&format!("#sql = \"\"\"{}\"\"\"\n", query))
@@ -161,9 +175,7 @@ geometry_type = "POINT"
     }
 
     fn gen_runtime_config(&self) -> String {
-        let mut lines = vec!["\n[[tileset]]".to_string()];
-        lines.push(format!(r#"name = "{}""#, self.name));
-        lines.push("\n[[tileset.layer]]".to_string());
+        let mut lines = vec!["[[tileset.layer]]".to_string()];
         lines.push(format!(r#"name = "{}""#, self.name));
         match self.table_name {
             Some(ref table_name) => lines.push(format!(r#"table_name = "{}""#, table_name)),

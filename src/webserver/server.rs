@@ -182,6 +182,7 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
             let mut layers = pg.detect_layers(detect_geometry_types);
             let mut tilesets = Vec::new();
             while let Some(mut l) = layers.pop() {
+                let extent = pg.layer_extent(&l);
                 l.simplify = Some(simplify);
                 if simplify {
                     // Limit features by default unless simplify is set to false
@@ -203,6 +204,7 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
                 };
                 let tileset = Tileset {
                     name: l.name.clone(),
+                    extent: extent,
                     layers: vec![l],
                 };
                 tilesets.push(tileset);

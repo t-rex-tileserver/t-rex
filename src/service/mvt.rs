@@ -21,6 +21,7 @@ use std::io::Stdout;
 /// Collection of layers in one MVT
 pub struct Tileset {
     pub name: String,
+    pub extent: Option<Extent>,
     pub layers: Vec<Layer>,
 }
 
@@ -38,9 +39,12 @@ impl MvtService {
     pub fn connect(&mut self) {
         self.input = self.input.connected();
     }
-    fn get_tileset(&self, name: &str) -> Vec<&Layer> {
-        let tileset = self.tilesets.iter().find(|t| t.name == name);
-        match tileset {
+    fn get_tileset(&self, name: &str) -> Option<&Tileset> {
+        self.tilesets.iter().find(|t| t.name == name)
+    }
+    /// Get layers (as reference) of given tileset
+    fn get_tileset_layers(&self, name: &str) -> Vec<&Layer> {
+        match self.get_tileset(name) {
             Some(set) => set.layers.iter().map(|l| l).collect(),
             None => Vec::new(),
         }
@@ -56,6 +60,7 @@ impl MvtService {
             name: String,
             tilejson: String,
             tileurl: String,
+            bounds: [f64; 4],
             layers: Vec<LayerInfo>,
             supported: bool,
         }
@@ -84,10 +89,12 @@ impl MvtService {
                                  l.geometry_type.clone().unwrap_or("UNKNOWN".to_string());
                              ["POINT", "LINESTRING", "POLYGON"].contains(&(&geom_type as &str))
                          });
+                let ext = set.get_extent();
                 TilesetInfo {
                     name: set.name.clone(),
                     tilejson: format!("{}.json", set.name),
                     tileurl: format!("/{}/{{z}}/{{x}}/{{y}}.pbf", set.name),
+                    bounds: [ ext.minx, ext.miny, ext.maxx, ext.maxy ],
                     layers: layerinfos,
                     supported: supported,
                 }
@@ -98,6 +105,10 @@ impl MvtService {
         serde_json::to_value(mvt_info)
     }
     fn get_tilejson_metadata(&self, tileset: &str) -> JsonResult {
+        let ts = self.get_tileset(tileset).unwrap();
+        let ext = ts.get_extent();
+        let center = ts.get_center();
+        let zoom = ts.get_start_zoom();
         Ok(json!({
             "id": tileset,
             "name": tileset,
@@ -106,15 +117,18 @@ impl MvtService {
             "format": "pbf",
             "version": "2.0.0",
             "scheme": "xyz",
-            "bounds": [-180.0,-90.0,180.0,90.0], //TODO: bbox from data
-            "minzoom": 0,  //TODO: make configurable
-            "maxzoom": 14,  //TODO: make configurable
-            "center": [0.0, 0.0, 2], //TODO: make configurable
+            "bounds": [ext.minx,
+                       ext.miny,
+                       ext.maxx,
+                       ext.maxy],
+            "minzoom": ts.minzoom(),
+            "maxzoom": ts.maxzoom(),
+            "center": [center.0, center.1, zoom],
             "basename": tileset
         }))
     }
     fn get_tilejson_layers(&self, tileset: &str) -> JsonResult {
-        let layers = self.get_tileset(tileset);
+        let layers = self.get_tileset_layers(tileset);
         let layers_metadata: Vec<serde_json::Value> = layers
             .iter()
             .map(|layer| {
@@ -147,7 +161,7 @@ impl MvtService {
     }
     /// TileJSON MVT vector layer extension (https://github.com/mapbox/tilejson-spec/issues/14)
     fn get_tilejson_vector_layers(&self, tileset: &str) -> JsonResult {
-        let layers = self.get_tileset(tileset);
+        let layers = self.get_tileset_layers(tileset);
         let vector_layers: Vec<serde_json::Value> = layers
             .iter()
             .map(|layer| {
@@ -211,7 +225,7 @@ impl MvtService {
             "background-color": "rgba(255, 255, 255, 1)"
           }
         }); // TODO: from global style
-        let layers = self.get_tileset(tileset);
+        let layers = self.get_tileset_layers(tileset);
         let mut layer_styles: Vec<serde_json::Value> = layers
             .iter()
             .map(|layer| {
@@ -288,7 +302,7 @@ impl MvtService {
         let extent = self.grid.tile_extent(xtile, ytile, zoom);
         debug!("MVT tile request {:?}", extent);
         let mut tile = Tile::new(&extent, 4096, true);
-        for layer in self.get_tileset(tileset) {
+        for layer in self.get_tileset_layers(tileset) {
             let mut mvt_layer = tile.new_layer(layer);
             self.input
                 .retrieve_features(&layer,
@@ -443,8 +457,30 @@ impl MvtService {
     }
 }
 
-
 impl Tileset {
+    pub fn minzoom(&self) -> u8 {
+        0 // TODO: from layers or config?
+    }
+    pub fn maxzoom(&self) -> u8 {
+        22 // TODO: from layers or config?
+    }
+    pub fn get_extent(&self) -> Extent {
+        self.extent
+            .clone()
+            .unwrap_or(Extent {
+                           minx: -180.0,
+                           miny: -90.0,
+                           maxx: 180.0,
+                           maxy: 90.0,
+                       })
+    }
+    pub fn get_center(&self) -> (f64, f64) {
+        let ext = self.get_extent();
+        (ext.maxx - (ext.maxx - ext.minx) / 2.0, ext.maxy - (ext.maxy - ext.miny) / 2.0)
+    }
+    pub fn get_start_zoom(&self) -> u8 {
+        2 // TODO: from config
+    }
     pub fn gen_runtime_config_from_input(&self, input: &PostgisInput) -> String {
         let mut config = String::new();
         for layer in &self.layers {
@@ -463,6 +499,7 @@ impl<'a> Config<'a, Tileset, TilesetCfg> for Tileset {
             .collect();
         Ok(Tileset {
                name: tileset_cfg.name.clone(),
+               extent: tileset_cfg.extent.clone(),
                layers: layers,
            })
     }

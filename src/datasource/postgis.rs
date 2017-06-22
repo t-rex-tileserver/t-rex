@@ -380,6 +380,35 @@ impl PostgisInput {
             .filter(|&(ref col, _)| !filter_cols.contains(&&col))
             .collect()
     }
+    pub fn layer_extent(&self, layer: &Layer) -> Option<Extent> {
+        use postgis::ewkb;
+        use postgis::{Polygon, LineString, Point}; // conflicts with core::geom::Point etc.
+
+        let ref geom_name = layer.geometry_field.as_ref().unwrap();
+        let layer_srid = layer.srid.unwrap_or(0);
+        if !layer.query.is_empty() || layer_srid <= 0 {
+            info!("Couldn't detect extent of layer {}, because of custom queries or an unknown SRID",
+                  layer.name);
+            return None;
+        }
+        let extent_sql = format!("ST_Transform(ST_SetSRID(ST_Extent({}),{}),4326)",
+                                 geom_name,
+                                 layer_srid);
+        let sql = format!("SELECT {} AS extent FROM {}",
+                          extent_sql,
+                          layer.table_name.as_ref().unwrap());
+        let conn = self.conn();
+        let rows = conn.query(&sql, &[]).unwrap();
+        let poly: ewkb::Polygon = rows.into_iter().nth(0).unwrap().get("extent");
+        let p1 = poly.rings().nth(0).unwrap().points().nth(0).unwrap();
+        let p2 = poly.rings().nth(0).unwrap().points().nth(2).unwrap();
+        Some(Extent {
+                 minx: p1.x(),
+                 miny: p1.y(),
+                 maxx: p2.x(),
+                 maxy: p2.y(),
+             })
+    }
     /// Build geometry selection expression for feature query.
     fn build_geom_expr(&self, layer: &Layer, grid_srid: i32, raw_geom: bool) -> String {
         let layer_srid = layer.srid.unwrap_or(0);

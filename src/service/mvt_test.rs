@@ -29,6 +29,7 @@ pub fn test_tile_query() {
     layer.query_limit = Some(1);
     let tileset = Tileset {
         name: "points".to_string(),
+        extent: None,
         layers: vec![layer],
     };
     let mut service = MvtService {
@@ -183,6 +184,12 @@ pub fn test_mvt_metadata() {
     let expected = r#"{
   "tilesets": [
     {
+      "bounds": [
+        -180.0,
+        -90.0,
+        180.0,
+        90.0
+      ],
       "layers": [
         {
           "geometry_type": "POINT",
@@ -241,7 +248,7 @@ pub fn test_tilejson() {
   "description": "osm",
   "format": "pbf",
   "id": "osm",
-  "maxzoom": 14,
+  "maxzoom": 22,
   "minzoom": 0,
   "name": "osm",
   "scheme": "xyz",
@@ -353,7 +360,7 @@ pub fn test_mbtiles_metadata() {
   "format": "pbf",
   "id": "osm",
   "json": "{\"Layer\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"name\":\"points\",\"properties\":{\"buffer-size\":0,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"name\":\"buildings\",\"properties\":{\"buffer-size\":10,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{\"fid\":\"\",\"iso_a3\":\"\",\"name\":\"\"},\"id\":\"admin_0_countries\",\"name\":\"admin_0_countries\",\"properties\":{\"buffer-size\":1,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"}],\"vector_layers\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{\"fid\":\"\",\"iso_a3\":\"\",\"name\":\"\"},\"id\":\"admin_0_countries\",\"maxzoom\":22,\"minzoom\":0}]}",
-  "maxzoom": 14,
+  "maxzoom": 22,
   "minzoom": 0,
   "name": "osm",
   "scheme": "xyz",

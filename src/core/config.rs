@@ -81,6 +81,10 @@ pub struct GridCfg {
 #[derive(Deserialize, Debug)]
 pub struct TilesetCfg {
     pub name: String,
+    pub extent: Option<Extent>,
+    //? pub minzoom: Option<u8>,
+    //? pub maxzoom: Option<u8>,
+    //? pub center: [0.0, 0.0, 2],
     #[serde(rename = "layer")]
     pub layers: Vec<LayerCfg>,
     // Inline style
@@ -113,7 +117,7 @@ pub struct LayerCfg {
     /// Tile buffer size in pixels
     pub buffer_size: Option<u32>,
     // Inline style
-    pub style: Option<Value>, //invalid type: map, expected a string for key `tileset.layers.style`"
+    pub style: Option<Value>,
 }
 
 #[derive(Deserialize, Debug)]

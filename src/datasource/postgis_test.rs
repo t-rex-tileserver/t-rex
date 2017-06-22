@@ -88,6 +88,28 @@ pub fn test_detect_columns() {
 }
 
 #[test]
+#[ignore]
+pub fn test_extent_query() {
+    let pg: PostgisInput = match env::var("DBCONN") {
+            Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+            Result::Err(_) => panic!("DBCONN undefined"),
+        }
+        .unwrap();
+    let layers = pg.detect_layers(false);
+    let layer = &layers
+                     .iter()
+                     .find(|ref layer| layer.name == "rivers_lake_centerlines")
+                     .unwrap();
+    assert_eq!(pg.layer_extent(&layer),
+               Some(Extent {
+                        minx: -164.90347246002037,
+                        miny: -52.1577287739643,
+                        maxx: 177.2111922535212,
+                        maxy: 75.79348379113983,
+                    }));
+}
+
+#[test]
 pub fn test_feature_query() {
     let pg = PostgisInput::new("postgresql://pi@localhost/osm2vectortiles");
     let mut layer = Layer::new("points");
