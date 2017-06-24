@@ -824,3 +824,4 @@ buffer_size = 64
 bind = "127.0.0.1"
 port = 6767
 threads = 4
+#cache_control_max_age = 43200

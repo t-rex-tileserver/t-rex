@@ -208,6 +208,7 @@ pub fn webserver(args: &ArgMatches) {
     let bind: &str = &config.webserver.bind.unwrap_or("127.0.0.1".to_string());
     let port = config.webserver.port.unwrap_or(6767);
     let threads = config.webserver.threads.unwrap_or(4) as usize;
+    let cache_max_age = config.webserver.cache_control_max_age.unwrap_or(0);
 
     service.prepare_feature_queries();
     service.init_cache();
@@ -288,7 +289,7 @@ pub fn webserver(args: &ArgMatches) {
             res.set_header_fallback(|| ContentEncoding(vec![Encoding::Gzip]));
         }
         res.set_header_fallback(|| ContentType("application/x-protobuf".to_owned()));
-        res.set_header_fallback(|| CacheControl(vec![CacheDirective::MaxAge(43200u32)])); //TODO: from cache settings
+        res.set_header_fallback(|| CacheControl(vec![CacheDirective::MaxAge(cache_max_age)]));
         //res.set_header_fallback(|| ContentLength(tile.len() as u64));
         res.set(AccessControlAllowMethods(vec![Method::Get]));
         res.set(AccessControlAllowOrigin::Any);
@@ -331,6 +332,7 @@ pub fn gen_config(args: &ArgMatches) -> String {
 bind = "127.0.0.1"
 port = 6767
 threads = 4
+#cache_control_max_age = 43200
 "#;
     let mut config;
     if let Some(_dbconn) = args.value_of("dbconn") {

@@ -38,4 +38,4 @@ sql = """SELECT wkb_geometry,ktnr::FLOAT8,ktname FROM geostat.g1k16 WHERE wkb_ge
 bind = "127.0.0.1"
 port = 6767
 threads = 4
-
+#cache_control_max_age = 43200

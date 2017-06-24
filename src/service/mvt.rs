@@ -94,7 +94,7 @@ impl MvtService {
                     name: set.name.clone(),
                     tilejson: format!("{}.json", set.name),
                     tileurl: format!("/{}/{{z}}/{{x}}/{{y}}.pbf", set.name),
-                    bounds: [ ext.minx, ext.miny, ext.maxx, ext.maxy ],
+                    bounds: [ext.minx, ext.miny, ext.maxx, ext.maxy],
                     layers: layerinfos,
                     supported: supported,
                 }

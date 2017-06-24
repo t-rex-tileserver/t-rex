@@ -136,6 +136,9 @@ pub struct WebserverCfg {
     pub bind: Option<String>,
     pub port: Option<u16>,
     pub threads: Option<u8>,
+    // Cache-Control headers set by web server
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control#Expiration
+    pub cache_control_max_age: Option<u32>,
 }
 
 pub const DEFAULT_CONFIG: &'static str = r#"
