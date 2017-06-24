@@ -6,16 +6,14 @@
 use core::config::ApplicationCfg;
 use datasource::postgis::PostgisInput;
 use core::grid::Grid;
-use mvt::tile::Tile;
-use mvt::vector_tile;
 use service::mvt::{MvtService, Tileset};
 use core::{Config, read_config, parse_config};
 use core::config::DEFAULT_CONFIG;
 use serde_json;
 use cache::{Tilecache, Nocache, Filecache};
 
-use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Responder, Response,
-             MiddlewareResult, StaticFilesHandler};
+use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Response, MiddlewareResult,
+             StaticFilesHandler};
 use hyper::header::{CacheControl, CacheDirective, AccessControlAllowOrigin,
                     AccessControlAllowMethods, ContentEncoding, Encoding};
 use hyper::method::Method;
@@ -35,28 +33,7 @@ fn log_request<'mw>(req: &mut Request<MvtService>,
     res.next_middleware()
 }
 
-#[allow(dead_code)]
-fn enable_cors<'mw>(_req: &mut Request, mut res: Response<'mw>) -> MiddlewareResult<'mw> {
-    // access-control-allow-methods: GET
-    // access-control-allow-origin: *
-    // see also https://github.com/nickel-org/nickel.rs/blob/master/examples/enable_cors.rs
-    res.set(AccessControlAllowMethods(vec![Method::Get]));
-    res.set(AccessControlAllowOrigin::Any);
-
-    res.next_middleware()
-}
-
 header! { (ContentType, "Content-Type") => [String] }
-
-impl<D> Responder<D> for vector_tile::Tile {
-    fn respond<'a>(self, mut res: Response<'a, D>) -> MiddlewareResult<'a, D> {
-        res.set_header_fallback(|| ContentType("application/x-protobuf".to_owned()));
-        res.set_header_fallback(|| CacheControl(vec![CacheDirective::MaxAge(43200u32)])); //TODO: from cache settings
-
-        let vec = Tile::binary_tile(&self);
-        res.send(vec)
-    }
-}
 
 #[derive(RustcEncodable)]
 struct TilesetInfo {
@@ -248,32 +225,30 @@ pub fn webserver(args: &ArgMatches) {
     server.keep_alive_timeout(None);
     server.utilize(log_request);
 
-    server.get("/index.json",
+    server.get("/**(.style)?.json",
                middleware! { |_req, mut res|
-        let service: &MvtService = res.server_data();
         res.set(MediaType::Json);
         res.set(AccessControlAllowMethods(vec![Method::Get]));
         res.set(AccessControlAllowOrigin::Any);
+    });
+
+    server.get("/index.json",
+               middleware! { |_req, res|
+        let service: &MvtService = res.server_data();
         let json = service.get_mvt_metadata().unwrap();
         serde_json::to_vec(&json).unwrap()
     });
 
     // Font list for Maputnik
     server.get("/fontstacks.json",
-               middleware! { |_req, mut res|
-        res.set(MediaType::Json);
-        res.set(AccessControlAllowMethods(vec![Method::Get]));
-        res.set(AccessControlAllowOrigin::Any);
+               middleware! { |_req, _res|
         "[]"
     });
 
     server.get("/:tileset.json",
-               middleware! { |req, mut res|
+               middleware! { |req, res|
         let service: &MvtService = res.server_data();
         let tileset = req.param("tileset").unwrap();
-        res.set(MediaType::Json);
-        res.set(AccessControlAllowMethods(vec![Method::Get]));
-        res.set(AccessControlAllowOrigin::Any);
         let host = req.origin.headers.get::<header::Host>().unwrap();
         let baseurl = format!("http://{}:{}", host.hostname, host.port.unwrap_or(80));
         let json = service.get_tilejson(&baseurl, &tileset).unwrap();
@@ -281,12 +256,9 @@ pub fn webserver(args: &ArgMatches) {
     });
 
     server.get("/:tileset.style.json",
-               middleware! { |req, mut res|
+               middleware! { |req, res|
         let service: &MvtService = res.server_data();
         let tileset = req.param("tileset").unwrap();
-        res.set(MediaType::Json);
-        res.set(AccessControlAllowMethods(vec![Method::Get]));
-        res.set(AccessControlAllowOrigin::Any);
         let host = req.origin.headers.get::<header::Host>().unwrap();
         let baseurl = format!("http://{}:{}", host.hostname, host.port.unwrap_or(80));
         let json = service.get_stylejson(&baseurl, &tileset).unwrap();
@@ -294,10 +266,9 @@ pub fn webserver(args: &ArgMatches) {
     });
 
     server.get("/:tileset/metadata.json",
-               middleware! { |req, mut res|
+               middleware! { |req, res|
         let service: &MvtService = res.server_data();
         let tileset = req.param("tileset").unwrap();
-        res.set(MediaType::Json);
         let json = service.get_mbtiles_metadata(&tileset).unwrap();
         serde_json::to_vec(&json).unwrap()
     });
