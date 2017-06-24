@@ -129,9 +129,10 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
         info!("Reading configuration from '{}'", cfgpath);
         let config =
             read_config(cfgpath).unwrap_or_else(|err| {
-                                                 println!("Error reading configuration - {} ", err);
-                                                 process::exit(1)
-                                             });
+                                                    println!("Error reading configuration - {} ",
+                                                             err);
+                                                    process::exit(1)
+                                                });
         let mut svc =
             MvtService::from_config(&config).unwrap_or_else(|err| {
                                                                 println!("Error reading configuration - {} ", err);
@@ -283,7 +284,9 @@ pub fn webserver(args: &ArgMatches) {
         let x = req.param("x").unwrap().parse::<u32>().unwrap();
         let y = req.param("y").unwrap().parse::<u32>().unwrap();
 
-        let gzip = true; // TODO: From AcceptEncoding
+        let accept_encoding = req.origin.headers.get::<header::AcceptEncoding>();
+        let gzip = accept_encoding.is_some() && accept_encoding.unwrap().iter().any(
+                   |ref qit| qit.item == Encoding::Gzip );
         let tile = service.tile_cached(tileset, x, y, z, gzip);
         if gzip {
             res.set_header_fallback(|| ContentEncoding(vec![Encoding::Gzip]));
@@ -357,7 +360,8 @@ fn test_gen_config() {
 
     let config = parse_config(toml, "").unwrap();
     let service = MvtService::from_config(&config).unwrap();
-    assert_eq!(service.input.connection_url, "postgresql://user:pass@host/database");
+    assert_eq!(service.input.connection_url,
+               "postgresql://user:pass@host/database");
 }
 
 #[test]
