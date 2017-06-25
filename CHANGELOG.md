@@ -1,9 +1,12 @@
 <a name="0.7.4"></a>
-## 0.7.4 (UNRELEASED)
+## 0.7.4 (2017-06-25)
 
 #### Features
 
+* Tileset extent detection and configuration
 * New seeding option `overwrite` (Thanks @kiambogo!)
+* cache_control_max_age setting (with new default 0)
+* Write :tileset.json and and :tileset.style.json when generating cache
 
 <a name="0.7.3"></a>
 ## 0.7.3 (2017-06-15)
