@@ -73,8 +73,6 @@ script:
 after_script: set +e
 
 before_deploy:
-  - sudo apt-get -qq update
-  - sudo apt-get install -y fakeroot
   - sh ci/before_deploy.sh
 
 deploy:

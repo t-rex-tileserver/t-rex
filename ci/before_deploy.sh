@@ -17,6 +17,9 @@ mk_deb() {
 mk_package() {
     if [ $TRAVIS_OS_NAME = linux ]; then
         if [ ! -z $MAKE_DEB ]; then
+            apt-get -qq update
+            apt-get install -y fakeroot
+
             dtd=$(mktemp -d)
             mkdir -p $dtd/debian/usr/bin
 
