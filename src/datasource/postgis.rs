@@ -399,15 +399,20 @@ impl PostgisInput {
                           layer.table_name.as_ref().unwrap());
         let conn = self.conn();
         let rows = conn.query(&sql, &[]).unwrap();
-        let poly: ewkb::Polygon = rows.into_iter().nth(0).unwrap().get("extent");
-        let p1 = poly.rings().nth(0).unwrap().points().nth(0).unwrap();
-        let p2 = poly.rings().nth(0).unwrap().points().nth(2).unwrap();
-        Some(Extent {
-                 minx: p1.x(),
-                 miny: p1.y(),
-                 maxx: p2.x(),
-                 maxy: p2.y(),
-             })
+        let extpoly = rows.into_iter().nth(0).unwrap().get_opt::<_, ewkb::Polygon>("extent");
+        match extpoly {
+            Some(Ok(poly)) => {
+                let p1 = poly.rings().nth(0).unwrap().points().nth(0).unwrap();
+                let p2 = poly.rings().nth(0).unwrap().points().nth(2).unwrap();
+                Some(Extent {
+                         minx: p1.x(),
+                         miny: p1.y(),
+                         maxx: p2.x(),
+                         maxy: p2.y(),
+                     })
+            }
+            _ => None,
+        }
     }
     /// Build geometry selection expression for feature query.
     fn build_geom_expr(&self, layer: &Layer, grid_srid: i32, raw_geom: bool) -> String {
