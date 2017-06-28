@@ -5,7 +5,7 @@
 
 use core::config::ApplicationCfg;
 use datasource::postgis::PostgisInput;
-use core::grid::Grid;
+use core::grid::{Grid, Extent};
 use service::mvt::{MvtService, Tileset};
 use core::{Config, read_config, parse_config};
 use core::config::DEFAULT_CONFIG;
@@ -13,7 +13,7 @@ use serde_json;
 use cache::{Tilecache, Nocache, Filecache};
 
 use nickel::{Nickel, Options, HttpRouter, MediaType, Request, Response, MiddlewareResult,
-             StaticFilesHandler};
+             StaticFilesHandler, JsonBody};
 use hyper::header::{CacheControl, CacheDirective, AccessControlAllowOrigin,
                     AccessControlAllowMethods, ContentEncoding, Encoding};
 use hyper::method::Method;
@@ -298,6 +298,47 @@ pub fn webserver(args: &ArgMatches) {
         res.set(AccessControlAllowOrigin::Any);
 
         tile
+    });
+
+    #[derive(RustcDecodable, RustcEncodable)]
+    struct RefreshRequest {
+          minzoom: u8,
+          maxzoom: u8,
+          minx: f64,
+          miny: f64,
+          maxx: f64,
+          maxy: f64,
+    }
+
+    server.post("/refresh",
+               middleware! { |req, mut res|
+        let service: &MvtService = res.server_data();
+        let refreshRequest = req.json_as::<RefreshRequest>().unwrap();
+
+        let accept_encoding = req.origin.headers.get::<header::AcceptEncoding>();
+        let gzip = accept_encoding.is_some() && accept_encoding.unwrap().iter().any(
+                   |ref qit| qit.item == Encoding::Gzip );
+
+        let gen = service.generate(
+            None,
+            Some(refreshRequest.minzoom),
+            Some(refreshRequest.maxzoom),
+            Some(Extent {
+              minx: refreshRequest.minx,
+              miny: refreshRequest.miny,
+              maxx: refreshRequest.maxx,
+              maxy: refreshRequest.maxy,
+            }),
+            None,
+            None,
+            false,
+            true);
+        res.set_header_fallback(|| ContentType("application/x-protobuf".to_owned()));
+        res.set_header_fallback(|| CacheControl(vec![CacheDirective::MaxAge(cache_max_age)]));
+        res.set(AccessControlAllowMethods(vec![Method::Get]));
+        res.set(AccessControlAllowOrigin::Any);
+
+        "true"
     });
 
     if mvt_viewer {
