@@ -12,7 +12,7 @@ use serde::Deserialize;
 
 pub trait Config<'a, T, C: Deserialize<'a>> {
     /// Read configuration
-    fn from_config(_config: &C) -> Result<T, String>;
+    fn from_config(config: &C) -> Result<T, String>;
     /// Generate configuration template
     fn gen_config() -> String;
     /// Generate configuration template with runtime information
