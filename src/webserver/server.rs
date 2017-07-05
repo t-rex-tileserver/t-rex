@@ -243,7 +243,8 @@ pub fn webserver(args: &ArgMatches) {
     // Font list for Maputnik
     server.get("/fontstacks.json",
                middleware! { |_req, _res|
-        "[]"
+        let json = json!(["Roboto Medium","Roboto Regular"]);
+        serde_json::to_vec(&json).unwrap()
     });
 
     server.get("/:tileset.json",
