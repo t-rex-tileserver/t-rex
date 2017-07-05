@@ -123,6 +123,30 @@ impl StaticFiles {
     }
 }
 
+static DINO: &'static str = "             xxxxxxxxx
+        xxxxxxxxxxxxxxxxxxxxxxxx
+      xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+     xxxxxxxxxxxxxxxxxxxxxxxxx xxxx
+     xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  xxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx   xxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx   xxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx     xxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx      x
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxx    xxxxxxxxxxx
+xxxxxxxxxxxxxx                   xxxxxx
+xxxxxxxxxxxx
+xxxxxxxxxxx
+xxxxxxxxxx
+xxxxxxxxx
+xxxxxxx
+xxxxxx
+xxxxxxx";
 
 pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
     if let Some(cfgpath) = args.value_of("config") {
@@ -316,6 +340,8 @@ pub fn webserver(args: &ArgMatches) {
     }
 
     server.get("/**", StaticFilesHandler::new("public/"));
+
+    println!("{}", DINO);
 
     let _listening = server
         .listen((bind, port))
