@@ -201,7 +201,6 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
     }
 }
 
-#[allow(unreachable_code)]
 pub fn webserver(args: &ArgMatches) {
     let (mut service, config) = service_from_args(args);
 
@@ -209,7 +208,7 @@ pub fn webserver(args: &ArgMatches) {
     let bind: &str = &config.webserver.bind.unwrap_or("127.0.0.1".to_string());
     let port = config.webserver.port.unwrap_or(6767);
     let threads = config.webserver.threads.unwrap_or(4) as usize;
-    let cache_max_age = config.webserver.cache_control_max_age.unwrap_or(0);
+    let cache_max_age = config.webserver.cache_control_max_age.unwrap_or(300);
 
     service.prepare_feature_queries();
     service.init_cache();
