@@ -388,7 +388,7 @@ impl MvtService {
             if progress {
                 println!("Generating tileset '{}'...", tileset.name);
             }
-            for zoom in minzoom..(maxzoom + 1) {
+            for zoom in minzoom..maxzoom + 1 {
                 if zoom > self.grid.maxzoom() {
                     warn!("Zoom level exceeds maximal zoom level of grid ({}) - skipping", self.grid.maxzoom());
                     continue;
@@ -399,8 +399,8 @@ impl MvtService {
                 if progress {
                     pb.tick();
                 }
-                for xtile in limit.minx..limit.maxx {
-                    for ytile in limit.miny..limit.maxy {
+                for xtile in limit.minx..limit.maxx + 1 {
+                    for ytile in limit.miny..limit.maxy + 1 {
                         let skip = tileno % nodes != nodeno;
                         tileno += 1;
                         if skip {

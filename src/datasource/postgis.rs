@@ -399,7 +399,10 @@ impl PostgisInput {
                           layer.table_name.as_ref().unwrap());
         let conn = self.conn();
         let rows = conn.query(&sql, &[]).unwrap();
-        let extpoly = rows.into_iter().nth(0).unwrap().get_opt::<_, ewkb::Polygon>("extent");
+        let extpoly = rows.into_iter()
+            .nth(0)
+            .unwrap()
+            .get_opt::<_, ewkb::Polygon>("extent");
         match extpoly {
             Some(Ok(poly)) => {
                 let p1 = poly.rings().nth(0).unwrap().points().nth(0).unwrap();
@@ -606,7 +609,7 @@ impl PostgisInput {
         for layer_query in &layer.query {
             if let Some(query) = self.build_query(layer, grid_srid, layer_query.sql.as_ref()) {
                 debug!("Query for layer '{}': {}", layer.name, query.sql);
-                for zoom in layer_query.minzoom()..layer_query.maxzoom() {
+                for zoom in layer_query.minzoom()..layer_query.maxzoom() + 1 {
                     if &layer.query(zoom).unwrap_or(&"".to_string()) ==
                        &layer_query.sql.as_ref().unwrap_or(&"".to_string()) {
                         queries.insert(zoom, query.clone());
@@ -615,13 +618,14 @@ impl PostgisInput {
             }
         }
 
-        let has_gaps = (layer.minzoom()..layer.maxzoom()).any(|zoom| !queries.contains_key(&zoom));
+        let has_gaps =
+            (layer.minzoom()..layer.maxzoom() + 1).any(|zoom| !queries.contains_key(&zoom));
 
         // Genereate queries for zoom levels without user sql
         if has_gaps {
             if let Some(query) = self.build_query(layer, grid_srid, None) {
                 debug!("Query for layer '{}': {}", layer.name, query.sql);
-                for zoom in layer.minzoom()..layer.maxzoom() {
+                for zoom in layer.minzoom()..layer.maxzoom() + 1 {
                     if !queries.contains_key(&zoom) {
                         queries.insert(zoom, query.clone());
                     }
@@ -633,7 +637,11 @@ impl PostgisInput {
     }
     fn query(&self, layer: &Layer, zoom: u8) -> Option<&SqlQuery> {
         let ref queries = self.queries[&layer.name];
-        Some(&queries[&zoom])
+        if (zoom as usize) < queries.len() {
+            Some(&queries[&zoom])
+        } else {
+            None
+        }
     }
 }
 

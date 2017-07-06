@@ -5,15 +5,14 @@
 
 use datasource::PostgisInput;
 use core::grid::Grid;
+use core::grid::Extent;
 use core::layer::Layer;
 use core::Config;
 use cache::{Tilecache, Nocache};
 use service::mvt::{Tileset, MvtService};
 
 
-#[test]
-#[ignore]
-pub fn test_tile_query() {
+fn mvt_service() -> MvtService {
     use std::env;
 
     let pg: PostgisInput = match env::var("DBCONN") {
@@ -39,6 +38,13 @@ pub fn test_tile_query() {
         cache: Tilecache::Nocache(Nocache),
     };
     service.prepare_feature_queries();
+    service
+}
+
+#[test]
+#[ignore]
+fn test_tile_query() {
+    let service = mvt_service();
 
     let mvt_tile = service.tile("points", 33, 41, 6);
     println!("{:#?}", mvt_tile);
@@ -174,7 +180,30 @@ pub fn test_tile_query() {
 }
 
 #[test]
-pub fn test_mvt_metadata() {
+#[ignore]
+fn test_generate() {
+    let service = mvt_service();
+
+    let extent = Extent {
+        minx: 4.0,
+        miny: 52.0,
+        maxx: 5.0,
+        maxy: 53.0,
+    };
+
+    assert_eq!(service.grid.maxzoom(), 22);
+    service.generate(Some("points"),
+                     Some(20),
+                     Some(23),
+                     Some(extent),
+                     None,
+                     None,
+                     false,
+                     false);
+}
+
+#[test]
+fn test_mvt_metadata() {
     use core::read_config;
 
     let config = read_config("src/test/example.toml").unwrap();
@@ -217,7 +246,7 @@ pub fn test_mvt_metadata() {
 
 #[test]
 #[ignore]
-pub fn test_tilejson() {
+fn test_tilejson() {
     use core::read_config;
     use std::env;
 
@@ -293,7 +322,7 @@ pub fn test_tilejson() {
 }
 
 #[test]
-pub fn test_stylejson() {
+fn test_stylejson() {
     use core::read_config;
 
     let config = read_config("src/test/example.toml").unwrap();
@@ -338,7 +367,7 @@ pub fn test_stylejson() {
 
 #[test]
 #[ignore]
-pub fn test_mbtiles_metadata() {
+fn test_mbtiles_metadata() {
     use core::read_config;
     use std::env;
 
@@ -370,7 +399,7 @@ pub fn test_mbtiles_metadata() {
 }
 
 #[test]
-pub fn test_gen_config() {
+fn test_gen_config() {
     let expected = r#"# t-rex configuration
 
 [service.mvt]

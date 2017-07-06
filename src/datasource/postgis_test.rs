@@ -17,7 +17,7 @@ use std::env;
 
 #[test]
 #[ignore]
-pub fn test_from_geom_fields() {
+fn test_from_geom_fields() {
     let conn: Connection = match env::var("DBCONN") {
             Result::Ok(val) => Connection::connect(&val as &str, postgres::TlsMode::None),
             Result::Err(_) => panic!("DBCONN undefined"),
@@ -55,7 +55,7 @@ pub fn test_from_geom_fields() {
 
 #[test]
 #[ignore]
-pub fn test_detect_layers() {
+fn test_detect_layers() {
     let pg: PostgisInput = match env::var("DBCONN") {
             Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
             Result::Err(_) => panic!("DBCONN undefined"),
@@ -69,7 +69,7 @@ pub fn test_detect_layers() {
 
 #[test]
 #[ignore]
-pub fn test_detect_columns() {
+fn test_detect_columns() {
     let pg: PostgisInput = match env::var("DBCONN") {
             Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
             Result::Err(_) => panic!("DBCONN undefined"),
@@ -89,7 +89,7 @@ pub fn test_detect_columns() {
 
 #[test]
 #[ignore]
-pub fn test_extent_query() {
+fn test_extent_query() {
     let pg: PostgisInput = match env::var("DBCONN") {
             Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
             Result::Err(_) => panic!("DBCONN undefined"),
@@ -110,7 +110,7 @@ pub fn test_extent_query() {
 }
 
 #[test]
-pub fn test_feature_query() {
+fn test_feature_query() {
     let pg = PostgisInput::new("postgresql://pi@localhost/osm2vectortiles");
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("osm_place_point"));
@@ -193,7 +193,7 @@ pub fn test_feature_query() {
 }
 
 #[test]
-pub fn test_query_params() {
+fn test_query_params() {
     let pg = PostgisInput::new("postgresql://pi@localhost/osm2vectortiles");
     let mut layer = Layer::new("buildings");
     layer.geometry_field = Some(String::from("way"));
@@ -234,7 +234,7 @@ pub fn test_query_params() {
 
 #[test]
 #[ignore]
-pub fn test_retrieve_features() {
+fn test_retrieve_features() {
     let mut pg: PostgisInput = match env::var("DBCONN") {
             Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
             Result::Err(_) => panic!("DBCONN undefined"),
