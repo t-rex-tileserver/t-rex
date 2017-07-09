@@ -28,7 +28,12 @@ fn mvt_service() -> MvtService {
     layer.query_limit = Some(1);
     let tileset = Tileset {
         name: "points".to_string(),
-        extent: None,
+        extent: Some(Extent {
+                         minx: -179.58998,
+                         miny: -90.00000,
+                         maxx: 179.38330,
+                         maxy: 82.48332,
+                     }),
         layers: vec![layer],
     };
     let mut service = MvtService {
@@ -181,14 +186,36 @@ fn test_tile_query() {
 
 #[test]
 #[ignore]
-fn test_generate() {
+fn test_projected_extent() {
     let service = mvt_service();
 
-    let extent = Extent {
+    let extent_wgs84 = Extent {
         minx: 4.0,
         miny: 52.0,
         maxx: 5.0,
         maxy: 53.0,
+    };
+    let extent_3857 = Extent {
+        minx: 445277.9631730949,
+        miny: 6800125.454397307,
+        maxx: 556597.4539663672,
+        maxy: 6982997.920389788,
+    };
+
+    assert_eq!(service.extent_from_wgs84(&extent_wgs84), extent_3857);
+}
+
+#[test]
+#[ignore]
+fn test_generate() {
+    let service = mvt_service();
+
+    // Single tile level 23
+    let extent = Extent {
+        minx: 9.43743,
+        miny: 47.05001,
+        maxx: 9.43751,
+        maxy: 47.05006,
     };
 
     assert_eq!(service.grid.maxzoom(), 22);

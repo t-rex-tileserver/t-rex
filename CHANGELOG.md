@@ -1,3 +1,19 @@
+<a name="0.7.6"></a>
+## 0.7.6 (UNRELEASED)
+
+#### Features
+
+* Use tileset extent from configuration as default for cache generation
+* Serve fontstacks.json (used by Maputnik et al.)
+
+#### Bug Fixes
+
+* Fix queries at maxzoom levels
+
+#### Breaking changes
+
+* Extent parameter of generate command is now in WGS84 instead of grid SRS
+
 <a name="0.7.5"></a>
 ## 0.7.5 (2017-06-26)
 

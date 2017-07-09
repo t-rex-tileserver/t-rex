@@ -380,23 +380,11 @@ impl PostgisInput {
             .filter(|&(ref col, _)| !filter_cols.contains(&&col))
             .collect()
     }
-    pub fn layer_extent(&self, layer: &Layer) -> Option<Extent> {
+    /// Execute query returning an extent as polygon
+    fn extent_query(&self, sql: String) -> Option<Extent> {
         use postgis::ewkb;
         use postgis::{Polygon, LineString, Point}; // conflicts with core::geom::Point etc.
 
-        let ref geom_name = layer.geometry_field.as_ref().unwrap();
-        let layer_srid = layer.srid.unwrap_or(0);
-        if !layer.query.is_empty() || layer_srid <= 0 {
-            info!("Couldn't detect extent of layer {}, because of custom queries or an unknown SRID",
-                  layer.name);
-            return None;
-        }
-        let extent_sql = format!("ST_Transform(ST_SetSRID(ST_Extent({}),{}),4326)",
-                                 geom_name,
-                                 layer_srid);
-        let sql = format!("SELECT {} AS extent FROM {}",
-                          extent_sql,
-                          layer.table_name.as_ref().unwrap());
         let conn = self.conn();
         let rows = conn.query(&sql, &[]).unwrap();
         let extpoly = rows.into_iter()
@@ -416,6 +404,33 @@ impl PostgisInput {
             }
             _ => None,
         }
+    }
+    /// Detect extent of layer (in WGS84)
+    pub fn layer_extent(&self, layer: &Layer) -> Option<Extent> {
+        let ref geom_name = layer.geometry_field.as_ref().unwrap();
+        let layer_srid = layer.srid.unwrap_or(0);
+        if !layer.query.is_empty() || layer_srid <= 0 {
+            info!("Couldn't detect extent of layer {}, because of custom queries or an unknown SRID",
+                  layer.name);
+            return None;
+        }
+        let extent_sql = format!("ST_Transform(ST_SetSRID(ST_Extent({}),{}),4326)",
+                                 geom_name,
+                                 layer_srid);
+        let sql = format!("SELECT {} AS extent FROM {}",
+                          extent_sql,
+                          layer.table_name.as_ref().unwrap());
+        self.extent_query(sql)
+    }
+    /// Projected extent
+    pub fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent> {
+        let sql = format!("SELECT ST_Transform(ST_MakeEnvelope({}, {}, {}, {}, 4326), {}) AS extent",
+                          extent.minx,
+                          extent.miny,
+                          extent.maxx,
+                          extent.maxy,
+                          dest_srid);
+        self.extent_query(sql)
     }
     /// Build geometry selection expression for feature query.
     fn build_geom_expr(&self, layer: &Layer, grid_srid: i32, raw_geom: bool) -> String {

@@ -362,6 +362,14 @@ impl MvtService {
         pb.show_time_left = false;
         pb
     }
+    /// Projected extent in grid SRS from WGS84
+    pub fn extent_from_wgs84(&self, extent: &Extent) -> Extent {
+        // TODO: use proj4 (directly)
+        // and maybe fast track for Web Mercator (see fn xy in grid_test)
+        self.input
+            .extent_from_wgs84(extent, self.grid.srid)
+            .expect(&format!("Error transforming {:?} to SRID {}", extent, self.grid.srid))
+    }
     /// Populate tile cache
     pub fn generate(&self,
                     tileset_name: Option<&str>,
@@ -375,12 +383,9 @@ impl MvtService {
         self.init_cache();
         let minzoom = minzoom.unwrap_or(0);
         let maxzoom = maxzoom.unwrap_or(self.grid.maxzoom());
-        let extent = extent.unwrap_or(self.grid.tile_extent(0, 0, 0));
         let nodes = nodes.unwrap_or(1) as u64;
         let nodeno = nodeno.unwrap_or(0) as u64;
         let mut tileno: u64 = 0;
-        debug!("tile limits: {:?}", extent);
-        let limits = self.grid.tile_limits(extent, 0);
         for tileset in &self.tilesets {
             if tileset_name.is_some() && tileset_name.unwrap() != &tileset.name {
                 continue;
@@ -388,6 +393,22 @@ impl MvtService {
             if progress {
                 println!("Generating tileset '{}'...", tileset.name);
             }
+
+            // Convert extent to grid SRS
+            let ext_proj = if let Some(ref ext_wgs84) = extent {
+                if *ext_wgs84 != WORLD_EXTENT {
+                    self.extent_from_wgs84(&ext_wgs84)
+                } else {
+                    // (-180 -90) throws error when projecting
+                    self.grid.tile_extent(0, 0, 0)
+                }
+            } else {
+                self.grid.tile_extent(0, 0, 0)
+            };
+            debug!("tile limits: {:?}", ext_proj);
+
+            let tolerance = 0;
+            let limits = self.grid.tile_limits(ext_proj, tolerance);
             for zoom in minzoom..maxzoom + 1 {
                 if zoom > self.grid.maxzoom() {
                     warn!("Zoom level exceeds maximal zoom level of grid ({}) - skipping", self.grid.maxzoom());
@@ -457,6 +478,13 @@ impl MvtService {
     }
 }
 
+static WORLD_EXTENT: Extent = Extent {
+    minx: -180.0,
+    miny: -90.0,
+    maxx: 180.0,
+    maxy: 90.0,
+};
+
 impl Tileset {
     pub fn minzoom(&self) -> u8 {
         0 // TODO: from layers or config?
@@ -464,15 +492,8 @@ impl Tileset {
     pub fn maxzoom(&self) -> u8 {
         22 // TODO: from layers or config?
     }
-    pub fn get_extent(&self) -> Extent {
-        self.extent
-            .clone()
-            .unwrap_or(Extent {
-                           minx: -180.0,
-                           miny: -90.0,
-                           maxx: 180.0,
-                           maxy: 90.0,
-                       })
+    pub fn get_extent(&self) -> &Extent {
+        self.extent.as_ref().unwrap_or(&WORLD_EXTENT)
     }
     pub fn get_center(&self) -> (f64, f64) {
         let ext = self.get_extent();
