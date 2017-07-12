@@ -395,15 +395,10 @@ impl MvtService {
             }
 
             // Convert extent to grid SRS
-            let ext_proj = if let Some(ref ext_wgs84) = extent {
-                if *ext_wgs84 != WORLD_EXTENT {
-                    self.extent_from_wgs84(&ext_wgs84)
-                } else {
-                    // (-180 -90) throws error when projecting
-                    self.grid.tile_extent(0, 0, 0)
-                }
-            } else {
-                self.grid.tile_extent(0, 0, 0)
+            let ext_proj = match extent {
+                Some(ref ext_wgs84) if *ext_wgs84 != WORLD_EXTENT => // (-180 -90) throws error when projecting
+                    self.extent_from_wgs84(&ext_wgs84),
+                _ => self.grid.tile_extent(0, 0, 0)
             };
             debug!("tile limits: {:?}", ext_proj);
 
