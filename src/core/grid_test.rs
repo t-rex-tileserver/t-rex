@@ -104,7 +104,7 @@ fn test_grid_calculations() {
     let grid = Grid::web_mercator();
 
     assert_eq!(grid.pixel_width(10), 152.8740565703525);
-    assert_eq!(grid.scale_denominator(10), 577791.7098721985);
+    assert_eq!(grid.scale_denominator(10), 545978.7734655447);
 
     assert_eq!(grid.level_limit(0), (1, 1));
     assert_eq!(grid.level_limit(10), (1024, 1024));
@@ -243,7 +243,7 @@ mod web_mercator {
     fn ul(xtile: u32, ytile: u32, zoom: u8) -> LngLat {
         let n = (zoom as f64).exp2();
         let lon_deg = xtile as f64 / n * 360.0 - 180.0;
-        let lat_rad = (consts::PI * (1.0_f64 - 2.0_f64 * ytile as f64 / n))
+        let lat_rad = (consts::PI * (1.0 - 2.0 * ytile as f64 / n))
             .sinh()
             .atan();
         let lat_deg = lat_rad.to_degrees();
@@ -256,9 +256,9 @@ mod web_mercator {
     /// Returns the Spherical Mercator (x, y) in meters
     fn xy(lon: f64, lat: f64) -> (f64, f64) {
         //lng, lat = truncate_lnglat(lng, lat)
-        let x = 6378137.0_f64 * lon.to_radians();
-        let y = 6378137.0_f64 *
-                ((consts::PI * 0.25) + (0.5_f64 * lat.to_radians()))
+        let x = 6378137.0 * lon.to_radians();
+        let y = 6378137.0 *
+                ((consts::PI * 0.25) + (0.5 * lat.to_radians()))
                     .tan()
                     .ln();
         (x, y)

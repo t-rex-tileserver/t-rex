@@ -157,6 +157,7 @@ impl Grid {
             },
             srid: 3857,
             units: Unit::M,
+            // Formula: http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Resolution_and_Scale
             resolutions: vec![156543.0339280410,
                               78271.51696402048,
                               39135.75848201023,
@@ -194,7 +195,10 @@ impl Grid {
         self.resolutions[zoom as usize] //TODO: assumes grid unit 'm'
     }
     pub fn scale_denominator(&self, zoom: u8) -> f64 {
-        let pixel_screen_width = 0.0254 / 96.0; //FIXME: assumes 96dpi - check with mapnik
+        let pixel_screen_width = 0.00028;
+        // https://github.com/mapnik/mapnik/wiki/ScaleAndPpi#scale-denominator
+        // Mapnik calculates it's default at about 90.7 PPI, which originates from an assumed standard pixel size
+        // of 0.28 millimeters as defined by the OGC (Open Geospatial Consortium) SLD (Styled Layer Descriptor) Specification.
         self.pixel_width(zoom) / pixel_screen_width
     }
     /// Extent of a given tile in the grid given its x, y, and z in TMS adressing scheme
