@@ -683,7 +683,7 @@ impl DatasourceInput for PostgisInput {
         };
 
         // Add query params
-        let zoom_param = zoom as i16;
+        let zoom_param = zoom as i32;
         let pixel_width = grid.pixel_width(zoom); //TODO: calculate only if needed
         let scale_denominator = grid.scale_denominator(zoom);
         let mut params = Vec::new();
@@ -697,8 +697,6 @@ impl DatasourceInput for PostgisInput {
                 &QueryParam::Zoom => params.push(&zoom_param),
                 &QueryParam::PixelWidth => params.push(&pixel_width),
                 &QueryParam::ScaleDenominator => {
-                    //NOTE: function z() in osm2vectortiles takes numeric argument, which is not
-                    // supported by rust postgresql
                     params.push(&scale_denominator);
                 }
             }
