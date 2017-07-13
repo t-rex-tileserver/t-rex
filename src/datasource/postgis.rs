@@ -652,11 +652,7 @@ impl PostgisInput {
     }
     fn query(&self, layer: &Layer, zoom: u8) -> Option<&SqlQuery> {
         let ref queries = self.queries[&layer.name];
-        if (zoom as usize) < queries.len() {
-            Some(&queries[&zoom])
-        } else {
-            None
-        }
+        queries.get(&zoom)
     }
 }
 
