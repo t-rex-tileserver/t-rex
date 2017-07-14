@@ -1,3 +1,15 @@
+<a name="0.7.7"></a>
+## 0.7.7 (2017-07-14)
+
+#### Bug Fixes
+
+* Fix queries with `!zoom!` variable
+* Fix queries for layers with minzoom > 0
+
+#### Breaking changes
+
+* Use OGC SLD pixel size for `scale_denominator` calculation (like Mapnik)
+
 <a name="0.7.6"></a>
 ## 0.7.6 (2017-07-10)
 
