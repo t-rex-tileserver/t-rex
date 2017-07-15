@@ -243,7 +243,7 @@ Build:
 
 Run tests:
 
-    cargo test
+    cargo test --all
 
 Run server:
 
@@ -275,7 +275,7 @@ Creating test database:
 
 Run the tests with
 
-    cargo test -- --ignored
+    cargo test --all -- --ignored
 
 
 License

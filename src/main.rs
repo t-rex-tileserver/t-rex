@@ -3,41 +3,17 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-#[macro_use]
 extern crate log;
 extern crate env_logger;
-extern crate toml;
-#[macro_use]
-extern crate nickel;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
-extern crate rustc_serialize;
-#[macro_use]
-extern crate hyper;
-extern crate r2d2;
-extern crate r2d2_postgres;
-extern crate postgres;
-extern crate fallible_iterator;
-extern crate postgis;
-extern crate protobuf;
 #[macro_use]
 extern crate clap;
 extern crate time;
-extern crate flate2;
-extern crate pbr;
-extern crate open;
 
-pub mod core;
-mod datasource;
-pub mod mvt;
-mod service;
-mod cache;
-mod webserver;
+extern crate t_rex_core;
+extern crate t_rex_webserver;
 
-use core::grid::Extent;
+use t_rex_core::core::grid::Extent;
+use t_rex_webserver as webserver;
 use clap::{App, SubCommand, ArgMatches, AppSettings};
 use std::env;
 use log::{LogRecord, LogLevelFilter};

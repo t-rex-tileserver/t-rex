@@ -1,21 +1,24 @@
 [package]
-name = "t-rex"
+name = "t-rex-webserver"
 version = "0.7.8-dev"
 description = "vector tile server"
 repository = "https://github.com/pka/t-rex"
-readme = "README.md"
+readme = "../README.md"
 license = "MIT"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
-
-[[bin]]
-name = "t_rex"
+workspace = ".."
 
 [dependencies]
-t-rex-core = { path = "t-rex-core" }
-t-rex-webserver = { path = "t-rex-webserver" }
+nickel = "*"
+hyper = "*"
+serde_json = "*"
+rustc-serialize = "*"
+toml = "*"
 clap = "*"
 log = "*"
 env_logger = "*"
-time = "*"
+open = "*"
 
-[workspace]
+[dependencies.t-rex-core]
+path = "../t-rex-core"
+version = "0.7.8-dev"

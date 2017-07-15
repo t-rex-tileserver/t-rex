@@ -12,11 +12,11 @@ main() {
     fi
 
     #cross test --target $TARGET
-    cross test --target $TARGET --release
+    cross test --all --target $TARGET --release
 
-    cargo test --target $TARGET
+    cargo test --all --target $TARGET
     # cross ignores DBCONN env variable (https://github.com/japaric/cross/issues/76)
-    cargo test --target $TARGET -- --ignored
+    cargo test --all --target $TARGET -- --ignored
 
     #cross run --target $TARGET
     cargo run --target $TARGET
