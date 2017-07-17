@@ -13,6 +13,7 @@ name = "t_rex"
 [dependencies]
 t-rex-core = { path = "t-rex-core" }
 t-rex-webserver = { path = "t-rex-webserver" }
+t-rex-gdal = { path = "t-rex-gdal" }
 clap = "*"
 log = "*"
 env_logger = "*"

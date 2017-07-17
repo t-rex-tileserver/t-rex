@@ -1,0 +1,16 @@
+[package]
+name = "t-rex-gdal"
+version = "0.7.8-dev"
+description = "vector tile server"
+repository = "https://github.com/pka/t-rex"
+readme = "../README.md"
+license = "MIT"
+authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
+workspace = ".."
+
+[dependencies]
+gdal = { git = "https://github.com/georust/rust-gdal" }
+
+[dependencies.t-rex-core]
+path = "../t-rex-core"
+version = "0.7.8-dev"
