@@ -23,3 +23,5 @@ natural_earth_vectors: packages/Natural_Earth_quick_start/10m_cultural/ne_10m_po
 geostat:
 	psql natural_earth_vectors -c "CREATE schema geostat"
 	SHAPE_ENCODING="ISO-8859-1" ogr2ogr -t_srs EPSG:2056 -nlt PROMOTE_TO_MULTI -lco SCHEMA=geostat -f PostgreSQL PG:dbname=natural_earth_vectors geostat_ggg_16/shp/g1k16.shp
+	# ggg_2017-LV95/shp
+	#for i in *.shp; do ogr2ogr -a_srs EPSG:2056 -nlt PROMOTE_TO_MULTI -f PostgreSQL PG:dbname=geostat $i; done

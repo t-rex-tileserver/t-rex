@@ -123,6 +123,8 @@ impl StaticFiles {
     }
 }
 
+include!(concat!(env!("OUT_DIR"), "/fonts.rs"));
+
 static DINO: &'static str = "             xxxxxxxxx
         xxxxxxxxxxxxxxxxxxxxxxxx
       xxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -269,6 +271,26 @@ pub fn webserver(args: &ArgMatches) {
                middleware! { |_req, _res|
         let json = json!(["Roboto Medium","Roboto Regular"]);
         serde_json::to_vec(&json).unwrap()
+    });
+
+    // Fonts for Maputnik
+    // Example: /fonts/Open%20Sans%20Regular,Arial%20Unicode%20MS%20Regular/0-255.pbf
+    server.get("/fonts/:fonts/:range.pbf",
+               middleware! { |req, mut res|
+        let fontpbfs = fonts();
+        let fontlist = req.param("fonts").unwrap();
+        let range = req.param("range").unwrap();
+        let mut fonts = fontlist.split(",").collect::<Vec<_>>();
+        fonts.push("Roboto Regular"); // Fallback
+        for font in fonts {
+            let key = format!("fonts/{}/{}.pbf", font.replace("%20", " "), range);
+            debug!("Font lookup: {}", key);
+            if let Some(pbf) = fontpbfs.get(&key as &str) {
+                res.set_header_fallback(|| ContentType("application/x-protobuf".to_owned()));
+                res.set_header_fallback(|| ContentEncoding(vec![Encoding::Gzip]));
+                return res.send(*pbf)
+            }
+        }
     });
 
     server.get("/:tileset.json",

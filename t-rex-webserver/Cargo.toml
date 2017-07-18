@@ -6,6 +6,7 @@ repository = "https://github.com/pka/t-rex"
 readme = "../README.md"
 license = "MIT"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
+build = "build.rs"
 workspace = ".."
 
 [dependencies]
