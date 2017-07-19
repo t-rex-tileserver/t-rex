@@ -28,8 +28,8 @@ fn main() {
                 let keypath = pbfcomp.as_path();
                 writeln!(f,
                          "fonts.insert(\"{}\", include_bytes!(\"{}\"));",
-                         keypath.display(),
-                         inclpath.display())
+                         keypath.display().to_string().replace(std::path::MAIN_SEPARATOR, "/"),
+                         inclpath.display().to_string().replace(std::path::MAIN_SEPARATOR, "/"))
                         .unwrap();
             }
         }
