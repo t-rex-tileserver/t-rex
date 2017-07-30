@@ -6,6 +6,7 @@
 use datasource::DatasourceInput;
 use postgres::rows::Row;
 use postgres::types::{Type, FromSql, ToSql};
+use postgres::tls::native_tls::NativeTls;
 use fallible_iterator::FallibleIterator;
 use postgres;
 use r2d2;
@@ -231,7 +232,8 @@ impl PostgisInput {
     }
     /// New instance with connected pool
     pub fn connected(&self) -> PostgisInput {
-        let manager = PostgresConnectionManager::new(self.connection_url.as_ref(), TlsMode::None)
+        let negotiator = NativeTls::new().unwrap();
+        let manager = PostgresConnectionManager::new(self.connection_url.as_ref(), TlsMode::Prefer(Box::new(negotiator)))
             .unwrap();
         let config = r2d2::Config::builder().pool_size(10).build();
         let pool = r2d2::Pool::new(config, manager).unwrap();

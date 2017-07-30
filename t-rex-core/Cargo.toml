@@ -10,7 +10,6 @@ workspace = ".."
 
 [dependencies]
 toml = "*"
-postgres = "*"
 fallible-iterator = "*"
 r2d2 = "*"
 r2d2_postgres = "*"
@@ -22,3 +21,7 @@ serde_json = "*"
 log = "*"
 flate2 = "*"
 pbr = "*"
+
+[dependencies.postgres]
+version = "*"
+features = ["with-native-tls"]
