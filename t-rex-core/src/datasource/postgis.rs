@@ -12,6 +12,7 @@ use postgres;
 use r2d2;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use std;
+use std::error::Error;
 use core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use core::geom::*;
 use core::grid::Extent;
@@ -232,11 +233,26 @@ impl PostgisInput {
     }
     /// New instance with connected pool
     pub fn connected(&self) -> PostgisInput {
-        let negotiator = NativeTls::new().unwrap();
-        let manager = PostgresConnectionManager::new(self.connection_url.as_ref(), TlsMode::Prefer(Box::new(negotiator)))
+        let pool_size = 10; //FIXME: make configurable
+        let config = r2d2::Config::builder().pool_size(pool_size).build();
+        // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
+        let manager = PostgresConnectionManager::new(self.connection_url.as_ref(), TlsMode::None)
             .unwrap();
-        let config = r2d2::Config::builder().pool_size(10).build();
-        let pool = r2d2::Pool::new(config, manager).unwrap();
+        let pool = r2d2::Pool::new(config, manager)
+            .or_else(|e| match e.description() {
+                         "unable to initialize connections" => {
+                info!("Couldn't connect with TlsMode::None - retrying with TlsMode::Require");
+                let config = r2d2::Config::builder().pool_size(pool_size).build();
+                let negotiator = NativeTls::new().unwrap();
+                let manager =
+                    PostgresConnectionManager::new(self.connection_url.as_ref(),
+                                                   TlsMode::Require(Box::new(negotiator)))
+                            .unwrap();
+                r2d2::Pool::new(config, manager)
+            }
+                         _ => Err(e),
+                     })
+            .unwrap();
         PostgisInput {
             connection_url: self.connection_url.clone(),
             conn_pool: Some(pool),
@@ -246,6 +262,7 @@ impl PostgisInput {
     pub fn conn(&self) -> r2d2::PooledConnection<PostgresConnectionManager> {
         let pool = self.conn_pool.as_ref().unwrap();
         //debug!("{:?}", pool);
+        // Waits for at most Config::connection_timeout (default: 30s) before returning an error.
         pool.get().unwrap()
     }
     pub fn detect_layers(&self, detect_geometry_types: bool) -> Vec<Layer> {

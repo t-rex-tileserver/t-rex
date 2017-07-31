@@ -294,9 +294,9 @@ fn test_tls() {
     use postgres::tls::native_tls::NativeTls;
     let negotiator = NativeTls::new().unwrap();
     let conn = match env::var("DBCONN") {
-            Result::Ok(val) => Connection::connect(&val as &str, TlsMode::Prefer(&negotiator)),
-            Result::Err(_) => panic!("DBCONN undefined"),
-        };
+        Result::Ok(val) => Connection::connect(&val as &str, TlsMode::Prefer(&negotiator)),
+        Result::Err(_) => panic!("DBCONN undefined"),
+    };
     assert!(conn.is_ok());
     assert!(conn.unwrap().execute("SELECT 1::VARCHAR", &[]).is_ok());
     // Check pg_stat_ssl? https://www.postgresql.org/docs/9.6/static/monitoring-stats.html#PG-STAT-SSL-VIEW
