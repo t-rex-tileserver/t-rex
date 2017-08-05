@@ -139,7 +139,7 @@ fn main() {
                                               --extent=[minx,miny,maxx,maxy] 'Extent of tiles'
                                               --nodes=[NUM] 'Number of generator nodes'
                                               --nodeno=[NUM] 'Number of this nodes (0 <= n < nodes)'
-                                              --progress=[true|false] 'Show progress bar')
+                                              --progress=[true|false] 'Show progress bar'
                                               --overwrite=[false|true] 'Overwrite previously cached tiles'")
                         .about("Generate tiles for cache"));
 
