@@ -1,3 +1,11 @@
+<a name="0.7.8"></a>
+## 0.7.8 (2017-08-05)
+
+#### Features
+
+* Support for PostgreSQL SSL connections
+* Serve fonts in pbf format
+
 <a name="0.7.7"></a>
 ## 0.7.7 (2017-07-14)
 
