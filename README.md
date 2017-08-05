@@ -26,16 +26,17 @@ Features
 * Workshop "Vector Tiles", GEOSummit Bern 7.6.16: [slides](doc/t-rex_vector_tile_server.pdf)
 
 
-Installation
-------------
-
-Pre-built binaries are available for 64 bit Linux, Mac OS X and Windows. Download your binary from [github.com/pka/t-rex/releases](https://github.com/pka/t-rex/releases) and unpack it.
-
-`t_rex` is an executable with very few dependencies, essentially `libgcc_s.so.1` on Linux and `msvcr120.dll` on Windows. If `msvcr120.dll` is missing, install `vcredist_x64.exe` from [here](https://www.microsoft.com/download/details.aspx?id=40784).
-
-
 Usage
 -----
+
+* [Setup](http://t-rex.tileserver.ch/doc/setup/)
+* [Serving vector tiles](http://t-rex.tileserver.ch/doc/serve/)
+* [Generating vector tiles](http://t-rex.tileserver.ch/doc/generate/)
+* [Configuration](http://t-rex.tileserver.ch/doc/configuration/)
+
+
+Quick tour
+----------
 
     t_rex serve --dbconn postgresql://user:pass@localhost/osm2vectortiles
 
@@ -58,178 +59,6 @@ Run server with configuration file:
 Generate tiles for cache:
 
     t_rex generate --config osm2vectortiles.toml
-
-
-Configuration
--------------
-
-Services can be configured in a text file with [TOML](https://github.com/toml-lang/toml) syntax.
-
-A good starting point is the template generated with the `genconfig` command.
-
-Configuration file example:
-
-```toml
-[service.mvt]
-viewer = true
-
-[datasource]
-type = "postgis"
-url = "postgresql://user:pass@localhost/natural_earth_vectors"
-
-[grid]
-predefined = "web_mercator"
-
-[[tileset]]
-name = "osm"
-
-[[tileset.layer]]
-name = "points"
-# Select all attributes of table:
-table_name = "ne_10m_populated_places"
-geometry_field = "wkb_geometry"
-geometry_type = "POINT"
-fid_field = "id"
-
-[[tileset.layer]]
-name = "buildings"
-geometry_field = "geometry"
-geometry_type = "POLYGON"
-fid_field = "osm_id"
-# Clip polygons with a buffer
-buffer_size = 10
-simplify = true
-  # Queries for different zoom levels:
-  [[tileset.layer.query]]
-  sql = """
-    SELECT name, type, 0 as osm_id, ST_Union(geometry) AS geometry
-    FROM osm_buildings_gen0
-    WHERE geometry && !bbox!
-    GROUP BY name, type
-    ORDER BY sum(area) DESC"""
-  [[tileset.layer.query]]
-  minzoom = 17
-  maxzoom = 22
-  sql = """
-    SELECT name, type, osm_id, geometry
-    FROM osm_buildings
-    WHERE geometry && !bbox!
-    ORDER BY area DESC"""
-
-[cache.file]
-base = "/var/cache/mvtcache"
-
-[webserver]
-bind = "0.0.0.0"
-port = 8080
-threads = 4
-```
-
-The datasource url can be overridden by the environment variable `TREX_DATASOURCE_URL`, which takes precedence.
-
-### Layer configuration
-
-Custom queries can be configured as PostGIS SQL queries.
-
-The following variables are replaced at runtime:
-
-* `!bbox!`: Bounding box of tile
-* `!zoom!`: Zoom level of tile request
-* `!scale_denominator!`: Map scale of tile request
-* `!pixel_width!`: Width of pixel in grid units
-
-If an `fid_field` is declared, this field is used as the feature ID.
-
-### Custom tile grids
-
-t-rex has two built-in grids, `web_mercator` and `wgs84`. Here's an example showing how to define a custom grid:
-
-```toml
-[grid]
-width = 256
-height = 256
-extent = { minx = 2420000.0, miny = 1030000.0, maxx = 2900000.0, maxy = 1350000.0 }
-srid = 2056
-units = "M"
-resolutions = [4000.0,3750.0,3500.0,3250.0,3000.0,2750.0,2500.0,2250.0,2000.0,1750.0,1500.0,1250.0,1000.0,750.0,650.0,500.0,250.0,100.0,50.0,20.0,10.0,5.0,2.5,2.0,1.5,1.0,0.5]
-origin = "TopLeft"
-```
-
-### Embedded styling
-
-t-rex supports embedded Mapbox GL styling according to the [Mapbox Style Specification (TOML)](https://pka.github.io/mapbox-gl-style-spec/).
-These styles are served in Mapbox GL JSON format which is used by Mapbox GL viewers, Maputnik and others.
-
-Example:
-
-```toml
-[[tileset.layer]]
-name = "Countries"
-table_name = "admin_0_countries"
-# ...
-[tileset.layer.style]
-  type = "fill"
-  [tileset.layer.style.paint]
-  fill-color = "#d8e8c8"
-  fill-opacity = 0.5
-```
-
-
-Server options
---------------
-
-```
-USAGE:
-    t_rex serve [OPTIONS]
-
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
-
-OPTIONS:
-        --cache <DIR>                 Use tile cache in DIR
-        --clip <true|false>           Clip geometries
-    -c, --config <FILE>               Load from custom config file
-        --dbconn <SPEC>
-            PostGIS connection postgresql://USER@HOST/DBNAME
-
-        --openbrowser <true|false>    Open backend URL in browser
-        --simplify <true|false>       Simplify geometries
-```
-
-
-Cache generation
-----------------
-
-A tile cache can be generated with the `t_rex generate` command:
-
-```
-USAGE:
-    t_rex generate [OPTIONS] --config <FILE>
-
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
-
-OPTIONS:
-    -c, --config <FILE>                   Load from custom config file
-        --extent <minx,miny,maxx,maxy>    Extent of tiles
-        --maxzoom <LEVEL>                 Maximum zoom level
-        --minzoom <LEVEL>                 Minimum zoom level
-        --nodeno <NUM>                    Number of this nodes (0 <= n < nodes)
-        --nodes <NUM>                     Number of generator nodes
-        --progress <true|false>           Show progress bar
-        --overwrite <false|true>          Re-render tile even if it already exists in the cache
-        --tileset <NAME>                  Tileset name
-```
-
-### MBTiles creation
-
-To create MBTiles files with vector tiles from a local cache you can use [MBUtil](https://github.com/mapbox/mbutil).
-
-Example:
-
-    mb-util --image_format=pbf /tmp/mvtcache/streets streets.mbtiles
 
 
 For developers
