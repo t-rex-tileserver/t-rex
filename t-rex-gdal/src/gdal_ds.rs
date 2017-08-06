@@ -6,6 +6,7 @@
 use datasource::DatasourceInput;
 use gdal;
 use gdal::vector::{Dataset, FieldValue};
+use gdal_sys::ogr;
 use core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use core::geom::{self, GeometryType};
 use core::grid::Extent;
@@ -21,6 +22,28 @@ pub struct GdalDatasource {
 impl GdalDatasource {
     pub fn new(path: &str) -> GdalDatasource {
         GdalDatasource { path: path.to_string() }
+    }
+}
+
+struct CoreGeometryType(GeometryType);
+
+impl CoreGeometryType {
+    pub fn from_geom_field(feature: &gdal::vector::Feature,
+                           srid: Option<i32>)
+                           -> Result<GeometryType, String> {
+        let ogrgeom = feature.geometry(); //FIXME: support for multiple geometry columns
+        let geometry_type = unsafe { ogr::OGR_G_GetGeometryType(ogrgeom.c_geometry()) };
+        match geometry_type {
+            ogr::WKB_POINT => {
+                let (x, y, _) = ogrgeom.get_point(0); //TODO: ZM support?
+                Ok(GeometryType::Point(geom::Point {
+                                           x: x,
+                                           y: y,
+                                           srid: srid,
+                                       }))
+            }
+            _ => Err("TODO".to_string()),
+        }
     }
 }
 
@@ -73,8 +96,11 @@ impl<'a> Feature for VectorFeature<'a> {
         attrs
     }
     fn geometry(&self) -> Result<GeometryType, String> {
-        let _ogrgeom = self.feature.geometry();
-        Ok(GeometryType::Point(geom::Point::new(960000.0, 6002729.0, Some(3857)))) //TODO
+        let geom = CoreGeometryType::from_geom_field(&self.feature, self.layer.srid);
+        if let Err(ref err) = geom {
+            error!("Layer '{}': {}", self.layer.name, err);
+        }
+        geom
     }
 }
 
@@ -128,6 +154,7 @@ fn test_gdal_retrieve() {
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("ne_10m_populated_places"));
     layer.geometry_field = Some(String::from("wkb_geometry"));
+    layer.srid = Some(3857);
     layer.fid_field = Some(String::from("SCALERANK"));
     layer.geometry_type = Some(String::from("POINT"));
     let grid = Grid::web_mercator();
@@ -141,8 +168,10 @@ fn test_gdal_retrieve() {
     let ds = GdalDatasource::new("natural_earth.gpkg");
     let mut reccnt = 0;
     ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
-        assert_eq!("Ok(Point(Point { x: 960000, y: 6002729, srid: Some(3857) }))",
-                   &*format!("{:?}", feat.geometry()));
+        if reccnt == 0 {
+            assert_eq!("Ok(Point(Point { x: -6438719.622820721, y: -4093437.7144101723, srid: Some(3857) }))",
+                       &*format!("{:?}", feat.geometry()));
+        }
         assert_eq!(3, feat.attributes().len());
         assert_eq!(feat.attributes()[0].key, "SCALERANK");
         assert_eq!(feat.attributes()[1].key, "NAME");
