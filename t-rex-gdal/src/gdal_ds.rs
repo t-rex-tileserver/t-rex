@@ -50,7 +50,7 @@ impl<'a> Feature for VectorFeature<'a> {
 
 impl DatasourceInput for GdalDatasource {
     fn retrieve_features<F>(&self,
-                            _layer: &Layer,
+                            layer: &Layer,
                             _extent: &Extent,
                             _zoom: u8,
                             _grid: &Grid,
@@ -58,7 +58,7 @@ impl DatasourceInput for GdalDatasource {
         where F: FnMut(&Feature)
     {
         let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
-        let layer = dataset.layer(0).unwrap();
+        let layer = dataset.layer_by_name(layer.table_name.as_ref().unwrap()).unwrap();
         for feature in layer.features().take(10) {
             let feat = VectorFeature::new(&feature);
             read(&feat);
@@ -74,12 +74,14 @@ fn test_gdal_api() {
     use gdal::vector::Dataset;
 
     let mut dataset = Dataset::open(Path::new("natural_earth.gpkg")).unwrap();
-    let layer = dataset.layer(0).unwrap();
+    let layer = dataset.layer_by_name("ne_10m_populated_places").unwrap();
     let feature = layer.features().next().unwrap();
     let name_field = feature.field("NAME").unwrap();
     let geometry = feature.geometry();
-    assert_eq!(name_field.to_string(), Some("Colonia del Sacramento".to_string()));
-    assert_eq!(geometry.wkt().unwrap(), "POINT (-6438719.62282072 -4093437.71441017)".to_string());
+    assert_eq!(name_field.to_string(),
+               Some("Colonia del Sacramento".to_string()));
+    assert_eq!(geometry.wkt().unwrap(),
+               "POINT (-6438719.62282072 -4093437.71441017)".to_string());
 }
 
 
