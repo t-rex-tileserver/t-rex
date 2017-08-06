@@ -5,8 +5,8 @@
 
 use datasource::DatasourceInput;
 use gdal;
-use gdal::vector::Dataset;
-use core::feature::{Feature, FeatureAttr};
+use gdal::vector::{Dataset, FieldValue};
+use core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use core::geom::{self, GeometryType};
 use core::grid::Extent;
 use core::grid::Grid;
@@ -24,26 +24,47 @@ impl GdalDatasource {
     }
 }
 
-struct VectorFeature<'a>(&'a gdal::vector::Feature<'a>);
-
-
-impl<'a> VectorFeature<'a> {
-    pub fn new(feat: &'a gdal::vector::Feature<'a>) -> VectorFeature<'a> {
-        VectorFeature(feat)
-    }
+struct VectorFeature<'a> {
+    layer: &'a Layer,
+    fields_defn: &'a Vec<gdal::vector::Field<'a>>,
+    feature: &'a gdal::vector::Feature<'a>,
 }
+
 
 impl<'a> Feature for VectorFeature<'a> {
     fn fid(&self) -> Option<u64> {
         None // TODO
     }
     fn attributes(&self) -> Vec<FeatureAttr> {
-        let attrs = Vec::new();
-        // TODO
+        let mut attrs = Vec::new();
+        for (_i, field) in self.fields_defn.into_iter().enumerate() {
+            let field_value = self.feature.field(&field.name()); //TODO: get by index
+            let val = match field_value {
+                Ok(FieldValue::StringValue(v)) => Some(FeatureAttrValType::String(v)),
+                Ok(FieldValue::IntegerValue(v)) => Some(FeatureAttrValType::Int(v as i64)),
+                Ok(FieldValue::RealValue(v)) => Some(FeatureAttrValType::Double(v)),
+                Err(err) => {
+                    warn!("Layer '{}' - skipping field '{}': {}",
+                          self.layer.name,
+                          field.name(),
+                          err);
+                    None
+                }
+            };
+            // match field.field_type {
+            //    OGRFieldType::OFTString => {
+            if let Some(val) = val {
+                let fattr = FeatureAttr {
+                    key: field.name(),
+                    value: val,
+                };
+                attrs.push(fattr);
+            };
+        }
         attrs
     }
     fn geometry(&self) -> Result<GeometryType, String> {
-        let _ogrgeom = self.0.geometry();
+        let _ogrgeom = self.feature.geometry();
         Ok(GeometryType::Point(geom::Point::new(960000.0, 6002729.0, Some(3857)))) //TODO
     }
 }
@@ -58,9 +79,16 @@ impl DatasourceInput for GdalDatasource {
         where F: FnMut(&Feature)
     {
         let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
-        let layer = dataset.layer_by_name(layer.table_name.as_ref().unwrap()).unwrap();
-        for feature in layer.features().take(10) {
-            let feat = VectorFeature::new(&feature);
+        let ogr_layer = dataset
+            .layer_by_name(layer.table_name.as_ref().unwrap())
+            .unwrap();
+        let fields_defn = ogr_layer.defn().fields().collect::<Vec<_>>();
+        for feature in ogr_layer.features() {
+            let feat = VectorFeature {
+                layer: layer,
+                fields_defn: &fields_defn,
+                feature: &feature,
+            };
             read(&feat);
         }
     }
@@ -105,9 +133,18 @@ fn test_gdal_retrieve() {
     ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
         assert_eq!("Ok(Point(Point { x: 960000, y: 6002729, srid: Some(3857) }))",
                    &*format!("{:?}", feat.geometry()));
-        assert_eq!(0, feat.attributes().len());
+        assert_eq!(3, feat.attributes().len());
+        assert_eq!(feat.attributes()[0].key, "SCALERANK");
+        assert_eq!(feat.attributes()[1].key, "NAME");
+        assert_eq!(feat.attributes()[2].key, "POP_MAX");
+        if reccnt == 0 {
+            assert_eq!(feat.attributes()[0].value, FeatureAttrValType::Int(10));
+            assert_eq!(feat.attributes()[1].value,
+                       FeatureAttrValType::String("Colonia del Sacramento".to_string()));
+            assert_eq!(feat.attributes()[2].value, FeatureAttrValType::Int(21714));
+        }
         assert_eq!(None, feat.fid());
         reccnt += 1;
     });
-    assert_eq!(10, reccnt);
+    assert_eq!(14644, reccnt);
 }

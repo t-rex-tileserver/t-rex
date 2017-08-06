@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate log;
 extern crate gdal;
 extern crate t_rex_core;
 

@@ -11,6 +11,7 @@ workspace = ".."
 [dependencies]
 #gdal = { git = "https://github.com/pka/rust-gdal", branch = "t-rex" }
 gdal = { path = "../../rust-gdal" }
+log = "*"
 
 [dependencies.t-rex-core]
 path = "../t-rex-core"
