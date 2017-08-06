@@ -33,7 +33,16 @@ struct VectorFeature<'a> {
 
 impl<'a> Feature for VectorFeature<'a> {
     fn fid(&self) -> Option<u64> {
-        None // TODO
+        self.layer
+            .fid_field
+            .as_ref()
+            .and_then(|fid| {
+                          let field_value = self.feature.field(&fid);
+                          match field_value {
+                              Ok(FieldValue::IntegerValue(v)) => Some(v as u64),
+                              _ => None,
+                          }
+                      })
     }
     fn attributes(&self) -> Vec<FeatureAttr> {
         let mut attrs = Vec::new();
@@ -119,6 +128,7 @@ fn test_gdal_retrieve() {
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("ne_10m_populated_places"));
     layer.geometry_field = Some(String::from("wkb_geometry"));
+    layer.fid_field = Some(String::from("SCALERANK"));
     layer.geometry_type = Some(String::from("POINT"));
     let grid = Grid::web_mercator();
     let extent = Extent {
@@ -142,8 +152,8 @@ fn test_gdal_retrieve() {
             assert_eq!(feat.attributes()[1].value,
                        FeatureAttrValType::String("Colonia del Sacramento".to_string()));
             assert_eq!(feat.attributes()[2].value, FeatureAttrValType::Int(21714));
+            assert_eq!(Some(10), feat.fid());
         }
-        assert_eq!(None, feat.fid());
         reccnt += 1;
     });
     assert_eq!(14644, reccnt);
