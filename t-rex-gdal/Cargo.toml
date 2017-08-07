@@ -9,9 +9,8 @@ authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 workspace = ".."
 
 [dependencies]
-#gdal = { git = "https://github.com/pka/rust-gdal", branch = "t-rex" }
-gdal = { path = "../../rust-gdal" }
-gdal-sys = { path = "../../rust-gdal/gdal-sys" }
+gdal = { git = "https://github.com/pka/rust-gdal", branch = "t-rex" }
+#gdal = { path = "../../rust-gdal" }
 log = "*"
 
 [dependencies.t-rex-core]

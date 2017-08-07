@@ -5,8 +5,7 @@
 
 use datasource::DatasourceInput;
 use gdal;
-use gdal::vector::{Dataset, Geometry, FieldValue};
-use gdal_sys::ogr;
+use gdal::vector::{Dataset, Geometry, WkbType, FieldValue};
 use core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use core::geom::{self, GeometryType};
 use core::grid::Extent;
@@ -33,7 +32,7 @@ trait ToGeo {
 impl ToGeo for Geometry {
     /// Convert OGR geomtry to t-rex EWKB geometry type (XY only)
     fn to_geo(&self, srid: Option<i32>) -> GeometryType {
-        let geometry_type = unsafe { ogr::OGR_G_GetGeometryType(self.c_geometry()) };
+        let geometry_type = self.geometry_type();
 
         let ring = |n: usize| {
             let ring = unsafe { self._get_geometry(n) };
@@ -44,17 +43,16 @@ impl ToGeo for Geometry {
         };
 
         match geometry_type {
-            ogr::WKB_POINT => {
-                let (x, y, _) = self.get_point(0); //TODO: ZM support?
+            WkbType::WkbPoint => {
+                let (x, y, _) = self.get_point(0);
                 GeometryType::Point(geom::Point {
                                         x: x,
                                         y: y,
                                         srid: srid,
                                     })
             }
-            ogr::WKB_MULTIPOINT => {
-                let point_count = unsafe { ogr::OGR_G_GetGeometryCount(self.c_geometry()) } as
-                                  usize;
+            WkbType::WkbMultipoint => {
+                let point_count = self.geometry_count();
                 let coords = (0..point_count)
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
                              GeometryType::Point(p) => p,
@@ -66,7 +64,7 @@ impl ToGeo for Geometry {
                                              srid: srid,
                                          })
             }
-            ogr::WKB_LINESTRING => {
+            WkbType::WkbLinestring => {
                 let coords = self.get_point_vec()
                     .iter()
                     .map(|&(x, y, _)| {
@@ -82,9 +80,8 @@ impl ToGeo for Geometry {
                                              srid: srid,
                                          })
             }
-            ogr::WKB_MULTILINESTRING => {
-                let string_count = unsafe { ogr::OGR_G_GetGeometryCount(self.c_geometry()) } as
-                                   usize;
+            WkbType::WkbMultilinestring => {
+                let string_count = self.geometry_count();
                 let strings = (0..string_count)
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
                              GeometryType::LineString(s) => s,
@@ -96,17 +93,16 @@ impl ToGeo for Geometry {
                                                   srid: srid,
                                               })
             }
-            ogr::WKB_POLYGON => {
-                let ring_count = unsafe { ogr::OGR_G_GetGeometryCount(self.c_geometry()) } as usize;
+            WkbType::WkbPolygon => {
+                let ring_count = self.geometry_count();
                 let rings = (0..ring_count).map(|n| ring(n)).collect();
                 GeometryType::Polygon(geom::Polygon {
                                           rings: rings,
                                           srid: srid,
                                       })
             }
-            ogr::WKB_MULTIPOLYGON => {
-                let string_count = unsafe { ogr::OGR_G_GetGeometryCount(self.c_geometry()) } as
-                                   usize;
+            WkbType::WkbMultipolygon => {
+                let string_count = self.geometry_count();
                 let strings = (0..string_count)
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
                              GeometryType::Polygon(s) => s,
@@ -119,8 +115,8 @@ impl ToGeo for Geometry {
                                            })
             }
             /* TODO:
-            ogr::WKB_GEOMETRYCOLLECTION => {
-                let item_count = unsafe { ogr::OGR_G_GetGeometryCount(self.c_geometry()) } as usize;
+            WkbType::WkbGeometrycollection => {
+                let item_count = self.geometry_count();
                 let geometry_list = (0..item_count)
                     .map(|n| unsafe { self._get_geometry(n) }.to_geo(srid))
                     .collect();
