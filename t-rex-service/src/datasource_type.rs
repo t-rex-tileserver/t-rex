@@ -3,9 +3,11 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::{DatasourceInput, DummyDatasource, PostgisInput};
+use datasource::{DatasourceInput, PostgisInput};
 #[cfg(feature = "with-gdal")]
 use gdal_ds::GdalDatasource;
+#[cfg(not(feature = "with-gdal"))]
+use datasource::DummyDatasource;
 use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::Layer;

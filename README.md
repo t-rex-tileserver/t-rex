@@ -68,11 +68,11 @@ t-rex is written in [Rust](https://www.rust-lang.org/).
 
 Build:
 
-    cargo build
+    cargo build --all-features
 
 Run tests:
 
-    cargo test --all
+    cargo test --all-features --all
 
 Run server:
 
@@ -104,7 +104,7 @@ Creating test database:
 
 Run the tests with
 
-    cargo test --all -- --ignored
+    cargo test --all-features --all -- --ignored
 
 
 License
