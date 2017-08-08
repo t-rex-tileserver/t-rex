@@ -9,7 +9,8 @@ use core::grid::Extent;
 use core::layer::Layer;
 use core::Config;
 use cache::{Tilecache, Nocache};
-use service::mvt::{Tileset, MvtService};
+use service::tileset::Tileset;
+use mvt_service::MvtService;
 
 
 fn mvt_service() -> MvtService {

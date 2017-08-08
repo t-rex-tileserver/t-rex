@@ -66,7 +66,7 @@ fn test_tile_values() {
 fn test_read_from_file() {
     // Command line decoding:
     // protoc --decode=vector_tile.Tile src/mvt/vector_tile.proto <src/test/tile.pbf
-    let mut f = File::open("src/test/tile.pbf").unwrap();
+    let mut f = File::open("../t-rex-service/src/test/tile.pbf").unwrap();
     let tile = Tile::read_from(&mut f).unwrap();
     println!("{:#?}", tile);
     let ref layer = tile.get_layers()[0];

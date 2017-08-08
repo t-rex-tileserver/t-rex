@@ -99,7 +99,7 @@ environment variable `DBCONN`. Example:
 Creating test database:
 
     # Set Postgresql environment variables when needed: PGHOST, PGPORT, PGUSER, PGPASSWORD
-    cd src/test
+    cd t-rex-service/src/test
     make
 
 Run the tests with

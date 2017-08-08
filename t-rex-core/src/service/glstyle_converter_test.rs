@@ -185,7 +185,7 @@ pub fn layer_style_from_config() {
     use core::read_config;
     use core::config::ApplicationCfg;
 
-    let config: ApplicationCfg = read_config("src/test/example.toml").unwrap();
+    let config: ApplicationCfg = read_config("../t-rex-service/src/test/example.toml").unwrap();
 
     let ref style = config.tilesets[0].style.clone().unwrap();
 

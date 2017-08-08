@@ -16,10 +16,12 @@ extern crate clap;
 extern crate open;
 
 extern crate t_rex_core;
-
-pub mod server;
+extern crate t_rex_service;
 
 use t_rex_core::core;
 use t_rex_core::datasource;
 use t_rex_core::service;
 use t_rex_core::cache;
+use t_rex_service::mvt_service;
+
+pub mod server;

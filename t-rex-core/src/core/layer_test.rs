@@ -4,8 +4,8 @@
 //
 
 use core::layer::Layer;
-use service::mvt::Tileset;
 use core::config::Config;
+use service::tileset::Tileset;
 
 
 fn layer_from_config(toml: &str) -> Result<Layer, String> {

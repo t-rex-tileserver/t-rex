@@ -3,10 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-pub mod mvt;
+pub mod tileset;
 pub mod glstyle_converter;
-
-#[cfg(test)]
-mod mvt_test;
 #[cfg(test)]
 mod glstyle_converter_test;

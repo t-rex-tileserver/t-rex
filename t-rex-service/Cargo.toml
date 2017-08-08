@@ -1,6 +1,6 @@
 [package]
-name = "t-rex-core"
-version = "0.7.8"
+name = "t-rex-service"
+version = "0.8.0-dev"
 description = "vector tile server"
 repository = "https://github.com/pka/t-rex"
 readme = "../README.md"
@@ -9,18 +9,12 @@ authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 workspace = ".."
 
 [dependencies]
-toml = "*"
-fallible-iterator = "*"
-r2d2 = "*"
-r2d2_postgres = "*"
-postgis = "~0.4.0"
-protobuf = "*"
 serde = "*"
 serde_derive = "*"
 serde_json = "*"
 log = "*"
-flate2 = "*"
+pbr = "*"
 
-[dependencies.postgres]
-version = "*"
-features = ["with-native-tls"]
+[dependencies.t-rex-core]
+path = "../t-rex-core"
+version = "0.7.8-dev"

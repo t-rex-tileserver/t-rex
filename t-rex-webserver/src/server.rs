@@ -6,7 +6,8 @@
 use core::config::ApplicationCfg;
 use datasource::postgis::PostgisInput;
 use core::grid::Grid;
-use service::mvt::{MvtService, Tileset};
+use service::tileset::Tileset;
+use mvt_service::MvtService;
 use core::{Config, read_config, parse_config};
 use core::config::DEFAULT_CONFIG;
 use serde_json;

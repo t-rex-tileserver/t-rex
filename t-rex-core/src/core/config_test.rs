@@ -9,7 +9,7 @@ use core::config::ApplicationCfg;
 
 #[test]
 fn test_load_config() {
-    let config = read_config("src/test/example.toml");
+    let config = read_config("../t-rex-service/src/test/example.toml");
     println!("{:#?}", config);
     let config: ApplicationCfg = config.expect("load_config returned Err");
     assert!(config.service.mvt.viewer);

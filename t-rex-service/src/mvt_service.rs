@@ -9,7 +9,7 @@ use core::grid::{Grid, Extent, ExtentInt};
 use core::layer::Layer;
 use core::Config;
 use core::ApplicationCfg;
-use core::config::TilesetCfg;
+use service::tileset::{Tileset, WORLD_EXTENT};
 use mvt::tile::Tile;
 use mvt::vector_tile;
 use cache::{Cache, Tilecache};
@@ -17,13 +17,6 @@ use serde_json;
 use pbr::ProgressBar;
 use std::io::Stdout;
 
-
-/// Collection of layers in one MVT
-pub struct Tileset {
-    pub name: String,
-    pub extent: Option<Extent>,
-    pub layers: Vec<Layer>,
-}
 
 /// Mapbox Vector Tile Service
 pub struct MvtService {
@@ -473,65 +466,6 @@ impl MvtService {
     }
 }
 
-static WORLD_EXTENT: Extent = Extent {
-    minx: -180.0,
-    miny: -90.0,
-    maxx: 180.0,
-    maxy: 90.0,
-};
-
-impl Tileset {
-    pub fn minzoom(&self) -> u8 {
-        0 // TODO: from layers or config?
-    }
-    pub fn maxzoom(&self) -> u8 {
-        22 // TODO: from layers or config?
-    }
-    pub fn get_extent(&self) -> &Extent {
-        self.extent.as_ref().unwrap_or(&WORLD_EXTENT)
-    }
-    pub fn get_center(&self) -> (f64, f64) {
-        let ext = self.get_extent();
-        (ext.maxx - (ext.maxx - ext.minx) / 2.0, ext.maxy - (ext.maxy - ext.miny) / 2.0)
-    }
-    pub fn get_start_zoom(&self) -> u8 {
-        2 // TODO: from config
-    }
-    pub fn gen_runtime_config_from_input(&self, input: &PostgisInput) -> String {
-        let mut config = String::new();
-        for layer in &self.layers {
-            config.push_str(&layer.gen_runtime_config_from_input(input));
-        }
-        config
-    }
-}
-
-impl<'a> Config<'a, Tileset, TilesetCfg> for Tileset {
-    fn from_config(tileset_cfg: &TilesetCfg) -> Result<Self, String> {
-        let layers = tileset_cfg
-            .layers
-            .iter()
-            .map(|layer| Layer::from_config(layer).unwrap())
-            .collect();
-        Ok(Tileset {
-               name: tileset_cfg.name.clone(),
-               extent: tileset_cfg.extent.clone(),
-               layers: layers,
-           })
-    }
-    fn gen_config() -> String {
-        let mut config = String::new();
-        config.push_str(&Layer::gen_config());
-        config
-    }
-    fn gen_runtime_config(&self) -> String {
-        let mut config = String::new();
-        for layer in &self.layers {
-            config.push_str(&layer.gen_runtime_config());
-        }
-        config
-    }
-}
 
 impl<'a> Config<'a, MvtService, ApplicationCfg> for MvtService {
     fn from_config(config: &ApplicationCfg) -> Result<Self, String> {

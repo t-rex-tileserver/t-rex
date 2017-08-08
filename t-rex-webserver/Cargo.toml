@@ -23,3 +23,7 @@ open = "*"
 [dependencies.t-rex-core]
 path = "../t-rex-core"
 version = "0.7.8-dev"
+
+[dependencies.t-rex-service]
+path = "../t-rex-service"
+version = "0.8.0-dev"
