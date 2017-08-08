@@ -12,12 +12,15 @@ name = "t_rex"
 
 [dependencies]
 t-rex-core = { path = "t-rex-core" }
-t-rex-gdal = { path = "t-rex-gdal" }
+t-rex-gdal = { path = "t-rex-gdal", optional = true }
 t-rex-service = { path = "t-rex-service" }
 t-rex-webserver = { path = "t-rex-webserver" }
 clap = "*"
 log = "*"
 env_logger = "*"
 time = "*"
+
+[features]
+with-gdal = ["t-rex-gdal"]
 
 [workspace]

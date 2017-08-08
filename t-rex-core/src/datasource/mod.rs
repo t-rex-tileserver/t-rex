@@ -8,5 +8,5 @@ pub mod postgis;
 #[cfg(test)]
 mod postgis_test;
 
-pub use self::datasource::DatasourceInput;
+pub use self::datasource::{DatasourceInput, DummyDatasource};
 pub use self::postgis::PostgisInput;

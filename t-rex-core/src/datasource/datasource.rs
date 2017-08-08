@@ -25,3 +25,27 @@ pub trait DatasourceInput {
                             read: F)
         where F: FnMut(&Feature);
 }
+
+pub struct DummyDatasource;
+
+impl DatasourceInput for DummyDatasource {
+    fn connected(&self) -> DummyDatasource {
+        unimplemented!();
+    }
+    fn detect_data_columns(&self, _layer: &Layer, _sql: Option<&String>) -> Vec<(String, String)> {
+        unimplemented!();
+    }
+    fn extent_from_wgs84(&self, _extent: &Extent, _dest_srid: i32) -> Option<Extent> {
+        unimplemented!();
+    }
+    fn prepare_queries(&mut self, _layer: &Layer, _grid_srid: i32) {}
+    fn retrieve_features<F>(&self,
+                            _layer: &Layer,
+                            _extent: &Extent,
+                            _zoom: u8,
+                            _grid: &Grid,
+                            _read: F)
+        where F: FnMut(&Feature)
+    {
+    }
+}

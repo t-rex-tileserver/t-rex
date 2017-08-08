@@ -22,3 +22,7 @@ version = "0.7.8-dev"
 [dependencies.t-rex-gdal]
 path = "../t-rex-gdal"
 version = "0.8.0-dev"
+optional = true
+
+[features]
+with-gdal = ["t-rex-gdal"]

@@ -3,7 +3,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::{DatasourceInput, PostgisInput};
+use datasource::{DatasourceInput, DummyDatasource, PostgisInput};
+#[cfg(feature = "with-gdal")]
 use gdal_ds::GdalDatasource;
 use core::grid::Extent;
 use core::grid::Grid;
@@ -15,25 +16,25 @@ use core::config::DatasourceCfg;
 
 pub enum Datasource {
     Postgis(PostgisInput),
+    #[cfg(feature = "with-gdal")]
     Gdal(GdalDatasource),
+    #[cfg(not(feature = "with-gdal"))]
+    Gdal(DummyDatasource),
 }
 
 impl DatasourceInput for Datasource {
-    /// New instance with connected pool
     fn connected(&self) -> Datasource {
         match self {
             &Datasource::Postgis(ref ds) => Datasource::Postgis(ds.connected()),
             &Datasource::Gdal(ref ds) => Datasource::Gdal(ds.connected()),
         }
     }
-    // Return column field names and Rust compatible type conversion - without geometry column
     fn detect_data_columns(&self, layer: &Layer, sql: Option<&String>) -> Vec<(String, String)> {
         match self {
             &Datasource::Postgis(ref ds) => ds.detect_data_columns(layer, sql),
             &Datasource::Gdal(ref ds) => ds.detect_data_columns(layer, sql),
         }
     }
-    /// Projected extent
     fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent> {
         match self {
             &Datasource::Postgis(ref ds) => ds.extent_from_wgs84(extent, dest_srid),
@@ -94,7 +95,7 @@ fn test_datasource_from_config() {
         "#;
     let pg = match ds_from_config(toml).unwrap() {
         Datasource::Postgis(pg) => pg,
-        Datasource::Gdal(_ds) => unimplemented!(),
+        _ => panic!(),
     };
     assert_eq!(pg.connection_url,
                "postgresql://pi@localhost/natural_earth_vectors");
