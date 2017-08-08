@@ -12,11 +12,11 @@ main() {
     fi
 
     #cross test --target $TARGET
-    cross test --all --target $TARGET --release
+    cross test -p t-rex-core -p t-rex-service -p t-rex-webserver --target $TARGET --release
 
-    cargo test --all --target $TARGET
+    cargo test -p t-rex-core -p t-rex-service -p t-rex-webserver --target $TARGET
     # cross ignores DBCONN env variable (https://github.com/japaric/cross/issues/76)
-    cargo test --all --target $TARGET -- --ignored
+    cargo test -p t-rex-core -p t-rex-service -p t-rex-webserver --target $TARGET -- --ignored
 
     #cross run --target $TARGET
     cargo run --target $TARGET
