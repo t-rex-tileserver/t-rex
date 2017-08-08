@@ -231,34 +231,6 @@ impl PostgisInput {
             queries: BTreeMap::new(),
         }
     }
-    /// New instance with connected pool
-    pub fn connected(&self) -> PostgisInput {
-        let pool_size = 10; //FIXME: make configurable
-        let config = r2d2::Config::builder().pool_size(pool_size).build();
-        // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
-        let manager = PostgresConnectionManager::new(self.connection_url.as_ref(), TlsMode::None)
-            .unwrap();
-        let pool = r2d2::Pool::new(config, manager)
-            .or_else(|e| match e.description() {
-                         "unable to initialize connections" => {
-                info!("Couldn't connect with TlsMode::None - retrying with TlsMode::Require");
-                let config = r2d2::Config::builder().pool_size(pool_size).build();
-                let negotiator = NativeTls::new().unwrap();
-                let manager =
-                    PostgresConnectionManager::new(self.connection_url.as_ref(),
-                                                   TlsMode::Require(Box::new(negotiator)))
-                            .unwrap();
-                r2d2::Pool::new(config, manager)
-            }
-                         _ => Err(e),
-                     })
-            .unwrap();
-        PostgisInput {
-            connection_url: self.connection_url.clone(),
-            conn_pool: Some(pool),
-            queries: BTreeMap::new(),
-        }
-    }
     pub fn conn(&self) -> r2d2::PooledConnection<PostgresConnectionManager> {
         let pool = self.conn_pool.as_ref().unwrap();
         //debug!("{:?}", pool);
@@ -385,20 +357,6 @@ impl PostgisInput {
             }
         }
     }
-    // Return column field names and Rust compatible type conversion - without geometry column
-    pub fn detect_data_columns(&self,
-                               layer: &Layer,
-                               sql: Option<&String>)
-                               -> Vec<(String, String)> {
-        debug!("detect_data_columns for layer {} with sql {:?}",
-               layer.name,
-               sql);
-        let cols = self.detect_columns(layer, sql);
-        let filter_cols = vec![layer.geometry_field.as_ref().unwrap()];
-        cols.into_iter()
-            .filter(|&(ref col, _)| !filter_cols.contains(&&col))
-            .collect()
-    }
     /// Execute query returning an extent as polygon
     fn extent_query(&self, sql: String) -> Option<Extent> {
         use postgis::ewkb;
@@ -439,16 +397,6 @@ impl PostgisInput {
         let sql = format!("SELECT {} AS extent FROM {}",
                           extent_sql,
                           layer.table_name.as_ref().unwrap());
-        self.extent_query(sql)
-    }
-    /// Projected extent
-    pub fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent> {
-        let sql = format!("SELECT ST_Transform(ST_MakeEnvelope({}, {}, {}, {}, 4326), {}) AS extent",
-                          extent.minx,
-                          extent.miny,
-                          extent.maxx,
-                          extent.maxy,
-                          dest_srid);
         self.extent_query(sql)
     }
     /// Build geometry selection expression for feature query.
@@ -637,7 +585,63 @@ impl PostgisInput {
         query.replace_params(bbox_expr);
         Some(query)
     }
-    pub fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
+    fn query(&self, layer: &Layer, zoom: u8) -> Option<&SqlQuery> {
+        let ref queries = self.queries[&layer.name];
+        queries.get(&zoom)
+    }
+}
+
+impl DatasourceInput for PostgisInput {
+    /// New instance with connected pool
+    fn connected(&self) -> PostgisInput {
+        let pool_size = 10; //FIXME: make configurable
+        let config = r2d2::Config::builder().pool_size(pool_size).build();
+        // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
+        let manager = PostgresConnectionManager::new(self.connection_url.as_ref(), TlsMode::None)
+            .unwrap();
+        let pool = r2d2::Pool::new(config, manager)
+            .or_else(|e| match e.description() {
+                         "unable to initialize connections" => {
+                info!("Couldn't connect with TlsMode::None - retrying with TlsMode::Require");
+                let config = r2d2::Config::builder().pool_size(pool_size).build();
+                let negotiator = NativeTls::new().unwrap();
+                let manager =
+                    PostgresConnectionManager::new(self.connection_url.as_ref(),
+                                                   TlsMode::Require(Box::new(negotiator)))
+                            .unwrap();
+                r2d2::Pool::new(config, manager)
+            }
+                         _ => Err(e),
+                     })
+            .unwrap();
+        PostgisInput {
+            connection_url: self.connection_url.clone(),
+            conn_pool: Some(pool),
+            queries: BTreeMap::new(),
+        }
+    }
+    // Return column field names and Rust compatible type conversion - without geometry column
+    fn detect_data_columns(&self, layer: &Layer, sql: Option<&String>) -> Vec<(String, String)> {
+        debug!("detect_data_columns for layer {} with sql {:?}",
+               layer.name,
+               sql);
+        let cols = self.detect_columns(layer, sql);
+        let filter_cols = vec![layer.geometry_field.as_ref().unwrap()];
+        cols.into_iter()
+            .filter(|&(ref col, _)| !filter_cols.contains(&&col))
+            .collect()
+    }
+    /// Projected extent
+    fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent> {
+        let sql = format!("SELECT ST_Transform(ST_MakeEnvelope({}, {}, {}, {}, 4326), {}) AS extent",
+                          extent.minx,
+                          extent.miny,
+                          extent.maxx,
+                          extent.maxy,
+                          dest_srid);
+        self.extent_query(sql)
+    }
+    fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
         let mut queries = BTreeMap::new();
 
         for layer_query in &layer.query {
@@ -669,13 +673,6 @@ impl PostgisInput {
 
         self.queries.insert(layer.name.clone(), queries);
     }
-    fn query(&self, layer: &Layer, zoom: u8) -> Option<&SqlQuery> {
-        let ref queries = self.queries[&layer.name];
-        queries.get(&zoom)
-    }
-}
-
-impl DatasourceInput for PostgisInput {
     fn retrieve_features<F>(&self,
                             layer: &Layer,
                             extent: &Extent,

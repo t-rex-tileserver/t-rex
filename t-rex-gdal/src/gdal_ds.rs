@@ -185,6 +185,19 @@ impl<'a> Feature for VectorFeature<'a> {
 }
 
 impl DatasourceInput for GdalDatasource {
+    /// New instance with connected pool
+    fn connected(&self) -> GdalDatasource {
+        unimplemented!();
+    }
+    /// Return column field names and Rust compatible type conversion - without geometry column
+    fn detect_data_columns(&self, _layer: &Layer, _sql: Option<&String>) -> Vec<(String, String)> {
+        unimplemented!();
+    }
+    /// Projected extent
+    fn extent_from_wgs84(&self, _extent: &Extent, _dest_srid: i32) -> Option<Extent> {
+        unimplemented!();
+    }
+    fn prepare_queries(&mut self, _layer: &Layer, _grid_srid: i32) {}
     fn retrieve_features<F>(&self,
                             layer: &Layer,
                             _extent: &Extent,

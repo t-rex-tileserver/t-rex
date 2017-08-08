@@ -3,7 +3,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::PostgisInput;
+use datasource::{DatasourceInput, PostgisInput};
+use datasource_type::Datasource;
 use core::grid::Grid;
 use core::grid::Extent;
 use core::layer::Layer;
@@ -38,7 +39,7 @@ fn mvt_service() -> MvtService {
         layers: vec![layer],
     };
     let mut service = MvtService {
-        input: pg,
+        input: Datasource::Postgis(pg),
         grid: grid,
         tilesets: vec![tileset],
         cache: Tilecache::Nocache(Nocache),

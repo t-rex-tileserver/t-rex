@@ -3,7 +3,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::{Datasource, DatasourceInput};
+use datasource_type::Datasource;
+use datasource::DatasourceInput;
 use datasource::PostgisInput;
 use core::grid::{Grid, Extent, ExtentInt};
 use core::layer::Layer;
@@ -20,7 +21,7 @@ use std::io::Stdout;
 
 /// Mapbox Vector Tile Service
 pub struct MvtService {
-    pub input: PostgisInput,
+    pub input: Datasource,
     pub grid: Grid,
     pub tilesets: Vec<Tileset>,
     pub cache: Tilecache,
@@ -478,7 +479,7 @@ impl<'a> Config<'a, MvtService, ApplicationCfg> for MvtService {
             .collect(); //FIXME: avoid unwrap
         let cache = Tilecache::from_config(&config)?;
         Ok(MvtService {
-               input: pg,
+               input: Datasource::Postgis(pg),
                grid: grid,
                tilesets: tilesets,
                cache: cache,
@@ -499,7 +500,12 @@ impl<'a> Config<'a, MvtService, ApplicationCfg> for MvtService {
         config.push_str(&self.input.gen_runtime_config());
         config.push_str(&self.grid.gen_runtime_config());
         for tileset in &self.tilesets {
-            config.push_str(&tileset.gen_runtime_config_from_input(&self.input));
+            match self.input {
+                Datasource::Postgis(ref ds) => {
+                    config.push_str(&tileset.gen_runtime_config_from_input(ds))
+                }
+                Datasource::Gdal(ref _ds) => unimplemented!(),
+            }
         }
         config.push_str(&self.cache.gen_runtime_config());
         config
