@@ -1,6 +1,6 @@
 [package]
 name = "t-rex-webserver"
-version = "0.7.8"
+version = "0.8.0-dev"
 description = "vector tile server"
 repository = "https://github.com/pka/t-rex"
 readme = "../README.md"
