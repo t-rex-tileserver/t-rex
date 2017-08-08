@@ -2,12 +2,10 @@
 
 set -ex
 
-# TODO This is the "test phase", tweak it as you see fit
 main() {
-    cross build --target $TARGET
-    cross build --target $TARGET --release
-
     if [ ! -z $DISABLE_TESTS ]; then
+        cross build --target $TARGET
+        cross build --target $TARGET --release
         return
     fi
 
@@ -19,7 +17,7 @@ main() {
     cargo test -p t-rex-core -p t-rex-service -p t-rex-webserver --target $TARGET -- --ignored
 
     #cross run --target $TARGET
-    cargo run --target $TARGET
+    #cargo run --target $TARGET
     cross run --target $TARGET --release
 }
 
