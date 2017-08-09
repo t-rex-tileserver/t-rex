@@ -4,21 +4,26 @@ set -ex
 
 main() {
     if [ ! -z $DISABLE_TESTS ]; then
-        cross build --target $TARGET
-        cross build --target $TARGET --release
+        cargo build --target $TARGET
+        cargo build --target $TARGET --release
         return
     fi
 
-    #cross test --target $TARGET
-    cross test -p t-rex-core -p t-rex-service -p t-rex-webserver --target $TARGET --release
+    #cargo test --target $TARGET
+    # cross failes with linking -lgdal
+    cargo test --all --target $TARGET --release
 
-    cargo test -p t-rex-core -p t-rex-service -p t-rex-webserver --target $TARGET
-    # cross ignores DBCONN env variable (https://github.com/japaric/cross/issues/76)
-    cargo test -p t-rex-core -p t-rex-service -p t-rex-webserver --target $TARGET -- --ignored
+    cargo test --all --target $TARGET
+    # libgdal-dev from ubuntugis drops postgresql-9.4-postgis-2.3
+    if [ $TRAVIS_OS_NAME = osx ]; then
+        # cross ignores DBCONN env variable (https://github.com/japaric/cross/issues/76)
+        cargo test --all --target $TARGET -- --ignored
+    fi
 
-    #cross run --target $TARGET
     #cargo run --target $TARGET
-    cross run --target $TARGET --release
+    cargo run --target $TARGET --release
+
+    ldd target/$TARGET/release/t_rex
 }
 
 # we don't run the "test phase" when doing deploys
