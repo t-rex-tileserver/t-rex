@@ -192,7 +192,19 @@ impl DatasourceInput for GdalDatasource {
         GdalDatasource { path: self.path.clone() }
     }
     fn detect_layers(&self, _detect_geometry_types: bool) -> Vec<Layer> {
-        Vec::new() //TODO
+        let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
+        (0..dataset.count())
+            .map(|idx| {
+                let gdal_layer = dataset.layer(idx).unwrap();
+                let name = gdal_layer.name();
+                let mut layer = Layer::new(&name);
+                layer.table_name = Some(name);
+                //layer.geometry_field = Some("wkb_geometry".to_string()); //TODO
+                //layer.geometry_type = Some("POINT".to_string()); //TODO
+                //layer.srid = Some(3857); //TODO
+                layer
+            })
+            .collect()
     }
     /// Return column field names and Rust compatible type conversion - without geometry column
     fn detect_data_columns(&self, _layer: &Layer, _sql: Option<&String>) -> Vec<(String, String)> {
@@ -217,10 +229,12 @@ impl DatasourceInput for GdalDatasource {
         where F: FnMut(&Feature)
     {
         let mut dataset = Dataset::open(Path::new(&self.path)).unwrap(); //TODO: Store gdal::vector::Layer
-        let ogr_layer = dataset
-            .layer_by_name(layer.table_name.as_ref().unwrap())
-            .unwrap();
+        let layer_name = layer.table_name.as_ref().unwrap();
+        debug!("retrieve_features layer: {}", layer_name);
+        let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
         let fields_defn = ogr_layer.defn().fields().collect::<Vec<_>>();
+        let mut cnt = 0;
+        let query_limit = layer.query_limit.unwrap_or(0);
         for feature in ogr_layer.features() {
             let feat = VectorFeature {
                 layer: layer,
@@ -228,6 +242,12 @@ impl DatasourceInput for GdalDatasource {
                 feature: &feature,
             };
             read(&feat);
+            cnt += 1;
+            if cnt == query_limit {
+                info!("Feature count limited (query_limit={})", cnt);
+                break;
+            }
         }
+        debug!("Feature count: {}", cnt);
     }
 }

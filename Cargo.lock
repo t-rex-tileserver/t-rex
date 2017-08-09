@@ -230,7 +230,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "gdal"
 version = "0.2.1"
-source = "git+https://github.com/pka/rust-gdal?branch=t-rex#33ba07a1ceff060c2645bc3b51b3cab98950c5f6"
+source = "git+https://github.com/pka/rust-gdal?branch=t-rex#423d4f6ca6d3ca51f60627c6ef551c67e439f046"
 dependencies = [
  "error-chain 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "gdal-sys 0.1.0 (git+https://github.com/pka/rust-gdal?branch=t-rex)",
@@ -242,7 +242,7 @@ dependencies = [
 [[package]]
 name = "gdal-sys"
 version = "0.1.0"
-source = "git+https://github.com/pka/rust-gdal?branch=t-rex#33ba07a1ceff060c2645bc3b51b3cab98950c5f6"
+source = "git+https://github.com/pka/rust-gdal?branch=t-rex#423d4f6ca6d3ca51f60627c6ef551c67e439f046"
 dependencies = [
  "libc 0.2.23 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
