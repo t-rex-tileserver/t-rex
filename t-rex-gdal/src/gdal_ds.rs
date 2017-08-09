@@ -11,11 +11,13 @@ use core::geom::{self, GeometryType};
 use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::Layer;
+use service::tileset::WORLD_EXTENT;
 use std::path::Path;
 
 
 pub struct GdalDatasource {
     pub path: String,
+    // We don't store the Dataset, because we need mut access for getting layers
 }
 
 impl GdalDatasource {
@@ -187,17 +189,25 @@ impl<'a> Feature for VectorFeature<'a> {
 impl DatasourceInput for GdalDatasource {
     /// New instance with connected pool
     fn connected(&self) -> GdalDatasource {
-        unimplemented!();
+        GdalDatasource { path: self.path.clone() }
+    }
+    fn detect_layers(&self, _detect_geometry_types: bool) -> Vec<Layer> {
+        Vec::new() //TODO
     }
     /// Return column field names and Rust compatible type conversion - without geometry column
     fn detect_data_columns(&self, _layer: &Layer, _sql: Option<&String>) -> Vec<(String, String)> {
-        unimplemented!();
+        Vec::new() //TODO
     }
     /// Projected extent
     fn extent_from_wgs84(&self, _extent: &Extent, _dest_srid: i32) -> Option<Extent> {
         unimplemented!();
     }
-    fn prepare_queries(&mut self, _layer: &Layer, _grid_srid: i32) {}
+    fn layer_extent(&self, _layer: &Layer) -> Option<Extent> {
+        Some(WORLD_EXTENT.clone()) // TODO
+    }
+    fn prepare_queries(&mut self, _layer: &Layer, _grid_srid: i32) {
+        // TODO: Prepare gdal::vector::Layer
+    }
     fn retrieve_features<F>(&self,
                             layer: &Layer,
                             _extent: &Extent,
@@ -206,7 +216,7 @@ impl DatasourceInput for GdalDatasource {
                             mut read: F)
         where F: FnMut(&Feature)
     {
-        let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
+        let mut dataset = Dataset::open(Path::new(&self.path)).unwrap(); //TODO: Store gdal::vector::Layer
         let ogr_layer = dataset
             .layer_by_name(layer.table_name.as_ref().unwrap())
             .unwrap();

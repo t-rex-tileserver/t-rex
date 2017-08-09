@@ -13,6 +13,7 @@ serde = "*"
 serde_derive = "*"
 serde_json = "*"
 log = "*"
+clap = "*"
 pbr = "*"
 
 [dependencies.t-rex-core]
@@ -23,4 +24,5 @@ path = "../t-rex-gdal"
 optional = true
 
 [features]
+default = ["with-gdal"]
 with-gdal = ["t-rex-gdal"]

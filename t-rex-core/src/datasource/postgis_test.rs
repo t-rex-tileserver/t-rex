@@ -298,7 +298,7 @@ fn test_tls() {
         Result::Err(_) => panic!("DBCONN undefined"),
     };
     // Connection fails on Travis with
-    //  InitializationError(Some("Error opening a connection: Error initiating SSL session: The OpenSSL library reported an error: The OpenSSL library reported an error: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify 
+    //  InitializationError(Some("Error opening a connection: Error initiating SSL session: The OpenSSL library reported an error: The OpenSSL library reported an error: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify
     // see https://github.com/sfackler/rust-postgres/issues/278
     //assert!(conn.is_ok());
     //assert!(conn.unwrap().execute("SELECT 1::VARCHAR", &[]).is_ok());

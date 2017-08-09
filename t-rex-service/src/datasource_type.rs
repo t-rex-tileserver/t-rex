@@ -14,6 +14,7 @@ use core::layer::Layer;
 use core::feature::Feature;
 use core::Config;
 use core::config::DatasourceCfg;
+use clap::ArgMatches;
 
 
 pub enum Datasource {
@@ -31,6 +32,12 @@ impl DatasourceInput for Datasource {
             &Datasource::Gdal(ref ds) => Datasource::Gdal(ds.connected()),
         }
     }
+    fn detect_layers(&self, detect_geometry_types: bool) -> Vec<Layer> {
+        match self {
+            &Datasource::Postgis(ref ds) => ds.detect_layers(detect_geometry_types),
+            &Datasource::Gdal(ref ds) => ds.detect_layers(detect_geometry_types),
+        }
+    }
     fn detect_data_columns(&self, layer: &Layer, sql: Option<&String>) -> Vec<(String, String)> {
         match self {
             &Datasource::Postgis(ref ds) => ds.detect_data_columns(layer, sql),
@@ -41,6 +48,12 @@ impl DatasourceInput for Datasource {
         match self {
             &Datasource::Postgis(ref ds) => ds.extent_from_wgs84(extent, dest_srid),
             &Datasource::Gdal(ref ds) => ds.extent_from_wgs84(extent, dest_srid),
+        }
+    }
+    fn layer_extent(&self, layer: &Layer) -> Option<Extent> {
+        match self {
+            &Datasource::Postgis(ref ds) => ds.layer_extent(layer),
+            &Datasource::Gdal(ref ds) => ds.layer_extent(layer),
         }
     }
     fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
@@ -75,6 +88,27 @@ impl<'a> Config<'a, Datasource, DatasourceCfg> for Datasource {
         match self {
             &Datasource::Postgis(ref ds) => ds.gen_runtime_config(),
             &Datasource::Gdal(ref _ds) => unimplemented!(),
+        }
+    }
+}
+
+
+impl Datasource {
+    pub fn from_args(args: &ArgMatches) -> Option<Datasource> {
+        if let Some(dbconn) = args.value_of("dbconn") {
+            Some(Datasource::Postgis(PostgisInput::new(dbconn)))
+        } else if let Some(datasource) = args.value_of("datasource") {
+            #[cfg(feature = "with-gdal")]
+            let ds = Some(Datasource::Gdal(GdalDatasource::new(datasource)));
+            #[cfg(not(feature = "with-gdal"))]
+            let ds = {
+                error!("GDAL datasource not supported in this build");
+                debug!("datasource: {}", datasource);
+                None
+            };
+            ds
+        } else {
+            None
         }
     }
 }
@@ -130,4 +164,31 @@ fn test_datasource_config_errors() {
     assert_eq!(ds_from_config(toml).err(),
                Some(" - invalid type: boolean `true`, expected a string for key `url`"
                         .to_string()));
+}
+
+#[cfg(feature = "with-gdal")]
+mod gdal_tests {
+
+    #[test]
+    fn test_gdal_datasource_from_args() {
+        use super::Datasource;
+        use t_rex_core::datasource::DatasourceInput;
+        use clap::{App, Arg};
+
+        const GPKG: &str = "../t-rex-gdal/natural_earth.gpkg";
+        let args = App::new("t_rex")
+            .arg(Arg::with_name("datasource")
+                     .long("datasource")
+                     .takes_value(true))
+            .get_matches_from(vec!["t_rex", "--datasource", GPKG]);
+        assert_eq!(args.value_of("datasource"), Some(GPKG));
+        let ds = Datasource::from_args(&args);
+        if let Some(Datasource::Gdal(ref gdal_ds)) = ds {
+            assert_eq!(gdal_ds.path, GPKG);
+        } else {
+            assert!(ds.is_some());
+        }
+        ds.unwrap().connected();
+    }
+
 }

@@ -8,7 +8,7 @@ use core::config::LayerCfg;
 use service::glstyle_converter::toml_style_to_gljson;
 use std::collections::HashMap;
 use datasource::PostgisInput;
-
+use datasource::DatasourceInput;
 
 #[derive(Debug)]
 pub struct LayerQuery {

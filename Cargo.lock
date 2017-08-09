@@ -784,6 +784,7 @@ dependencies = [
 name = "t-rex-service"
 version = "0.8.0-dev"
 dependencies = [
+ "clap 2.24.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "pbr 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",

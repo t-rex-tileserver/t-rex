@@ -10,6 +10,7 @@ extern crate serde;
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
+extern crate clap;
 extern crate pbr;
 
 extern crate t_rex_core;

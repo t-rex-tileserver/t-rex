@@ -231,63 +231,11 @@ impl PostgisInput {
             queries: BTreeMap::new(),
         }
     }
-    pub fn conn(&self) -> r2d2::PooledConnection<PostgresConnectionManager> {
+    fn conn(&self) -> r2d2::PooledConnection<PostgresConnectionManager> {
         let pool = self.conn_pool.as_ref().unwrap();
         //debug!("{:?}", pool);
         // Waits for at most Config::connection_timeout (default: 30s) before returning an error.
         pool.get().unwrap()
-    }
-    pub fn detect_layers(&self, detect_geometry_types: bool) -> Vec<Layer> {
-        info!("Detecting layers from geometry_columns");
-        let mut layers: Vec<Layer> = Vec::new();
-        let conn = self.conn();
-        let sql = "SELECT * FROM geometry_columns ORDER BY f_table_schema,f_table_name DESC";
-        for row in &conn.query(sql, &[]).unwrap() {
-            let schema: String = row.get("f_table_schema");
-            let table_name: String = row.get("f_table_name");
-            let geometry_column: String = row.get("f_geometry_column");
-            let srid: i32 = row.get("srid");
-            let geomtype: String = row.get("type");
-            let mut layer = Layer::new(&table_name);
-            layer.table_name = if schema != "public" {
-                Some(format!("{}.{}", schema, table_name))
-            } else {
-                Some(table_name.clone())
-            };
-            layer.geometry_field = Some(geometry_column.clone());
-            layer.geometry_type = match &geomtype as &str {
-                "GEOMETRY" => {
-                    if detect_geometry_types {
-                        let field = layer.geometry_field.as_ref().unwrap();
-                        let table = layer.table_name.as_ref().unwrap();
-                        let types = self.detect_geometry_types(&layer);
-                        if types.len() == 1 {
-                            debug!("Detected unique geometry type in '{}.{}': {}",
-                                   table,
-                                   field,
-                                   &types[0]);
-                            Some(types[0].clone())
-                        } else {
-                            let type_list = types.join(", ");
-                            warn!("Multiple geometry types in '{}.{}': {}",
-                                  table,
-                                  field,
-                                  type_list);
-                            Some("GEOMETRY".to_string())
-                        }
-                    } else {
-                        warn!("Unknwon geometry type of '{}.{}'",
-                              table_name,
-                              geometry_column);
-                        Some("GEOMETRY".to_string())
-                    }
-                }
-                _ => Some(geomtype.clone()),
-            };
-            layer.srid = Some(srid);
-            layers.push(layer);
-        }
-        layers
     }
     pub fn detect_geometry_types(&self, layer: &Layer) -> Vec<String> {
         let field = layer.geometry_field.as_ref().unwrap();
@@ -381,23 +329,6 @@ impl PostgisInput {
             }
             _ => None,
         }
-    }
-    /// Detect extent of layer (in WGS84)
-    pub fn layer_extent(&self, layer: &Layer) -> Option<Extent> {
-        let ref geom_name = layer.geometry_field.as_ref().unwrap();
-        let layer_srid = layer.srid.unwrap_or(0);
-        if !layer.query.is_empty() || layer_srid <= 0 {
-            info!("Couldn't detect extent of layer {}, because of custom queries or an unknown SRID",
-                  layer.name);
-            return None;
-        }
-        let extent_sql = format!("ST_Transform(ST_SetSRID(ST_Extent({}),{}),4326)",
-                                 geom_name,
-                                 layer_srid);
-        let sql = format!("SELECT {} AS extent FROM {}",
-                          extent_sql,
-                          layer.table_name.as_ref().unwrap());
-        self.extent_query(sql)
     }
     /// Build geometry selection expression for feature query.
     fn build_geom_expr(&self, layer: &Layer, grid_srid: i32, raw_geom: bool) -> String {
@@ -620,7 +551,59 @@ impl DatasourceInput for PostgisInput {
             queries: BTreeMap::new(),
         }
     }
-    // Return column field names and Rust compatible type conversion - without geometry column
+    fn detect_layers(&self, detect_geometry_types: bool) -> Vec<Layer> {
+        info!("Detecting layers from geometry_columns");
+        let mut layers: Vec<Layer> = Vec::new();
+        let conn = self.conn();
+        let sql = "SELECT * FROM geometry_columns ORDER BY f_table_schema,f_table_name DESC";
+        for row in &conn.query(sql, &[]).unwrap() {
+            let schema: String = row.get("f_table_schema");
+            let table_name: String = row.get("f_table_name");
+            let geometry_column: String = row.get("f_geometry_column");
+            let srid: i32 = row.get("srid");
+            let geomtype: String = row.get("type");
+            let mut layer = Layer::new(&table_name);
+            layer.table_name = if schema != "public" {
+                Some(format!("{}.{}", schema, table_name))
+            } else {
+                Some(table_name.clone())
+            };
+            layer.geometry_field = Some(geometry_column.clone());
+            layer.geometry_type = match &geomtype as &str {
+                "GEOMETRY" => {
+                    if detect_geometry_types {
+                        let field = layer.geometry_field.as_ref().unwrap();
+                        let table = layer.table_name.as_ref().unwrap();
+                        let types = self.detect_geometry_types(&layer);
+                        if types.len() == 1 {
+                            debug!("Detected unique geometry type in '{}.{}': {}",
+                                   table,
+                                   field,
+                                   &types[0]);
+                            Some(types[0].clone())
+                        } else {
+                            let type_list = types.join(", ");
+                            warn!("Multiple geometry types in '{}.{}': {}",
+                                  table,
+                                  field,
+                                  type_list);
+                            Some("GEOMETRY".to_string())
+                        }
+                    } else {
+                        warn!("Unknwon geometry type of '{}.{}'",
+                              table_name,
+                              geometry_column);
+                        Some("GEOMETRY".to_string())
+                    }
+                }
+                _ => Some(geomtype.clone()),
+            };
+            layer.srid = Some(srid);
+            layers.push(layer);
+        }
+        layers
+    }
+    /// Return column field names and Rust compatible type conversion - without geometry column
     fn detect_data_columns(&self, layer: &Layer, sql: Option<&String>) -> Vec<(String, String)> {
         debug!("detect_data_columns for layer {} with sql {:?}",
                layer.name,
@@ -639,6 +622,23 @@ impl DatasourceInput for PostgisInput {
                           extent.maxx,
                           extent.maxy,
                           dest_srid);
+        self.extent_query(sql)
+    }
+    /// Detect extent of layer (in WGS84)
+    fn layer_extent(&self, layer: &Layer) -> Option<Extent> {
+        let ref geom_name = layer.geometry_field.as_ref().unwrap();
+        let layer_srid = layer.srid.unwrap_or(0);
+        if !layer.query.is_empty() || layer_srid <= 0 {
+            info!("Couldn't detect extent of layer {}, because of custom queries or an unknown SRID",
+                  layer.name);
+            return None;
+        }
+        let extent_sql = format!("ST_Transform(ST_SetSRID(ST_Extent({}),{}),4326)",
+                                 geom_name,
+                                 layer_srid);
+        let sql = format!("SELECT {} AS extent FROM {}",
+                          extent_sql,
+                          layer.table_name.as_ref().unwrap());
         self.extent_query(sql)
     }
     fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {

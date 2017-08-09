@@ -6,7 +6,6 @@
 use core::config::ApplicationCfg;
 use datasource_type::Datasource;
 use datasource::DatasourceInput;
-use datasource::postgis::PostgisInput;
 use core::grid::Grid;
 use service::tileset::Tileset;
 use mvt_service::MvtService;
@@ -182,14 +181,14 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
         };
         let simplify = bool::from_str(args.value_of("simplify").unwrap_or("true")).unwrap_or(false);
         let clip = bool::from_str(args.value_of("clip").unwrap_or("true")).unwrap_or(false);
-        if let Some(dbconn) = args.value_of("dbconn") {
-            let pg = PostgisInput::new(dbconn).connected();
+        if let Some(ds) = Datasource::from_args(args) {
+            let dsconn = ds.connected();
             let grid = Grid::web_mercator();
             let detect_geometry_types = true; //TODO: add option (maybe slow for many geometries)
-            let mut layers = pg.detect_layers(detect_geometry_types);
+            let mut layers = dsconn.detect_layers(detect_geometry_types);
             let mut tilesets = Vec::new();
             while let Some(mut l) = layers.pop() {
-                let extent = pg.layer_extent(&l);
+                let extent = dsconn.layer_extent(&l);
                 l.simplify = Some(simplify);
                 if simplify {
                     // Limit features by default unless simplify is set to false
@@ -217,14 +216,14 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
                 tilesets.push(tileset);
             }
             let svc = MvtService {
-                input: Datasource::Postgis(pg),
+                input: dsconn,
                 grid: grid,
                 tilesets: tilesets,
                 cache: cache,
             };
             (svc, config)
         } else {
-            println!("Either 'config' or 'dbconn' is required");
+            println!("Either 'config', 'dbconn' or 'datasource' is required");
             process::exit(1)
         }
     }

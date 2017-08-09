@@ -21,6 +21,7 @@ env_logger = "*"
 time = "*"
 
 [features]
+default = ["with-gdal"]
 with-gdal = ["t-rex-gdal"]
 
 [workspace]

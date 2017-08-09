@@ -12,8 +12,10 @@ use core::feature::Feature;
 pub trait DatasourceInput {
     /// New instance with connected pool
     fn connected(&self) -> Self;
+    fn detect_layers(&self, detect_geometry_types: bool) -> Vec<Layer>;
     /// Return column field names and Rust compatible type conversion - without geometry column
     fn detect_data_columns(&self, layer: &Layer, sql: Option<&String>) -> Vec<(String, String)>;
+    fn layer_extent(&self, layer: &Layer) -> Option<Extent>;
     fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32);
     /// Projected extent
     fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent>;
@@ -32,10 +34,16 @@ impl DatasourceInput for DummyDatasource {
     fn connected(&self) -> DummyDatasource {
         unimplemented!();
     }
+    fn detect_layers(&self, _detect_geometry_types: bool) -> Vec<Layer> {
+        unimplemented!();
+    }
     fn detect_data_columns(&self, _layer: &Layer, _sql: Option<&String>) -> Vec<(String, String)> {
         unimplemented!();
     }
     fn extent_from_wgs84(&self, _extent: &Extent, _dest_srid: i32) -> Option<Extent> {
+        unimplemented!();
+    }
+    fn layer_extent(&self, _layer: &Layer) -> Option<Extent> {
         unimplemented!();
     }
     fn prepare_queries(&mut self, _layer: &Layer, _grid_srid: i32) {}

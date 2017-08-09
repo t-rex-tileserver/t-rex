@@ -119,6 +119,7 @@ fn main() {
         .about("vector tile server specialized on publishing MVT tiles from a PostGIS database")
         .subcommand(SubCommand::with_name("serve")
                         .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'
+                                              --datasource=[FILE_OR_GDAL_DS] 'GDAL datasource specification'
                                               --simplify=[true|false] 'Simplify geometries'
                                               --clip=[true|false] 'Clip geometries'
                                               --cache=[DIR] 'Use tile cache in DIR'
