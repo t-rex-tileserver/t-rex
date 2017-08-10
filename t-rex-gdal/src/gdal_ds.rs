@@ -192,19 +192,28 @@ impl DatasourceInput for GdalDatasource {
         GdalDatasource { path: self.path.clone() }
     }
     fn detect_layers(&self, _detect_geometry_types: bool) -> Vec<Layer> {
+        let mut layers: Vec<Layer> = Vec::new();
         let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
-        (0..dataset.count())
-            .map(|idx| {
-                let gdal_layer = dataset.layer(idx).unwrap();
-                let name = gdal_layer.name();
+        for idx in 0..dataset.count() {
+            let gdal_layer = dataset.layer(idx).unwrap();
+            let name = gdal_layer.name();
+            for (n, field) in gdal_layer.defn().geom_fields().enumerate() {
                 let mut layer = Layer::new(&name);
-                layer.table_name = Some(name);
-                //layer.geometry_field = Some("wkb_geometry".to_string()); //TODO
+                layer.table_name = if n == 0 {
+                    Some(name.clone())
+                } else {
+                    Some(format!("{}_{}", &name, n))
+                };
+                layer.geometry_field = Some(field.name());
                 //layer.geometry_type = Some("POINT".to_string()); //TODO
-                //layer.srid = Some(3857); //TODO
-                layer
-            })
-            .collect()
+                let srs = field.spatial_ref().unwrap();
+                if let Ok(epsg) = srs.auth_code() {
+                    layer.srid = Some(epsg)
+                }
+                layers.push(layer)
+            }
+        }
+        layers
     }
     /// Return column field names and Rust compatible type conversion - without geometry column
     fn detect_data_columns(&self, _layer: &Layer, _sql: Option<&String>) -> Vec<(String, String)> {
