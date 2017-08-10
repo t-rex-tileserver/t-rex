@@ -23,7 +23,12 @@ main() {
     #cargo run --target $TARGET
     cargo run --target $TARGET --release
 
-    ldd target/$TARGET/release/t_rex
+    if [ $TRAVIS_OS_NAME = linux ]; then
+        ldd target/$TARGET/release/t_rex
+    fi
+    if [ $TRAVIS_OS_NAME = osx ]; then
+        otool -L target/$TARGET/release/t_rex
+    fi
 }
 
 # we don't run the "test phase" when doing deploys
