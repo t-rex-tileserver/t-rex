@@ -222,7 +222,7 @@ impl DatasourceInput for GdalDatasource {
     }
     fn retrieve_features<F>(&self,
                             layer: &Layer,
-                            _extent: &Extent,
+                            extent: &Extent,
                             _zoom: u8,
                             _grid: &Grid,
                             mut read: F)
@@ -232,6 +232,17 @@ impl DatasourceInput for GdalDatasource {
         let layer_name = layer.table_name.as_ref().unwrap();
         debug!("retrieve_features layer: {}", layer_name);
         let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
+        let bbox = if let Some(buffer_size) = layer.buffer_size {
+            let buf = f64::from(buffer_size);
+            Geometry::bbox(extent.minx - buf,
+                           extent.miny - buf,
+                           extent.maxx + buf,
+                           extent.maxy + buf)
+                    .unwrap()
+        } else {
+            Geometry::bbox(extent.minx, extent.miny, extent.maxx, extent.maxy).unwrap()
+        };
+        ogr_layer.set_spatial_filter(&bbox);
         let fields_defn = ogr_layer.defn().fields().collect::<Vec<_>>();
         let mut cnt = 0;
         let query_limit = layer.query_limit.unwrap_or(0);

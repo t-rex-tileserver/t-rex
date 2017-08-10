@@ -9,6 +9,9 @@ authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 build = "build.rs"
 workspace = ".."
 
+[lib]
+doctest = false
+
 [dependencies]
 nickel = "*"
 hyper = "*"

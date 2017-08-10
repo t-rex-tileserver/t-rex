@@ -9,6 +9,7 @@ authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 
 [[bin]]
 name = "t_rex"
+doctest = false
 
 [dependencies]
 t-rex-core = { path = "t-rex-core" }

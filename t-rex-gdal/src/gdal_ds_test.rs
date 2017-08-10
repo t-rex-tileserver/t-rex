@@ -9,12 +9,12 @@ use core::feature::FeatureAttrValType;
 use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::Layer;
+use std::path::Path;
+use gdal::vector::Dataset;
 
 
 #[test]
 fn test_gdal_api() {
-    use std::path::Path;
-    use gdal::vector::Dataset;
 
     let mut dataset = Dataset::open(Path::new("natural_earth.gpkg")).unwrap();
     let layer = dataset.layer_by_name("ne_10m_populated_places").unwrap();
@@ -31,7 +31,6 @@ fn test_gdal_api() {
                "POINT (-6438719.622820721007884 -4093437.714410172309726)".to_string());
 }
 
-#[cfg(not(target_os = "macos"))] // ? ERROR 1: pragma integrity_check on 'natural_earth.gpkg' failed
 #[test]
 fn test_gdal_retrieve_points() {
     let mut layer = Layer::new("points");
@@ -52,11 +51,7 @@ fn test_gdal_retrieve_points() {
     let mut reccnt = 0;
     ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
         if reccnt == 0 {
-            #[cfg(not(target_os = "macos"))]
-            assert_eq!("Ok(Point(Point { x: -6438719.622820721, y: -4093437.7144101723, srid: Some(3857) }))",
-                       &*format!("{:?}", feat.geometry()));
-            #[cfg(target_os = "macos")]
-            assert_eq!("Ok(Point(Point { x: -6438719.622820721007884, y: -4093437.714410172309726, srid: Some(3857) }))",
+            assert_eq!("Ok(Point(Point { x: 831219.9062494118, y: 5928485.165733484, srid: Some(3857) }))",
                        &*format!("{:?}", feat.geometry()));
         }
         assert_eq!(3, feat.attributes().len());
@@ -64,15 +59,15 @@ fn test_gdal_retrieve_points() {
         assert_eq!(feat.attributes()[1].key, "NAME");
         assert_eq!(feat.attributes()[2].key, "POP_MAX");
         if reccnt == 0 {
-            assert_eq!(feat.attributes()[0].value, FeatureAttrValType::Int(10));
+            assert_eq!(feat.attributes()[0].value, FeatureAttrValType::Int(4));
             assert_eq!(feat.attributes()[1].value,
-                       FeatureAttrValType::String("Colonia del Sacramento".to_string()));
-            assert_eq!(feat.attributes()[2].value, FeatureAttrValType::Int(21714));
-            assert_eq!(Some(10), feat.fid());
+                       FeatureAttrValType::String("Bern".to_string()));
+            assert_eq!(feat.attributes()[2].value, FeatureAttrValType::Int(275329));
+            assert_eq!(feat.fid(), Some(4));
         }
         reccnt += 1;
     });
-    assert_eq!(14644, reccnt);
+    assert_eq!(reccnt, 2);
 }
 
 #[test]
@@ -90,25 +85,39 @@ fn test_gdal_retrieve_multilines() {
         maxy: 5948635.3,
     };
 
+    let mut gdal_ds = Dataset::open(Path::new("natural_earth.gpkg")).unwrap();
+    let gdal_layer = gdal_ds
+        .layer_by_name(layer.table_name.as_ref().unwrap())
+        .unwrap();
+    assert_eq!(gdal_layer.features().count(), 1404);
+
     let ds = GdalDatasource::new("natural_earth.gpkg");
     let mut reccnt = 0;
+
+    // without buffer
+    ds.retrieve_features(&layer, &extent, 10, &grid, |_| { reccnt += 1; });
+    assert_eq!(reccnt, 0);
+
+    // with buffer
+    layer.buffer_size = Some(100000);
+    let mut reccnt = 0;
     ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
-        if reccnt == 1398 {
-            assert_eq!("Ok(MultiLineString(MultiLineStringT { lines: [LineStringT { points: [Point { x: 524057.9769470511, y: 6406083.8740046825, srid: Some(3857) }, Point { x: 523360.4182889238, y: 6406083.8740046825, srid: Some(3857) }], srid: Some(3857) }], srid: Some(3857) }))",
+        if reccnt == 1 {
+            assert_eq!("Ok(MultiLineString(MultiLineStringT { lines: [LineStringT { points: [Point { x: 682757.1012729447, y: 5813200.024936108, srid: Some(3857) }, Point { x: 683572.4295746532, y: 5814895.307100639, srid: Some(3857) }, Point { x: 684405.8762830653, y: 5815700.51643066, srid: Some(3857) }, Point { x: 686063.7104965394, y: 5817684.394041292, srid: Some(3857) }, Point { x: 687404.4725926834, y: 5820284.406662052, srid: Some(3857) }, Point { x: 688545.9322150754, y: 5823494.54626182, srid: Some(3857) }, Point { x: 691689.4757783283, y: 5831092.159555616, srid: Some(3857) }, Point { x: 692287.3831995813, y: 5833289.410580246, srid: Some(3857) }, Point { x: 694633.7168678325, y: 5836484.600127116, srid: Some(3857) }, Point { x: 697804.4380411424, y: 5840698.509721698, srid: Some(3857) }, Point { x: 701428.1193820703, y: 5843830.710570353, srid: Some(3857) }, Point { x: 704852.4982492463, y: 5844947.27781533, srid: Some(3857) }, Point { x: 708512.4164035813, y: 5845118.059404142, srid: Some(3857) }, Point { x: 712136.0977445092, y: 5846050.848060609, srid: Some(3857) }, Point { x: 721612.0244510319, y: 5852583.137171743, srid: Some(3857) }, Point { x: 728741.6174893066, y: 5853983.544356565, srid: Some(3857) }, Point { x: 736161.1050348545, y: 5853746.840167029, srid: Some(3857) }, Point { x: 752766.6247796519, y: 5849447.822084563, srid: Some(3857) }, Point { x: 752676.0327461276, y: 5849717.2707096655, srid: Some(3857) }, Point { x: 761236.9799140673, y: 5847509.349466373, srid: Some(3857) }, Point { x: 763248.1230582818, y: 5846142.818490322, srid: Some(3857) }, Point { x: 764335.2274605598, y: 5845131.196586606, srid: Some(3857) }], srid: Some(3857) }], srid: Some(3857) }))",
                        &*format!("{:?}", feat.geometry()));
         }
         assert_eq!(2, feat.attributes().len());
         assert_eq!(feat.attributes()[0].key, "scalerank");
         assert_eq!(feat.attributes()[1].key, "name");
-        if reccnt == 1398 {
-            assert_eq!(feat.attributes()[0].value, FeatureAttrValType::Double(8.0));
+        if reccnt == 1 {
+            assert_eq!(feat.attributes()[0].value, FeatureAttrValType::Double(6.0));
             assert_eq!(feat.attributes()[1].value,
-                       FeatureAttrValType::String("Meuse".to_string()));
+                       FeatureAttrValType::String("Rhne".to_string()));
             assert_eq!(None, feat.fid());
         }
         reccnt += 1;
     });
-    assert_eq!(1404, reccnt);
+    assert_eq!(reccnt, 5);
 }
 
 #[test]
@@ -129,20 +138,20 @@ fn test_gdal_retrieve_multipolys() {
     let ds = GdalDatasource::new("natural_earth.gpkg");
     let mut reccnt = 0;
     ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
-        if reccnt == 97 {
-            assert_eq!("Ok(MultiPolygon(MultiPolygonT { polygons: [PolygonT { rings: [LineStringT { points: [Point { x: 672711.8490145913, y: 6468481.737381289, srid: Some(3857) }, Point { x: 694939.8727280691, y: 6429360.233285289, srid: Some(3857) }, Point { x: 688658.0399394701, y: 6353928.606103209, srid: Some(3857) }, Point { x: 656535.5543245667, y: 6350309.278097487, srid: Some(3857) }, Point { x: 631632.5743412259, y: 6365185.930146941, srid: Some(3857) }, Point { x: 643695.764229205, y: 6461933.756740372, srid: Some(3857) }, Point { x: 672711.8490145913, y: 6468481.737381289, srid: Some(3857) }], srid: Some(3857) }], srid: Some(3857) }], srid: Some(3857) }))",
-                       &*format!("{:?}", feat.geometry()));
+        if reccnt == 0 {
+            assert_eq!("Ok(MultiPolygon(MultiPolygonT { polygons: [PolygonT { rings: [LineStringT { points: [Point { x: 1068024.3649477786, y: 6028202.019",
+                       &format!("{:?}", feat.geometry())[0..130]);
         }
         assert_eq!(2, feat.attributes().len());
         assert_eq!(feat.attributes()[0].key, "name");
         assert_eq!(feat.attributes()[1].key, "iso_a3");
-        if reccnt == 97 {
-            assert_eq!(feat.attributes()[0].value, FeatureAttrValType::String("Luxembourg".to_string()));
+        if reccnt == 0 {
+            assert_eq!(feat.attributes()[0].value, FeatureAttrValType::String("Switzerland".to_string()));
             assert_eq!(feat.attributes()[1].value,
-                       FeatureAttrValType::String("LUX".to_string()));
+                       FeatureAttrValType::String("CHE".to_string()));
             assert_eq!(None, feat.fid());
         }
         reccnt += 1;
     });
-    assert_eq!(177, reccnt);
+    assert_eq!(reccnt, 1);
 }
