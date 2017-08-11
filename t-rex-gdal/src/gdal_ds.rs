@@ -6,6 +6,7 @@
 use datasource::DatasourceInput;
 use gdal;
 use gdal::vector::{Dataset, Geometry, WkbType, FieldValue};
+use gdal::spatial_ref::{SpatialRef, CoordTransform};
 use core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use core::geom::{self, GeometryType};
 use core::grid::Extent;
@@ -135,6 +136,8 @@ impl ToGeo for Geometry {
 struct VectorFeature<'a> {
     layer: &'a Layer,
     fields_defn: &'a Vec<gdal::vector::Field<'a>>,
+    grid_srid: i32,
+    transform: Option<&'a CoordTransform>,
     feature: &'a gdal::vector::Feature<'a>,
 }
 
@@ -181,8 +184,15 @@ impl<'a> Feature for VectorFeature<'a> {
         attrs
     }
     fn geometry(&self) -> Result<GeometryType, String> {
-        let ogrgeom = self.feature.geometry(); //FIXME: support for multiple geometry columns
-        Ok(ogrgeom.to_geo(self.layer.srid))
+        let ogrgeom = if let Some(ref field) = self.layer.geometry_field {
+            self.feature.geometry_by_name(field).unwrap()
+        } else {
+            self.feature.geometry()
+        };
+        if let Some(ref transform) = self.transform {
+            ogrgeom.transform_inplace(transform).unwrap();
+        };
+        Ok(ogrgeom.to_geo(Some(self.grid_srid)))
     }
 }
 
@@ -220,14 +230,26 @@ impl DatasourceInput for GdalDatasource {
         Vec::new() //TODO
     }
     /// Projected extent
-    fn extent_from_wgs84(&self, _extent: &Extent, _dest_srid: i32) -> Option<Extent> {
-        unimplemented!();
+    fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent> {
+        let sref_in = SpatialRef::from_epsg(4326).unwrap();
+        let sref_out = SpatialRef::from_epsg(dest_srid as u32).unwrap();
+        let transform = CoordTransform::new(&sref_in, &sref_out).unwrap();
+
+        let mut xs = &mut [extent.minx, extent.maxx];
+        let mut ys = &mut [extent.miny, extent.maxy];
+        transform.transform_coord(xs, ys, &mut [0.0, 0.0]);
+        Some(Extent {
+                 minx: *xs.get(0).unwrap(),
+                 miny: *ys.get(0).unwrap(),
+                 maxx: *xs.get(1).unwrap(),
+                 maxy: *ys.get(1).unwrap(),
+             })
     }
     fn layer_extent(&self, _layer: &Layer) -> Option<Extent> {
         Some(WORLD_EXTENT.clone()) // TODO
     }
     fn prepare_queries(&mut self, _layer: &Layer, _grid_srid: i32) {
-        // TODO: Prepare gdal::vector::Layer
+        // TODO: Prepare gdal::vector::Layer, CoordTransform
     }
     fn retrieve_features<F>(&self,
                             layer: &Layer,
@@ -237,10 +259,20 @@ impl DatasourceInput for GdalDatasource {
                             mut read: F)
         where F: FnMut(&Feature)
     {
-        let mut dataset = Dataset::open(Path::new(&self.path)).unwrap(); //TODO: Store gdal::vector::Layer
+        let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
         let layer_name = layer.table_name.as_ref().unwrap();
         debug!("retrieve_features layer: {}", layer_name);
         let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
+
+        let transform = match layer.srid {
+            Some(srid) if srid != grid.srid => {
+                let sref_in = SpatialRef::from_epsg(srid as u32).unwrap();
+                let sref_out = SpatialRef::from_epsg(grid.srid as u32).unwrap();
+                Some(CoordTransform::new(&sref_in, &sref_out).unwrap())
+            }
+            _ => None,
+        };
+
         let bbox = if let Some(pixels) = layer.buffer_size {
             let pixel_width = grid.pixel_width(zoom);
             let buf = f64::from(pixels) * pixel_width;
@@ -253,6 +285,7 @@ impl DatasourceInput for GdalDatasource {
             Geometry::bbox(extent.minx, extent.miny, extent.maxx, extent.maxy).unwrap()
         };
         ogr_layer.set_spatial_filter(&bbox);
+
         let fields_defn = ogr_layer.defn().fields().collect::<Vec<_>>();
         let mut cnt = 0;
         let query_limit = layer.query_limit.unwrap_or(0);
@@ -260,6 +293,8 @@ impl DatasourceInput for GdalDatasource {
             let feat = VectorFeature {
                 layer: layer,
                 fields_defn: &fields_defn,
+                grid_srid: grid.srid,
+                transform: transform.as_ref(),
                 feature: &feature,
             };
             read(&feat);

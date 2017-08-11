@@ -46,10 +46,10 @@ fn test_detect_layers() {
 fn test_gdal_retrieve_points() {
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("ne_10m_populated_places"));
-    layer.geometry_field = Some(String::from("geom"));
+    //layer.geometry_field = Some(String::from("geom"));
     layer.srid = Some(3857);
     layer.fid_field = Some(String::from("SCALERANK"));
-    layer.geometry_type = Some(String::from("POINT"));
+    //layer.geometry_type = Some(String::from("POINT"));
     let grid = Grid::web_mercator();
     let extent = Extent {
         minx: 821850.9,
@@ -82,12 +82,66 @@ fn test_gdal_retrieve_points() {
 }
 
 #[test]
+fn test_coord_transformation() {
+    let mut layer = Layer::new("points");
+    layer.table_name = Some(String::from("ne_10m_populated_places"));
+    layer.geometry_field = Some(String::from("geom"));
+    layer.srid = Some(3857);
+    let grid = Grid::wgs84();
+    let extent = Extent {
+        minx: 821850.9,
+        miny: 5909499.5,
+        maxx: 860986.7,
+        maxy: 5948635.3,
+    };
+
+    let ds = GdalDatasource::new("natural_earth.gpkg");
+
+    let extent_wgs84 = Extent {
+        minx: 7.3828,
+        miny: 46.8000,
+        maxx: 7.7343,
+        maxy: 47.0401,
+    };
+    #[cfg(not(target_os = "macos"))]
+    let extent_3857 = Extent {
+        minx: 821849.5366285803,
+        miny: 5909489.863677091,
+        maxx: 860978.3376424159,
+        maxy: 5948621.871058013,
+    };
+    #[cfg(target_os = "macos")]
+    let extent_3857 = Extent {
+        minx: 821849.5366285803,
+        miny: 5909489.863677091,
+        maxx: 860978.3376424166,
+        maxy: 5948621.871058013,
+    };
+    assert_eq!(ds.extent_from_wgs84(&extent_wgs84, 3857).unwrap(),
+               extent_3857);
+
+    let mut reccnt = 0;
+    ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
+        if reccnt == 0 {
+            assert_eq!("Ok(Point(Point { x: 7.466975462482421, y: 46.916682758667704, srid: Some(4326) }))",
+                       &*format!("{:?}", feat.geometry()));
+        }
+        if reccnt == 0 {
+            assert_eq!(feat.attributes()[1].value,
+                       FeatureAttrValType::String("Bern".to_string()));
+        }
+        reccnt += 1;
+    });
+    assert_eq!(reccnt, 2);
+}
+
+#[test]
 fn test_gdal_retrieve_multilines() {
     let mut layer = Layer::new("multilines");
     layer.table_name = Some(String::from("ne_10m_rivers_lake_centerlines"));
-    layer.geometry_field = Some(String::from("geom"));
+    //layer.geometry_field = Some(String::from("geom"));
     layer.srid = Some(3857);
-    layer.geometry_type = Some(String::from("MULTILINE"));
+    //layer.geometry_type = Some(String::from("MULTILINE"));
     let grid = Grid::web_mercator();
     let extent = Extent {
         minx: 821850.9,
@@ -139,9 +193,9 @@ fn test_gdal_retrieve_multilines() {
 fn test_gdal_retrieve_multipolys() {
     let mut layer = Layer::new("multipolys");
     layer.table_name = Some(String::from("ne_110m_admin_0_countries"));
-    layer.geometry_field = Some(String::from("geom"));
+    //layer.geometry_field = Some(String::from("geom"));
     layer.srid = Some(3857);
-    layer.geometry_type = Some(String::from("MULTIPOLYGON"));
+    //layer.geometry_type = Some(String::from("MULTIPOLYGON"));
     let grid = Grid::web_mercator();
     let extent = Extent {
         minx: 821850.9,
