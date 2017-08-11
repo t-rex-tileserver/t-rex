@@ -110,7 +110,11 @@ fn test_gdal_retrieve_multilines() {
     assert_eq!(reccnt, 0);
 
     // with buffer
-    layer.buffer_size = Some(100000);
+    layer.buffer_size = Some(600);
+
+    ds.retrieve_features(&layer, &extent, 22, &grid, |_| { reccnt += 1; });
+    assert_eq!(reccnt, 0);
+
     let mut reccnt = 0;
     ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
         if reccnt == 1 {

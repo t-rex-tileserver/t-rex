@@ -232,8 +232,8 @@ impl DatasourceInput for GdalDatasource {
     fn retrieve_features<F>(&self,
                             layer: &Layer,
                             extent: &Extent,
-                            _zoom: u8,
-                            _grid: &Grid,
+                            zoom: u8,
+                            grid: &Grid,
                             mut read: F)
         where F: FnMut(&Feature)
     {
@@ -241,8 +241,9 @@ impl DatasourceInput for GdalDatasource {
         let layer_name = layer.table_name.as_ref().unwrap();
         debug!("retrieve_features layer: {}", layer_name);
         let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
-        let bbox = if let Some(buffer_size) = layer.buffer_size {
-            let buf = f64::from(buffer_size);
+        let bbox = if let Some(pixels) = layer.buffer_size {
+            let pixel_width = grid.pixel_width(zoom);
+            let buf = f64::from(pixels) * pixel_width;
             Geometry::bbox(extent.minx - buf,
                            extent.miny - buf,
                            extent.maxx + buf,
