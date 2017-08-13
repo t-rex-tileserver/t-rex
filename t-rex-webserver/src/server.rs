@@ -4,7 +4,7 @@
 //
 
 use core::config::ApplicationCfg;
-use datasource_type::Datasource;
+use datasource_type::Datasources;
 use datasource::DatasourceInput;
 use core::grid::Grid;
 use service::tileset::Tileset;
@@ -181,12 +181,17 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
         };
         let simplify = bool::from_str(args.value_of("simplify").unwrap_or("true")).unwrap_or(false);
         let clip = bool::from_str(args.value_of("clip").unwrap_or("true")).unwrap_or(false);
-        if let Some(ds) = Datasource::from_args(args) {
+        let datasources = Datasources::from_args(args);
+        if datasources.datasources.is_empty() {
+            println!("Either 'config', 'dbconn' or 'datasource' is required");
+            process::exit(1)
+        }
+        let grid = Grid::web_mercator();
+        let mut tilesets = Vec::new();
+        let detect_geometry_types = true; //TODO: add option (maybe slow for many geometries)
+        for (_name, ds) in &datasources.datasources {
             let dsconn = ds.connected();
-            let grid = Grid::web_mercator();
-            let detect_geometry_types = true; //TODO: add option (maybe slow for many geometries)
             let mut layers = dsconn.detect_layers(detect_geometry_types);
-            let mut tilesets = Vec::new();
             while let Some(mut l) = layers.pop() {
                 let extent = dsconn.layer_extent(&l);
                 l.simplify = Some(simplify);
@@ -215,17 +220,15 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
                 };
                 tilesets.push(tileset);
             }
-            let svc = MvtService {
-                input: dsconn,
-                grid: grid,
-                tilesets: tilesets,
-                cache: cache,
-            };
-            (svc, config)
-        } else {
-            println!("Either 'config', 'dbconn' or 'datasource' is required");
-            process::exit(1)
         }
+        let mut svc = MvtService {
+            datasources: datasources,
+            grid: grid,
+            tilesets: tilesets,
+            cache: cache,
+        };
+        svc.connect(); //TODO: ugly - we connect twice
+        (svc, config)
     }
 }
 

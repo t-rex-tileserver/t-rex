@@ -4,15 +4,18 @@
 //
 
 use toml::Value;
+use std;
 use std::io::prelude::*;
 use std::fs::File;
 use core::grid::Extent;
 use serde::Deserialize;
 
 
-pub trait Config<'a, T, C: Deserialize<'a>> {
+pub trait Config<'a, C: Deserialize<'a>>
+    where Self: std::marker::Sized
+{
     /// Read configuration
-    fn from_config(config: &C) -> Result<T, String>;
+    fn from_config(config: &C) -> Result<Self, String>;
     /// Generate configuration template
     fn gen_config() -> String;
     /// Generate configuration template with runtime information
@@ -24,7 +27,7 @@ pub trait Config<'a, T, C: Deserialize<'a>> {
 #[derive(Deserialize, Debug)]
 pub struct ApplicationCfg {
     pub service: ServiceCfg,
-    pub datasource: DatasourceCfg,
+    pub datasource: Vec<DatasourceCfg>,
     pub grid: GridCfg,
     #[serde(rename = "tileset")]
     pub tilesets: Vec<TilesetCfg>,
@@ -44,9 +47,13 @@ pub struct ServiceMvtCfg {
 
 #[derive(Deserialize, Debug)]
 pub struct DatasourceCfg {
-    #[serde(rename = "type")]
-    pub dstype: String,
-    pub url: String,
+    pub name: Option<String>,
+    pub default: Option<bool>,
+    // Postgis
+    pub dbconn: Option<String>,
+    pub pool: Option<u16>,
+    // GDAL
+    pub path: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -101,6 +108,7 @@ pub struct LayerQueryCfg {
 #[derive(Deserialize, Debug)]
 pub struct LayerCfg {
     pub name: String,
+    pub datasource: Option<String>,
     pub geometry_field: Option<String>,
     pub geometry_type: Option<String>,
     /// Spatial reference system (PostGIS SRID)
@@ -145,9 +153,8 @@ pub const DEFAULT_CONFIG: &'static str = r#"
 [service.mvt]
 viewer = true
 
-[datasource]
-type = "postgis"
-url = ""
+[[datasource]]
+dbconn = ""
 
 [grid]
 predefined = "web_mercator"

@@ -5,7 +5,6 @@
 
 use core::grid::Extent;
 use core::layer::Layer;
-use datasource::PostgisInput;
 use core::config::Config;
 use core::config::TilesetCfg;
 
@@ -41,16 +40,9 @@ impl Tileset {
     pub fn get_start_zoom(&self) -> u8 {
         2 // TODO: from config
     }
-    pub fn gen_runtime_config_from_input(&self, input: &PostgisInput) -> String {
-        let mut config = String::new();
-        for layer in &self.layers {
-            config.push_str(&layer.gen_runtime_config_from_input(input));
-        }
-        config
-    }
 }
 
-impl<'a> Config<'a, Tileset, TilesetCfg> for Tileset {
+impl<'a> Config<'a, TilesetCfg> for Tileset {
     fn from_config(tileset_cfg: &TilesetCfg) -> Result<Self, String> {
         let layers = tileset_cfg
             .layers

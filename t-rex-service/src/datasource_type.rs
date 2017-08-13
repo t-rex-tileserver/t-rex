@@ -13,8 +13,9 @@ use core::grid::Grid;
 use core::layer::Layer;
 use core::feature::Feature;
 use core::Config;
-use core::config::DatasourceCfg;
+use core::config::{ApplicationCfg, DatasourceCfg};
 use clap::ArgMatches;
+use std::collections::HashMap;
 
 
 pub enum Datasource {
@@ -72,32 +73,82 @@ impl DatasourceInput for Datasource {
     }
 }
 
-impl<'a> Config<'a, Datasource, DatasourceCfg> for Datasource {
+impl<'a> Config<'a, DatasourceCfg> for Datasource {
     fn from_config(ds_cfg: &DatasourceCfg) -> Result<Self, String> {
-        match ds_cfg.dstype.as_str() {
-            "postgis" => {
-                PostgisInput::from_config(ds_cfg).and_then(|pg| Ok(Datasource::Postgis(pg)))
-            }
-            _ => Err(format!("Unsupported datasource '{}'", ds_cfg.dstype)),
+        if ds_cfg.dbconn.is_some() {
+            PostgisInput::from_config(ds_cfg).and_then(|ds| Ok(Datasource::Postgis(ds)))
+        } else if ds_cfg.path.is_some() {
+            GdalDatasource::from_config(ds_cfg).and_then(|ds| Ok(Datasource::Gdal(ds)))
+        } else {
+            Err(format!("Unsupported datasource"))
         }
     }
     fn gen_config() -> String {
         PostgisInput::gen_config()
+        //? GdalDatasource::gen_config()
     }
     fn gen_runtime_config(&self) -> String {
         match self {
             &Datasource::Postgis(ref ds) => ds.gen_runtime_config(),
-            &Datasource::Gdal(ref _ds) => unimplemented!(),
+            &Datasource::Gdal(ref ds) => ds.gen_runtime_config(),
         }
     }
 }
 
 
-impl Datasource {
-    pub fn from_args(args: &ArgMatches) -> Option<Datasource> {
+
+pub struct Datasources {
+    pub datasources: HashMap<String, Datasource>,
+    pub default: Option<String>,
+}
+
+impl<'a> Config<'a, ApplicationCfg> for Datasources {
+    fn from_config(app_cfg: &ApplicationCfg) -> Result<Self, String> {
+        let mut datasources = Datasources::new();
+        let default_name = "<noname>".to_string();
+        for ds_cfg in &app_cfg.datasource {
+            let name = ds_cfg.name.as_ref().unwrap_or(&default_name);
+            let ds = Datasource::from_config(&ds_cfg).unwrap();
+            datasources.add(name, ds);
+            if ds_cfg.default.unwrap_or(false) {
+                datasources.default = Some(name.clone());
+            }
+        }
+        datasources.setup();
+        Ok(datasources)
+    }
+    fn gen_config() -> String {
+        PostgisInput::gen_config()
+        //? GdalDatasource::gen_config()
+    }
+    fn gen_runtime_config(&self) -> String {
+        let mut config = String::new();
+        for (_name, ds) in &self.datasources {
+            //TODO: missing name & default
+            config.push_str(&ds.gen_runtime_config());
+        }
+        config
+    }
+}
+
+impl Datasources {
+    pub fn new() -> Self {
+        Datasources {
+            datasources: HashMap::new(),
+            default: None,
+        }
+    }
+    pub fn add(&mut self, name: &String, ds: Datasource) {
+        // TODO: check for duplicate names
+        self.datasources.insert(name.clone(), ds);
+    }
+    pub fn from_args(args: &ArgMatches) -> Self {
+        let mut datasources = Datasources::new();
         if let Some(dbconn) = args.value_of("dbconn") {
-            Some(Datasource::Postgis(PostgisInput::new(dbconn)))
-        } else if let Some(datasource) = args.value_of("datasource") {
+            datasources.add(&"dbconn".to_string(),
+                            Datasource::Postgis(PostgisInput::new(dbconn)));
+        }
+        if let Some(datasource) = args.value_of("datasource") {
             #[cfg(feature = "with-gdal")]
             let ds = Some(Datasource::Gdal(GdalDatasource::new(datasource)));
             #[cfg(not(feature = "with-gdal"))]
@@ -106,13 +157,37 @@ impl Datasource {
                 debug!("datasource: {}", datasource);
                 None
             };
-            ds
-        } else {
-            None
+            if let Some(ds) = ds {
+                datasources.add(&"datasource".to_string(), ds);
+            }
+        }
+        datasources.setup();
+        datasources
+    }
+    /// Finish initialization
+    pub fn setup(&mut self) {
+        // TODO: default should be first in config, not first in HashMap
+        if self.default.is_none() {
+            self.default = self.datasources.keys().cloned().next();
         }
     }
-}
+    pub fn datasource(&self, name: &Option<String>) -> Option<&Datasource> {
+        let key = name.as_ref().unwrap_or(self.default.as_ref().unwrap());
+        self.datasources.get(key)
 
+    }
+    pub fn datasource_mut(&mut self, name: &Option<String>) -> Option<&mut Datasource> {
+        let key = name.as_ref().unwrap_or(self.default.as_ref().unwrap());
+        self.datasources.get_mut(key)
+    }
+    pub fn default(&self) -> Option<&Datasource> {
+        match self.default {
+            Some(ref default) => self.datasources.get(default),
+            None => None,
+        }
+
+    }
+}
 
 #[cfg(test)]
 fn ds_from_config(toml: &str) -> Result<Datasource, String> {
@@ -125,9 +200,8 @@ fn ds_from_config(toml: &str) -> Result<Datasource, String> {
 #[test]
 fn test_datasource_from_config() {
     let toml = r#"
-        #[datasource]
-        type = "postgis"
-        url = "postgresql://pi@localhost/natural_earth_vectors"
+        #[[datasource]]
+        dbconn = "postgresql://pi@localhost/natural_earth_vectors"
         "#;
     let pg = match ds_from_config(toml).unwrap() {
         Datasource::Postgis(pg) => pg,
@@ -140,29 +214,21 @@ fn test_datasource_from_config() {
 #[test]
 fn test_datasource_config_errors() {
     assert_eq!(ds_from_config("").err(),
-               Some(" - missing field `type`".to_string()));
+               Some("Unsupported datasource".to_string()));
 
     let toml = r#"
-        #[datasource]
-        url = "postgresql://pi@localhost/natural_earth_vectors"
+        #[[datasource]]
+        pool = 10
         "#;
     assert_eq!(ds_from_config(toml).err(),
-               Some(" - missing field `type`".to_string()));
+               Some("Unsupported datasource".to_string()));
 
     let toml = r#"
-        #[datasource]
-        type = "postgis"
+        #[[datasource]]
+        dbconn = true
         "#;
     assert_eq!(ds_from_config(toml).err(),
-               Some(" - missing field `url`".to_string()));
-
-    let toml = r#"
-        #[datasource]
-        type = "postgis"
-        url = true
-        "#;
-    assert_eq!(ds_from_config(toml).err(),
-               Some(" - invalid type: boolean `true`, expected a string for key `url`"
+               Some(" - invalid type: boolean `true`, expected a string for key `dbconn`"
                         .to_string()));
 }
 
@@ -171,7 +237,7 @@ mod gdal_tests {
 
     #[test]
     fn test_gdal_datasource_from_args() {
-        use super::Datasource;
+        use super::*;
         use t_rex_core::datasource::DatasourceInput;
         use clap::{App, Arg};
 
@@ -182,13 +248,13 @@ mod gdal_tests {
                      .takes_value(true))
             .get_matches_from(vec!["t_rex", "--datasource", GPKG]);
         assert_eq!(args.value_of("datasource"), Some(GPKG));
-        let ds = Datasource::from_args(&args);
-        if let Some(Datasource::Gdal(ref gdal_ds)) = ds {
+        let dss = Datasources::from_args(&args);
+        if let Some(&Datasource::Gdal(ref gdal_ds)) = dss.default() {
             assert_eq!(gdal_ds.path, GPKG);
         } else {
-            assert!(ds.is_some());
+            assert!(dss.default().is_some());
         }
-        ds.unwrap().connected();
+        dss.default().unwrap().connected();
     }
 
 }

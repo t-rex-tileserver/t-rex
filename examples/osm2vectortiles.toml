@@ -4,9 +4,8 @@
 [service.mvt]
 viewer = true
 
-[datasource]
-type = "postgis"
-url = "postgresql://pi@localhost/osm2vectortiles"
+[[datasource]]
+dbconn = "postgresql://pi@localhost/osm2vectortiles"
 
 [grid]
 predefined = "web_mercator"

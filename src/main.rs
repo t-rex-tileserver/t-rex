@@ -128,6 +128,7 @@ fn main() {
                         .about("Start web server and serve MVT vector tiles"))
         .subcommand(SubCommand::with_name("genconfig")
                         .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'
+                                              --datasource=[FILE_OR_GDAL_DS] 'GDAL datasource specification'
                                               --simplify=[true|false] 'Simplify geometries'
                                               --clip=[true|false] 'Clip geometries'")
                         .about("Generate configuration template"))

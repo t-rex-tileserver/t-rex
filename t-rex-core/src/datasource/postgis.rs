@@ -743,30 +743,30 @@ impl DatasourceInput for PostgisInput {
     }
 }
 
-impl<'a> Config<'a, PostgisInput, DatasourceCfg> for PostgisInput {
+impl<'a> Config<'a, DatasourceCfg> for PostgisInput {
     fn from_config(ds_cfg: &DatasourceCfg) -> Result<Self, String> {
-        assert_eq!(ds_cfg.dstype, "postgis");
         if let Ok(url) = env::var("TREX_DATASOURCE_URL") {
+            // FIXME: this overwrites *all* PostGIS connections instead of a specific one
             Ok(PostgisInput::new(url.as_str()))
         } else {
-            Ok(PostgisInput::new(&ds_cfg.url))
+            Ok(PostgisInput::new(ds_cfg.dbconn.as_ref().unwrap()))
         }
     }
 
     fn gen_config() -> String {
         let toml = r#"
-[datasource]
-type = "postgis"
-# Connection specification (https://github.com/sfackler/rust-postgres#connecting)
-url = "postgresql://user:pass@host/database"
+[[datasource]]
+name = "database"
+# PostgreSQL connection specification (https://github.com/sfackler/rust-postgres#connecting)
+dbconn = "postgresql://user:pass@host/database"
 "#;
         toml.to_string()
     }
     fn gen_runtime_config(&self) -> String {
         format!(r#"
-[datasource]
-type = "postgis"
-url = "{}"
+[[datasource]]
+#name = "postgis"
+dbconn = "{}"
 "#,
                 self.connection_url)
     }

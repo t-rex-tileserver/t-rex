@@ -4,7 +4,7 @@
 //
 
 use datasource::{DatasourceInput, PostgisInput};
-use datasource_type::Datasource;
+use datasource_type::{Datasources, Datasource};
 use core::grid::Grid;
 use core::grid::Extent;
 use core::layer::Layer;
@@ -22,6 +22,9 @@ fn mvt_service() -> MvtService {
             Result::Err(_) => panic!("DBCONN undefined"),
         }
         .unwrap();
+    let mut datasources = Datasources::new();
+    datasources.add(&"pg".to_string(), Datasource::Postgis(pg));
+    datasources.setup();
     let grid = Grid::web_mercator();
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("ne_10m_populated_places"));
@@ -39,7 +42,7 @@ fn mvt_service() -> MvtService {
         layers: vec![layer],
     };
     let mut service = MvtService {
-        input: Datasource::Postgis(pg),
+        datasources: datasources,
         grid: grid,
         tilesets: vec![tileset],
         cache: Tilecache::Nocache(Nocache),
@@ -287,8 +290,10 @@ fn test_tilejson() {
     use core::read_config;
     use std::env;
 
-    if env::var("DBCONN").is_err() {
-        panic!("DBCONN undefined");
+    match env::var("DBCONN") {
+        Err(_) => panic!("DBCONN undefined"),
+        // Overwrite PG connection in example.toml
+        Ok(dbconn) => env::set_var("TREX_DATASOURCE_URL", dbconn),
     }
 
     let config = read_config("src/test/example.toml").unwrap();
@@ -324,12 +329,7 @@ fn test_tilejson() {
   "vector_layers": [
     {
       "description": "",
-      "fields": {
-        "fid": "",
-        "name": "",
-        "pop_max": "",
-        "scalerank": ""
-      },
+      "fields": {},
       "id": "points",
       "maxzoom": 22,
       "minzoom": 0
@@ -343,11 +343,7 @@ fn test_tilejson() {
     },
     {
       "description": "",
-      "fields": {
-        "fid": "",
-        "iso_a3": "",
-        "name": ""
-      },
+      "fields": {},
       "id": "admin_0_countries",
       "maxzoom": 22,
       "minzoom": 0
@@ -408,8 +404,10 @@ fn test_mbtiles_metadata() {
     use core::read_config;
     use std::env;
 
-    if env::var("DBCONN").is_err() {
-        panic!("DBCONN undefined");
+    match env::var("DBCONN") {
+        Err(_) => panic!("DBCONN undefined"),
+        // Overwrite PG connection in example.toml
+        Ok(dbconn) => env::set_var("TREX_DATASOURCE_URL", dbconn),
     }
 
     let config = read_config("src/test/example.toml").unwrap();
@@ -425,7 +423,7 @@ fn test_mbtiles_metadata() {
   "description": "osm",
   "format": "pbf",
   "id": "osm",
-  "json": "{\"Layer\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"name\":\"points\",\"properties\":{\"buffer-size\":0,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"name\":\"buildings\",\"properties\":{\"buffer-size\":10,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{\"fid\":\"\",\"iso_a3\":\"\",\"name\":\"\"},\"id\":\"admin_0_countries\",\"name\":\"admin_0_countries\",\"properties\":{\"buffer-size\":1,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"}],\"vector_layers\":[{\"description\":\"\",\"fields\":{\"fid\":\"\",\"name\":\"\",\"pop_max\":\"\",\"scalerank\":\"\"},\"id\":\"points\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{\"fid\":\"\",\"iso_a3\":\"\",\"name\":\"\"},\"id\":\"admin_0_countries\",\"maxzoom\":22,\"minzoom\":0}]}",
+  "json": "{\"Layer\":[{\"description\":\"\",\"fields\":{},\"id\":\"points\",\"name\":\"points\",\"properties\":{\"buffer-size\":0,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"name\":\"buildings\",\"properties\":{\"buffer-size\":10,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"admin_0_countries\",\"name\":\"admin_0_countries\",\"properties\":{\"buffer-size\":1,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"}],\"vector_layers\":[{\"description\":\"\",\"fields\":{},\"id\":\"points\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"admin_0_countries\",\"maxzoom\":22,\"minzoom\":0}]}",
   "maxzoom": 22,
   "minzoom": 0,
   "name": "osm",
@@ -442,10 +440,10 @@ fn test_gen_config() {
 [service.mvt]
 viewer = true
 
-[datasource]
-type = "postgis"
-# Connection specification (https://github.com/sfackler/rust-postgres#connecting)
-url = "postgresql://user:pass@host/database"
+[[datasource]]
+name = "database"
+# PostgreSQL connection specification (https://github.com/sfackler/rust-postgres#connecting)
+dbconn = "postgresql://user:pass@host/database"
 
 [grid]
 # Predefined grids: web_mercator, wgs84

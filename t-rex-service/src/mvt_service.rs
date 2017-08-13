@@ -5,7 +5,7 @@
 
 use datasource_type::Datasource;
 use datasource::DatasourceInput;
-use datasource::PostgisInput;
+use datasource_type::Datasources;
 use core::grid::{Grid, Extent, ExtentInt};
 use core::layer::Layer;
 use core::Config;
@@ -21,7 +21,7 @@ use std::io::Stdout;
 
 /// Mapbox Vector Tile Service
 pub struct MvtService {
-    pub input: Datasource,
+    pub datasources: Datasources,
     pub grid: Grid,
     pub tilesets: Vec<Tileset>,
     pub cache: Tilecache,
@@ -30,8 +30,20 @@ pub struct MvtService {
 type JsonResult = Result<serde_json::Value, serde_json::error::Error>;
 
 impl MvtService {
+    /// Connect all datasources
+    // Needed before calling methods on PostGIS datasources like prepare_feature_queries or get_mbtiles_metadata
+    // TODO: connect automatically when needed
     pub fn connect(&mut self) {
-        self.input = self.input.connected();
+        let mut datasources = Datasources::new();
+        datasources.default = self.datasources.default.clone();
+        for (name, ds) in &self.datasources.datasources {
+            datasources.add(&name, ds.connected());
+        }
+        datasources.setup();
+        self.datasources = datasources;
+    }
+    fn ds(&self, layer: &Layer) -> Option<&Datasource> {
+        self.datasources.datasource(&layer.datasource)
     }
     fn get_tileset(&self, name: &str) -> Option<&Tileset> {
         self.tilesets.iter().find(|t| t.name == name)
@@ -129,19 +141,21 @@ impl MvtService {
                 let meta = layer.metadata();
                 let query = layer.query(layer.maxzoom());
                 let mut meta_json = json!({
-                "id": meta.get("id").unwrap(),
-                "name": meta.get("name").unwrap(),
-                "description": meta.get("description").unwrap(),
-                "srs": meta.get("srs").unwrap(),
-                "properties": {
-                    "minzoom": layer.minzoom(),
-                    "maxzoom": layer.maxzoom(),
-                    "buffer-size": layer.buffer_size.unwrap_or(0)
-                },
-                "fields": {}
-            });
+                    "id": meta.get("id").unwrap(),
+                    "name": meta.get("name").unwrap(),
+                    "description": meta.get("description").unwrap(),
+                    "srs": meta.get("srs").unwrap(),
+                    "properties": {
+                        "minzoom": layer.minzoom(),
+                        "maxzoom": layer.maxzoom(),
+                        "buffer-size": layer.buffer_size.unwrap_or(0)
+                    },
+                    "fields": {}
+                });
                 //insert fields
-                let fields = self.input.detect_data_columns(&layer, query);
+                let fields = self.ds(&layer)
+                    .unwrap()
+                    .detect_data_columns(&layer, query);
                 for (ref field, _) in fields {
                     meta_json["fields"]
                         .as_object_mut()
@@ -169,7 +183,9 @@ impl MvtService {
                 "fields": {}
             });
                 //insert fields
-                let fields = self.input.detect_data_columns(&layer, query);
+                let fields = self.ds(&layer)
+                    .unwrap()
+                    .detect_data_columns(&layer, query);
                 for (ref field, _) in fields {
                     layer_json["fields"]
                         .as_object_mut()
@@ -287,7 +303,10 @@ impl MvtService {
     pub fn prepare_feature_queries(&mut self) {
         for tileset in &self.tilesets {
             for layer in &tileset.layers {
-                self.input.prepare_queries(&layer, self.grid.srid);
+                let ds = self.datasources
+                    .datasource_mut(&layer.datasource)
+                    .expect(&format!("Datasource of layer `{}` not found", layer.name));
+                ds.prepare_queries(&layer, self.grid.srid);
             }
         }
     }
@@ -298,7 +317,8 @@ impl MvtService {
         let mut tile = Tile::new(&extent, 4096, true);
         for layer in self.get_tileset_layers(tileset) {
             let mut mvt_layer = tile.new_layer(layer);
-            self.input
+            self.ds(&layer)
+                .unwrap()
                 .retrieve_features(&layer,
                                    &extent,
                                    zoom,
@@ -360,8 +380,8 @@ impl MvtService {
     pub fn extent_from_wgs84(&self, extent: &Extent) -> Extent {
         // TODO: use proj4 (directly)
         // and maybe fast track for Web Mercator (see fn xy in grid_test)
-        self.input
-            .extent_from_wgs84(extent, self.grid.srid)
+        let ds = self.datasources.default().unwrap();
+        ds.extent_from_wgs84(extent, self.grid.srid)
             .expect(&format!("Error transforming {:?} to SRID {}", extent, self.grid.srid))
     }
     /// Populate tile cache
@@ -465,21 +485,46 @@ impl MvtService {
                        &serde_json::to_vec(&json).unwrap());
         }
     }
+    fn gen_layer_runtime_config(&self, layer: &Layer) -> String {
+        let ds = self.ds(layer).unwrap();
+        let extent = ds.layer_extent(layer);
+        let mut lines = vec!["\n[[tileset]]".to_string()];
+        lines.push(format!(r#"name = "{}""#, layer.name));
+        if let Some(ext) = extent {
+            lines.push(format!(r#"extent = [{:.5}, {:.5}, {:.5}, {:.5}]"#,
+                               ext.minx,
+                               ext.miny,
+                               ext.maxx,
+                               ext.maxy));
+        } else {
+            lines.push("#extent = [-180.0,-90.0,180.0,90.0]".to_string());
+        }
+
+        let mut cfg = lines.join("\n") + "\n";
+        cfg.push_str(&layer.gen_runtime_config());
+        if let &Datasource::Postgis(ref pg) = ds {
+            if layer.query(0).is_none() {
+                let query = pg.build_query_sql(layer, 3857, None, true).unwrap();
+                cfg.push_str(&format!("#sql = \"\"\"{}\"\"\"\n", query))
+            }
+        }
+        cfg
+    }
 }
 
 
-impl<'a> Config<'a, MvtService, ApplicationCfg> for MvtService {
+impl<'a> Config<'a, ApplicationCfg> for MvtService {
     fn from_config(config: &ApplicationCfg) -> Result<Self, String> {
-        let pg = PostgisInput::from_config(&config.datasource)?;
+        let datasources = Datasources::from_config(config)?;
         let grid = Grid::from_config(&config.grid)?;
         let tilesets = config
             .tilesets
             .iter()
             .map(|ts_cfg| Tileset::from_config(ts_cfg).unwrap())
-            .collect(); //FIXME: avoid unwrap
+            .collect();
         let cache = Tilecache::from_config(&config)?;
         Ok(MvtService {
-               input: Datasource::Postgis(pg),
+               datasources: datasources,
                grid: grid,
                tilesets: tilesets,
                cache: cache,
@@ -497,14 +542,11 @@ impl<'a> Config<'a, MvtService, ApplicationCfg> for MvtService {
     fn gen_runtime_config(&self) -> String {
         let mut config = String::new();
         config.push_str(TOML_SERVICES);
-        config.push_str(&self.input.gen_runtime_config());
+        config.push_str(&self.datasources.gen_runtime_config());
         config.push_str(&self.grid.gen_runtime_config());
         for tileset in &self.tilesets {
-            match self.input {
-                Datasource::Postgis(ref ds) => {
-                    config.push_str(&tileset.gen_runtime_config_from_input(ds))
-                }
-                Datasource::Gdal(ref _ds) => unimplemented!(),
+            for layer in &tileset.layers {
+                config.push_str(&self.gen_layer_runtime_config(layer));
             }
         }
         config.push_str(&self.cache.gen_runtime_config());

@@ -3,9 +3,13 @@
 [service.mvt]
 viewer = true
 
-[datasource]
-type = "postgis"
-url = "postgresql://postgres@127.0.0.1/natural_earth_vectors"
+[[datasource]]
+name = "buildings"
+dbconn = "postgresql://postgres@127.0.0.1/osm_buildings"
+
+[[datasource]]
+name = "natural_earth"
+path = "natural_earth.gpkg"
 
 [grid]
 predefined = "web_mercator"
@@ -20,6 +24,7 @@ background-color = "#f8f4f0"
 
 [[tileset.layer]]
 name = "points"
+datasource = "natural_earth"
 table_name = "ne_10m_populated_places"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
@@ -33,6 +38,7 @@ fid_field = "id"
 
 [[tileset.layer]]
 name = "buildings"
+datasource = "buildings"
 geometry_field = "geometry"
 geometry_type = "POLYGON"
 fid_field = "osm_id"
@@ -57,6 +63,7 @@ simplify = true
 
 [[tileset.layer]]
 name = "admin_0_countries"
+datasource = "natural_earth"
 table_name = "admin_0_countries"
 geometry_field = "wkb_geometry"
 geometry_type = "POLYGON"

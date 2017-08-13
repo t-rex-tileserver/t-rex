@@ -3,9 +3,8 @@
 [service.mvt]
 viewer = true
 
-[datasource]
-type = "postgis"
-url = "postgresql://pi@localhost/natural_earth_vectors"
+[[datasource]]
+dbconn = "postgresql://pi@localhost/natural_earth_vectors"
 
 [grid]
 width = 256

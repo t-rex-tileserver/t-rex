@@ -12,7 +12,8 @@ use core::geom::{self, GeometryType};
 use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::Layer;
-use service::tileset::WORLD_EXTENT;
+use core::Config;
+use core::config::DatasourceCfg;
 use std::path::Path;
 
 
@@ -246,7 +247,7 @@ impl DatasourceInput for GdalDatasource {
              })
     }
     fn layer_extent(&self, _layer: &Layer) -> Option<Extent> {
-        Some(WORLD_EXTENT.clone()) // TODO
+        None // TODO
     }
     fn prepare_queries(&mut self, _layer: &Layer, _grid_srid: i32) {
         // TODO: Prepare gdal::vector::Layer, CoordTransform
@@ -305,5 +306,30 @@ impl DatasourceInput for GdalDatasource {
             }
         }
         debug!("Feature count: {}", cnt);
+    }
+}
+
+
+impl<'a> Config<'a, DatasourceCfg> for GdalDatasource {
+    fn from_config(ds_cfg: &DatasourceCfg) -> Result<Self, String> {
+        Ok(GdalDatasource::new(ds_cfg.path.as_ref().unwrap()))
+    }
+
+    fn gen_config() -> String {
+        let toml = r#"
+[[datasource]]
+name = "ds"
+# Dataset specification (http://gdal.org/ogr_formats.html)
+path = "<filename-or-connection-spec>"
+"#;
+        toml.to_string()
+    }
+    fn gen_runtime_config(&self) -> String {
+        format!(r#"
+[[datasource]]
+#name = "ds"
+path = "{}"
+"#,
+                self.path)
     }
 }

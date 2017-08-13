@@ -58,7 +58,7 @@ impl Cache for Tilecache {
     }
 }
 
-impl<'a> Config<'a, Tilecache, ApplicationCfg> for Tilecache {
+impl<'a> Config<'a, ApplicationCfg> for Tilecache {
     fn from_config(config: &ApplicationCfg) -> Result<Self, String> {
         config
             .cache

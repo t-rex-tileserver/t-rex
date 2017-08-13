@@ -7,8 +7,6 @@ use core::Config;
 use core::config::LayerCfg;
 use service::glstyle_converter::toml_style_to_gljson;
 use std::collections::HashMap;
-use datasource::PostgisInput;
-use datasource::DatasourceInput;
 
 #[derive(Debug)]
 pub struct LayerQuery {
@@ -20,6 +18,7 @@ pub struct LayerQuery {
 #[derive(Default, Debug)]
 pub struct Layer {
     pub name: String,
+    pub datasource: Option<String>,
     pub geometry_field: Option<String>,
     pub geometry_type: Option<String>,
     /// Spatial reference system (PostGIS SRID)
@@ -94,31 +93,9 @@ impl Layer {
         metadata.insert("srs", "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over".to_string());
         metadata
     }
-    pub fn gen_runtime_config_from_input(&self, input: &PostgisInput) -> String {
-        let extent = input.layer_extent(self);
-        let mut lines = vec!["\n[[tileset]]".to_string()];
-        lines.push(format!(r#"name = "{}""#, self.name));
-        if let Some(ext) = extent {
-            lines.push(format!(r#"extent = [{:.5}, {:.5}, {:.5}, {:.5}]"#,
-                               ext.minx,
-                               ext.miny,
-                               ext.maxx,
-                               ext.maxy));
-        } else {
-            lines.push("#extent = [-180.0,-90.0,180.0,90.0]".to_string());
-        }
-
-        let mut cfg = lines.join("\n") + "\n";
-        cfg.push_str(&self.gen_runtime_config());
-        if self.query(0).is_none() {
-            let query = input.build_query_sql(self, 3857, None, true).unwrap();
-            cfg.push_str(&format!("#sql = \"\"\"{}\"\"\"\n", query))
-        }
-        cfg
-    }
 }
 
-impl<'a> Config<'a, Layer, LayerCfg> for Layer {
+impl<'a> Config<'a, LayerCfg> for Layer {
     fn from_config(layer_cfg: &LayerCfg) -> Result<Self, String> {
         let queries = layer_cfg
             .query
@@ -140,6 +117,7 @@ impl<'a> Config<'a, Layer, LayerCfg> for Layer {
         };
         Ok(Layer {
                name: layer_cfg.name.clone(),
+               datasource: layer_cfg.datasource.clone(), //TODO: inherit from parents if None?
                geometry_field: layer_cfg.geometry_field.clone(),
                geometry_type: layer_cfg.geometry_type.clone(),
                srid: layer_cfg.srid,

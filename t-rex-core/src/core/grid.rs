@@ -313,7 +313,7 @@ impl Grid {
     }
 }
 
-impl<'a> Config<'a, Grid, GridCfg> for Grid {
+impl<'a> Config<'a, GridCfg> for Grid {
     fn from_config(grid_cfg: &GridCfg) -> Result<Self, String> {
         match grid_cfg.predefined {
             Some(ref gridname) => {
