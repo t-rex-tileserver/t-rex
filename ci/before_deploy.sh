@@ -57,7 +57,7 @@ main() {
 
     test -f Cargo.lock || cargo generate-lockfile
 
-    cross rustc --bin t_rex --target $TARGET --release -- -C lto
+    cargo rustc --bin t_rex --target $TARGET --release -- -C lto
 
     cp target/$TARGET/release/t_rex $stage/
 
