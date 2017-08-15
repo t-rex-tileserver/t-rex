@@ -1,3 +1,15 @@
+<a name="0.8.0"></a>
+## 0.8.0 (UNRELEASED)
+
+#### Features
+
+* Support for GDAL/OGR datasources (up to 84 drivers, see http://gdal.org/)
+* Multiple datasources in tilesets
+
+#### Breaking changes
+
+* Changed configuration format of datasources
+
 <a name="0.7.8"></a>
 ## 0.7.8 (2017-08-05)
 
