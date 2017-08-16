@@ -32,7 +32,7 @@ Version: ${TRAVIS_TAG#v}
 Architecture: $(architecture $TARGET)
 Maintainer: $DEB_MAINTAINER
 Description: $DEB_DESCRIPTION
-Depends: openssl
+Depends: openssl, libgdal20
 EOF
 
             fakeroot dpkg-deb --build $dtd/debian
