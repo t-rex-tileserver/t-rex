@@ -37,15 +37,16 @@ install:
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
   - rustc -Vv
   - cargo -V
-  #- curl -Sf -o gdal-x64-core.msi http://download.gisinternals.com/sdk/downloads/release-1800-x64-gdal-2-2-1-mapserver-7-0-6/gdal-202-1800-x64-core.msi
-  #- msiexec /i gdal-x64-core.msi /quiet
+  - curl -Sf -o gdal-x64-core.msi http://download.gisinternals.com/sdk/downloads/release-1800-x64-gdal-2-2-1-mapserver-7-0-6/gdal-202-1800-x64-core.msi
+  - msiexec /i gdal-x64-core.msi /quiet
   #- set PATH=%PATH%;"C:\Program Files\GDAL"
   - curl -S -O http://download.gisinternals.com/sdk/downloads/release-1800-x64-dev.zip
   - 7z x release-1800-x64-dev.zip
-  - set GDAL_HOME=release-1800-x64
+  - set GDAL_HOME=C:\projects\t-rex\release-1800-x64
+  - set PATH=%PATH%;C:\projects\t-rex\release-1800-x64\bin
 
 test_script:
-  - cargo test -p t-rex-core --target %TARGET%
+  - cargo test --all --target %TARGET%
   #- cargo test --no-default-features -p t-rex-core --target %TARGET%
   #- cargo test --no-default-features -p t-rex-core --target %TARGET% --release
   #- cargo run --no-default-features --target %TARGET% --release

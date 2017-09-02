@@ -35,7 +35,8 @@ fn main() {
                          inclpath
                              .display()
                              .to_string()
-                             .replace(std::path::MAIN_SEPARATOR, "/"))
+                             .replace(std::path::MAIN_SEPARATOR, "/")
+                             .replace("//?/", ""))
                         .unwrap();
             }
         }
