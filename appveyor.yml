@@ -22,6 +22,9 @@ environment:
     #- TARGET: x86_64-pc-windows-msvc
     #  RUST_VERSION: nightly
 
+init:
+  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
 install:
   - ps: >-
       If ($Env:TARGET -eq 'x86_64-pc-windows-gnu') {
@@ -75,3 +78,6 @@ notifications:
 
 # disable automatic builds
 build: false
+
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
