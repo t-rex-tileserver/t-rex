@@ -45,24 +45,24 @@ install:
   - set PATH=%PATH%;"%WIX%\bin"
 
 test_script:
-  - cargo build --target %TARGET% --release
-  #- cargo test --no-default-features -p t-rex-core --target %TARGET%
+  - cargo test --no-default-features -p t-rex-core --target %TARGET%
   #- cargo test --no-default-features -p t-rex-core --target %TARGET% --release
   #- cargo run --no-default-features --target %TARGET% --release
+
+before_deploy:
+  # - cargo rustc --no-default-features --target %TARGET% --release --bin t_rex -- -C lto
+  # - ps: ci\before_deploy.ps1
+  - cargo build --target %TARGET% --release
   - cd packaging\windows
   - candle -nologo gdal.wxs
   - candle -nologo projlib.wxs
   - candle -nologo t-rex.wxs
-  - light -nologo -dBuildDir="C:\projects\t-rex\target\%TARGET%\release" -dGdalSrcDir="%GDAL_HOME%\bin" -dProjlibSrcDir="%GDAL_HOME%\bin\proj\SHARE" -sice:ICE80 -o t-rex.msi t-rex.wixobj gdal.wixobj projlib.wixobj
-  - cargo test --all --target %TARGET% --release
-
-before_deploy:
-  # TODO Update this to build the artifacts that matter to you
-  - cargo rustc --no-default-features --target %TARGET% --release --bin t_rex -- -C lto
-  - ps: ci\before_deploy.ps1
+  - light -nologo -dBuildDir="C:\projects\t-rex\target\%TARGET%\release" -dGdalSrcDir="%GDAL_HOME%\bin" -dProjlibSrcDir="%GDAL_HOME%\bin\proj\SHARE" -sice:ICE80 -o t-rex-%APPVEYOR_REPO_TAG_NAME%.msi t-rex.wixobj gdal.wixobj projlib.wixobj
+  - appveyor PushArtifact t-rex-%APPVEYOR_REPO_TAG_NAME%.msi
 
 deploy:
-  artifact: /.*\.zip/
+  # artifact: /.*\.zip/
+  artifact: /.*\.msi/
   auth_token:
     secure: SBSCNxEf2bxSkYTYj95/dAkg0JZmthpcWxufEdr9AyyOXoViT3zyglUT2yfdBAlO
   description: ''
