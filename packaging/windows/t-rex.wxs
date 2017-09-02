@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension" RequiredVersion="3.5.0.0">
+  <Product Id="*"
+           Name="t-rex tileserver"
+           Language="1033"
+           Codepage="1252"
+           Version="0.8.0"
+           Manufacturer="Pirmin Kalberer"
+           UpgradeCode="{011E2D16-56FA-4CEE-8AA9-4399DB111B37}">
+    <Package InstallerVersion="301"
+             Compressed="yes"
+             Manufacturer="Pirmin Kalberer"
+             Description="t-rex Installer"
+             Platform="x64"
+             InstallScope="perMachine"
+    />
+    <MediaTemplate EmbedCab='yes'/>
+
+    <MajorUpgrade AllowDowngrades="yes" />
+
+    <Feature Id="gdalFeat" Title="GDAL" Level="1">
+      <ComponentGroupRef Id="gdal"/>
+      <ComponentGroupRef Id="projlib"/>
+    </Feature>
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='ProgramFiles64Folder'>
+        <Directory Id='BINDIR' Name='t-rex'>
+          <Directory Id='PROJLIBDIR' Name='projlib'>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <ComponentGroup Id="t-rex">
+      <Component Id="ApplicationExeComp" Directory="BINDIR" Guid="*">
+        <File Id="ApplicationExe" KeyPath="yes" Source="!(wix.SourceDir)\target\release\t_rex.exe" />
+      </Component>
+    </ComponentGroup>
+
+  </Product>
+
+</Wix>
