@@ -4,7 +4,6 @@
 environment:
   global:
     RUST_VERSION: stable
-
     CRATE_NAME: t-rex
 
   matrix:
@@ -34,27 +33,33 @@ install:
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
   - rustc -Vv
   - cargo -V
+  - curl -S -O http://download.gisinternals.com/sdk/downloads/release-1800-x64-dev.zip
+  - 7z x release-1800-x64-dev.zip
+  - set GDAL_HOME=C:\projects\t-rex\release-1800-x64
+  - set GDAL_DATA=%GDAL_HOME%\bin\gdal-data
+  - set PATH=%PATH%;%GDAL_HOME%\bin
+  - set PATH=%PATH%;"%WIX%\bin"
 
 test_script:
-  - cargo test --no-default-features -p t-rex-core --target %TARGET%
-  - cargo test --no-default-features -p t-rex-core --target %TARGET% --release
-  #- cargo run --no-default-features --target %TARGET% --release
+  - cargo test --all --target %TARGET%
+  - cargo test --all --target %TARGET% --release
+  # - cargo run --no-default-features --target %TARGET% --release
 
 before_deploy:
-  # TODO Update this to build the artifacts that matter to you
-  - cargo rustc --no-default-features --target %TARGET% --release --bin t_rex -- -C lto
-  - ps: ci\before_deploy.ps1
+  - cargo rustc --target %TARGET% --release --bin t_rex -- -C lto
+  - cd packaging\windows
+  - candle -nologo gdal.wxs
+  - candle -nologo projlib.wxs
+  - candle -nologo t-rex.wxs
+  - light -nologo -dBuildDir="C:\projects\t-rex\target\%TARGET%\release" -dGdalSrcDir="%GDAL_HOME%\bin" -dProjlibSrcDir="%GDAL_HOME%\bin\proj\SHARE" -sice:ICE80 -o t-rex-%APPVEYOR_REPO_TAG_NAME%.msi t-rex.wixobj gdal.wixobj projlib.wixobj
+  - appveyor PushArtifact t-rex-%APPVEYOR_REPO_TAG_NAME%.msi
 
 deploy:
-  artifact: /.*\.zip/
+  artifact: /.*\.msi/
   auth_token:
     secure: SBSCNxEf2bxSkYTYj95/dAkg0JZmthpcWxufEdr9AyyOXoViT3zyglUT2yfdBAlO
   description: ''
   on:
-    # TODO Here you can pick which targets will generate binary releases
-    # In this example, there are some targets that are tested using the stable
-    # and nightly channels. This condition makes sure there is only one release
-    # for such targets and that's generated using the stable channel
     RUST_VERSION: stable
     appveyor_repo_tag: true
   provider: GitHub
@@ -62,12 +67,6 @@ deploy:
 cache:
   - C:\Users\appveyor\.cargo\registry
   - target
-
-#branches:
-#  only:
-#    # Release tags
-#    - /^v\d+\.\d+\.\d+.*$/
-#    - master
 
 notifications:
   - provider: Email
