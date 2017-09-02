@@ -230,10 +230,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "gdal"
 version = "0.2.1"
-source = "git+https://github.com/pka/rust-gdal?branch=t-rex#3c18171167bc59f7803c7fe8c9406b4c4fd059ec"
+source = "git+https://github.com/georust/rust-gdal.git#b7a82450ddc806831281cc645e194b95f49b6926"
 dependencies = [
  "error-chain 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "gdal-sys 0.1.0 (git+https://github.com/pka/rust-gdal?branch=t-rex)",
+ "gdal-sys 0.1.0 (git+https://github.com/georust/rust-gdal.git)",
  "geo 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.1.37 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -242,7 +242,7 @@ dependencies = [
 [[package]]
 name = "gdal-sys"
 version = "0.1.0"
-source = "git+https://github.com/pka/rust-gdal?branch=t-rex#3c18171167bc59f7803c7fe8c9406b4c4fd059ec"
+source = "git+https://github.com/georust/rust-gdal.git#b7a82450ddc806831281cc645e194b95f49b6926"
 dependencies = [
  "libc 0.2.23 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -775,7 +775,7 @@ dependencies = [
 name = "t-rex-gdal"
 version = "0.8.0-dev"
 dependencies = [
- "gdal 0.2.1 (git+https://github.com/pka/rust-gdal?branch=t-rex)",
+ "gdal 0.2.1 (git+https://github.com/georust/rust-gdal.git)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "t-rex-core 0.8.0-dev",
 ]
@@ -988,8 +988,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum flate2 0.2.19 (registry+https://github.com/rust-lang/crates.io-index)" = "36df0166e856739905cd3d7e0b210fe818592211a008862599845e012d8d304c"
 "checksum foreign-types 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3e4056b9bd47f8ac5ba12be771f77a0dae796d1bbaaf5fd0b9c2d38b69b8a29d"
 "checksum gcc 0.3.50 (registry+https://github.com/rust-lang/crates.io-index)" = "5f837c392f2ea61cb1576eac188653df828c861b7137d74ea4a5caa89621f9e6"
-"checksum gdal 0.2.1 (git+https://github.com/pka/rust-gdal?branch=t-rex)" = "<none>"
-"checksum gdal-sys 0.1.0 (git+https://github.com/pka/rust-gdal?branch=t-rex)" = "<none>"
+"checksum gdal 0.2.1 (git+https://github.com/georust/rust-gdal.git)" = "<none>"
+"checksum gdal-sys 0.1.0 (git+https://github.com/georust/rust-gdal.git)" = "<none>"
 "checksum geo 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)" = "0da93d2b08af16ad4378cd114999df4fd11282d3e94a607919e35827f1f3f642"
 "checksum groupable 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "32619942b8be646939eaf3db0602b39f5229b74575b67efc897811ded1db4e57"
 "checksum hex 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d6a22814455d41612f41161581c2883c0c6a1c41852729b17d5ed88f01e153aa"

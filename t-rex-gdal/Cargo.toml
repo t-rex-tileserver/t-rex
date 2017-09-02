@@ -12,7 +12,7 @@ workspace = ".."
 doctest = false
 
 [dependencies]
-gdal = { git = "https://github.com/pka/rust-gdal", branch = "t-rex" }
+gdal = { git = "https://github.com/georust/rust-gdal.git" }
 # gdal = { path = "../../rust-gdal" }
 log = "*"
 
