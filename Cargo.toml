@@ -9,6 +9,7 @@ authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 
 [[bin]]
 name = "t_rex"
+path = "src/main.rs"
 doctest = false
 
 [dependencies]

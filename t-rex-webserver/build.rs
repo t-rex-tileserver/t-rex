@@ -20,10 +20,10 @@ fn main() {
         if l1fn.is_dir() {
             for pbf in fs::read_dir(l1fn).unwrap() {
                 let pbfpath = pbf.unwrap().path();
+                let inclpath = pbfpath.as_path().canonicalize().unwrap();
                 let mut pbfcomp = pbfpath.components();
                 pbfcomp.next();
                 pbfcomp.next();
-                let inclpath = pbfcomp.as_path();
                 pbfcomp.next();
                 let keypath = pbfcomp.as_path();
                 writeln!(f,
