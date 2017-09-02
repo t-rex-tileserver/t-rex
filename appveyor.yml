@@ -56,7 +56,7 @@ test_script:
   - candle -nologo gdal.wxs
   - candle -nologo projlib.wxs
   - candle -nologo t-rex.wxs
-  - light -nologo -dSourceDir="C:\projects\t-rex" -dGdalSrcDir="C:\projects\t-rex\release-1800-x64\bin" -dProjlibSrcDir="ase-1800C:\projects\t-rex\release-1800-x64\bin\proj\SHARE" -sice:ICE80 -o t-rex.msi t-rex.wixobj gdal.wixobj projlib.wixobj
+  - light -nologo -dSourceDir="C:\projects\t-rex" -dGdalSrcDir="C:\projects\t-rex\release-1800-x64\bin" -dProjlibSrcDir="C:\projects\t-rex\release-1800-x64\bin\proj\SHARE" -sice:ICE80 -o t-rex.msi t-rex.wixobj gdal.wixobj projlib.wixobj
 
 before_deploy:
   # TODO Update this to build the artifacts that matter to you

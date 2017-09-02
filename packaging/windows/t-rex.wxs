@@ -18,7 +18,8 @@
 
     <MajorUpgrade AllowDowngrades="yes" />
 
-    <Feature Id="gdalFeat" Title="GDAL" Level="1">
+    <Feature Id="t-rexFeat" Title="t-rex" Level="1">
+      <ComponentGroupRef Id="t-rex"/>
       <ComponentGroupRef Id="gdal"/>
       <ComponentGroupRef Id="projlib"/>
     </Feature>
