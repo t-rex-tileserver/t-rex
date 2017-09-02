@@ -18,7 +18,7 @@
 
     <MajorUpgrade AllowDowngrades="yes" />
 
-    <Feature Id="t-rexFeat" Title="t-rex" Level="1">
+    <Feature Id="TRexFeat" Title="t-rex" Level="1">
       <ComponentGroupRef Id="t-rex"/>
       <ComponentGroupRef Id="gdal"/>
       <ComponentGroupRef Id="projlib"/>
@@ -35,7 +35,7 @@
 
     <ComponentGroup Id="t-rex">
       <Component Id="ApplicationExeComp" Directory="BINDIR" Guid="*">
-        <File Id="ApplicationExe" KeyPath="yes" Source="!(wix.SourceDir)\target\release\t_rex.exe" />
+        <File Id="ApplicationExe" KeyPath="yes" Source="!(wix.BuildDir)\t_rex.exe" />
       </Component>
     </ComponentGroup>
 
