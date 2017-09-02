@@ -43,11 +43,12 @@ install:
   - curl -S -O http://download.gisinternals.com/sdk/downloads/release-1800-x64-dev.zip
   - 7z x release-1800-x64-dev.zip
   - set GDAL_HOME=C:\projects\t-rex\release-1800-x64
+  - set GDAL_DATA=C:\projects\t-rex\release-1800-x64\bin\gdal-data
   - set PATH=%PATH%;C:\projects\t-rex\release-1800-x64\bin
   - set PATH=%PATH%;"%WIX%\bin"
 
 test_script:
-  - cargo test --all --target %TARGET% --release
+  - cargo build --all --target %TARGET% --release
   #- cargo test --no-default-features -p t-rex-core --target %TARGET%
   #- cargo test --no-default-features -p t-rex-core --target %TARGET% --release
   #- cargo run --no-default-features --target %TARGET% --release
