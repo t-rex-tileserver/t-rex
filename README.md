@@ -21,10 +21,10 @@ Features
 
 ### Presentations
 
-* T-rex, a vector tile server for your own data [FOSS4G 2017](http://2017.foss4g.org/) - [slides](http://t-rex.tileserver.ch/Vector-tiles-and-QGIS.pdf)
-* Vector Tiles - Introduction & Usage with QGIS, User meeting Bern 21.6.17: [slides](http://t-rex.tileserver.ch/Vector-tiles-and-QGIS.pdf)
-* Von WMS zu WMTS zu Vektor-Tiles [FOSSGIS 2017](https://www.fossgis-konferenz.de/2017/programm/event.php?id=5233) - [Video](https://av.tib.eu/media/30549)
-* Workshop "Vector Tiles", GEOSummit Bern 7.6.16: [slides](http://t-rex.tileserver.ch/t-rex_vector_tile_server.pdf)
+* T-rex, a vector tile server for your own data ([FOSS4G 2017](http://2017.foss4g.org/)): [slides](http://t-rex.tileserver.ch/Vector-tiles-and-QGIS.pdf)
+* Vector Tiles - Introduction & Usage with QGIS (User meeting Bern 21.6.17): [slides](http://t-rex.tileserver.ch/Vector-tiles-and-QGIS.pdf)
+* Von WMS zu WMTS zu Vektor-Tiles ([FOSSGIS 2017](https://www.fossgis-konferenz.de/2017/programm/event.php?id=5233)): [Video](https://av.tib.eu/media/30549)
+* Workshop "Vector Tiles" (GEOSummit Bern 7.6.16): [slides](http://t-rex.tileserver.ch/t-rex_vector_tile_server.pdf)
 
 
 Usage
