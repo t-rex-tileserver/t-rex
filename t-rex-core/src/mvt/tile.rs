@@ -24,7 +24,6 @@ use flate2::read::GzDecoder;
 
 pub struct Tile<'a> {
     pub mvt_tile: vector_tile::Tile,
-    tile_size: u32,
     extent: &'a Extent,
     reverse_y: bool,
 }
@@ -150,46 +149,45 @@ impl ScreenGeom<geom::MultiPolygon> for screen::MultiPolygon {
 // --- Tile creation functions
 
 impl<'a> Tile<'a> {
-    pub fn new(extent: &Extent, tile_size: u32, reverse_y: bool) -> Tile {
+    pub fn new(extent: &Extent, reverse_y: bool) -> Tile {
         let mvt_tile = vector_tile::Tile::new();
         Tile {
             mvt_tile: mvt_tile,
-            tile_size: tile_size,
             extent: extent,
             reverse_y: reverse_y,
         }
     }
 
-    pub fn new_layer(&mut self, layer: &Layer) -> vector_tile::Tile_Layer {
+    pub fn new_layer(&mut self, layer: &Layer, tile_size: u32) -> vector_tile::Tile_Layer {
         let mut mvt_layer = vector_tile::Tile_Layer::new();
         mvt_layer.set_version(2);
         mvt_layer.set_name(layer.name.clone());
-        mvt_layer.set_extent(self.tile_size);
+        mvt_layer.set_extent(tile_size);
         mvt_layer
     }
 
-    pub fn encode_geom(&self, geom: geom::GeometryType) -> CommandSequence {
+    pub fn encode_geom(&self, geom: geom::GeometryType, tile_size: u32) -> CommandSequence {
         match geom {
             GeometryType::Point(ref g) => {
-                screen::Point::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode()
+                screen::Point::from_geom(&self.extent, self.reverse_y, tile_size, g).encode()
             }
             GeometryType::MultiPoint(ref g) => {
-                screen::MultiPoint::from_geom(&self.extent, self.reverse_y, self.tile_size, g)
+                screen::MultiPoint::from_geom(&self.extent, self.reverse_y, tile_size, g)
                     .encode()
             }
             GeometryType::LineString(ref g) => {
-                screen::LineString::from_geom(&self.extent, self.reverse_y, self.tile_size, g)
+                screen::LineString::from_geom(&self.extent, self.reverse_y, tile_size, g)
                     .encode()
             }
             GeometryType::MultiLineString(ref g) => {
-                screen::MultiLineString::from_geom(&self.extent, self.reverse_y, self.tile_size, g)
+                screen::MultiLineString::from_geom(&self.extent, self.reverse_y, tile_size, g)
                     .encode()
             }
             GeometryType::Polygon(ref g) => {
-                screen::Polygon::from_geom(&self.extent, self.reverse_y, self.tile_size, g).encode()
+                screen::Polygon::from_geom(&self.extent, self.reverse_y, tile_size, g).encode()
             }
             GeometryType::MultiPolygon(ref g) => {
-                screen::MultiPolygon::from_geom(&self.extent, self.reverse_y, self.tile_size, g)
+                screen::MultiPolygon::from_geom(&self.extent, self.reverse_y, tile_size, g)
                     .encode()
             }
             GeometryType::GeometryCollection(_) => panic!("GeometryCollection not supported"),
@@ -264,7 +262,7 @@ impl<'a> Tile<'a> {
         if let Ok(geom) = feature.geometry() {
             if !geom.is_empty() {
                 mvt_feature.set_field_type(geom.mvt_field_type());
-                mvt_feature.set_geometry(self.encode_geom(geom).vec());
+                mvt_feature.set_geometry(self.encode_geom(geom, mvt_layer.get_extent()).vec());
                 mvt_layer.mut_features().push(mvt_feature);
             }
         }

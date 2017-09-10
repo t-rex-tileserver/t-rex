@@ -314,9 +314,9 @@ impl MvtService {
     pub fn tile(&self, tileset: &str, xtile: u32, ytile: u32, zoom: u8) -> vector_tile::Tile {
         let extent = self.grid.tile_extent(xtile, ytile, zoom);
         debug!("MVT tile request {:?}", extent);
-        let mut tile = Tile::new(&extent, 4096, true);
+        let mut tile = Tile::new(&extent, true);
         for layer in self.get_tileset_layers(tileset) {
-            let mut mvt_layer = tile.new_layer(layer);
+            let mut mvt_layer = tile.new_layer(layer, 4096);
             self.ds(&layer)
                 .unwrap()
                 .retrieve_features(&layer,
