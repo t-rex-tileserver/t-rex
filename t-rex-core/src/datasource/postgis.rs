@@ -372,7 +372,7 @@ impl PostgisInput {
             }
 
             // Simplify
-            if layer.simplify.unwrap_or(false) {
+            if layer.simplify {
                 geom_expr = match layer
                           .geometry_type
                           .as_ref()

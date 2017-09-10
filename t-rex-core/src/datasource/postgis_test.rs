@@ -147,7 +147,7 @@ fn test_feature_query() {
     layer.geometry_type = Some("POLYGON".to_string());
 
     // simplification
-    layer.simplify = Some(true);
+    layer.simplify = true;
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
                "SELECT COALESCE(ST_SnapToGrid(ST_Multi(geometry), $5::FLOAT8/2),ST_GeomFromText('MULTIPOLYGON EMPTY',3857))::geometry(MULTIPOLYGON,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
     layer.geometry_type = Some("LINESTRING".to_string());
@@ -157,7 +157,7 @@ fn test_feature_query() {
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
                "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
-    layer.simplify = Some(false);
+    layer.simplify = false;
     layer.query_limit = Some(1);
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
                // No LIMIT clause added - limited when retrieving records

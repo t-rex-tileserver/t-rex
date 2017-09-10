@@ -120,11 +120,11 @@ pub struct LayerCfg {
     // Explicit queries
     #[serde(default)]
     pub query: Vec<LayerQueryCfg>,
-    /// Width and height of the tile
+    /// Width and height of the tile (Default: 4096. Grid default size is 256)
     pub tile_size: Option<u32>,
     /// Simplify geometry (lines and polygons)
     pub simplify: Option<bool>,
-    /// Tile buffer size in pixels
+    /// Tile buffer size in pixels (None: no clipping)
     pub buffer_size: Option<u32>,
     // Inline style
     pub style: Option<Value>,

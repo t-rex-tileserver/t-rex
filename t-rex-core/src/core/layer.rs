@@ -32,8 +32,8 @@ pub struct Layer {
     /// Width and height of the tiles
     pub tile_size: u32,
     /// Simplify geometry (lines and polygons)
-    pub simplify: Option<bool>,
-    /// Tile buffer size in pixels
+    pub simplify: bool,
+    /// Tile buffer size in pixels (None: no clipping)
     pub buffer_size: Option<u32>,
     // Inline style
     pub style: Option<String>,
@@ -129,7 +129,7 @@ impl<'a> Config<'a, LayerCfg> for Layer {
                query_limit: layer_cfg.query_limit,
                query: queries,
                tile_size: layer_cfg.tile_size.unwrap_or(4096),
-               simplify: layer_cfg.simplify,
+               simplify: layer_cfg.simplify.unwrap_or(false),
                buffer_size: layer_cfg.buffer_size,
                style: style,
            })
@@ -193,10 +193,7 @@ geometry_type = "POINT"
         }
         if self.geometry_type != Some("POINT".to_string()) {
             // simplify is ignored for points
-            match self.simplify {
-                Some(ref simplify) => lines.push(format!("simplify = {}", simplify)),
-                _ => lines.push(format!("#simplify = true")),
-            }
+            lines.push(format!("simplify = {}", self.simplify));
         }
         match self.query_limit {
             Some(ref query_limit) => lines.push(format!("query_limit = {}", query_limit)),

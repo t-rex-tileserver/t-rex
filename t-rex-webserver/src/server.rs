@@ -194,7 +194,7 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
             let mut layers = dsconn.detect_layers(detect_geometry_types);
             while let Some(mut l) = layers.pop() {
                 let extent = dsconn.layer_extent(&l);
-                l.simplify = Some(simplify);
+                l.simplify = simplify;
                 if simplify {
                     // Limit features by default unless simplify is set to false
                     l.query_limit = Some(1000);
