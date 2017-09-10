@@ -21,9 +21,10 @@ Features
 
 ### Presentations
 
-* Vector Tiles - Introduction & Usage with QGIS, User meeting Bern 21.6.17: [slides](doc/Vector-tiles-and-QGIS.pdf)
+* T-rex, a vector tile server for your own data [FOSS4G 2017](http://2017.foss4g.org/) - [slides](http://t-rex.tileserver.ch/Vector-tiles-and-QGIS.pdf)
+* Vector Tiles - Introduction & Usage with QGIS, User meeting Bern 21.6.17: [slides](http://t-rex.tileserver.ch/Vector-tiles-and-QGIS.pdf)
 * Von WMS zu WMTS zu Vektor-Tiles [FOSSGIS 2017](https://www.fossgis-konferenz.de/2017/programm/event.php?id=5233) - [Video](https://av.tib.eu/media/30549)
-* Workshop "Vector Tiles", GEOSummit Bern 7.6.16: [slides](doc/t-rex_vector_tile_server.pdf)
+* Workshop "Vector Tiles", GEOSummit Bern 7.6.16: [slides](http://t-rex.tileserver.ch/t-rex_vector_tile_server.pdf)
 
 
 Usage
@@ -105,6 +106,17 @@ Creating test database:
 Run the tests with
 
     cargo test --all -- --ignored
+
+
+Roadmap
+-------
+
+* Release of 0.8 with OGR/GDAL support
+* Clipping & Simplification for OGR/GDAL layers
+* More cache output formats (S3, etc.)
+* Performance optimizations for big geometries
+* More to come - driven by customer needs or contributions
+  - ST_AsMVT integration?
 
 
 License
