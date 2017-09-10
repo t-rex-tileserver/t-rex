@@ -211,6 +211,24 @@ impl MvtService {
     }
     /// MapboxGL Style JSON (https://www.mapbox.com/mapbox-gl-style-spec/)
     pub fn get_stylejson(&self, baseurl: &str, tileset: &str) -> JsonResult {
+        // TODO: add minZoom/maxZoom for vector source.
+        // Difference between setting the maxZoom for a source, and setting
+        // the maxZoom for a layer:
+        // (https://github.com/mapbox/mapbox-gl-native/issues/9863#issuecomment-325615680)
+        //
+        // Source maxZoom controls from which zoom levels tiles are loaded. If
+        // your custom tile source only has tiles up to z14, please set
+        // maxZoom: 14 so that Mapbox GL doesn't attempt to load z15/z16/...
+        // tiles. As per the style specification, the default value of maxZoom
+        // is 22.
+        // https://www.mapbox.com/mapbox-gl-js/style-spec/#sources-vector-maxzoom
+        //
+        // Layer maxZoom controls when the layer is displayed depending on the
+        // zoom. This is independent of the source zoom level, e.g. we can
+        // show z14 tiles when zoomed to 16. If you specify a maxZoom of 14,
+        // the layer won't be shown at all when the zoom level is >= 14, even
+        // if there are still tiles available.
+        // https://www.mapbox.com/mapbox-gl-js/style-spec/#layer-maxzoom
         let mut stylejson = json!({
             "version": 8,
             "name": "t-rex",

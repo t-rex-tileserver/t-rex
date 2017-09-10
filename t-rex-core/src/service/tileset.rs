@@ -28,7 +28,7 @@ impl Tileset {
         0 // TODO: from layers or config?
     }
     pub fn maxzoom(&self) -> u8 {
-        22 // TODO: from layers or config?
+        22 // TODO: from layers or config (see also MvtService#get_stylejson)
     }
     pub fn get_extent(&self) -> &Extent {
         self.extent.as_ref().unwrap_or(&WORLD_EXTENT)
