@@ -306,7 +306,7 @@ fn test_build_mvt_with_helpers() {
     };
     let mut tile = Tile::new(&extent, false);
     let layer = Layer::new("points");
-    let mut mvt_layer = tile.new_layer(&layer, 4096);
+    let mut mvt_layer = tile.new_layer(&layer);
 
     let geom: GeometryType = GeometryType::Point(geom::Point::new(960000.0, 6002729.0, Some(3857)));
     let feature = FeatureStruct {

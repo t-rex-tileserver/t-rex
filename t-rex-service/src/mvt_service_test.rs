@@ -458,6 +458,7 @@ table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
 #fid_field = "id"
+#tile_size = 4096
 #simplify = true
 #buffer_size = 10
 #[[tileset.layer.query]]

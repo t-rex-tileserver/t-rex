@@ -316,7 +316,7 @@ impl MvtService {
         debug!("MVT tile request {:?}", extent);
         let mut tile = Tile::new(&extent, true);
         for layer in self.get_tileset_layers(tileset) {
-            let mut mvt_layer = tile.new_layer(layer, 4096);
+            let mut mvt_layer = tile.new_layer(layer);
             self.ds(&layer)
                 .unwrap()
                 .retrieve_features(&layer,

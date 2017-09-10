@@ -29,6 +29,8 @@ pub struct Layer {
     pub query_limit: Option<u32>,
     // Explicit queries
     pub query: Vec<LayerQuery>,
+    /// Width and height of the tiles
+    pub tile_size: u32,
     /// Simplify geometry (lines and polygons)
     pub simplify: Option<bool>,
     /// Tile buffer size in pixels
@@ -50,6 +52,7 @@ impl Layer {
     pub fn new(name: &str) -> Layer {
         Layer {
             name: String::from(name),
+            tile_size: 4096,
             ..Default::default()
         }
     }
@@ -125,6 +128,7 @@ impl<'a> Config<'a, LayerCfg> for Layer {
                table_name: layer_cfg.table_name.clone(),
                query_limit: layer_cfg.query_limit,
                query: queries,
+               tile_size: layer_cfg.tile_size.unwrap_or(4096),
                simplify: layer_cfg.simplify,
                buffer_size: layer_cfg.buffer_size,
                style: style,
@@ -142,6 +146,7 @@ table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
 #fid_field = "id"
+#tile_size = 4096
 #simplify = true
 #buffer_size = 10
 #[[tileset.layer.query]]
@@ -176,6 +181,11 @@ geometry_type = "POINT"
         match self.fid_field {
             Some(ref fid_field) => lines.push(format!("fid_field = \"{}\"", fid_field)),
             _ => lines.push("#fid_field = \"id\"".to_string()),
+        }
+        if self.tile_size != 4096 {
+            lines.push(format!(r#"tile_size = "{}""#, self.tile_size));
+        } else {
+            lines.push(format!(r#"#tile_size = "{}""#, self.tile_size));
         }
         match self.buffer_size {
             Some(ref buffer_size) => lines.push(format!("buffer_size = {}", buffer_size)),

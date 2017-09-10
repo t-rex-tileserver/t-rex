@@ -5,6 +5,7 @@
 
 * Support for GDAL/OGR datasources (up to 84 drivers, see http://gdal.org/)
 * Multiple datasources in tilesets
+* Configurable layer tile size
 
 #### Breaking changes
 

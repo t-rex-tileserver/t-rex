@@ -158,11 +158,11 @@ impl<'a> Tile<'a> {
         }
     }
 
-    pub fn new_layer(&mut self, layer: &Layer, tile_size: u32) -> vector_tile::Tile_Layer {
+    pub fn new_layer(&mut self, layer: &Layer) -> vector_tile::Tile_Layer {
         let mut mvt_layer = vector_tile::Tile_Layer::new();
         mvt_layer.set_version(2);
         mvt_layer.set_name(layer.name.clone());
-        mvt_layer.set_extent(tile_size);
+        mvt_layer.set_extent(layer.tile_size);
         mvt_layer
     }
 
