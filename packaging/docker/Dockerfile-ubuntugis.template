@@ -49,7 +49,7 @@ RUN gpg --export --armor 314DF160 | apt-key add -
 RUN apt-get update && apt-get install -y libgdal-dev
 
 # Build t-rex
-RUN wget -qO- https://github.com/pka/t-rex/archive/master.tar.gz | tar xzf -
+RUN wget -qO- https://github.com/t-rex-tileserver/t-rex/archive/master.tar.gz | tar xzf -
 RUN cd t-rex-master && cargo build --release
 
 # Build DEB package
