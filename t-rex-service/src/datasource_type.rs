@@ -7,7 +7,7 @@ use datasource::{DatasourceInput, PostgisInput};
 #[cfg(feature = "with-gdal")]
 use gdal_ds::GdalDatasource;
 #[cfg(not(feature = "with-gdal"))]
-use datasource::DummyDatasource;
+use datasource::DummyDatasource as GdalDatasource;
 use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::Layer;
@@ -20,10 +20,7 @@ use std::collections::HashMap;
 
 pub enum Datasource {
     Postgis(PostgisInput),
-    #[cfg(feature = "with-gdal")]
     Gdal(GdalDatasource),
-    #[cfg(not(feature = "with-gdal"))]
-    Gdal(DummyDatasource),
 }
 
 impl DatasourceInput for Datasource {
@@ -84,8 +81,9 @@ impl<'a> Config<'a, DatasourceCfg> for Datasource {
         }
     }
     fn gen_config() -> String {
-        PostgisInput::gen_config()
-        //? GdalDatasource::gen_config()
+        format!("{}{}",
+                PostgisInput::gen_config(),
+                GdalDatasource::gen_config())
     }
     fn gen_runtime_config(&self) -> String {
         match self {
@@ -118,8 +116,7 @@ impl<'a> Config<'a, ApplicationCfg> for Datasources {
         Ok(datasources)
     }
     fn gen_config() -> String {
-        PostgisInput::gen_config()
-        //? GdalDatasource::gen_config()
+        Datasource::gen_config()
     }
     fn gen_runtime_config(&self) -> String {
         let mut config = String::new();

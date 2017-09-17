@@ -7,6 +7,8 @@ use core::layer::Layer;
 use core::grid::Extent;
 use core::grid::Grid;
 use core::feature::Feature;
+use core::Config;
+use core::config::DatasourceCfg;
 
 
 pub trait DatasourceInput {
@@ -55,5 +57,17 @@ impl DatasourceInput for DummyDatasource {
                             _read: F)
         where F: FnMut(&Feature)
     {
+    }
+}
+
+impl<'a> Config<'a, DatasourceCfg> for DummyDatasource {
+    fn from_config(_ds_cfg: &DatasourceCfg) -> Result<Self, String> {
+        Ok(DummyDatasource {})
+    }
+    fn gen_config() -> String {
+        "".to_string()
+    }
+    fn gen_runtime_config(&self) -> String {
+        "".to_string()
     }
 }

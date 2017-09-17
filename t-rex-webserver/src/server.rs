@@ -391,7 +391,7 @@ threads = 4
 #cache_control_max_age = 43200
 "#;
     let mut config;
-    if let Some(_dbconn) = args.value_of("dbconn") {
+    if args.value_of("dbconn").is_some() || args.value_of("datasource").is_some() {
         let (service, _) = service_from_args(args);
         config = service.gen_runtime_config();
     } else {

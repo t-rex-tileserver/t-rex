@@ -435,7 +435,17 @@ fn test_mbtiles_metadata() {
 
 #[test]
 fn test_gen_config() {
-    let expected = r#"# t-rex configuration
+#[cfg(feature = "with-gdal")]
+    let gdal_ds_cfg = r#"
+[[datasource]]
+name = "ds"
+# Dataset specification (http://gdal.org/ogr_formats.html)
+path = "<filename-or-connection-spec>"
+"#;
+#[cfg(not(feature = "with-gdal"))]
+    let gdal_ds_cfg = "";
+
+    let expected = format!(r#"# t-rex configuration
 
 [service.mvt]
 viewer = true
@@ -444,7 +454,7 @@ viewer = true
 name = "database"
 # PostgreSQL connection specification (https://github.com/sfackler/rust-postgres#connecting)
 dbconn = "postgresql://user:pass@host/database"
-
+{}
 [grid]
 # Predefined grids: web_mercator, wgs84
 predefined = "web_mercator"
@@ -469,7 +479,7 @@ geometry_type = "POINT"
 #[cache.file]
 #base = "/tmp/mvtcache"
 #baseurl = "http://example.com/tiles"
-"#;
+"#, gdal_ds_cfg);
     println!("{}", &MvtService::gen_config());
-    assert_eq!(expected, &MvtService::gen_config());
+    assert_eq!(&expected, &MvtService::gen_config());
 }

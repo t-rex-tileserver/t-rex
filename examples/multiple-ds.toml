@@ -1,0 +1,60 @@
+# t-rex configuration
+
+[service.mvt]
+viewer = true
+
+[[datasource]]
+dbconn = "postgresql://pi@localhost/natural_earth_vectors"
+default = true
+
+[[datasource]]
+name= "geostat"
+dbconn = "postgresql://pi@localhost/geostat"
+
+[[datasource]]
+name= "gpkg"
+path = "t-rex-gdal/natural_earth.gpkg"
+
+[grid]
+predefined = "web_mercator"
+
+[[tileset]]
+name = "world"
+
+[[tileset.layer]]
+name = "admin_0_countries"
+table_name = "admin_0_countries"
+geometry_field = "wkb_geometry"
+geometry_type = "POLYGON"
+srid = 3857
+buffer_size = 2
+simplify = true
+
+[[tileset.layer]]
+name = "cantons"
+datasource = "geostat"
+table_name = "g1k16"
+geometry_field = "wkb_geometry"
+geometry_type = "MULTIPOLYGON"
+srid = 2056
+buffer_size = 2
+simplify = true
+
+[[tileset.layer]]
+name = "places"
+datasource = "gpkg"
+table_name = "ne_10m_populated_places"
+geometry_field = "geom"
+srid = 3857
+query_limit = 1000
+
+#[cache.file]
+#base = "/tmp/mvtcache"
+#baseurl = "http://example.com/tiles"
+
+[webserver]
+# Bind address. Use 0.0.0.0 to listen on all adresses.
+bind = "127.0.0.1"
+port = 6767
+threads = 4
+#cache_control_max_age = 43200
