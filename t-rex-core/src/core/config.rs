@@ -59,20 +59,24 @@ pub struct DatasourceCfg {
 #[derive(Deserialize, Debug)]
 pub struct GridCfg {
     pub predefined: Option<String>,
-    // TODO: put custom grid into [grid.user] to get rid of Option types
+    pub user: Option<UserGridCfg>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct UserGridCfg {
     /// The width and height of an individual tile, in pixels.
-    pub width: Option<u16>,
-    pub height: Option<u16>,
+    pub width: u16,
+    pub height: u16,
     /// The geographical extent covered by the grid, in ground units (e.g. meters, degrees, feet, etc.).
     /// Must be specified as 4 floating point numbers ordered as minx, miny, maxx, maxy.
     /// The (minx,miny) point defines the origin of the grid, i.e. the pixel at the bottom left of the
     /// bottom-left most tile is always placed on the (minx,miny) geographical point.
     /// The (maxx,maxy) point is used to determine how many tiles there are for each zoom level.
-    pub extent: Option<Extent>,
+    pub extent: Extent,
     /// Spatial reference system (PostGIS SRID).
-    pub srid: Option<i32>,
+    pub srid: i32,
     /// Grid units
-    pub units: Option<String>,
+    pub units: String,
     /// This is a list of resolutions for each of the zoom levels defined by the grid.
     /// This must be supplied as a list of positive floating point values, ordered from largest to smallest.
     /// The largest value will correspond to the grid’s zoom level 0. Resolutions
@@ -82,7 +86,7 @@ pub struct GridCfg {
     #[serde(default)]
     pub resolutions: Vec<f64>,
     /// Grid origin
-    pub origin: Option<String>,
+    pub origin: String,
 }
 
 #[derive(Deserialize, Debug)]

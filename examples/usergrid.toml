@@ -4,11 +4,12 @@
 viewer = true
 
 [[datasource]]
-dbconn = "postgresql://pi@localhost/natural_earth_vectors"
+dbconn = "postgresql://pi@localhost/geostat"
 
-[grid]
+[grid.user]
 width = 256
 height = 256
+# LV95/CH1903+ (EPSG:2056)
 extent = { minx = 2420000.0, miny = 1030000.0, maxx = 2900000.0, maxy = 1350000.0 }
 srid = 2056
 units = "M"
@@ -24,10 +25,10 @@ geometry_field = "wkb_geometry"
 geometry_type = "MULTIPOLYGON"
 fid_field = "ktnr"
 srid = 2056
-buffer_size = 1
+buffer_size = 2
 simplify = true
 [[tileset.layer.query]]
-sql = """SELECT wkb_geometry,ktnr::FLOAT8,ktname FROM geostat.g1k16 WHERE wkb_geometry && !bbox!"""
+sql = """SELECT wkb_geometry,ktnr::FLOAT8,ktname FROM g1k16 WHERE wkb_geometry && !bbox!"""
 
 #[cache.file]
 #base = "/tmp/mvtcache"

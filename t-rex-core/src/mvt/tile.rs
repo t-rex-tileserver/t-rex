@@ -172,12 +172,10 @@ impl<'a> Tile<'a> {
                 screen::Point::from_geom(&self.extent, self.reverse_y, tile_size, g).encode()
             }
             GeometryType::MultiPoint(ref g) => {
-                screen::MultiPoint::from_geom(&self.extent, self.reverse_y, tile_size, g)
-                    .encode()
+                screen::MultiPoint::from_geom(&self.extent, self.reverse_y, tile_size, g).encode()
             }
             GeometryType::LineString(ref g) => {
-                screen::LineString::from_geom(&self.extent, self.reverse_y, tile_size, g)
-                    .encode()
+                screen::LineString::from_geom(&self.extent, self.reverse_y, tile_size, g).encode()
             }
             GeometryType::MultiLineString(ref g) => {
                 screen::MultiLineString::from_geom(&self.extent, self.reverse_y, tile_size, g)
@@ -187,8 +185,7 @@ impl<'a> Tile<'a> {
                 screen::Polygon::from_geom(&self.extent, self.reverse_y, tile_size, g).encode()
             }
             GeometryType::MultiPolygon(ref g) => {
-                screen::MultiPolygon::from_geom(&self.extent, self.reverse_y, tile_size, g)
-                    .encode()
+                screen::MultiPolygon::from_geom(&self.extent, self.reverse_y, tile_size, g).encode()
             }
             GeometryType::GeometryCollection(_) => panic!("GeometryCollection not supported"),
         }

@@ -315,26 +315,24 @@ impl Grid {
 
 impl<'a> Config<'a, GridCfg> for Grid {
     fn from_config(grid_cfg: &GridCfg) -> Result<Self, String> {
-        match grid_cfg.predefined {
-            Some(ref gridname) => {
-                match gridname.as_str() {
-                    "wgs84" => Ok(Grid::wgs84()),
-                    "web_mercator" => Ok(Grid::web_mercator()),
-                    _ => Err(format!("Unkown grid '{}'", gridname)),
-                }
+        if let Some(ref gridname) = grid_cfg.predefined {
+            match gridname.as_str() {
+                "wgs84" => Ok(Grid::wgs84()),
+                "web_mercator" => Ok(Grid::web_mercator()),
+                _ => Err(format!("Unkown grid '{}'", gridname)),
             }
-            None => {
-                Ok(Grid {
-                       width: grid_cfg.width.expect("grid.width missing"),
-                       height: grid_cfg.height.expect("grid.height missing"),
-                       extent: grid_cfg.extent.clone().expect("grid.extent missing"),
-                       srid: grid_cfg.srid.expect("grid.srid missing"),
-                       units: Unit::from_str(&grid_cfg.units.clone().expect("grid.units missing"))?,
-                       resolutions: grid_cfg.resolutions.clone(),
-                       origin:
-                           Origin::from_str(&grid_cfg.origin.clone().expect("grid.origin missing"))?,
-                   })
-            }
+        } else if let Some(ref usergrid) = grid_cfg.user {
+            Ok(Grid {
+                   width: usergrid.width,
+                   height: usergrid.height,
+                   extent: usergrid.extent.clone(),
+                   srid: usergrid.srid,
+                   units: Unit::from_str(&usergrid.units)?,
+                   resolutions: usergrid.resolutions.clone(),
+                   origin: Origin::from_str(&usergrid.origin)?,
+               })
+        } else {
+            Err("Invalid grid definition".to_string())
         }
     }
     fn gen_config() -> String {

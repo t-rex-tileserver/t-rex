@@ -1,3 +1,4 @@
 target
 *.gpkg-shm
 *.gpkg-wal
+public

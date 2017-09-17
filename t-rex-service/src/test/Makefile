@@ -26,7 +26,9 @@ natural_earth_vectors: packages/Natural_Earth_quick_start/10m_cultural/ne_10m_po
 # Swiss grid test data
 # https://www.bfs.admin.ch/bfsstatic/dam/assets/453578/master
 geostat:
-	psql natural_earth_vectors -c "CREATE schema geostat"
-	SHAPE_ENCODING="ISO-8859-1" ogr2ogr -t_srs EPSG:2056 -nlt PROMOTE_TO_MULTI -lco SCHEMA=geostat -f PostgreSQL PG:dbname=natural_earth_vectors geostat_ggg_16/shp/g1k16.shp
+	psql postgres -c "DROP DATABASE IF EXISTS geostat"
+	psql postgres -c "CREATE DATABASE geostat"
+	psql geostat -c "CREATE EXTENSION postgis"
+	SHAPE_ENCODING="ISO-8859-1" ogr2ogr -t_srs EPSG:2056 -nlt PROMOTE_TO_MULTI -f PostgreSQL PG:dbname=geostat geostat_ggg_16/shp/g1k16.shp
 	# ggg_2017-LV95/shp
 	#for i in *.shp; do ogr2ogr -a_srs EPSG:2056 -nlt PROMOTE_TO_MULTI -f PostgreSQL PG:dbname=geostat $i; done

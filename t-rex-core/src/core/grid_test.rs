@@ -185,7 +185,8 @@ fn test_grid_from_config() {
                });
 
     let toml = r#"
-        #[grid]
+        #[grid.user]
+        [user]
         width = 256
         height = 256
         extent = { minx = 2420000.0, miny = 1030000.0, maxx = 2900000.0, maxy = 1350000.0 }

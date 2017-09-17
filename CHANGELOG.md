@@ -10,6 +10,7 @@
 #### Breaking changes
 
 * Changed configuration format of datasources
+* User defined grid now defined in [grid.user] block
 
 <a name="0.7.8"></a>
 ## 0.7.8 (2017-08-05)
