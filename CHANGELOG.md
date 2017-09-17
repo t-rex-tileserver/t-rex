@@ -11,6 +11,7 @@
 
 * Changed configuration format of datasources
 * User defined grid now defined in [grid.user] block
+* Changed user defined grid units to lower case (m, dd, ft)
 
 <a name="0.7.8"></a>
 ## 0.7.8 (2017-08-05)

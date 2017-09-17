@@ -56,25 +56,25 @@ enum_string_serialization!(Origin OriginVisitor);
 
 #[derive(PartialEq, Debug)]
 pub enum Unit {
-    M,
-    DD,
-    Ft,
+    Meters,
+    Degrees,
+    Feet,
 }
 
 impl EnumString<Unit> for Unit {
     fn from_str(val: &str) -> Result<Unit, String> {
-        match val {
-            "M" => Ok(Unit::M),
-            "DD" => Ok(Unit::DD),
-            "Ft" => Ok(Unit::Ft),
+        match &val.to_lowercase() as &str {
+            "m" => Ok(Unit::Meters),
+            "dd" => Ok(Unit::Degrees),
+            "ft" => Ok(Unit::Feet),
             _ => Err(format!("Unexpected enum value '{}'", val)),
         }
     }
     fn as_str(&self) -> &'static str {
         match *self {
-            Unit::M => "M",
-            Unit::DD => "DD",
-            Unit::Ft => "Ft",
+            Unit::Meters => "m",
+            Unit::Degrees => "dd",
+            Unit::Feet => "ft",
         }
     }
 }
@@ -121,7 +121,7 @@ impl Grid {
                 maxy: 90.0,
             },
             srid: 4326,
-            units: Unit::DD,
+            units: Unit::Degrees,
             resolutions: vec![0.703125000000000,
                               0.351562500000000,
                               0.175781250000000,
@@ -156,7 +156,7 @@ impl Grid {
                 maxy: 20037508.3427892480,
             },
             srid: 3857,
-            units: Unit::M,
+            units: Unit::Meters,
             // Formula: http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Resolution_and_Scale
             resolutions: vec![156543.0339280410,
                               78271.51696402048,

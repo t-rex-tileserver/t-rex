@@ -75,7 +75,7 @@ pub struct UserGridCfg {
     pub extent: Extent,
     /// Spatial reference system (PostGIS SRID).
     pub srid: i32,
-    /// Grid units
+    /// Grid units (m: meters, dd: decimal degrees, ft: feet)
     pub units: String,
     /// This is a list of resolutions for each of the zoom levels defined by the grid.
     /// This must be supplied as a list of positive floating point values, ordered from largest to smallest.
