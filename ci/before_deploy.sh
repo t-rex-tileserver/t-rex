@@ -38,8 +38,16 @@ EOF
             fakeroot dpkg-deb --build $dtd/debian
             mv $dtd/debian.deb $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.deb
             rm -r $dtd
+
+            pushd packaging/docker
+            cp $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.deb .
+            # travis uid/gid is 2000/2000, but we build with default uid 1000
+            docker build -t t-rex-tileserver/t-rex -f Dockerfile .
+            docker run -t -i t-rex-tileserver/t-rex --version
+            popd
+
         fi
-    fi
+   fi
 }
 
 main() {

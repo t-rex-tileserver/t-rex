@@ -1,4 +1,4 @@
-# t-rex container
+# t-rex build container
 #
 # docker build --build-arg uid=$UID -t t-rex-%%UBUNTU-SUITE%% -f Dockerfile-%%UBUNTU-SUITE%% .
 # docker run -t -i -v $(pwd):/var/data/in t-rex-%%UBUNTU-SUITE%%
@@ -9,6 +9,7 @@
 
 FROM ubuntu:%%UBUNTU-SUITE%%
 
+ARG gitref
 ARG uid
 
 RUN apt-get -y update && apt-get install -y wget make
@@ -49,17 +50,18 @@ RUN gpg --export --armor 314DF160 | apt-key add -
 RUN apt-get update && apt-get install -y libgdal-dev
 
 # Build t-rex
-RUN wget -qO- https://github.com/t-rex-tileserver/t-rex/archive/master.tar.gz | tar xzf -
-RUN cd t-rex-master && cargo build --release
+RUN wget -qO- https://api.github.com/repos/t-rex-tileserver/t-rex/tarball/${gitref:-master} | tar xzf -
+RUN mv t-rex-tileserver* t-rex
+RUN cd t-rex && cargo build --release
 
 # Build DEB package
 RUN apt-get update && apt-get install -y fakeroot
 
-RUN VERSION=$(grep version t-rex-master/Cargo.toml | sed 's/version = "\(.*\)"/\1/') && \
+RUN VERSION=$(grep version t-rex/Cargo.toml | sed 's/version = "\(.*\)"/\1/') && \
     ARCH=$(dpkg --print-architecture) && \
     mkdir -p debian/usr/bin && \
     \
-    install -m0755 t-rex-master/target/release/t_rex debian/usr/bin/ && \
+    install -m0755 t-rex/target/release/t_rex debian/usr/bin/ && \
     strip -s debian/usr/bin/t_rex && \
     \
     mkdir -p debian/DEBIAN && \
@@ -74,10 +76,10 @@ Depends: openssl, libgdal20\n"\
     mv debian.deb t-rex-$VERSION-$ARCH-ubuntugis~%%UBUNTU-SUITE%%.deb && \
     echo t-rex-$VERSION-$ARCH-ubuntugis-%%UBUNTU-SUITE%%.deb
 
-# t_rex execution from Docker
-RUN mv t-rex-master/target/release/t_rex /usr/local/bin/ && rm -rf t-rex-master/target
+RUN dpkg -i t-rex-*-ubuntugis~%%UBUNTU-SUITE%%.deb && rm -rf debian
+RUN rm -rf t-rex-tileserver*/target
 
-RUN useradd --uid ${uid:-1000} --create-home rust
+RUN useradd --uid ${uid:-1000} rust
 USER rust
 
 WORKDIR /var/data/in
@@ -86,4 +88,4 @@ VOLUME ["/var/data/in"]
 VOLUME ["/var/data/out"]
 
 EXPOSE 6767
-ENTRYPOINT ["/usr/local/bin/t_rex"]
+ENTRYPOINT ["/usr/bin/t_rex"]

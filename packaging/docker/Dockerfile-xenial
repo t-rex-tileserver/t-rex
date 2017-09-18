@@ -1,13 +1,13 @@
 # t-rex build container
 #
-# docker build --build-arg uid=$UID -t t-rex-trusty -f Dockerfile-trusty .
-# docker run -t -i -v $(pwd):/var/data/in t-rex-trusty
+# docker build --build-arg uid=$UID -t t-rex-xenial -f Dockerfile-xenial .
+# docker run -t -i -v $(pwd):/var/data/in t-rex-xenial
 # 
 # Copy generated DEB package
-# docker run --entrypoint="" t-rex-trusty ls -l /
-# docker run --entrypoint="" -v $(pwd):/var/data/out t-rex-trusty cp /t-rex-0.8.0-dev-amd64-ubuntugis~trusty.deb /var/data/out/
+# docker run --entrypoint="" t-rex-xenial ls -l /
+# docker run --entrypoint="" -v $(pwd):/var/data/out t-rex-xenial cp /t-rex-0.8.0-dev-amd64-ubuntugis~xenial.deb /var/data/out/
 
-FROM ubuntu:trusty
+FROM ubuntu:xenial
 
 ARG gitref
 ARG uid
@@ -43,7 +43,7 @@ RUN set -eux; \
 rustc --version;
 
 # GDAL 2 from ubuntugis
-RUN echo "deb http://ppa.launchpad.net/ubuntugis/ubuntugis-unstable/ubuntu trusty main" >> /etc/apt/sources.list
+RUN echo "deb http://ppa.launchpad.net/ubuntugis/ubuntugis-unstable/ubuntu xenial main" >> /etc/apt/sources.list
 RUN gpg --keyserver keyserver.ubuntu.com --recv 314DF160
 RUN gpg --export --armor 314DF160 | apt-key add -
 
@@ -73,10 +73,10 @@ Description: t-rex vector tile server\n\
 Depends: openssl, libgdal20\n"\
 >debian/DEBIAN/control && \
     fakeroot dpkg-deb --build debian && \
-    mv debian.deb t-rex-$VERSION-$ARCH-ubuntugis~trusty.deb && \
-    echo t-rex-$VERSION-$ARCH-ubuntugis-trusty.deb
+    mv debian.deb t-rex-$VERSION-$ARCH-ubuntugis~xenial.deb && \
+    echo t-rex-$VERSION-$ARCH-ubuntugis-xenial.deb
 
-RUN dpkg -i t-rex-*-ubuntugis~trusty.deb && rm -rf debian
+RUN dpkg -i t-rex-*-ubuntugis~xenial.deb && rm -rf debian
 RUN rm -rf t-rex-tileserver*/target
 
 RUN useradd --uid ${uid:-1000} rust
