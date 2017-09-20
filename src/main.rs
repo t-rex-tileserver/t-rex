@@ -124,6 +124,8 @@ fn main() {
                                               --clip=[true|false] 'Clip geometries'
                                               --cache=[DIR] 'Use tile cache in DIR'
                                               -c, --config=[FILE] 'Load from custom config file'
+                                              --bind=[IPADDRESS] 'Bind web server to this address (0.0.0.0 for all)'
+                                              --port=[PORT] 'Bind web server to this port'
                                               --openbrowser=[true|false] 'Open backend URL in browser'")
                         .about("Start web server and serve MVT vector tiles"))
         .subcommand(SubCommand::with_name("genconfig")

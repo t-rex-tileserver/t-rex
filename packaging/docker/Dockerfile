@@ -2,7 +2,7 @@
 #
 # docker build --build-arg uid=$UID -t t-rex -f Dockerfile .
 # docker run -v $(pwd):/var/data/in t-rex --version
-# docker run -v $(pwd):/var/data/in t-rex serve --openbrowser=false --datasource=t-rex-gdal/natural_earth.gpkg
+# docker run -v $(pwd):/var/data/in t-rex serve --bind=0.0.0.0 --openbrowser=false --datasource=t-rex-gdal/natural_earth.gpkg
 
 FROM ubuntu:xenial
 

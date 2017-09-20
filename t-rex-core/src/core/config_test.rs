@@ -5,6 +5,7 @@
 
 use core::config::read_config;
 use core::config::ApplicationCfg;
+use core::config::DEFAULT_CONFIG;
 
 
 #[test]
@@ -32,6 +33,13 @@ fn test_parse_error() {
 
     let config: Result<ApplicationCfg, _> = read_config("wrongfile");
     assert_eq!("Could not find config file!", config.err().unwrap());
+}
+
+#[test]
+fn test_default_config() {
+    use core::parse_config;
+    let config: ApplicationCfg = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
+    assert_eq!(config.webserver.port, Some(6767));
 }
 
 #[test]

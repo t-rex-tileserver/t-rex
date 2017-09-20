@@ -169,7 +169,11 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
         svc.connect();
         (svc, config)
     } else {
-        let config = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
+        let bind = args.value_of("bind").unwrap_or("127.0.0.1");
+        let port = u16::from_str(args.value_of("port").unwrap_or("6767")).expect("Invalid port number");
+        let mut config: ApplicationCfg = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
+        config.webserver.bind = Some(bind.to_string());
+        config.webserver.port = Some(port);
         let cache = match args.value_of("cache") {
             None => Tilecache::Nocache(Nocache),
             Some(dir) => {
