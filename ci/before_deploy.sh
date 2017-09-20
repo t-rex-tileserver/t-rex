@@ -39,13 +39,14 @@ EOF
             mv $dtd/debian.deb $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.deb
             rm -r $dtd
 
-            pushd packaging/docker
+            cd $src/packaging/docker
             cp $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.deb .
             # travis uid/gid is 2000/2000, but we build with default uid 1000
-            docker build -t t-rex-tileserver/t-rex -f Dockerfile .
-            docker run -t -i t-rex-tileserver/t-rex --version
-            popd
+            docker build -t sourcepole/t-rex -f Dockerfile .
+            docker run sourcepole/t-rex --version
 
+            docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+            docker push sourcepole/t-rex
         fi
    fi
 }
