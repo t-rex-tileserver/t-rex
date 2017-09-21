@@ -25,6 +25,7 @@ background-color = "#f8f4f0"
 [[tileset.layer]]
 name = "points"
 datasource = "natural_earth"
+# Select all attributes of table:
 table_name = "ne_10m_populated_places"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
@@ -59,6 +60,7 @@ simplify = true
   sql = """
     SELECT name, type, osm_id, geometry
     FROM osm_buildings
+    WHERE geometry && !bbox!
     ORDER BY area DESC"""
 
 [[tileset.layer]]
