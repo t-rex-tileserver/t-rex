@@ -1,5 +1,5 @@
 <a name="0.8.0"></a>
-## 0.8.0 (UNRELEASED)
+## 0.8.0 (2017-09-26)
 
 #### Features
 
@@ -13,7 +13,9 @@
 #### Breaking changes
 
 * Changed configuration format of datasources
-* User defined grid now defined in [grid.user] block
+
+  See [Upgrading](http://t-rex.tileserver.ch/doc/setup/#0-7-x-0-8-0) for conversion help.
+* User defined grid now in [grid.user] block
 * Changed user defined grid units to lower case (m, dd, ft)
 
 <a name="0.7.8"></a>
