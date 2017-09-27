@@ -1,6 +1,6 @@
 [package]
 name = "t-rex-webserver"
-version = "0.8.0"
+version = "0.8.1-dev"
 description = "vector tile server"
 repository = "https://github.com/t-rex-tileserver/t-rex"
 readme = "../README.md"
@@ -14,7 +14,7 @@ doctest = false
 
 [dependencies]
 nickel = "*"
-hyper = "*"
+hyper = "~0.10.0" # same as nickel
 serde_json = "*"
 rustc-serialize = "*"
 toml = "*"
