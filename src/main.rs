@@ -116,10 +116,11 @@ fn main() {
     let mut app = App::new("t_rex")
         .version(crate_version!())
         .author("Pirmin Kalberer <pka@sourcepole.ch>")
-        .about("vector tile server specialized on publishing MVT tiles from a PostGIS database")
+        .about("vector tile server specialized on publishing MVT tiles from your own data")
         .subcommand(SubCommand::with_name("serve")
                         .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'
                                               --datasource=[FILE_OR_GDAL_DS] 'GDAL datasource specification'
+                                              --qgs=[FILE] 'QGIS project file'
                                               --simplify=[true|false] 'Simplify geometries'
                                               --clip=[true|false] 'Clip geometries'
                                               --cache=[DIR] 'Use tile cache in DIR'
@@ -131,6 +132,7 @@ fn main() {
         .subcommand(SubCommand::with_name("genconfig")
                         .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'
                                               --datasource=[FILE_OR_GDAL_DS] 'GDAL datasource specification'
+                                              --qgs=[FILE] 'QGIS project file'
                                               --simplify=[true|false] 'Simplify geometries'
                                               --clip=[true|false] 'Clip geometries'")
                         .about("Generate configuration template"))

@@ -10,6 +10,8 @@ extern crate serde;
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
+extern crate percent_encoding;
+extern crate elementtree;
 extern crate clap;
 extern crate pbr;
 
@@ -29,3 +31,5 @@ pub mod datasource_type;
 pub mod mvt_service;
 #[cfg(test)]
 mod mvt_service_test;
+mod qgs_reader;
+pub use qgs_reader::read_qgs;

@@ -13,6 +13,7 @@ use core::ApplicationCfg;
 use service::tileset::{Tileset, WORLD_EXTENT};
 use mvt::tile::Tile;
 use mvt::vector_tile;
+use percent_encoding::percent_decode;
 use cache::{Cache, Tilecache};
 use serde_json;
 use pbr::ProgressBar;
@@ -46,7 +47,8 @@ impl MvtService {
         self.datasources.datasource(&layer.datasource)
     }
     fn get_tileset(&self, name: &str) -> Option<&Tileset> {
-        self.tilesets.iter().find(|t| t.name == name)
+        let dec_name = percent_decode(name.as_bytes()).decode_utf8().unwrap();
+        self.tilesets.iter().find(|t| t.name == dec_name)
     }
     /// Get layers (as reference) of given tileset
     fn get_tileset_layers(&self, name: &str) -> Vec<&Layer> {

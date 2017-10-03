@@ -60,6 +60,12 @@ impl DatasourceInput for DummyDatasource {
     }
 }
 
+impl DummyDatasource {
+    pub fn new(_: &str) -> DummyDatasource {
+        DummyDatasource {}
+    }
+}
+
 impl<'a> Config<'a, DatasourceCfg> for DummyDatasource {
     fn from_config(_ds_cfg: &DatasourceCfg) -> Result<Self, String> {
         Ok(DummyDatasource {})

@@ -134,6 +134,12 @@ impl ToGeo for Geometry {
     }
 }
 
+pub fn ogr_layer_name(path: &str, id: isize) -> Result<String, gdal::errors::Error> {
+    let mut dataset = Dataset::open(Path::new(path))?;
+    let layer = dataset.layer(id)?;
+    Ok(layer.name())
+}
+
 struct VectorFeature<'a> {
     layer: &'a Layer,
     fields_defn: &'a Vec<gdal::vector::Field<'a>>,
@@ -327,7 +333,6 @@ path = "<filename-or-connection-spec>"
     fn gen_runtime_config(&self) -> String {
         format!(r#"
 [[datasource]]
-#name = "ds"
 path = "{}"
 "#,
                 self.path)

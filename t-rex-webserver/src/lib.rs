@@ -24,5 +24,6 @@ use t_rex_core::service;
 use t_rex_core::cache;
 use t_rex_service::mvt_service;
 use t_rex_service::datasource_type;
+use t_rex_service::read_qgs;
 
 pub mod server;

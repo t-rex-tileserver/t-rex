@@ -1,3 +1,10 @@
+<a name="0.8.1"></a>
+## 0.8.1 (UNRELEASED)
+
+#### Features
+
+* Read layers from QGIS project file
+
 <a name="0.8.0"></a>
 ## 0.8.0 (2017-09-26)
 

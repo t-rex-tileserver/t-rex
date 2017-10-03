@@ -120,9 +120,14 @@ impl<'a> Config<'a, ApplicationCfg> for Datasources {
     }
     fn gen_runtime_config(&self) -> String {
         let mut config = String::new();
-        for (_name, ds) in &self.datasources {
-            //TODO: missing name & default
+        for (name, ds) in &self.datasources {
             config.push_str(&ds.gen_runtime_config());
+            if name != "" {
+                config.push_str(&format!("name = \"{}\"\n", name));
+            }
+            if self.default.is_some() && name == self.default.as_ref().unwrap() {
+                config.push_str("default = true\n");
+            }
         }
         config
     }

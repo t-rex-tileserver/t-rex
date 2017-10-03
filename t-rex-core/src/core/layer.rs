@@ -160,6 +160,9 @@ geometry_type = "POINT"
     fn gen_runtime_config(&self) -> String {
         let mut lines = vec!["[[tileset.layer]]".to_string()];
         lines.push(format!(r#"name = "{}""#, self.name));
+        if let Some(ref ds) = self.datasource {
+            lines.push(format!("datasource = \"{}\"", ds));
+        }
         match self.table_name {
             Some(ref table_name) => lines.push(format!(r#"table_name = "{}""#, table_name)),
             _ => lines.push(r#"#table_name = "mytable""#.to_string()),

@@ -765,7 +765,6 @@ dbconn = "postgresql://user:pass@host/database"
     fn gen_runtime_config(&self) -> String {
         format!(r#"
 [[datasource]]
-#name = "postgis"
 dbconn = "{}"
 "#,
                 self.connection_url)

@@ -7,8 +7,10 @@ use core::config::ApplicationCfg;
 use datasource_type::Datasources;
 use datasource::DatasourceInput;
 use core::grid::Grid;
+use core::layer::Layer;
 use service::tileset::Tileset;
 use mvt_service::MvtService;
+use read_qgs;
 use core::{Config, read_config, parse_config};
 use core::config::DEFAULT_CONFIG;
 use serde_json;
@@ -152,9 +154,36 @@ xxxxxxx
 xxxxxx
 xxxxxxx";
 
+fn set_layer_buffer_defaults(layer: &mut Layer, simplify: bool, clip: bool) {
+    layer.simplify = simplify;
+    if simplify {
+        // Limit features by default unless simplify is set to false
+        layer.query_limit = Some(1000);
+    }
+    layer.buffer_size = match layer.geometry_type {
+        Some(ref geom) => {
+            if clip {
+                if geom.contains("POLYGON") {
+                    Some(1)
+                } else {
+                    Some(0)
+                }
+            } else {
+                None
+            }
+        }
+        None => None,
+    };
+}
+
 pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
     if let Some(cfgpath) = args.value_of("config") {
         info!("Reading configuration from '{}'", cfgpath);
+        for argname in vec!["dbconn", "datasource", "qgs"] {
+            if args.value_of(argname).is_some() {
+                warn!("Ignoring argument `{}`", argname);
+            }
+        }
         let config =
             read_config(cfgpath).unwrap_or_else(|err| {
                                                     println!("Error reading configuration - {} ",
@@ -170,7 +199,8 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
         (svc, config)
     } else {
         let bind = args.value_of("bind").unwrap_or("127.0.0.1");
-        let port = u16::from_str(args.value_of("port").unwrap_or("6767")).expect("Invalid port number");
+        let port =
+            u16::from_str(args.value_of("port").unwrap_or("6767")).expect("Invalid port number");
         let mut config: ApplicationCfg = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
         config.webserver.bind = Some(bind.to_string());
         config.webserver.port = Some(port);
@@ -185,46 +215,39 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
         };
         let simplify = bool::from_str(args.value_of("simplify").unwrap_or("true")).unwrap_or(false);
         let clip = bool::from_str(args.value_of("clip").unwrap_or("true")).unwrap_or(false);
-        let datasources = Datasources::from_args(args);
-        if datasources.datasources.is_empty() {
-            println!("Either 'config', 'dbconn' or 'datasource' is required");
-            process::exit(1)
-        }
         let grid = Grid::web_mercator();
         let mut tilesets = Vec::new();
-        let detect_geometry_types = true; //TODO: add option (maybe slow for many geometries)
-        for (_name, ds) in &datasources.datasources {
-            let dsconn = ds.connected();
-            let mut layers = dsconn.detect_layers(detect_geometry_types);
-            while let Some(mut l) = layers.pop() {
-                let extent = dsconn.layer_extent(&l);
-                l.simplify = simplify;
-                if simplify {
-                    // Limit features by default unless simplify is set to false
-                    l.query_limit = Some(1000);
-                }
-                l.buffer_size = match l.geometry_type {
-                    Some(ref geom) => {
-                        if clip {
-                            if geom.contains("POLYGON") {
-                                Some(1)
-                            } else {
-                                Some(0)
-                            }
-                        } else {
-                            None
-                        }
-                    }
-                    None => None,
-                };
-                let tileset = Tileset {
-                    name: l.name.clone(),
-                    extent: extent,
-                    layers: vec![l],
-                };
-                tilesets.push(tileset);
+        let datasources = if let Some(qgs) = args.value_of("qgs") {
+            info!("Reading configuration from '{}'", qgs);
+            let (datasources, mut tileset) = read_qgs(qgs);
+            for layer in tileset.layers.iter_mut() {
+                set_layer_buffer_defaults(layer, simplify, clip);
             }
-        }
+            tilesets.push(tileset);
+            datasources
+        } else {
+            let datasources = Datasources::from_args(args);
+            if datasources.datasources.is_empty() {
+                println!("Either 'config', 'dbconn' or 'datasource' is required");
+                process::exit(1)
+            }
+            let detect_geometry_types = true; //TODO: add option (maybe slow for many geometries)
+            for (_name, ds) in &datasources.datasources {
+                let dsconn = ds.connected();
+                let mut layers = dsconn.detect_layers(detect_geometry_types);
+                while let Some(mut l) = layers.pop() {
+                    let extent = dsconn.layer_extent(&l);
+                    set_layer_buffer_defaults(&mut l, simplify, clip);
+                    let tileset = Tileset {
+                        name: l.name.clone(),
+                        extent: extent,
+                        layers: vec![l],
+                    };
+                    tilesets.push(tileset);
+                }
+            }
+            datasources
+        };
         let mut svc = MvtService {
             datasources: datasources,
             grid: grid,
@@ -395,7 +418,8 @@ threads = 4
 #cache_control_max_age = 43200
 "#;
     let mut config;
-    if args.value_of("dbconn").is_some() || args.value_of("datasource").is_some() {
+    if args.value_of("dbconn").is_some() || args.value_of("datasource").is_some() ||
+       args.value_of("qgs").is_some() {
         let (service, _) = service_from_args(args);
         config = service.gen_runtime_config();
     } else {
