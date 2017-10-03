@@ -123,8 +123,12 @@ impl GdalLayerInfo {
         };
         // Read layer name based on id
         let layer = parts[1].split('=').collect::<Vec<&str>>();
-        let layer_name = ogr_layer_name(path.to_str().unwrap(), isize::from_str(layer[1]).unwrap())
-            .expect("Couldn't resolve layer name");
+        let layer_name = match layer[0] {
+            "layerid" => ogr_layer_name(path.to_str().unwrap(), isize::from_str(layer[1]).unwrap())
+                         .expect("Couldn't resolve layer name"),
+            "layername" => layer[1].to_string(),
+            &_ => format!("<{}>", ds),
+        };
         GdalLayerInfo {
             path: path.to_str().unwrap().to_string().replace("//?/", ""),
             geometry_field: "TODO".to_string(),
@@ -227,6 +231,13 @@ fn test_gdal_ds() {
                                           "../t-rex-gdal/natural_earth.gpkg|layerid=2");
     println!("{:?}", info);
     assert!(info.path.contains("natural_earth.gpkg"));
+    assert_eq!(info.layer_name, "ne_110m_admin_0_countries");
+    let info = GdalLayerInfo::from_qgs_ds("../examples/natural_earth.qgs",
+                                          "../t-rex-gdal/natural_earth.gpkg|layername=ne_10m_rivers_lake_centerlines");
+    assert_eq!(info.layer_name, "ne_10m_rivers_lake_centerlines");
+    let info = GdalLayerInfo::from_qgs_ds("../examples/natural_earth.qgs",
+                                          "../t-rex-gdal/natural_earth.gpkg|layerinfo=missing");
+    assert_eq!(info.layer_name, "<../t-rex-gdal/natural_earth.gpkg|layerinfo=missing>");
 }
 
 #[test]
