@@ -18,20 +18,14 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::io;
+use std::env;
 #[cfg(test)]
 use t_rex_core::core::Config;
 #[cfg(test)]
 use std::error::Error;
 
-#[cfg(not(windows))]
 pub fn get_user_name() -> String {
-    use std::env;
     env::var("LOGNAME").unwrap_or("".to_string())
-}
-
-#[cfg(windows)]
-pub fn get_user_name() -> String {
-    "".to_string()
 }
 
 fn read_xml(fname: &str) -> Result<Element, io::Error> {
@@ -132,7 +126,7 @@ impl GdalLayerInfo {
         let layer_name = ogr_layer_name(path.to_str().unwrap(), isize::from_str(layer[1]).unwrap())
             .expect("Couldn't resolve layer name");
         GdalLayerInfo {
-            path: path.to_str().unwrap().to_string(),
+            path: path.to_str().unwrap().to_string().replace("//?/", ""),
             geometry_field: "TODO".to_string(),
             geometry_type: "TODO".to_string(),
             srid: None, //TODO
@@ -232,7 +226,7 @@ fn test_gdal_ds() {
     let info = GdalLayerInfo::from_qgs_ds("../examples/natural_earth.qgs",
                                           "../t-rex-gdal/natural_earth.gpkg|layerid=2");
     println!("{:?}", info);
-    assert!(info.path.contains("t-rex-gdal/natural_earth.gpkg"));
+    assert!(info.path.contains("natural_earth.gpkg"));
 }
 
 #[test]
@@ -267,7 +261,7 @@ simplify = false
 
     let ref ds = dss.datasources[&ts.layers[1].name];
     assert_eq!(ts.layers[1].name, "natural_earth ne_110m_admin_0_countries");
-    assert!(ds.gen_runtime_config().contains("t-rex-gdal/natural_earth.gpkg"));
+    assert!(ds.gen_runtime_config().contains("natural_earth.gpkg"));
     let layerconfig = r#"[[tileset.layer]]
 name = "natural_earth ne_110m_admin_0_countries"
 datasource = "natural_earth ne_110m_admin_0_countries"
