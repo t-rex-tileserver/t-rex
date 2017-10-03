@@ -255,8 +255,24 @@ impl DatasourceInput for GdalDatasource {
     fn layer_extent(&self, _layer: &Layer) -> Option<Extent> {
         None // TODO
     }
-    fn prepare_queries(&mut self, _layer: &Layer, _grid_srid: i32) {
+    fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
         // TODO: Prepare gdal::vector::Layer, CoordTransform
+        match layer.srid {
+            None => {
+                // Unknown SRID
+                warn!("Layer '{}' - Casting geometry to SRID {}",
+                      layer.name,
+                      grid_srid);
+            }
+            Some(srid) => {
+                if srid != grid_srid {
+                    warn!("Layer '{}' - Reprojecting geometry from SRID {} to {}",
+                          layer.name,
+                          srid,
+                          grid_srid);
+                }
+            }
+        }
     }
     fn retrieve_features<F>(&self,
                             layer: &Layer,
