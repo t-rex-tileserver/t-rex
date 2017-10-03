@@ -18,7 +18,6 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::io;
-use std::env;
 #[cfg(test)]
 use t_rex_core::core::Config;
 #[cfg(test)]
@@ -26,6 +25,7 @@ use std::error::Error;
 
 #[cfg(not(windows))]
 pub fn get_user_name() -> String {
+    use std::env;
     env::var("LOGNAME").unwrap_or("".to_string())
 }
 
@@ -40,6 +40,7 @@ fn read_xml(fname: &str) -> Result<Element, io::Error> {
     Element::from_reader(&mut reader).map_err(|e| io::Error::new(io::ErrorKind::Other, e))
 }
 
+#[derive(Debug)]
 struct PgLayerInfo {
     pub dbconn: String,
     pub geometry_field: String,
@@ -104,6 +105,7 @@ impl PgLayerInfo {
     }
 }
 
+#[derive(Debug)]
 struct GdalLayerInfo {
     pub path: String,
     pub geometry_field: String,
@@ -229,6 +231,7 @@ fn test_pg_uri() {
 fn test_gdal_ds() {
     let info = GdalLayerInfo::from_qgs_ds("../examples/natural_earth.qgs",
                                           "../t-rex-gdal/natural_earth.gpkg|layerid=2");
+    println!("{:?}", info);
     assert!(info.path.contains("t-rex-gdal/natural_earth.gpkg"));
 }
 
@@ -241,10 +244,10 @@ fn test_read_qgs() {
 
     assert_eq!(ts.layers[0].name, "admin_0_countries");
     let ref ds = dss.datasources[&ts.layers[0].name];
-    let dsconfig = r#"
+    let dsconfig = format!(r#"
 [[datasource]]
-dbconn = "postgresql://pi@%2Frun%2Fpostgresql:5432/natural_earth_vectors"
-"#;
+dbconn = "postgresql://{}@%2Frun%2Fpostgresql:5432/natural_earth_vectors"
+"#, get_user_name());
     assert_eq!(ds.gen_runtime_config(), dsconfig);
     let layerconfig = r#"[[tileset.layer]]
 name = "admin_0_countries"

@@ -47,6 +47,7 @@ impl MvtService {
         self.datasources.datasource(&layer.datasource)
     }
     fn get_tileset(&self, name: &str) -> Option<&Tileset> {
+        // URL decode tileset names from http requests
         let dec_name = percent_decode(name.as_bytes()).decode_utf8().unwrap();
         self.tilesets.iter().find(|t| t.name == dec_name)
     }
