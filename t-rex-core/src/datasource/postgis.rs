@@ -399,14 +399,13 @@ impl PostgisInput {
 
         // Transform geometry to grid SRID
         if layer_srid <= 0 {
-            // Unknown SRID
-            warn!("Layer '{}' - Casting geometry '{}' to SRID {}",
+            warn!("Layer '{}': Unknown SRS of geometry '{}' - assuming SRID {}",
                   layer.name,
                   geom_name,
                   grid_srid);
             geom_expr = format!("ST_SetSRID({},{})", geom_expr, grid_srid)
         } else if layer_srid != grid_srid {
-            warn!("Layer '{}' - Reprojecting geometry '{}' from SRID {} to {}",
+            info!("Layer '{}': Reprojecting geometry '{}' from SRID {} to {}",
                   layer.name,
                   geom_name,
                   layer_srid,

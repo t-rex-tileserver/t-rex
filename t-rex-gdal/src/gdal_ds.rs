@@ -270,14 +270,13 @@ impl DatasourceInput for GdalDatasource {
         // TODO: Prepare gdal::vector::Layer, CoordTransform
         match layer.srid {
             None => {
-                // Unknown SRID
-                warn!("Layer '{}' - Casting geometry to SRID {}",
+                warn!("Layer '{}': Unknown SRS - assuming SRID {}",
                       layer.name,
                       grid_srid);
             }
             Some(srid) => {
                 if srid != grid_srid {
-                    warn!("Layer '{}' - Reprojecting geometry from SRID {} to {}",
+                    info!("Layer '{}': Reprojecting geometry from SRID {} to {}",
                           layer.name,
                           srid,
                           grid_srid);
