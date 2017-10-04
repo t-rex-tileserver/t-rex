@@ -134,6 +134,29 @@ impl ToGeo for Geometry {
     }
 }
 
+fn new_transform(src_srid: i32, dest_srid: i32) -> Result<CoordTransform, gdal::errors::Error> {
+    let sref_in = SpatialRef::from_epsg(src_srid as u32)?;
+    let sref_out = SpatialRef::from_epsg(dest_srid as u32)?;
+    CoordTransform::new(&sref_in, &sref_out)
+}
+
+/// Projected extent
+fn transform_extent(extent: &Extent,
+                    src_srid: i32,
+                    dest_srid: i32)
+                    -> Result<Extent, gdal::errors::Error> {
+    let transform = new_transform(src_srid, dest_srid)?;
+    let mut xs = &mut [extent.minx, extent.maxx];
+    let mut ys = &mut [extent.miny, extent.maxy];
+    transform.transform_coord(xs, ys, &mut [0.0, 0.0]);
+    Ok(Extent {
+           minx: *xs.get(0).unwrap(),
+           miny: *ys.get(0).unwrap(),
+           maxx: *xs.get(1).unwrap(),
+           maxy: *ys.get(1).unwrap(),
+       })
+}
+
 pub fn ogr_layer_name(path: &str, id: isize) -> Result<String, gdal::errors::Error> {
     let mut dataset = Dataset::open(Path::new(path))?;
     let layer = dataset.layer(id)?;
@@ -238,19 +261,7 @@ impl DatasourceInput for GdalDatasource {
     }
     /// Projected extent
     fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent> {
-        let sref_in = SpatialRef::from_epsg(4326).unwrap();
-        let sref_out = SpatialRef::from_epsg(dest_srid as u32).unwrap();
-        let transform = CoordTransform::new(&sref_in, &sref_out).unwrap();
-
-        let mut xs = &mut [extent.minx, extent.maxx];
-        let mut ys = &mut [extent.miny, extent.maxy];
-        transform.transform_coord(xs, ys, &mut [0.0, 0.0]);
-        Some(Extent {
-                 minx: *xs.get(0).unwrap(),
-                 miny: *ys.get(0).unwrap(),
-                 maxx: *xs.get(1).unwrap(),
-                 maxy: *ys.get(1).unwrap(),
-             })
+        transform_extent(extent, 4326, dest_srid).ok()
     }
     fn layer_extent(&self, _layer: &Layer) -> Option<Extent> {
         None // TODO
@@ -288,25 +299,33 @@ impl DatasourceInput for GdalDatasource {
         let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
 
         let transform = match layer.srid {
-            Some(srid) if srid != grid.srid => {
-                let sref_in = SpatialRef::from_epsg(srid as u32).unwrap();
-                let sref_out = SpatialRef::from_epsg(grid.srid as u32).unwrap();
-                Some(CoordTransform::new(&sref_in, &sref_out).unwrap())
-            }
+            Some(srid) if srid != grid.srid => new_transform(srid, grid.srid).ok(),
             _ => None,
         };
 
-        let bbox = if let Some(pixels) = layer.buffer_size {
+        let mut bbox_extent = if let Some(pixels) = layer.buffer_size {
             let pixel_width = grid.pixel_width(zoom);
             let buf = f64::from(pixels) * pixel_width;
-            Geometry::bbox(extent.minx - buf,
-                           extent.miny - buf,
-                           extent.maxx + buf,
-                           extent.maxy + buf)
-                    .unwrap()
+            Extent {
+                minx: extent.minx - buf,
+                miny: extent.miny - buf,
+                maxx: extent.maxx + buf,
+                maxy: extent.maxy + buf,
+            }
         } else {
-            Geometry::bbox(extent.minx, extent.miny, extent.maxx, extent.maxy).unwrap()
+            extent.clone()
         };
+
+        // Spatial filter must be in layer SRS
+        let layer_srid = layer.srid.unwrap_or(grid.srid);
+        if layer_srid != grid.srid {
+            bbox_extent = transform_extent(&bbox_extent, grid.srid, layer_srid).unwrap()
+        };
+        let bbox = Geometry::bbox(bbox_extent.minx,
+                                  bbox_extent.miny,
+                                  bbox_extent.maxx,
+                                  bbox_extent.maxy)
+                .unwrap();
         ogr_layer.set_spatial_filter(&bbox);
 
         let fields_defn = ogr_layer.defn().fields().collect::<Vec<_>>();

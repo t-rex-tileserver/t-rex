@@ -10,6 +10,7 @@ use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::Layer;
 use std::path::Path;
+use std;
 use gdal::vector::Dataset;
 
 
@@ -88,13 +89,6 @@ fn test_coord_transformation() {
     layer.geometry_field = Some(String::from("geom"));
     layer.srid = Some(3857);
     let grid = Grid::wgs84();
-    let extent = Extent {
-        minx: 821850.9,
-        miny: 5909499.5,
-        maxx: 860986.7,
-        maxy: 5948635.3,
-    };
-
     let ds = GdalDatasource::new("natural_earth.gpkg");
 
     let extent_wgs84 = Extent {
@@ -117,11 +111,15 @@ fn test_coord_transformation() {
         maxx: 860978.3376424166,
         maxy: 5948621.871058013,
     };
-    assert_eq!(ds.extent_from_wgs84(&extent_wgs84, 3857).unwrap(),
-               extent_3857);
+    assert_eq!(ds.extent_from_wgs84(&extent_wgs84, 3857),
+               Some(extent_3857.clone()));
+
+    // Invalid input extent panics in gdal/srs.rs
+    let result = std::panic::catch_unwind(|| ds.extent_from_wgs84(&extent_3857, 3857));
+    assert!(result.is_err());
 
     let mut reccnt = 0;
-    ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
+    ds.retrieve_features(&layer, &extent_wgs84, 10, &grid, |feat| {
         if reccnt == 0 {
             assert_eq!("Ok(Point(Point { x: 7.466975462482421, y: 46.916682758667704, srid: Some(4326) }))",
                        &*format!("{:?}", feat.geometry()));

@@ -5,6 +5,10 @@
 
 * Read layers from QGIS project file
 
+#### Bug Fixes
+
+* Fix extent calculation for reprojected OGR geometries
+
 <a name="0.8.0"></a>
 ## 0.8.0 (2017-09-26)
 
