@@ -207,7 +207,7 @@ impl MvtService {
         let url = json!([
             format!("{}/{}/{{z}}/{{x}}/{{y}}.pbf", baseurl, tileset)
         ]);
-        let mut obj = metadata.as_object_mut().unwrap();
+        let obj = metadata.as_object_mut().unwrap();
         obj.insert("tiles".to_string(), url);
         obj.insert("vector_layers".to_string(), vector_layers);
         Ok(json!(obj))
@@ -299,7 +299,7 @@ impl MvtService {
             .collect();
         layer_styles.insert(0, background_layer);
         // Insert layers in stylejson
-        let mut obj = stylejson.as_object_mut().unwrap();
+        let obj = stylejson.as_object_mut().unwrap();
         obj.insert("layers".to_string(), json!(layer_styles));
         Ok(json!(obj))
     }
@@ -315,7 +315,7 @@ impl MvtService {
             "Layer": layers,
             "vector_layers": vector_layers
         });
-        let mut obj = metadata.as_object_mut().unwrap();
+        let obj = metadata.as_object_mut().unwrap();
         obj.insert("json".to_string(),
                    json!(metadata_vector_layers.to_string()));
         Ok(json!(obj))
@@ -367,7 +367,7 @@ impl MvtService {
 
         let mut tile: Option<Vec<u8>> = None;
         self.cache
-            .read(&path, |mut f| {
+            .read(&path, |f| {
                 let mut data = Vec::new();
                 let _ = f.read_to_end(&mut data);
                 tile = Some(data);
