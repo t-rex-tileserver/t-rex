@@ -522,7 +522,7 @@ impl DatasourceInput for PostgisInput {
     /// New instance with connected pool
     fn connected(&self) -> PostgisInput {
         let pool_size = 10; //FIXME: make configurable
-                            // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
+        // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
         let manager =
             PostgresConnectionManager::new(self.connection_url.as_ref(), TlsMode::None).unwrap();
         let pool = r2d2::Pool::builder()
