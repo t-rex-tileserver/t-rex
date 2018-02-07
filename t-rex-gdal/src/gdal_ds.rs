@@ -318,7 +318,13 @@ impl DatasourceInput for GdalDatasource {
         // Spatial filter must be in layer SRS
         let layer_srid = layer.srid.unwrap_or(grid.srid);
         if layer_srid != grid.srid {
-            bbox_extent = transform_extent(&bbox_extent, grid.srid, layer_srid).unwrap()
+            match transform_extent(&bbox_extent, grid.srid, layer_srid) {
+                Ok(extent) => bbox_extent = extent,
+                Err(e) => {
+                    error!("Unable to transform {:?}: {}", bbox_extent, e);
+                    return;
+                }
+            }
         };
         let bbox = Geometry::bbox(bbox_extent.minx,
                                   bbox_extent.miny,
