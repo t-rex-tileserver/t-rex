@@ -16,22 +16,21 @@ use t_rex_core::core::grid::Extent;
 use t_rex_webserver as webserver;
 use clap::{App, SubCommand, ArgMatches, AppSettings};
 use std::env;
-use log::{LogRecord, LogLevelFilter};
-use env_logger::LogBuilder;
+use std::io::Write;
+use log::{Record, LevelFilter};
+use env_logger::Builder;
 
 
 fn init_logger() {
-    let format = |record: &LogRecord| {
+    let mut builder = Builder::new();
+    builder.format(|buf, record: &Record| {
         let t = time::now();
-        format!("{}.{:03} {} {}",
+        writeln!(buf, "{}.{:03} {} {}",
                 time::strftime("%Y-%m-%d %H:%M:%S", &t).unwrap(),
                 t.tm_nsec / 1000_000,
                 record.level(),
                 record.args())
-    };
-
-    let mut builder = LogBuilder::new();
-    builder.format(format);
+    });
 
     match env::var("RUST_LOG") {
         Result::Ok(val) => {
@@ -39,11 +38,11 @@ fn init_logger() {
         }
         // Set log level to info by default
         Result::Err(_) => {
-            builder.filter(None, LogLevelFilter::Info);
+            builder.filter(None, LevelFilter::Info);
         }
     }
 
-    builder.init().unwrap();
+    builder.init();
 }
 
 fn generate(args: &ArgMatches) {

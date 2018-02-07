@@ -10,7 +10,6 @@ use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::Layer;
 use std::path::Path;
-use std;
 use gdal::vector::Dataset;
 
 
@@ -114,9 +113,9 @@ fn test_coord_transformation() {
     assert_eq!(ds.extent_from_wgs84(&extent_wgs84, 3857),
                Some(extent_3857.clone()));
 
-    // Invalid input extent panics in gdal/srs.rs
-    let result = std::panic::catch_unwind(|| ds.extent_from_wgs84(&extent_3857, 3857));
-    assert!(result.is_err());
+    // Invalid input extent doesn't panic
+    let result = ds.extent_from_wgs84(&extent_3857, 3857);
+    assert!(result.is_none());
 
     let mut reccnt = 0;
     ds.retrieve_features(&layer, &extent_wgs84, 10, &grid, |feat| {

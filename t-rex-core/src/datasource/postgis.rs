@@ -5,10 +5,9 @@
 
 use datasource::DatasourceInput;
 use postgres::rows::Row;
-use postgres::types::{Type, FromSql, ToSql};
+use postgres::types::{self, Type, FromSql, ToSql};
 use postgres::tls::native_tls::NativeTls;
 use fallible_iterator::FallibleIterator;
-use postgres;
 use r2d2;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use std;
@@ -54,9 +53,7 @@ impl GeometryType {
                     .map(|opt| opt.map(|f| GeometryType::GeometryCollection(f)))
             }
             _ => {
-                let err: Box<std::error::Error + Sync + Send> =
-                    format!("Unknown geometry type {}", type_name).into();
-                Some(Err(postgres::error::Error::Conversion(err)))
+                return Err(format!("Unknown geometry type {}", type_name));
             }
         };
         // Option<Result<GeometryType, _>> --> Result<GeometryType, String>
@@ -65,35 +62,33 @@ impl GeometryType {
     }
 }
 
-// http://sfackler.github.io/rust-postgres/doc/v0.11.8/postgres/types/trait.FromSql.html#types
-// http://sfackler.github.io/rust-postgres/doc/v0.11.8/postgres/types/enum.Type.html
 impl FromSql for FeatureAttrValType {
     fn accepts(ty: &Type) -> bool {
         match ty {
-            &Type::Varchar | &Type::Text | &Type::CharArray | &Type::Float4 | &Type::Float8 |
-            &Type::Int2 | &Type::Int4 | &Type::Int8 | &Type::Bool => true,
+            &types::VARCHAR | &types::TEXT | &types::CHAR_ARRAY | &types::FLOAT4 | &types::FLOAT8 |
+            &types::INT2 | &types::INT4 | &types::INT8 | &types::BOOL => true,
             _ => false,
         }
     }
     fn from_sql(ty: &Type, raw: &[u8]) -> Result<Self, Box<std::error::Error + Sync + Send>> {
         match ty {
-            &Type::Varchar | &Type::Text | &Type::CharArray => {
+            &types::VARCHAR | &types::TEXT | &types::CHAR_ARRAY => {
                 <String>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::String(v)))
             }
-            &Type::Float4 => {
+            &types::FLOAT4 => {
                 <f32>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Float(v)))
             }
-            &Type::Float8 => {
+            &types::FLOAT8 => {
                 <f64>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Double(v)))
             }
-            &Type::Int2 => {
+            &types::INT2 => {
                 <i16>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Int(v as i64)))
             }
-            &Type::Int4 => {
+            &types::INT4 => {
                 <i32>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Int(v as i64)))
             }
-            &Type::Int8 => <i64>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Int(v))),
-            &Type::Bool => <bool>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Bool(v))),
+            &types::INT8 => <i64>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Int(v))),
+            &types::BOOL => <bool>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Bool(v))),
             _ => {
                 let err: Box<std::error::Error + Sync + Send> =
                     format!("cannot convert {} to FeatureAttrValType", ty).into();
@@ -277,18 +272,18 @@ impl PostgisInput {
                     .iter()
                     .map(|col| {
                         let name = col.name().to_string();
-                        let cast = match col.type_() {
-                            &Type::Varchar | &Type::Text | &Type::CharArray | &Type::Float4 |
-                            &Type::Float8 | &Type::Int2 | &Type::Int4 | &Type::Int8 |
-                            &Type::Bool => String::new(),
-                            &Type::Numeric => "FLOAT8".to_string(),
-                            &Type::Other(ref other) => {
-                                match other.name() {
+                        let ty = col.type_();
+                        let cast = match ty {
+                            &types::VARCHAR | &types::TEXT | &types::CHAR_ARRAY | &types::FLOAT4 |
+                            &types::FLOAT8 | &types::INT2 | &types::INT4 | &types::INT8 |
+                            &types::BOOL => String::new(),
+                            &types::NUMERIC => "FLOAT8".to_string(),
+                            _ => {
+                                match ty.name() {
                                     "geometry" => String::new(),
                                     _ => "TEXT".to_string(),
                                 }
                             }
-                            _ => "TEXT".to_string(),
                         };
                         if !cast.is_empty() {
                             warn!("Layer '{}': Converting field '{}' of type {} to {}",
@@ -524,26 +519,27 @@ impl PostgisInput {
 
 impl DatasourceInput for PostgisInput {
     /// New instance with connected pool
+    /// New instance with connected pool
     fn connected(&self) -> PostgisInput {
         let pool_size = 10; //FIXME: make configurable
-        let config = r2d2::Config::builder().pool_size(pool_size).build();
         // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
-        let manager = PostgresConnectionManager::new(self.connection_url.as_ref(), TlsMode::None)
-            .unwrap();
-        let pool = r2d2::Pool::new(config, manager)
+        let manager =
+            PostgresConnectionManager::new(self.connection_url.as_ref(), TlsMode::None).unwrap();
+        let pool = r2d2::Pool::builder()
+            .max_size(pool_size)
+            .build(manager)
             .or_else(|e| match e.description() {
-                         "unable to initialize connections" => {
-                info!("Couldn't connect with TlsMode::None - retrying with TlsMode::Require");
-                let config = r2d2::Config::builder().pool_size(pool_size).build();
-                let negotiator = NativeTls::new().unwrap();
-                let manager =
-                    PostgresConnectionManager::new(self.connection_url.as_ref(),
-                                                   TlsMode::Require(Box::new(negotiator)))
-                            .unwrap();
-                r2d2::Pool::new(config, manager)
-            }
-                         _ => Err(e),
-                     })
+                "unable to initialize connections" => {
+                    info!("Couldn't connect with TlsMode::None - retrying with TlsMode::Require");
+                    let negotiator = NativeTls::new().unwrap();
+                    let manager = PostgresConnectionManager::new(
+                        self.connection_url.as_ref(),
+                        TlsMode::Require(Box::new(negotiator)),
+                    ).unwrap();
+                    r2d2::Pool::builder().max_size(pool_size).build(manager)
+                }
+                _ => Err(e),
+            })
             .unwrap();
         PostgisInput {
             connection_url: self.connection_url.clone(),

@@ -276,7 +276,7 @@ impl<'a> Tile<'a> {
     }
 
     pub fn write_gz_to(out: &mut Write, mvt_tile: &vector_tile::Tile) {
-        let mut gz = GzEncoder::new(out, Compression::Default);
+        let mut gz = GzEncoder::new(out, Compression::default());
         {
             let mut os = CodedOutputStream::new(&mut gz);
             let _ = mvt_tile.write_to(&mut os);
@@ -291,7 +291,7 @@ impl<'a> Tile<'a> {
     }
 
     pub fn read_gz_from(fin: &mut Read) -> Result<vector_tile::Tile, ProtobufError> {
-        let gz = GzDecoder::new(fin).unwrap();
+        let gz = GzDecoder::new(fin);
         let mut reader = BufReader::new(gz);
         parse_from_reader::<vector_tile::Tile>(&mut reader)
     }

@@ -146,9 +146,9 @@ fn transform_extent(extent: &Extent,
                     dest_srid: i32)
                     -> Result<Extent, gdal::errors::Error> {
     let transform = new_transform(src_srid, dest_srid)?;
-    let mut xs = &mut [extent.minx, extent.maxx];
-    let mut ys = &mut [extent.miny, extent.maxy];
-    transform.transform_coord(xs, ys, &mut [0.0, 0.0]);
+    let xs = &mut [extent.minx, extent.maxx];
+    let ys = &mut [extent.miny, extent.maxy];
+    transform.transform_coords(xs, ys, &mut [0.0, 0.0])?;
     Ok(Extent {
            minx: *xs.get(0).unwrap(),
            miny: *ys.get(0).unwrap(),
