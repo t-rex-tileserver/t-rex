@@ -430,10 +430,16 @@ impl MvtService {
             }
 
             // Convert extent to grid SRS
+            let extent = extent.as_ref().or(tileset.extent.as_ref());
+            debug!("wgs84 extent: {:?}", extent);
+            // (-180 -90) throws error when projecting
             let ext_proj = match extent {
-                Some(ref ext_wgs84) if *ext_wgs84 != WORLD_EXTENT => // (-180 -90) throws error when projecting
-                    self.extent_from_wgs84(&ext_wgs84),
-                _ => self.grid.tile_extent(0, 0, 0)
+                // (-180 -90) throws error when projecting
+                Some(ext_wgs84) if *ext_wgs84 != WORLD_EXTENT => self.extent_from_wgs84(ext_wgs84),
+                _ => {
+                    warn!("Building cache for the full globe, please fill in the tileset extent");
+                    self.grid.tile_extent(0, 0, 0)
+                }
             };
             debug!("tile limits: {:?}", ext_proj);
 
