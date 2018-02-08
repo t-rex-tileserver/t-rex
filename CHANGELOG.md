@@ -1,3 +1,10 @@
+<a name="0.8.2"></a>
+## 0.8.2 (UNRELEASED)
+
+#### Features
+
+* Use tileset extent when generating cache (Thanks @lnicola!)
+
 <a name="0.8.1"></a>
 ## 0.8.1 (2017-10-05)
 
