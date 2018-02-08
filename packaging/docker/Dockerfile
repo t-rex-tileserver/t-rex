@@ -1,12 +1,10 @@
 # t-rex container
 #
-# docker build --build-arg uid=$UID -t t-rex -f Dockerfile .
+# docker build -t t-rex -f Dockerfile .
 # docker run t-rex --version
 # docker run -p 6767:6767 -v $PWD:/var/data/in:ro -v /tmp:/var/data/out t-rex serve --bind=0.0.0.0 --openbrowser=false --datasource=t-rex-gdal/natural_earth.gpkg
 
 FROM ubuntu:xenial
-
-ARG uid
 
 # GDAL 2 from ubuntugis
 RUN echo "deb http://ppa.launchpad.net/ubuntugis/ubuntugis-unstable/ubuntu xenial main" >> /etc/apt/sources.list
@@ -19,8 +17,7 @@ ADD t-rex-*.deb .
 RUN dpkg -i t-rex-*.deb
 RUN rm t-rex-*.deb
 
-RUN useradd --uid ${uid:-1000} rust
-USER rust
+USER www-data
 
 WORKDIR /var/data/in
 
