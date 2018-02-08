@@ -18,6 +18,7 @@ origin = "TopLeft"
 
 [[tileset]]
 name = "g1k16"
+extent = [5.96438, 45.81937, 10.55886, 47.77210]
 
 [[tileset.layer]]
 name = "g1k16"

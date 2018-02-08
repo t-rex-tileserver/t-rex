@@ -238,8 +238,7 @@ impl MvtService {
             "metadata": {
                 "mapbox:autocomposite": false,
                 "mapbox:type": "template",
-                "maputnik:renderer": "mbgljs",
-                "openmaptiles:version": "3.x"
+                "maputnik:renderer": "mbgljs"
             },
             "glyphs": format!("{}/fonts/{{fontstack}}/{{range}}.pbf", baseurl),
             "sources": {
@@ -304,7 +303,7 @@ impl MvtService {
         Ok(json!(obj))
     }
 
-    /// MBTiles metadata.json
+    /// MBTiles metadata.json (https://github.com/mapbox/mbtiles-spec/blob/master/1.3/spec.md)
     pub fn get_mbtiles_metadata(&self, tileset: &str) -> JsonResult {
         let mut metadata = self.get_tilejson_metadata(tileset)?;
         metadata["bounds"] = json!(metadata["bounds"].to_string());
