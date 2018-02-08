@@ -1064,7 +1064,7 @@ dependencies = [
 
 [[package]]
 name = "t-rex"
-version = "0.8.1"
+version = "0.8.2-dev"
 dependencies = [
  "clap 2.29.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
