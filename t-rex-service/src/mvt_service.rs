@@ -327,13 +327,15 @@ impl MvtService {
         debug!("MVT tile request {:?}", extent);
         let mut tile = Tile::new(&extent, true);
         for layer in self.get_tileset_layers(tileset) {
-            let mut mvt_layer = tile.new_layer(layer);
-            self.ds(&layer)
-                .unwrap()
-                .retrieve_features(&layer, &extent, zoom, &self.grid, |feat| {
-                    tile.add_feature(&mut mvt_layer, feat);
-                });
-            tile.add_layer(mvt_layer);
+            if zoom >= layer.minzoom() && zoom <= layer.maxzoom() {
+                let mut mvt_layer = tile.new_layer(layer);
+                self.ds(&layer)
+                    .unwrap()
+                    .retrieve_features(&layer, &extent, zoom, &self.grid, |feat| {
+                        tile.add_feature(&mut mvt_layer, feat);
+                    });
+                tile.add_layer(mvt_layer);
+            }
         }
         tile.mvt_tile
     }
@@ -425,7 +427,6 @@ impl MvtService {
             // Convert extent to grid SRS
             let extent = extent.as_ref().or(tileset.extent.as_ref());
             debug!("wgs84 extent: {:?}", extent);
-            // (-180 -90) throws error when projecting
             let ext_proj = match extent {
                 // (-180 -90) throws error when projecting
                 Some(ext_wgs84) if *ext_wgs84 != WORLD_EXTENT => self.extent_from_wgs84(ext_wgs84),
