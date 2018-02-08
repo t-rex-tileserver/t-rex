@@ -8,8 +8,7 @@ use serde_json;
 use toml;
 use std;
 
-use toml::Value::{self, String, Integer, Float, Boolean, Datetime, Array, Table};
-
+use toml::Value::{self, Array, Boolean, Datetime, Float, Integer, String, Table};
 
 /// Convert Mapbox GL Styles from [TOML format](https://pka.github.io/mapbox-gl-style-spec/) to JSON
 pub fn toml_style_to_gljson(toml: &toml::Value) -> std::string::String {
@@ -17,7 +16,6 @@ pub fn toml_style_to_gljson(toml: &toml::Value) -> std::string::String {
     let json = converter.convert_value(toml);
     serde_json::to_string_pretty(&json).unwrap()
 }
-
 
 struct TomlConverter;
 impl TomlConverter {
@@ -56,15 +54,16 @@ impl TomlConverter {
                         if let Table(ref stops_tbl) = *stop {
                             if stops_tbl.contains_key("in") {
                                 if stops_tbl.contains_key("out") {
-                                    stops.push(vec![self.convert_value(&stops_tbl["in"]),
-                                                    self.convert_value(&stops_tbl["out"])]);
+                                    stops.push(vec![
+                                        self.convert_value(&stops_tbl["in"]),
+                                        self.convert_value(&stops_tbl["out"]),
+                                    ]);
                                 } else {
                                     stops.push(vec![self.convert_value(&stops_tbl["in"])]);
                                 }
                             }
                         }
                     }
-
                 }
                 json.insert(key.to_string(), serde_json::to_value(stops).unwrap());
             } else {

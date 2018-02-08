@@ -6,7 +6,7 @@
 use core::geom::GeometryType;
 
 /// Supported feature attribute value types
-#[derive(Clone,PartialEq,Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum FeatureAttrValType {
     String(String), //TODO: use ref
     Float(f32),
@@ -23,12 +23,11 @@ pub trait Feature {
     fn geometry(&self) -> Result<GeometryType, String>;
 }
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct FeatureAttr {
     pub key: String,
     pub value: FeatureAttrValType,
 }
-
 
 /// Basic Feature implementation
 pub struct FeatureStruct {

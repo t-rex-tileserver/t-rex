@@ -4,24 +4,22 @@
 //
 
 use datasource::{DatasourceInput, PostgisInput};
-use datasource_type::{Datasources, Datasource};
+use datasource_type::{Datasource, Datasources};
 use core::grid::Grid;
 use core::grid::Extent;
 use core::layer::Layer;
 use core::Config;
-use cache::{Tilecache, Nocache};
+use cache::{Nocache, Tilecache};
 use service::tileset::Tileset;
 use mvt_service::MvtService;
-
 
 fn mvt_service() -> MvtService {
     use std::env;
 
     let pg: PostgisInput = match env::var("DBCONN") {
-            Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
-            Result::Err(_) => panic!("DBCONN undefined"),
-        }
-        .unwrap();
+        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+        Result::Err(_) => panic!("DBCONN undefined"),
+    }.unwrap();
     let mut datasources = Datasources::new();
     datasources.add(&"pg".to_string(), Datasource::Postgis(pg));
     datasources.setup();
@@ -34,11 +32,11 @@ fn mvt_service() -> MvtService {
     let tileset = Tileset {
         name: "points".to_string(),
         extent: Some(Extent {
-                         minx: -179.58998,
-                         miny: -90.00000,
-                         maxx: 179.38330,
-                         maxy: 82.48332,
-                     }),
+            minx: -179.58998,
+            miny: -90.00000,
+            maxx: 179.38330,
+            maxy: 82.48332,
+        }),
         layers: vec![layer],
     };
     let mut service = MvtService {
@@ -232,14 +230,16 @@ fn test_generate() {
     };
 
     assert_eq!(service.grid.maxzoom(), 22);
-    service.generate(Some("points"),
-                     Some(20),
-                     Some(23),
-                     Some(extent),
-                     None,
-                     None,
-                     false,
-                     false);
+    service.generate(
+        Some("points"),
+        Some(20),
+        Some(23),
+        Some(extent),
+        None,
+        None,
+        false,
+        false,
+    );
 }
 
 #[test]
@@ -300,7 +300,10 @@ fn test_tilejson() {
     let mut service = MvtService::from_config(&config).unwrap();
     service.connect();
     service.prepare_feature_queries();
-    let metadata = format!("{:#}", service.get_tilejson("http://127.0.0.1", "osm").unwrap());
+    let metadata = format!(
+        "{:#}",
+        service.get_tilejson("http://127.0.0.1", "osm").unwrap()
+    );
     println!("{}", metadata);
     let expected = r#"{
   "attribution": "",
@@ -360,7 +363,10 @@ fn test_stylejson() {
 
     let config = read_config("src/test/example.toml").unwrap();
     let service = MvtService::from_config(&config).unwrap();
-    let json = format!("{:#}", service.get_stylejson("http://127.0.0.1", "osm").unwrap());
+    let json = format!(
+        "{:#}",
+        service.get_stylejson("http://127.0.0.1", "osm").unwrap()
+    );
     println!("{}", json);
     let expected = r#"
   "name": "t-rex",
@@ -435,17 +441,18 @@ fn test_mbtiles_metadata() {
 
 #[test]
 fn test_gen_config() {
-#[cfg(feature = "with-gdal")]
+    #[cfg(feature = "with-gdal")]
     let gdal_ds_cfg = r#"
 [[datasource]]
 name = "ds"
 # Dataset specification (http://gdal.org/ogr_formats.html)
 path = "<filename-or-connection-spec>"
 "#;
-#[cfg(not(feature = "with-gdal"))]
+    #[cfg(not(feature = "with-gdal"))]
     let gdal_ds_cfg = "";
 
-    let expected = format!(r#"# t-rex configuration
+    let expected = format!(
+        r#"# t-rex configuration
 
 [service.mvt]
 viewer = true
@@ -479,7 +486,9 @@ geometry_type = "POINT"
 #[cache.file]
 #base = "/tmp/mvtcache"
 #baseurl = "http://example.com/tiles"
-"#, gdal_ds_cfg);
+"#,
+        gdal_ds_cfg
+    );
     println!("{}", &MvtService::gen_config());
     assert_eq!(&expected, &MvtService::gen_config());
 }

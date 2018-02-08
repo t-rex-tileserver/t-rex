@@ -5,7 +5,7 @@
 
 use datasource::DatasourceInput;
 use postgres::rows::Row;
-use postgres::types::{self, Type, FromSql, ToSql};
+use postgres::types::{self, FromSql, ToSql, Type};
 use postgres::tls::native_tls::NativeTls;
 use fallible_iterator::FallibleIterator;
 use r2d2;
@@ -22,51 +22,48 @@ use core::config::DatasourceCfg;
 use std::collections::BTreeMap;
 use env;
 
-
 impl GeometryType {
     pub fn from_geom_field(row: &Row, idx: &str, type_name: &str) -> Result<GeometryType, String> {
         let field = match type_name {
             //Option<Result<T>> --> Option<Result<GeometryType>>
-            "POINT" => {
-                row.get_opt::<_, Point>(idx)
-                    .map(|opt| opt.map(|f| GeometryType::Point(f)))
-            }
+            "POINT" => row.get_opt::<_, Point>(idx)
+                .map(|opt| opt.map(|f| GeometryType::Point(f))),
             //"LINESTRING" =>
             //    row.get_opt::<_, LineString>(idx).map(|opt| opt.map(|f| GeometryType::LineString(f))),
             //"POLYGON" =>
             //    row.get_opt::<_, Polygon>(idx).map(|opt| opt.map(|f| GeometryType::Polygon(f))),
-            "MULTIPOINT" => {
-                row.get_opt::<_, MultiPoint>(idx)
-                    .map(|opt| opt.map(|f| GeometryType::MultiPoint(f)))
-            }
-            "LINESTRING" |
-            "MULTILINESTRING" => {
-                row.get_opt::<_, MultiLineString>(idx)
-                    .map(|opt| opt.map(|f| GeometryType::MultiLineString(f)))
-            }
-            "POLYGON" | "MULTIPOLYGON" => {
-                row.get_opt::<_, MultiPolygon>(idx)
-                    .map(|opt| opt.map(|f| GeometryType::MultiPolygon(f)))
-            }
-            "GEOMETRYCOLLECTION" => {
-                row.get_opt::<_, GeometryCollection>(idx)
-                    .map(|opt| opt.map(|f| GeometryType::GeometryCollection(f)))
-            }
+            "MULTIPOINT" => row.get_opt::<_, MultiPoint>(idx)
+                .map(|opt| opt.map(|f| GeometryType::MultiPoint(f))),
+            "LINESTRING" | "MULTILINESTRING" => row.get_opt::<_, MultiLineString>(idx)
+                .map(|opt| opt.map(|f| GeometryType::MultiLineString(f))),
+            "POLYGON" | "MULTIPOLYGON" => row.get_opt::<_, MultiPolygon>(idx)
+                .map(|opt| opt.map(|f| GeometryType::MultiPolygon(f))),
+            "GEOMETRYCOLLECTION" => row.get_opt::<_, GeometryCollection>(idx)
+                .map(|opt| opt.map(|f| GeometryType::GeometryCollection(f))),
             _ => {
                 return Err(format!("Unknown geometry type {}", type_name));
             }
         };
         // Option<Result<GeometryType, _>> --> Result<GeometryType, String>
-        field.map_or_else(|| Err("Column not found".to_string()),
-                          |res| res.map_err(|err| format!("{}", err)))
+        field.map_or_else(
+            || Err("Column not found".to_string()),
+            |res| res.map_err(|err| format!("{}", err)),
+        )
     }
 }
 
 impl FromSql for FeatureAttrValType {
     fn accepts(ty: &Type) -> bool {
         match ty {
-            &types::VARCHAR | &types::TEXT | &types::CHAR_ARRAY | &types::FLOAT4 | &types::FLOAT8 |
-            &types::INT2 | &types::INT4 | &types::INT8 | &types::BOOL => true,
+            &types::VARCHAR
+            | &types::TEXT
+            | &types::CHAR_ARRAY
+            | &types::FLOAT4
+            | &types::FLOAT8
+            | &types::INT2
+            | &types::INT4
+            | &types::INT8
+            | &types::BOOL => true,
             _ => false,
         }
     }
@@ -105,25 +102,23 @@ struct FeatureRow<'a> {
 
 impl<'a> Feature for FeatureRow<'a> {
     fn fid(&self) -> Option<u64> {
-        self.layer
-            .fid_field
-            .as_ref()
-            .and_then(|fid| {
-                          let val = self.row.get_opt::<_, FeatureAttrValType>(fid as &str);
-                          match val {
-                              Some(Ok(FeatureAttrValType::Int(fid))) => Some(fid as u64),
-                              _ => None,
-                          }
-                      })
+        self.layer.fid_field.as_ref().and_then(|fid| {
+            let val = self.row.get_opt::<_, FeatureAttrValType>(fid as &str);
+            match val {
+                Some(Ok(FeatureAttrValType::Int(fid))) => Some(fid as u64),
+                _ => None,
+            }
+        })
     }
     fn attributes(&self) -> Vec<FeatureAttr> {
         let mut attrs = Vec::new();
         for (i, col) in self.row.columns().into_iter().enumerate() {
-            if col.name() !=
-               self.layer
-                   .geometry_field
-                   .as_ref()
-                   .unwrap_or(&"".to_string()) {
+            if col.name()
+                != self.layer
+                    .geometry_field
+                    .as_ref()
+                    .unwrap_or(&"".to_string())
+            {
                 let val = self.row.get_opt::<_, Option<FeatureAttrValType>>(i);
                 match val.unwrap() {
                     Ok(Some(v)) => {
@@ -137,10 +132,12 @@ impl<'a> Feature for FeatureRow<'a> {
                         // Skip NULL values
                     }
                     Err(err) => {
-                        warn!("Layer '{}' - skipping field '{}': {}",
-                              self.layer.name,
-                              col.name(),
-                              err);
+                        warn!(
+                            "Layer '{}' - skipping field '{}': {}",
+                            self.layer.name,
+                            col.name(),
+                            err
+                        );
                         //warn!("{:?}", self.row);
                     }
                 }
@@ -149,9 +146,11 @@ impl<'a> Feature for FeatureRow<'a> {
         attrs
     }
     fn geometry(&self) -> Result<GeometryType, String> {
-        let geom = GeometryType::from_geom_field(&self.row,
-                                                 &self.layer.geometry_field.as_ref().unwrap(),
-                                                 &self.layer.geometry_type.as_ref().unwrap());
+        let geom = GeometryType::from_geom_field(
+            &self.row,
+            &self.layer.geometry_field.as_ref().unwrap(),
+            &self.layer.geometry_type.as_ref().unwrap(),
+        );
         if let Err(ref err) = geom {
             error!("Layer '{}': {}", self.layer.name, err);
             error!("{:?}", self.row);
@@ -160,7 +159,7 @@ impl<'a> Feature for FeatureRow<'a> {
     }
 }
 
-#[derive(PartialEq,Clone,Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum QueryParam {
     Bbox,
     Zoom,
@@ -168,7 +167,7 @@ pub enum QueryParam {
     ScaleDenominator,
 }
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct SqlQuery {
     pub sql: String,
     pub params: Vec<QueryParam>,
@@ -192,11 +191,15 @@ impl SqlQuery {
             self.sql = self.sql.replace("!bbox!", &bbox_expr);
         }
         // replace e.g. !zoom! with $5
-        for (var, par, cast) in vec![("!zoom!", QueryParam::Zoom, ""),
-                                     ("!pixel_width!", QueryParam::PixelWidth, "FLOAT8"),
-                                     ("!scale_denominator!",
-                                      QueryParam::ScaleDenominator,
-                                      "FLOAT8")] {
+        for (var, par, cast) in vec![
+            ("!zoom!", QueryParam::Zoom, ""),
+            ("!pixel_width!", QueryParam::PixelWidth, "FLOAT8"),
+            (
+                "!scale_denominator!",
+                QueryParam::ScaleDenominator,
+                "FLOAT8",
+            ),
+        ] {
             if self.sql.contains(var) {
                 self.params.push(par);
                 numvars += 1;
@@ -235,14 +238,16 @@ impl PostgisInput {
     pub fn detect_geometry_types(&self, layer: &Layer) -> Vec<String> {
         let field = layer.geometry_field.as_ref().unwrap();
         let table = layer.table_name.as_ref().unwrap();
-        debug!("Detecting geometry types for field '{}' in table '{}'",
-               field,
-               table);
+        debug!(
+            "Detecting geometry types for field '{}' in table '{}'",
+            field, table
+        );
 
         let conn = self.conn();
-        let sql = format!("SELECT DISTINCT GeometryType({}) AS geomtype FROM {}",
-                          field,
-                          table);
+        let sql = format!(
+            "SELECT DISTINCT GeometryType({}) AS geomtype FROM {}",
+            field, table
+        );
 
         let mut types: Vec<String> = Vec::new();
         for row in &conn.query(&sql, &[]).unwrap() {
@@ -254,10 +259,10 @@ impl PostgisInput {
     pub fn detect_columns(&self, layer: &Layer, sql: Option<&String>) -> Vec<(String, String)> {
         let mut query = match sql {
             Some(&ref userquery) => userquery.clone(),
-            None => {
-                format!("SELECT * FROM {}",
-                        layer.table_name.as_ref().unwrap_or(&layer.name))
-            }
+            None => format!(
+                "SELECT * FROM {}",
+                layer.table_name.as_ref().unwrap_or(&layer.name)
+            ),
         };
         query = SqlQuery::valid_sql_for_params(&query);
         let conn = self.conn();
@@ -274,23 +279,29 @@ impl PostgisInput {
                         let name = col.name().to_string();
                         let ty = col.type_();
                         let cast = match ty {
-                            &types::VARCHAR | &types::TEXT | &types::CHAR_ARRAY | &types::FLOAT4 |
-                            &types::FLOAT8 | &types::INT2 | &types::INT4 | &types::INT8 |
-                            &types::BOOL => String::new(),
+                            &types::VARCHAR
+                            | &types::TEXT
+                            | &types::CHAR_ARRAY
+                            | &types::FLOAT4
+                            | &types::FLOAT8
+                            | &types::INT2
+                            | &types::INT4
+                            | &types::INT8
+                            | &types::BOOL => String::new(),
                             &types::NUMERIC => "FLOAT8".to_string(),
-                            _ => {
-                                match ty.name() {
-                                    "geometry" => String::new(),
-                                    _ => "TEXT".to_string(),
-                                }
-                            }
+                            _ => match ty.name() {
+                                "geometry" => String::new(),
+                                _ => "TEXT".to_string(),
+                            },
                         };
                         if !cast.is_empty() {
-                            warn!("Layer '{}': Converting field '{}' of type {} to {}",
-                                  layer.name,
-                                  name,
-                                  col.type_().name(),
-                                  cast);
+                            warn!(
+                                "Layer '{}': Converting field '{}' of type {} to {}",
+                                layer.name,
+                                name,
+                                col.type_().name(),
+                                cast
+                            );
                         }
                         (name, cast)
                     })
@@ -303,7 +314,7 @@ impl PostgisInput {
     /// Execute query returning an extent as polygon
     fn extent_query(&self, sql: String) -> Option<Extent> {
         use postgis::ewkb;
-        use postgis::{Polygon, LineString, Point}; // conflicts with core::geom::Point etc.
+        use postgis::{LineString, Point, Polygon}; // conflicts with core::geom::Point etc.
 
         let conn = self.conn();
         let rows = conn.query(&sql, &[]).unwrap();
@@ -316,11 +327,11 @@ impl PostgisInput {
                 let p1 = poly.rings().nth(0).unwrap().points().nth(0).unwrap();
                 let p2 = poly.rings().nth(0).unwrap().points().nth(2).unwrap();
                 Some(Extent {
-                         minx: p1.x(),
-                         miny: p1.y(),
-                         maxx: p2.x(),
-                         maxy: p2.y(),
-                     })
+                    minx: p1.x(),
+                    miny: p1.y(),
+                    maxx: p2.x(),
+                    maxy: p2.y(),
+                })
             }
             _ => None,
         }
@@ -335,32 +346,32 @@ impl PostgisInput {
             // Clipping
             if layer.buffer_size.is_some() {
                 match layer
-                          .geometry_type
-                          .as_ref()
-                          .unwrap_or(&"GEOMETRY".to_string()) as &str {
+                    .geometry_type
+                    .as_ref()
+                    .unwrap_or(&"GEOMETRY".to_string()) as &str
+                {
                     "POLYGON" | "MULTIPOLYGON" => {
-                        geom_expr = format!("ST_Buffer(ST_Intersection(ST_MakeValid({}),!bbox!), 0.0)",
-                                            geom_expr);
+                        geom_expr = format!(
+                            "ST_Buffer(ST_Intersection(ST_MakeValid({}),!bbox!), 0.0)",
+                            geom_expr
+                        );
                     }
                     "POINT" => {
                         // ST_Intersection not necessary - bbox query in WHERE clause is sufficient
                     }
                     _ => {
                         geom_expr = format!("ST_Intersection(ST_MakeValid({}),!bbox!)", geom_expr);
-                    }
-                    //Buffer is added to !bbox! when replaced
+                    } //Buffer is added to !bbox! when replaced
                 };
             }
 
             // convert LINESTRING and POLYGON to multi geometries (and fix potential (empty) single types)
             match layer
-                      .geometry_type
-                      .as_ref()
-                      .unwrap_or(&"GEOMETRY".to_string()) as &str {
-                "LINESTRING" |
-                "MULTILINESTRING" |
-                "POLYGON" |
-                "MULTIPOLYGON" => {
+                .geometry_type
+                .as_ref()
+                .unwrap_or(&"GEOMETRY".to_string()) as &str
+            {
+                "LINESTRING" | "MULTILINESTRING" | "POLYGON" | "MULTIPOLYGON" => {
                     geom_expr = format!("ST_Multi({})", geom_expr);
                 }
                 _ => {}
@@ -369,18 +380,17 @@ impl PostgisInput {
             // Simplify
             if layer.simplify {
                 geom_expr = match layer
-                          .geometry_type
-                          .as_ref()
-                          .unwrap_or(&"GEOMETRY".to_string()) as
-                                  &str {
-                    "LINESTRING" |
-                    "MULTILINESTRING" => {
-                        format!("ST_Multi(ST_SimplifyPreserveTopology({},!pixel_width!/2))",
-                                geom_expr)
-                    }
+                    .geometry_type
+                    .as_ref()
+                    .unwrap_or(&"GEOMETRY".to_string()) as &str
+                {
+                    "LINESTRING" | "MULTILINESTRING" => format!(
+                        "ST_Multi(ST_SimplifyPreserveTopology({},!pixel_width!/2))",
+                        geom_expr
+                    ),
                     "POLYGON" | "MULTIPOLYGON" => {
-                        let empty_geom = format!("ST_GeomFromText('MULTIPOLYGON EMPTY',{})",
-                                                 layer_srid);
+                        let empty_geom =
+                            format!("ST_GeomFromText('MULTIPOLYGON EMPTY',{})", layer_srid);
                         format!("COALESCE(ST_SnapToGrid({}, !pixel_width!/2),{})::geometry(MULTIPOLYGON,{})",
                                 geom_expr,
                                 empty_geom,
@@ -389,22 +399,20 @@ impl PostgisInput {
                     _ => geom_expr, // No simplification for points or unknown types
                 };
             }
-
         }
 
         // Transform geometry to grid SRID
         if layer_srid <= 0 {
-            warn!("Layer '{}': Unknown SRS of geometry '{}' - assuming SRID {}",
-                  layer.name,
-                  geom_name,
-                  grid_srid);
+            warn!(
+                "Layer '{}': Unknown SRS of geometry '{}' - assuming SRID {}",
+                layer.name, geom_name, grid_srid
+            );
             geom_expr = format!("ST_SetSRID({},{})", geom_expr, grid_srid)
         } else if layer_srid != grid_srid {
-            info!("Layer '{}': Reprojecting geometry '{}' from SRID {} to {}",
-                  layer.name,
-                  geom_name,
-                  layer_srid,
-                  grid_srid);
+            info!(
+                "Layer '{}': Reprojecting geometry '{}' from SRID {} to {}",
+                layer.name, geom_name, layer_srid, grid_srid
+            );
             geom_expr = format!("ST_Transform({},{})", geom_expr, grid_srid);
         }
 
@@ -423,13 +431,13 @@ impl PostgisInput {
             let mut cols: Vec<String> = self.detect_data_columns(layer, sql)
                 .iter()
                 .map(|&(ref name, ref casttype)| {
-                         // Wrap column names in double quotes to guarantee validity. Columns might have colons
-                         if casttype.is_empty() {
-                             format!("\"{}\"", name)
-                         } else {
-                             format!("\"{}\"::{}", name, casttype)
-                         }
-                     })
+                    // Wrap column names in double quotes to guarantee validity. Columns might have colons
+                    if casttype.is_empty() {
+                        format!("\"{}\"", name)
+                    } else {
+                        format!("\"{}\"::{}", name, casttype)
+                    }
+                })
                 .collect();
             cols.insert(0, geom_expr);
             cols.join(",")
@@ -456,18 +464,21 @@ impl PostgisInput {
         expr
     }
     /// Build feature query SQL (also used for generated config).
-    pub fn build_query_sql(&self,
-                           layer: &Layer,
-                           grid_srid: i32,
-                           sql: Option<&String>,
-                           raw_geom: bool)
-                           -> Option<String> {
+    pub fn build_query_sql(
+        &self,
+        layer: &Layer,
+        grid_srid: i32,
+        sql: Option<&String>,
+        raw_geom: bool,
+    ) -> Option<String> {
         let mut query;
         let offline = self.conn_pool.is_none();
         let geom_expr = self.build_geom_expr(layer, grid_srid, raw_geom);
         let select_list = self.build_select_list(layer, geom_expr, sql);
-        let intersect_clause = format!(" WHERE {} && !bbox!",
-                                       layer.geometry_field.as_ref().unwrap());
+        let intersect_clause = format!(
+            " WHERE {} && !bbox!",
+            layer.geometry_field.as_ref().unwrap()
+        );
 
         if let Some(&ref userquery) = sql {
             // user query
@@ -486,19 +497,22 @@ impl PostgisInput {
             if layer.table_name.is_none() {
                 return None;
             }
-            query = format!("SELECT {} FROM {}",
-                            select_list,
-                            layer.table_name.as_ref().unwrap());
+            query = format!(
+                "SELECT {} FROM {}",
+                select_list,
+                layer.table_name.as_ref().unwrap()
+            );
             query.push_str(&intersect_clause);
         };
 
         Some(query)
     }
-    pub fn build_query(&self,
-                       layer: &Layer,
-                       grid_srid: i32,
-                       sql: Option<&String>)
-                       -> Option<SqlQuery> {
+    pub fn build_query(
+        &self,
+        layer: &Layer,
+        grid_srid: i32,
+        sql: Option<&String>,
+    ) -> Option<SqlQuery> {
         let sqlquery = self.build_query_sql(layer, grid_srid, sql, false);
         if sqlquery.is_none() {
             return None;
@@ -522,7 +536,7 @@ impl DatasourceInput for PostgisInput {
     /// New instance with connected pool
     fn connected(&self) -> PostgisInput {
         let pool_size = 10; //FIXME: make configurable
-        // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
+                            // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
         let manager =
             PostgresConnectionManager::new(self.connection_url.as_ref(), TlsMode::None).unwrap();
         let pool = r2d2::Pool::builder()
@@ -572,23 +586,24 @@ impl DatasourceInput for PostgisInput {
                         let table = layer.table_name.as_ref().unwrap();
                         let types = self.detect_geometry_types(&layer);
                         if types.len() == 1 {
-                            debug!("Detected unique geometry type in '{}.{}': {}",
-                                   table,
-                                   field,
-                                   &types[0]);
+                            debug!(
+                                "Detected unique geometry type in '{}.{}': {}",
+                                table, field, &types[0]
+                            );
                             Some(types[0].clone())
                         } else {
                             let type_list = types.join(", ");
-                            warn!("Multiple geometry types in '{}.{}': {}",
-                                  table,
-                                  field,
-                                  type_list);
+                            warn!(
+                                "Multiple geometry types in '{}.{}': {}",
+                                table, field, type_list
+                            );
                             Some("GEOMETRY".to_string())
                         }
                     } else {
-                        warn!("Unknwon geometry type of '{}.{}'",
-                              table_name,
-                              geometry_column);
+                        warn!(
+                            "Unknwon geometry type of '{}.{}'",
+                            table_name, geometry_column
+                        );
                         Some("GEOMETRY".to_string())
                     }
                 }
@@ -601,9 +616,10 @@ impl DatasourceInput for PostgisInput {
     }
     /// Return column field names and Rust compatible type conversion - without geometry column
     fn detect_data_columns(&self, layer: &Layer, sql: Option<&String>) -> Vec<(String, String)> {
-        debug!("detect_data_columns for layer {} with sql {:?}",
-               layer.name,
-               sql);
+        debug!(
+            "detect_data_columns for layer {} with sql {:?}",
+            layer.name, sql
+        );
         let cols = self.detect_columns(layer, sql);
         let filter_cols = vec![layer.geometry_field.as_ref().unwrap()];
         cols.into_iter()
@@ -612,12 +628,10 @@ impl DatasourceInput for PostgisInput {
     }
     /// Projected extent
     fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent> {
-        let sql = format!("SELECT ST_Transform(ST_MakeEnvelope({}, {}, {}, {}, 4326), {}) AS extent",
-                          extent.minx,
-                          extent.miny,
-                          extent.maxx,
-                          extent.maxy,
-                          dest_srid);
+        let sql = format!(
+            "SELECT ST_Transform(ST_MakeEnvelope({}, {}, {}, {}, 4326), {}) AS extent",
+            extent.minx, extent.miny, extent.maxx, extent.maxy, dest_srid
+        );
         self.extent_query(sql)
     }
     /// Detect extent of layer (in WGS84)
@@ -625,16 +639,21 @@ impl DatasourceInput for PostgisInput {
         let ref geom_name = layer.geometry_field.as_ref().unwrap();
         let layer_srid = layer.srid.unwrap_or(0);
         if !layer.query.is_empty() || layer_srid <= 0 {
-            info!("Couldn't detect extent of layer {}, because of custom queries or an unknown SRID",
-                  layer.name);
+            info!(
+                "Couldn't detect extent of layer {}, because of custom queries or an unknown SRID",
+                layer.name
+            );
             return None;
         }
-        let extent_sql = format!("ST_Transform(ST_SetSRID(ST_Extent({}),{}),4326)",
-                                 geom_name,
-                                 layer_srid);
-        let sql = format!("SELECT {} AS extent FROM {}",
-                          extent_sql,
-                          layer.table_name.as_ref().unwrap());
+        let extent_sql = format!(
+            "ST_Transform(ST_SetSRID(ST_Extent({}),{}),4326)",
+            geom_name, layer_srid
+        );
+        let sql = format!(
+            "SELECT {} AS extent FROM {}",
+            extent_sql,
+            layer.table_name.as_ref().unwrap()
+        );
         self.extent_query(sql)
     }
     fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
@@ -644,8 +663,9 @@ impl DatasourceInput for PostgisInput {
             if let Some(query) = self.build_query(layer, grid_srid, layer_query.sql.as_ref()) {
                 debug!("Query for layer '{}': {}", layer.name, query.sql);
                 for zoom in layer_query.minzoom()..layer_query.maxzoom() + 1 {
-                    if &layer.query(zoom).unwrap_or(&"".to_string()) ==
-                       &layer_query.sql.as_ref().unwrap_or(&"".to_string()) {
+                    if &layer.query(zoom).unwrap_or(&"".to_string())
+                        == &layer_query.sql.as_ref().unwrap_or(&"".to_string())
+                    {
                         queries.insert(zoom, query.clone());
                     }
                 }
@@ -669,13 +689,15 @@ impl DatasourceInput for PostgisInput {
 
         self.queries.insert(layer.name.clone(), queries);
     }
-    fn retrieve_features<F>(&self,
-                            layer: &Layer,
-                            extent: &Extent,
-                            zoom: u8,
-                            grid: &Grid,
-                            mut read: F)
-        where F: FnMut(&Feature)
+    fn retrieve_features<F>(
+        &self,
+        layer: &Layer,
+        extent: &Extent,
+        zoom: u8,
+        grid: &Grid,
+        mut read: F,
+    ) where
+        F: FnMut(&Feature),
     {
         let conn = self.conn();
         let query = self.query(&layer, zoom);
@@ -759,10 +781,12 @@ dbconn = "postgresql://user:pass@host/database"
         toml.to_string()
     }
     fn gen_runtime_config(&self) -> String {
-        format!(r#"
+        format!(
+            r#"
 [[datasource]]
 dbconn = "{}"
 "#,
-                self.connection_url)
+            self.connection_url
+        )
     }
 }

@@ -3,10 +3,10 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-extern crate log;
-extern crate env_logger;
 #[macro_use]
 extern crate clap;
+extern crate env_logger;
+extern crate log;
 extern crate time;
 
 extern crate t_rex_core;
@@ -14,22 +14,24 @@ extern crate t_rex_webserver;
 
 use t_rex_core::core::grid::Extent;
 use t_rex_webserver as webserver;
-use clap::{App, SubCommand, ArgMatches, AppSettings};
+use clap::{App, AppSettings, ArgMatches, SubCommand};
 use std::env;
 use std::io::Write;
-use log::{Record, LevelFilter};
+use log::{LevelFilter, Record};
 use env_logger::Builder;
-
 
 fn init_logger() {
     let mut builder = Builder::new();
     builder.format(|buf, record: &Record| {
         let t = time::now();
-        writeln!(buf, "{}.{:03} {} {}",
-                time::strftime("%Y-%m-%d %H:%M:%S", &t).unwrap(),
-                t.tm_nsec / 1000_000,
-                record.level(),
-                record.args())
+        writeln!(
+            buf,
+            "{}.{:03} {} {}",
+            time::strftime("%Y-%m-%d %H:%M:%S", &t).unwrap(),
+            t.tm_nsec / 1000_000,
+            record.level(),
+            record.args()
+        )
     });
 
     match env::var("RUST_LOG") {
@@ -51,61 +53,56 @@ fn generate(args: &ArgMatches) {
         .cache
         .expect("Missing configuration entry base in [cache.file]");
     let tileset = args.value_of("tileset");
-    let minzoom = args.value_of("minzoom")
-        .map(|s| {
-                 s.parse::<u8>()
-                     .expect("Error parsing 'minzoom' as integer value")
-             });
-    let maxzoom = args.value_of("maxzoom")
-        .map(|s| {
-                 s.parse::<u8>()
-                     .expect("Error parsing 'maxzoom' as integer value")
-             });
-    let extent = args.value_of("extent")
-        .and_then(|numlist| {
-            let arr: Vec<f64> = numlist
-                .split(",")
-                .map(|v| {
-                         v.parse()
-                             .expect("Error parsing 'extent' as list of float values")
-                     })
-                .collect();
-            Some(Extent {
-                     minx: arr[0],
-                     miny: arr[1],
-                     maxx: arr[2],
-                     maxy: arr[3],
-                 })
-        });
-    let nodes = args.value_of("nodes")
-        .map(|s| {
-                 s.parse::<u8>()
-                     .expect("Error parsing 'nodes' as integer value")
-             });
-    let nodeno = args.value_of("nodeno")
-        .map(|s| {
-                 s.parse::<u8>()
-                     .expect("Error parsing 'nodeno' as integer value")
-             });
-    let progress = args.value_of("progress")
-        .map_or(true, |s| {
-            s.parse::<bool>()
-                .expect("Error parsing 'progress' as boolean value")
-        });
-    let overwrite = args.value_of("overwrite")
-        .map_or(false, |s| {
-            s.parse::<bool>()
-                .expect("Error parsing 'overwrite' as boolean value")
-        });
+    let minzoom = args.value_of("minzoom").map(|s| {
+        s.parse::<u8>()
+            .expect("Error parsing 'minzoom' as integer value")
+    });
+    let maxzoom = args.value_of("maxzoom").map(|s| {
+        s.parse::<u8>()
+            .expect("Error parsing 'maxzoom' as integer value")
+    });
+    let extent = args.value_of("extent").and_then(|numlist| {
+        let arr: Vec<f64> = numlist
+            .split(",")
+            .map(|v| {
+                v.parse()
+                    .expect("Error parsing 'extent' as list of float values")
+            })
+            .collect();
+        Some(Extent {
+            minx: arr[0],
+            miny: arr[1],
+            maxx: arr[2],
+            maxy: arr[3],
+        })
+    });
+    let nodes = args.value_of("nodes").map(|s| {
+        s.parse::<u8>()
+            .expect("Error parsing 'nodes' as integer value")
+    });
+    let nodeno = args.value_of("nodeno").map(|s| {
+        s.parse::<u8>()
+            .expect("Error parsing 'nodeno' as integer value")
+    });
+    let progress = args.value_of("progress").map_or(true, |s| {
+        s.parse::<bool>()
+            .expect("Error parsing 'progress' as boolean value")
+    });
+    let overwrite = args.value_of("overwrite").map_or(false, |s| {
+        s.parse::<bool>()
+            .expect("Error parsing 'overwrite' as boolean value")
+    });
     service.prepare_feature_queries();
-    service.generate(tileset,
-                     minzoom,
-                     maxzoom,
-                     extent,
-                     nodes,
-                     nodeno,
-                     progress,
-                     overwrite);
+    service.generate(
+        tileset,
+        minzoom,
+        maxzoom,
+        extent,
+        nodes,
+        nodeno,
+        progress,
+        overwrite,
+    );
 }
 
 fn main() {
@@ -148,20 +145,19 @@ fn main() {
                                               --overwrite=[false|true] 'Overwrite previously cached tiles'")
                         .about("Generate tiles for cache"));
 
-    match app.get_matches_from_safe_borrow(env::args()) { //app.get_matches() prohibits later call of app.print_help()
+    match app.get_matches_from_safe_borrow(env::args()) {
+        //app.get_matches() prohibits later call of app.print_help()
         Result::Err(e) => {
             println!("{}", e);
         }
-        Result::Ok(matches) => {
-            match matches.subcommand() {
-                ("serve", Some(sub_m)) => webserver::server::webserver(sub_m),
-                ("genconfig", Some(sub_m)) => println!("{}", webserver::server::gen_config(sub_m)),
-                ("generate", Some(sub_m)) => generate(sub_m),
-                _ => {
-                    let _ = app.print_help();
-                    println!("");
-                }
+        Result::Ok(matches) => match matches.subcommand() {
+            ("serve", Some(sub_m)) => webserver::server::webserver(sub_m),
+            ("genconfig", Some(sub_m)) => println!("{}", webserver::server::gen_config(sub_m)),
+            ("generate", Some(sub_m)) => generate(sub_m),
+            _ => {
+                let _ = app.print_help();
+                println!("");
             }
-        }
+        },
     }
 }

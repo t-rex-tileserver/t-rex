@@ -10,7 +10,7 @@ use core::geom::GeometryType;
 use core::geom;
 use core::screen;
 use mvt::vector_tile;
-use mvt::geom_encoder::{EncodableGeom, CommandSequence};
+use mvt::geom_encoder::{CommandSequence, EncodableGeom};
 use protobuf::stream::CodedOutputStream;
 use protobuf::core::Message;
 use protobuf::error::ProtobufError;
@@ -21,13 +21,11 @@ use flate2::Compression;
 use flate2::write::GzEncoder;
 use flate2::read::GzDecoder;
 
-
 pub struct Tile<'a> {
     pub mvt_tile: vector_tile::Tile,
     extent: &'a Extent,
     reverse_y: bool,
 }
-
 
 impl GeometryType {
     /// GeometryType to MVT geom type
@@ -43,7 +41,6 @@ impl GeometryType {
         }
     }
 }
-
 
 pub trait ScreenGeom<T> {
     /// Convert geometry into screen coordinates
@@ -66,85 +63,106 @@ impl ScreenGeom<geom::Point> for screen::Point {
 }
 
 impl ScreenGeom<geom::MultiPoint> for screen::MultiPoint {
-    fn from_geom(extent: &Extent,
-                 reverse_y: bool,
-                 tile_size: u32,
-                 multipoint: &geom::MultiPoint)
-                 -> Self {
+    fn from_geom(
+        extent: &Extent,
+        reverse_y: bool,
+        tile_size: u32,
+        multipoint: &geom::MultiPoint,
+    ) -> Self {
         let mut screen_geom = screen::MultiPoint { points: Vec::new() };
         for point in &multipoint.points {
-            screen_geom
-                .points
-                .push(screen::Point::from_geom(extent, reverse_y, tile_size, point));
+            screen_geom.points.push(screen::Point::from_geom(
+                extent,
+                reverse_y,
+                tile_size,
+                point,
+            ));
         }
         screen_geom
     }
 }
 
 impl ScreenGeom<geom::LineString> for screen::LineString {
-    fn from_geom(extent: &Extent,
-                 reverse_y: bool,
-                 tile_size: u32,
-                 line: &geom::LineString)
-                 -> Self {
+    fn from_geom(
+        extent: &Extent,
+        reverse_y: bool,
+        tile_size: u32,
+        line: &geom::LineString,
+    ) -> Self {
         let mut screen_geom = screen::LineString { points: Vec::new() };
         for point in &line.points {
-            screen_geom
-                .points
-                .push(screen::Point::from_geom(extent, reverse_y, tile_size, point));
+            screen_geom.points.push(screen::Point::from_geom(
+                extent,
+                reverse_y,
+                tile_size,
+                point,
+            ));
         }
         screen_geom
     }
 }
 
 impl ScreenGeom<geom::MultiLineString> for screen::MultiLineString {
-    fn from_geom(extent: &Extent,
-                 reverse_y: bool,
-                 tile_size: u32,
-                 multiline: &geom::MultiLineString)
-                 -> Self {
+    fn from_geom(
+        extent: &Extent,
+        reverse_y: bool,
+        tile_size: u32,
+        multiline: &geom::MultiLineString,
+    ) -> Self {
         let mut screen_geom = screen::MultiLineString { lines: Vec::new() };
         for line in &multiline.lines {
-            screen_geom
-                .lines
-                .push(screen::LineString::from_geom(extent, reverse_y, tile_size, line));
+            screen_geom.lines.push(screen::LineString::from_geom(
+                extent,
+                reverse_y,
+                tile_size,
+                line,
+            ));
         }
         screen_geom
     }
 }
 
 impl ScreenGeom<geom::Polygon> for screen::Polygon {
-    fn from_geom(extent: &Extent,
-                 reverse_y: bool,
-                 tile_size: u32,
-                 polygon: &geom::Polygon)
-                 -> Self {
+    fn from_geom(
+        extent: &Extent,
+        reverse_y: bool,
+        tile_size: u32,
+        polygon: &geom::Polygon,
+    ) -> Self {
         let mut screen_geom = screen::Polygon { rings: Vec::new() };
         for line in &polygon.rings {
-            screen_geom
-                .rings
-                .push(screen::LineString::from_geom(extent, reverse_y, tile_size, line));
+            screen_geom.rings.push(screen::LineString::from_geom(
+                extent,
+                reverse_y,
+                tile_size,
+                line,
+            ));
         }
         screen_geom
     }
 }
 
 impl ScreenGeom<geom::MultiPolygon> for screen::MultiPolygon {
-    fn from_geom(extent: &Extent,
-                 reverse_y: bool,
-                 tile_size: u32,
-                 multipolygon: &geom::MultiPolygon)
-                 -> Self {
-        let mut screen_geom = screen::MultiPolygon { polygons: Vec::new() };
+    fn from_geom(
+        extent: &Extent,
+        reverse_y: bool,
+        tile_size: u32,
+        multipolygon: &geom::MultiPolygon,
+    ) -> Self {
+        let mut screen_geom = screen::MultiPolygon {
+            polygons: Vec::new(),
+        };
         for polygon in &multipolygon.polygons {
-            screen_geom
-                .polygons
-                .push(screen::Polygon::from_geom(extent, reverse_y, tile_size, polygon));
+            screen_geom.polygons.push(screen::Polygon::from_geom(
+                extent,
+                reverse_y,
+                tile_size,
+                polygon,
+            ));
         }
         screen_geom
     }
 }
-
 
 // --- Tile creation functions
 
@@ -191,10 +209,12 @@ impl<'a> Tile<'a> {
         }
     }
 
-    pub fn add_feature_attribute(mvt_layer: &mut vector_tile::Tile_Layer,
-                                 mvt_feature: &mut vector_tile::Tile_Feature,
-                                 key: String,
-                                 mvt_value: vector_tile::Tile_Value) {
+    pub fn add_feature_attribute(
+        mvt_layer: &mut vector_tile::Tile_Layer,
+        mvt_feature: &mut vector_tile::Tile_Feature,
+        key: String,
+        mvt_value: vector_tile::Tile_Value,
+    ) {
         let keyentry = mvt_layer.get_keys().iter().position(|k| *k == key);
         // Optimization: maintain a hash table with key/index pairs
         let keyidx = match keyentry {
@@ -206,10 +226,7 @@ impl<'a> Tile<'a> {
         };
         mvt_feature.mut_tags().push(keyidx as u32);
 
-        let valentry = mvt_layer
-            .get_values()
-            .iter()
-            .position(|v| *v == mvt_value);
+        let valentry = mvt_layer.get_values().iter().position(|v| *v == mvt_value);
         // Optimization: maintain a hash table with value/index pairs
         let validx = match valentry {
             None => {
@@ -251,10 +268,12 @@ impl<'a> Tile<'a> {
                     mvt_value.set_bool_value(v);
                 }
             }
-            Tile::add_feature_attribute(&mut mvt_layer,
-                                        &mut mvt_feature,
-                                        attr.key.clone(),
-                                        mvt_value);
+            Tile::add_feature_attribute(
+                &mut mvt_layer,
+                &mut mvt_feature,
+                attr.key.clone(),
+                mvt_value,
+            );
         }
         if let Ok(geom) = feature.geometry() {
             if !geom.is_empty() {

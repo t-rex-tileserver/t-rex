@@ -6,7 +6,7 @@
 use datasource_type::Datasource;
 use datasource::DatasourceInput;
 use datasource_type::Datasources;
-use core::grid::{Grid, Extent, ExtentInt};
+use core::grid::{Extent, ExtentInt, Grid};
 use core::layer::Layer;
 use core::Config;
 use core::ApplicationCfg;
@@ -18,7 +18,6 @@ use cache::{Cache, Tilecache};
 use serde_json;
 use pbr::ProgressBar;
 use std::io::Stdout;
-
 
 /// Mapbox Vector Tile Service
 pub struct MvtService {
@@ -84,20 +83,15 @@ impl MvtService {
             .map(|set| {
                 let layerinfos = set.layers
                     .iter()
-                    .map(|l| {
-                             LayerInfo {
-                                 name: l.name.clone(),
-                                 geometry_type: l.geometry_type.clone(),
-                             }
-                         })
+                    .map(|l| LayerInfo {
+                        name: l.name.clone(),
+                        geometry_type: l.geometry_type.clone(),
+                    })
                     .collect();
-                let supported = set.layers
-                    .iter()
-                    .any(|l| {
-                             let geom_type =
-                                 l.geometry_type.clone().unwrap_or("UNKNOWN".to_string());
-                             ["POINT", "LINESTRING", "POLYGON"].contains(&(&geom_type as &str))
-                         });
+                let supported = set.layers.iter().any(|l| {
+                    let geom_type = l.geometry_type.clone().unwrap_or("UNKNOWN".to_string());
+                    ["POINT", "LINESTRING", "POLYGON"].contains(&(&geom_type as &str))
+                });
                 let ext = set.get_extent();
                 TilesetInfo {
                     name: set.name.clone(),
@@ -110,7 +104,9 @@ impl MvtService {
             })
             .collect();
         tileset_infos.sort_by_key(|ti| ti.name.clone());
-        let mvt_info = MvtInfo { tilesets: tileset_infos };
+        let mvt_info = MvtInfo {
+            tilesets: tileset_infos,
+        };
         serde_json::to_value(mvt_info)
     }
     fn get_tilejson_metadata(&self, tileset: &str) -> JsonResult {
@@ -156,9 +152,7 @@ impl MvtService {
                     "fields": {}
                 });
                 //insert fields
-                let fields = self.ds(&layer)
-                    .unwrap()
-                    .detect_data_columns(&layer, query);
+                let fields = self.ds(&layer).unwrap().detect_data_columns(&layer, query);
                 for (ref field, _) in fields {
                     meta_json["fields"]
                         .as_object_mut()
@@ -186,9 +180,7 @@ impl MvtService {
                 "fields": {}
             });
                 //insert fields
-                let fields = self.ds(&layer)
-                    .unwrap()
-                    .detect_data_columns(&layer, query);
+                let fields = self.ds(&layer).unwrap().detect_data_columns(&layer, query);
                 for (ref field, _) in fields {
                     layer_json["fields"]
                         .as_object_mut()
@@ -204,9 +196,7 @@ impl MvtService {
     pub fn get_tilejson(&self, baseurl: &str, tileset: &str) -> JsonResult {
         let mut metadata = self.get_tilejson_metadata(tileset)?;
         let vector_layers = self.get_tilejson_vector_layers(tileset)?;
-        let url = json!([
-            format!("{}/{}/{{z}}/{{x}}/{{y}}.pbf", baseurl, tileset)
-        ]);
+        let url = json!([format!("{}/{}/{{z}}/{{x}}/{{y}}.pbf", baseurl, tileset)]);
         let obj = metadata.as_object_mut().unwrap();
         obj.insert("tiles".to_string(), url);
         obj.insert("vector_layers".to_string(), vector_layers);
@@ -279,14 +269,13 @@ impl MvtService {
                 // TODO: support source-layer referencing other layers
                 // Default paint type
                 let default_type = if let Some(ref geomtype) = layer.geometry_type {
-                        match &geomtype as &str {
-                            "POINT" => "circle",
-                            _ => "line",
-                        }
-                    } else {
-                        "line"
+                    match &geomtype as &str {
+                        "POINT" => "circle",
+                        _ => "line",
                     }
-                    .to_string();
+                } else {
+                    "line"
+                }.to_string();
                 layerjson
                     .as_object_mut()
                     .unwrap()
@@ -315,8 +304,10 @@ impl MvtService {
             "vector_layers": vector_layers
         });
         let obj = metadata.as_object_mut().unwrap();
-        obj.insert("json".to_string(),
-                   json!(metadata_vector_layers.to_string()));
+        obj.insert(
+            "json".to_string(),
+            json!(metadata_vector_layers.to_string()),
+        );
         Ok(json!(obj))
     }
     /// Prepare datasource queries. Must be called before requesting tiles.
@@ -339,23 +330,22 @@ impl MvtService {
             let mut mvt_layer = tile.new_layer(layer);
             self.ds(&layer)
                 .unwrap()
-                .retrieve_features(&layer,
-                                   &extent,
-                                   zoom,
-                                   &self.grid,
-                                   |feat| { tile.add_feature(&mut mvt_layer, feat); });
+                .retrieve_features(&layer, &extent, zoom, &self.grid, |feat| {
+                    tile.add_feature(&mut mvt_layer, feat);
+                });
             tile.add_layer(mvt_layer);
         }
         tile.mvt_tile
     }
     /// Fetch or create vector tile from input at x, y, z
-    pub fn tile_cached(&self,
-                       tileset: &str,
-                       xtile: u32,
-                       ytile: u32,
-                       zoom: u8,
-                       _gzip: bool)
-                       -> Vec<u8> {
+    pub fn tile_cached(
+        &self,
+        tileset: &str,
+        xtile: u32,
+        ytile: u32,
+        zoom: u8,
+        _gzip: bool,
+    ) -> Vec<u8> {
         // Reverse y for XYZ scheme (TODO: protocol instead of CRS dependent?)
         let y = if self.grid.srid == 3857 {
             self.grid.ytile_from_xyz(ytile, zoom)
@@ -365,12 +355,11 @@ impl MvtService {
         let path = format!("{}/{}/{}/{}.pbf", tileset, zoom, xtile, ytile);
 
         let mut tile: Option<Vec<u8>> = None;
-        self.cache
-            .read(&path, |f| {
-                let mut data = Vec::new();
-                let _ = f.read_to_end(&mut data);
-                tile = Some(data);
-            });
+        self.cache.read(&path, |f| {
+            let mut data = Vec::new();
+            let _ = f.read_to_end(&mut data);
+            tile = Some(data);
+        });
         if tile.is_some() {
             //TODO: unzip if gzip == false
             return tile.unwrap();
@@ -386,8 +375,8 @@ impl MvtService {
         tilegz
     }
     fn progress_bar(&self, msg: &str, limits: &ExtentInt) -> ProgressBar<Stdout> {
-        let tiles = (limits.maxx as u64 - limits.minx as u64) *
-                    (limits.maxy as u64 - limits.miny as u64);
+        let tiles =
+            (limits.maxx as u64 - limits.minx as u64) * (limits.maxy as u64 - limits.miny as u64);
         let mut pb = ProgressBar::new(tiles);
         pb.message(msg);
         //pb.set_max_refresh_rate(Some(Duration::from_millis(200)));
@@ -402,18 +391,23 @@ impl MvtService {
         // and maybe fast track for Web Mercator (see fn xy in grid_test)
         let ds = self.datasources.default().unwrap();
         ds.extent_from_wgs84(extent, self.grid.srid)
-            .expect(&format!("Error transforming {:?} to SRID {}", extent, self.grid.srid))
+            .expect(&format!(
+                "Error transforming {:?} to SRID {}",
+                extent, self.grid.srid
+            ))
     }
     /// Populate tile cache
-    pub fn generate(&self,
-                    tileset_name: Option<&str>,
-                    minzoom: Option<u8>,
-                    maxzoom: Option<u8>,
-                    extent: Option<Extent>,
-                    nodes: Option<u8>,
-                    nodeno: Option<u8>,
-                    progress: bool,
-                    overwrite: bool) {
+    pub fn generate(
+        &self,
+        tileset_name: Option<&str>,
+        minzoom: Option<u8>,
+        maxzoom: Option<u8>,
+        extent: Option<Extent>,
+        nodes: Option<u8>,
+        nodeno: Option<u8>,
+        progress: bool,
+        overwrite: bool,
+    ) {
         self.init_cache();
         let minzoom = minzoom.unwrap_or(0);
         let maxzoom = maxzoom.unwrap_or(self.grid.maxzoom());
@@ -446,7 +440,10 @@ impl MvtService {
             let limits = self.grid.tile_limits(ext_proj, tolerance);
             for zoom in minzoom..maxzoom + 1 {
                 if zoom > self.grid.maxzoom() {
-                    warn!("Zoom level exceeds maximal zoom level of grid ({}) - skipping", self.grid.maxzoom());
+                    warn!(
+                        "Zoom level exceeds maximal zoom level of grid ({}) - skipping",
+                        self.grid.maxzoom()
+                    );
                     continue;
                 }
                 let ref limit = limits[zoom as usize];
@@ -493,22 +490,25 @@ impl MvtService {
             // :tileset.json
             let json = self.get_tilejson(&self.cache.baseurl(), &tileset.name)
                 .unwrap();
-            let _ = self.cache
-                .write(&format!("{}.json", &tileset.name),
-                       &serde_json::to_vec(&json).unwrap());
+            let _ = self.cache.write(
+                &format!("{}.json", &tileset.name),
+                &serde_json::to_vec(&json).unwrap(),
+            );
 
             // :tileset.style.json
             let json = self.get_stylejson(&self.cache.baseurl(), &tileset.name)
                 .unwrap();
-            let _ = self.cache
-                .write(&format!("{}.style.json", &tileset.name),
-                       &serde_json::to_vec(&json).unwrap());
+            let _ = self.cache.write(
+                &format!("{}.style.json", &tileset.name),
+                &serde_json::to_vec(&json).unwrap(),
+            );
 
             // :tileset/metadata.json
             let json = self.get_mbtiles_metadata(&tileset.name).unwrap();
-            let _ = self.cache
-                .write(&format!("{}/metadata.json", &tileset.name),
-                       &serde_json::to_vec(&json).unwrap());
+            let _ = self.cache.write(
+                &format!("{}/metadata.json", &tileset.name),
+                &serde_json::to_vec(&json).unwrap(),
+            );
         }
     }
     fn gen_layer_runtime_config(&self, layer: &Layer) -> String {
@@ -517,11 +517,10 @@ impl MvtService {
         let mut lines = vec!["\n[[tileset]]".to_string()];
         lines.push(format!(r#"name = "{}""#, layer.name));
         if let Some(ext) = extent {
-            lines.push(format!(r#"extent = [{:.5}, {:.5}, {:.5}, {:.5}]"#,
-                               ext.minx,
-                               ext.miny,
-                               ext.maxx,
-                               ext.maxy));
+            lines.push(format!(
+                r#"extent = [{:.5}, {:.5}, {:.5}, {:.5}]"#,
+                ext.minx, ext.miny, ext.maxx, ext.maxy
+            ));
         } else {
             lines.push("#extent = [-180.0,-90.0,180.0,90.0]".to_string());
         }
@@ -538,7 +537,6 @@ impl MvtService {
     }
 }
 
-
 impl<'a> Config<'a, ApplicationCfg> for MvtService {
     fn from_config(config: &ApplicationCfg) -> Result<Self, String> {
         let datasources = Datasources::from_config(config)?;
@@ -550,11 +548,11 @@ impl<'a> Config<'a, ApplicationCfg> for MvtService {
             .collect();
         let cache = Tilecache::from_config(&config)?;
         Ok(MvtService {
-               datasources: datasources,
-               grid: grid,
-               tilesets: tilesets,
-               cache: cache,
-           })
+            datasources: datasources,
+            grid: grid,
+            tilesets: tilesets,
+            cache: cache,
+        })
     }
     fn gen_config() -> String {
         let mut config = String::new();
@@ -579,7 +577,6 @@ impl<'a> Config<'a, ApplicationCfg> for MvtService {
         config
     }
 }
-
 
 const TOML_SERVICES: &'static str = r#"# t-rex configuration
 

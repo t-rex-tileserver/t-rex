@@ -8,7 +8,6 @@ use cache::filecache::Filecache;
 use std::fs;
 use std::path::Path;
 
-
 #[test]
 fn test_dircache() {
     use std::env;
@@ -38,6 +37,8 @@ fn test_dircache() {
 
     // Read from cache
     let mut s = String::new();
-    cache.read(path, |f| { let _ = f.read_to_string(&mut s); });
+    cache.read(path, |f| {
+        let _ = f.read_to_string(&mut s);
+    });
     assert_eq!(&s, "0123456789");
 }

@@ -8,7 +8,6 @@ pub trait EnumString<T> {
     fn as_str(&self) -> &'static str;
 }
 
-
 macro_rules! enum_string_serialization {
     ($enumtype:ident $visitor:ident) => (
 

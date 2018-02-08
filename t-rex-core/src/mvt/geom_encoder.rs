@@ -43,7 +43,6 @@ fn test_commands() {
     assert_eq!(CommandInteger::new(Command::ClosePath, 1).0, 15);
 }
 
-
 /// Commands requiring parameters are followed by a ParameterInteger for each parameter required by that command
 /// https://github.com/mapbox/vector-tile-spec/tree/master/2.1#432-parameter-integers
 struct ParameterInteger(u32);
@@ -63,7 +62,6 @@ fn test_paremeters() {
     assert_eq!(ParameterInteger(50).value(), 25);
     assert_eq!(ParameterInteger::new(25).value(), 25);
 }
-
 
 pub struct CommandSequence(pub Vec<u32>);
 

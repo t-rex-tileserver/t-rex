@@ -8,7 +8,6 @@ use core::layer::Layer;
 use core::config::Config;
 use core::config::TilesetCfg;
 
-
 /// Collection of layers in one MVT
 pub struct Tileset {
     pub name: String,
@@ -35,7 +34,10 @@ impl Tileset {
     }
     pub fn get_center(&self) -> (f64, f64) {
         let ext = self.get_extent();
-        (ext.maxx - (ext.maxx - ext.minx) / 2.0, ext.maxy - (ext.maxy - ext.miny) / 2.0)
+        (
+            ext.maxx - (ext.maxx - ext.minx) / 2.0,
+            ext.maxy - (ext.maxy - ext.miny) / 2.0,
+        )
     }
     pub fn get_start_zoom(&self) -> u8 {
         2 // TODO: from config
@@ -50,10 +52,10 @@ impl<'a> Config<'a, TilesetCfg> for Tileset {
             .map(|layer| Layer::from_config(layer).unwrap())
             .collect();
         Ok(Tileset {
-               name: tileset_cfg.name.clone(),
-               extent: tileset_cfg.extent.clone(),
-               layers: layers,
-           })
+            name: tileset_cfg.name.clone(),
+            extent: tileset_cfg.extent.clone(),
+            layers: layers,
+        })
     }
     fn gen_config() -> String {
         let mut config = String::new();

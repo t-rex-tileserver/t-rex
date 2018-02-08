@@ -10,7 +10,6 @@ use core::feature::Feature;
 use core::Config;
 use core::config::DatasourceCfg;
 
-
 pub trait DatasourceInput {
     /// New instance with connected pool
     fn connected(&self) -> Self;
@@ -21,13 +20,9 @@ pub trait DatasourceInput {
     fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32);
     /// Projected extent
     fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent>;
-    fn retrieve_features<F>(&self,
-                            layer: &Layer,
-                            extent: &Extent,
-                            zoom: u8,
-                            grid: &Grid,
-                            read: F)
-        where F: FnMut(&Feature);
+    fn retrieve_features<F>(&self, layer: &Layer, extent: &Extent, zoom: u8, grid: &Grid, read: F)
+    where
+        F: FnMut(&Feature);
 }
 
 pub struct DummyDatasource;
@@ -49,13 +44,15 @@ impl DatasourceInput for DummyDatasource {
         unimplemented!();
     }
     fn prepare_queries(&mut self, _layer: &Layer, _grid_srid: i32) {}
-    fn retrieve_features<F>(&self,
-                            _layer: &Layer,
-                            _extent: &Extent,
-                            _zoom: u8,
-                            _grid: &Grid,
-                            _read: F)
-        where F: FnMut(&Feature)
+    fn retrieve_features<F>(
+        &self,
+        _layer: &Layer,
+        _extent: &Extent,
+        _zoom: u8,
+        _grid: &Grid,
+        _read: F,
+    ) where
+        F: FnMut(&Feature),
     {
     }
 }

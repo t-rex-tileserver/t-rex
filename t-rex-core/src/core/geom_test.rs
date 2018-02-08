@@ -6,7 +6,6 @@
 use postgis::ewkb;
 use core::geom::{GeometryType, Point};
 
-
 #[cfg(test)]
 impl GeometryType {
     pub fn new_point(x: f64, y: f64) -> GeometryType {

@@ -17,7 +17,6 @@ use std::io;
 use core::Config;
 use core::ApplicationCfg;
 
-
 pub enum Tilecache {
     Nocache(Nocache),
     Filecache(Filecache),
@@ -37,7 +36,8 @@ impl Cache for Tilecache {
         }
     }
     fn read<F>(&self, path: &str, read: F) -> bool
-        where F: FnMut(&mut Read)
+    where
+        F: FnMut(&mut Read),
     {
         match self {
             &Tilecache::Nocache(ref cache) => cache.read(path, read),
@@ -64,12 +64,12 @@ impl<'a> Config<'a, ApplicationCfg> for Tilecache {
             .cache
             .as_ref()
             .map(|cache| {
-                     let fc = Filecache {
-                         basepath: cache.file.base.clone(),
-                         baseurl: cache.file.baseurl.clone(),
-                     };
-                     Tilecache::Filecache(fc)
-                 })
+                let fc = Filecache {
+                    basepath: cache.file.base.clone(),
+                    baseurl: cache.file.baseurl.clone(),
+                };
+                Tilecache::Filecache(fc)
+            })
             .or(Some(Tilecache::Nocache(Nocache)))
             .ok_or("".to_string())
     }

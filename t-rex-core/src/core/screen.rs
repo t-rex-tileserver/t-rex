@@ -7,8 +7,7 @@
 
 use std::vec::Vec;
 
-
-#[derive(PartialEq,Debug)]
+#[derive(PartialEq, Debug)]
 pub struct Point {
     pub x: i32,
     pub y: i32,
@@ -20,27 +19,27 @@ impl Point {
     }
 }
 
-#[derive(PartialEq,Debug)]
+#[derive(PartialEq, Debug)]
 pub struct MultiPoint {
     pub points: Vec<Point>,
 }
 
-#[derive(PartialEq,Debug)]
+#[derive(PartialEq, Debug)]
 pub struct LineString {
     pub points: Vec<Point>,
 }
 
-#[derive(PartialEq,Debug)]
+#[derive(PartialEq, Debug)]
 pub struct MultiLineString {
     pub lines: Vec<LineString>,
 }
 
-#[derive(PartialEq,Debug)]
+#[derive(PartialEq, Debug)]
 pub struct Polygon {
     pub rings: Vec<LineString>,
 }
 
-#[derive(PartialEq,Debug)]
+#[derive(PartialEq, Debug)]
 pub struct MultiPolygon {
     pub polygons: Vec<Polygon>,
 }

@@ -5,10 +5,10 @@
 
 use service::tileset::Tileset;
 use core::layer::Layer;
-use datasource_type::{Datasources, Datasource};
+use datasource_type::{Datasource, Datasources};
 use datasource::PostgisInput;
 #[cfg(feature = "with-gdal")]
-use gdal_ds::{GdalDatasource, ogr_layer_name};
+use gdal_ds::{ogr_layer_name, GdalDatasource};
 #[cfg(not(feature = "with-gdal"))]
 use datasource::DummyDatasource as GdalDatasource;
 use elementtree::Element;
@@ -48,15 +48,17 @@ impl PgLayerInfo {
     fn from_qgs_ds(ds: &str) -> PgLayerInfo {
         let params: HashMap<&str, &str> = ds.split(' ')
             .map(|kv| kv.split('=').collect::<Vec<&str>>())
-            .map(|vec| if vec.len() == 2 {
-                     (vec[0], vec[1].trim_matches('\''))
-                 } else {
-                     if vec[0].starts_with("(") {
-                         ("geometry_field", vec[0].get(1..vec[0].len() - 1).unwrap())
-                     } else {
-                         (vec[0], "")
-                     }
-                 })
+            .map(|vec| {
+                if vec.len() == 2 {
+                    (vec[0], vec[1].trim_matches('\''))
+                } else {
+                    if vec[0].starts_with("(") {
+                        ("geometry_field", vec[0].get(1..vec[0].len() - 1).unwrap())
+                    } else {
+                        (vec[0], "")
+                    }
+                }
+            })
             .collect();
 
         //postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
@@ -125,7 +127,7 @@ impl GdalLayerInfo {
         let layer = parts[1].split('=').collect::<Vec<&str>>();
         let layer_name = match layer[0] {
             "layerid" => ogr_layer_name(path.to_str().unwrap(), isize::from_str(layer[1]).unwrap())
-                         .expect("Couldn't resolve layer name"),
+                .expect("Couldn't resolve layer name"),
             "layername" => layer[1].to_string(),
             &_ => format!("<{}>", ds),
         };
@@ -157,9 +159,7 @@ pub fn read_qgs(fname: &str) -> (Datasources, Tileset) {
         layers: Vec::new(),
     };
     for qgslayer in projectlayers.find_all("maplayer") {
-        let layertype = qgslayer
-            .get_attr("type")
-            .expect("Missing attribute 'type'");
+        let layertype = qgslayer.get_attr("type").expect("Missing attribute 'type'");
         if layertype != "vector" {
             continue;
         }
@@ -205,39 +205,65 @@ pub fn read_qgs(fname: &str) -> (Datasources, Tileset) {
 #[test]
 fn test_parse_xml() {
     assert!(read_xml("../examples/natural_earth.qgs").is_ok());
-    assert_eq!(read_xml("wrong_file_name").err().unwrap().description(),
-               "entity not found");
-    assert_eq!(read_xml("Cargo.toml").err().unwrap().description(),
-               "Malformed XML");
+    assert_eq!(
+        read_xml("wrong_file_name").err().unwrap().description(),
+        "entity not found"
+    );
+    assert_eq!(
+        read_xml("Cargo.toml").err().unwrap().description(),
+        "Malformed XML"
+    );
 }
 
 #[test]
 fn test_pg_uri() {
     let info = PgLayerInfo::from_qgs_ds(r#"dbname='natural_earth_vectors' host=localhost port=5432 user='pi' password='xxx' sslmode=allow key='fid' estimatedmetadata=true srid=4326 type=Point table="public"."ne_10m_populated_places_wgs84" (wkb_geometry) sql="#);
-    assert_eq!(info.dbconn,
-               "postgresql://pi:xxx@localhost:5432/natural_earth_vectors");
-    assert_eq!(info.table_name, r#""public"."ne_10m_populated_places_wgs84""#);
+    assert_eq!(
+        info.dbconn,
+        "postgresql://pi:xxx@localhost:5432/natural_earth_vectors"
+    );
+    assert_eq!(
+        info.table_name,
+        r#""public"."ne_10m_populated_places_wgs84""#
+    );
     let info = PgLayerInfo::from_qgs_ds("dbname=\'natural_earth_vectors\' port=5432 sslmode=disable key=\'tid\' estimatedmetadata=true srid=3857 type=Polygon table=\"public\".\"admin_0_countries\" (wkb_geometry) sql=");
-    assert_eq!(info.dbconn,
-               format!("postgresql://{}@%2Frun%2Fpostgresql:5432/natural_earth_vectors", get_user_name()));
+    assert_eq!(
+        info.dbconn,
+        format!(
+            "postgresql://{}@%2Frun%2Fpostgresql:5432/natural_earth_vectors",
+            get_user_name()
+        )
+    );
     assert_eq!(info.table_name, r#""public"."admin_0_countries""#);
     let info = PgLayerInfo::from_qgs_ds(r#"dbname='natural_earth_vectors' port=5432 sslmode=disable key='fid' estimatedmetadata=true srid=4326 type=Point table="public"."ne_10m_populated_places_wgs84" (wkb_geometry) sql="scalerank" &lt; 9"#);
-    assert_eq!(info.table_name, r#""public"."ne_10m_populated_places_wgs84""#);
+    assert_eq!(
+        info.table_name,
+        r#""public"."ne_10m_populated_places_wgs84""#
+    );
 }
 
 #[test]
 fn test_gdal_ds() {
-    let info = GdalLayerInfo::from_qgs_ds("../examples/natural_earth.qgs",
-                                          "../t-rex-gdal/natural_earth.gpkg|layerid=2");
+    let info = GdalLayerInfo::from_qgs_ds(
+        "../examples/natural_earth.qgs",
+        "../t-rex-gdal/natural_earth.gpkg|layerid=2",
+    );
     println!("{:?}", info);
     assert!(info.path.contains("natural_earth.gpkg"));
     assert_eq!(info.layer_name, "ne_110m_admin_0_countries");
-    let info = GdalLayerInfo::from_qgs_ds("../examples/natural_earth.qgs",
-                                          "../t-rex-gdal/natural_earth.gpkg|layername=ne_10m_rivers_lake_centerlines");
+    let info = GdalLayerInfo::from_qgs_ds(
+        "../examples/natural_earth.qgs",
+        "../t-rex-gdal/natural_earth.gpkg|layername=ne_10m_rivers_lake_centerlines",
+    );
     assert_eq!(info.layer_name, "ne_10m_rivers_lake_centerlines");
-    let info = GdalLayerInfo::from_qgs_ds("../examples/natural_earth.qgs",
-                                          "../t-rex-gdal/natural_earth.gpkg|layerinfo=missing");
-    assert_eq!(info.layer_name, "<../t-rex-gdal/natural_earth.gpkg|layerinfo=missing>");
+    let info = GdalLayerInfo::from_qgs_ds(
+        "../examples/natural_earth.qgs",
+        "../t-rex-gdal/natural_earth.gpkg|layerinfo=missing",
+    );
+    assert_eq!(
+        info.layer_name,
+        "<../t-rex-gdal/natural_earth.gpkg|layerinfo=missing>"
+    );
 }
 
 #[test]
@@ -249,10 +275,13 @@ fn test_read_qgs() {
 
     assert_eq!(ts.layers[0].name, "admin_0_countries");
     let ref ds = dss.datasources[&ts.layers[0].name];
-    let dsconfig = format!(r#"
+    let dsconfig = format!(
+        r#"
 [[datasource]]
 dbconn = "postgresql://{}@%2Frun%2Fpostgresql:5432/natural_earth_vectors"
-"#, get_user_name());
+"#,
+        get_user_name()
+    );
     assert_eq!(ds.gen_runtime_config(), dsconfig);
     let layerconfig = r#"[[tileset.layer]]
 name = "admin_0_countries"

@@ -17,7 +17,6 @@ use core::config::{ApplicationCfg, DatasourceCfg};
 use clap::ArgMatches;
 use std::collections::HashMap;
 
-
 pub enum Datasource {
     Postgis(PostgisInput),
     Gdal(GdalDatasource),
@@ -61,7 +60,8 @@ impl DatasourceInput for Datasource {
         }
     }
     fn retrieve_features<F>(&self, layer: &Layer, extent: &Extent, zoom: u8, grid: &Grid, read: F)
-        where F: FnMut(&Feature)
+    where
+        F: FnMut(&Feature),
     {
         match self {
             &Datasource::Postgis(ref ds) => ds.retrieve_features(layer, extent, zoom, grid, read),
@@ -81,9 +81,11 @@ impl<'a> Config<'a, DatasourceCfg> for Datasource {
         }
     }
     fn gen_config() -> String {
-        format!("{}{}",
-                PostgisInput::gen_config(),
-                GdalDatasource::gen_config())
+        format!(
+            "{}{}",
+            PostgisInput::gen_config(),
+            GdalDatasource::gen_config()
+        )
     }
     fn gen_runtime_config(&self) -> String {
         match self {
@@ -92,8 +94,6 @@ impl<'a> Config<'a, DatasourceCfg> for Datasource {
         }
     }
 }
-
-
 
 pub struct Datasources {
     pub datasources: HashMap<String, Datasource>,
@@ -147,8 +147,10 @@ impl Datasources {
     pub fn from_args(args: &ArgMatches) -> Self {
         let mut datasources = Datasources::new();
         if let Some(dbconn) = args.value_of("dbconn") {
-            datasources.add(&"dbconn".to_string(),
-                            Datasource::Postgis(PostgisInput::new(dbconn)));
+            datasources.add(
+                &"dbconn".to_string(),
+                Datasource::Postgis(PostgisInput::new(dbconn)),
+            );
         }
         if let Some(datasource) = args.value_of("datasource") {
             #[cfg(feature = "with-gdal")]
@@ -176,7 +178,6 @@ impl Datasources {
     pub fn datasource(&self, name: &Option<String>) -> Option<&Datasource> {
         let key = name.as_ref().unwrap_or(self.default.as_ref().unwrap());
         self.datasources.get(key)
-
     }
     pub fn datasource_mut(&mut self, name: &Option<String>) -> Option<&mut Datasource> {
         let key = name.as_ref().unwrap_or(self.default.as_ref().unwrap());
@@ -187,7 +188,6 @@ impl Datasources {
             Some(ref default) => self.datasources.get(default),
             None => None,
         }
-
     }
 }
 
@@ -209,29 +209,36 @@ fn test_datasource_from_config() {
         Datasource::Postgis(pg) => pg,
         _ => panic!(),
     };
-    assert_eq!(pg.connection_url,
-               "postgresql://pi@localhost/natural_earth_vectors");
+    assert_eq!(
+        pg.connection_url,
+        "postgresql://pi@localhost/natural_earth_vectors"
+    );
 }
 
 #[test]
 fn test_datasource_config_errors() {
-    assert_eq!(ds_from_config("").err(),
-               Some("Unsupported datasource".to_string()));
+    assert_eq!(
+        ds_from_config("").err(),
+        Some("Unsupported datasource".to_string())
+    );
 
     let toml = r#"
         #[[datasource]]
         pool = 10
         "#;
-    assert_eq!(ds_from_config(toml).err(),
-               Some("Unsupported datasource".to_string()));
+    assert_eq!(
+        ds_from_config(toml).err(),
+        Some("Unsupported datasource".to_string())
+    );
 
     let toml = r#"
         #[[datasource]]
         dbconn = true
         "#;
-    assert_eq!(ds_from_config(toml).err(),
-               Some(" - invalid type: boolean `true`, expected a string for key `dbconn`"
-                        .to_string()));
+    assert_eq!(
+        ds_from_config(toml).err(),
+        Some(" - invalid type: boolean `true`, expected a string for key `dbconn`".to_string())
+    );
 }
 
 #[cfg(feature = "with-gdal")]
@@ -245,9 +252,11 @@ mod gdal_tests {
 
         const GPKG: &str = "../t-rex-gdal/natural_earth.gpkg";
         let args = App::new("t_rex")
-            .arg(Arg::with_name("datasource")
-                     .long("datasource")
-                     .takes_value(true))
+            .arg(
+                Arg::with_name("datasource")
+                    .long("datasource")
+                    .takes_value(true),
+            )
             .get_matches_from(vec!["t_rex", "--datasource", GPKG]);
         assert_eq!(args.value_of("datasource"), Some(GPKG));
         let dss = Datasources::from_args(&args);

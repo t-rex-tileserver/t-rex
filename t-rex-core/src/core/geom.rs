@@ -5,7 +5,6 @@
 
 use postgis::ewkb;
 
-
 // Aliases for rust-postgis geometry types
 pub type Point = ewkb::Point;
 pub type LineString = ewkb::LineString;

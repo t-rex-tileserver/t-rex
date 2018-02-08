@@ -8,7 +8,6 @@ use std::fs::{self, File};
 use std::io::{self, Read, Write};
 use std::path::Path;
 
-
 pub struct Filecache {
     pub basepath: String,
     pub baseurl: Option<String>,
@@ -24,7 +23,8 @@ impl Cache for Filecache {
             .unwrap_or("http://localhost:6767".to_string())
     }
     fn read<F>(&self, path: &str, mut read: F) -> bool
-        where F: FnMut(&mut Read)
+    where
+        F: FnMut(&mut Read),
     {
         let fullpath = format!("{}/{}", self.basepath, path);
         debug!("Filecache.read {}", fullpath);

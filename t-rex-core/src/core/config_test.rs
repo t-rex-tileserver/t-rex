@@ -7,15 +7,16 @@ use core::config::read_config;
 use core::config::ApplicationCfg;
 use core::config::DEFAULT_CONFIG;
 
-
 #[test]
 fn test_load_config() {
     let config = read_config("../t-rex-service/src/test/example.toml");
     println!("{:#?}", config);
     let config: ApplicationCfg = config.expect("load_config returned Err");
     assert!(config.service.mvt.viewer);
-    assert_eq!(config.datasource[0].dbconn,
-               Some("postgresql://postgres@127.0.0.1/osm_buildings".to_string()));
+    assert_eq!(
+        config.datasource[0].dbconn,
+        Some("postgresql://postgres@127.0.0.1/osm_buildings".to_string())
+    );
     assert_eq!(config.grid.predefined, Some("web_mercator".to_string()));
     assert_eq!(config.tilesets.len(), 1);
     assert_eq!(config.tilesets[0].name, "osm");
@@ -28,8 +29,10 @@ fn test_load_config() {
 #[test]
 fn test_parse_error() {
     let config: Result<ApplicationCfg, _> = read_config("src/core/mod.rs");
-    assert_eq!("src/core/mod.rs - unexpected character found: `/` at line 1",
-               config.err().unwrap());
+    assert_eq!(
+        "src/core/mod.rs - unexpected character found: `/` at line 1",
+        config.err().unwrap()
+    );
 
     let config: Result<ApplicationCfg, _> = read_config("wrongfile");
     assert_eq!("Could not find config file!", config.err().unwrap());
@@ -69,8 +72,10 @@ fn test_datasource_compatibility() {
         threads = 4
         "#;
     let config: Result<ApplicationCfg, _> = parse_config(toml.to_string(), "");
-    assert_eq!(" - invalid type: map, expected a sequence for key `datasource`",
-               config.err().unwrap());
+    assert_eq!(
+        " - invalid type: map, expected a sequence for key `datasource`",
+        config.err().unwrap()
+    );
     // let config: ApplicationCfg = config.expect("load_config returned Err");
     // assert_eq!(config.datasource[0].dbconn,
     //            Some("postgresql://pi@localhost/natural_earth_vectors".to_string()));

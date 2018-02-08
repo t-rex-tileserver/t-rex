@@ -3,17 +3,17 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
+extern crate clap;
+#[macro_use]
+extern crate hyper;
 #[macro_use]
 extern crate log;
 #[macro_use]
 extern crate nickel;
-#[macro_use]
-extern crate serde_json;
+extern crate open;
 extern crate rustc_serialize;
 #[macro_use]
-extern crate hyper;
-extern crate clap;
-extern crate open;
+extern crate serde_json;
 
 extern crate t_rex_core;
 extern crate t_rex_service;

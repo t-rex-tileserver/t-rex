@@ -10,9 +10,9 @@ use std::fs::File;
 use core::grid::Extent;
 use serde::Deserialize;
 
-
 pub trait Config<'a, C: Deserialize<'a>>
-    where Self: std::marker::Sized
+where
+    Self: std::marker::Sized,
 {
     /// Read configuration
     fn from_config(config: &C) -> Result<Self, String>;
@@ -29,8 +29,7 @@ pub struct ApplicationCfg {
     pub service: ServiceCfg,
     pub datasource: Vec<DatasourceCfg>,
     pub grid: GridCfg,
-    #[serde(rename = "tileset")]
-    pub tilesets: Vec<TilesetCfg>,
+    #[serde(rename = "tileset")] pub tilesets: Vec<TilesetCfg>,
     pub cache: Option<CacheCfg>,
     pub webserver: WebserverCfg,
 }
@@ -96,8 +95,7 @@ pub struct TilesetCfg {
     //? pub minzoom: Option<u8>,
     //? pub maxzoom: Option<u8>,
     //? pub center: [0.0, 0.0, 2],
-    #[serde(rename = "layer")]
-    pub layers: Vec<LayerCfg>,
+    #[serde(rename = "layer")] pub layers: Vec<LayerCfg>,
     // Inline style
     pub style: Option<Value>,
 }
@@ -122,8 +120,7 @@ pub struct LayerCfg {
     pub table_name: Option<String>,
     pub query_limit: Option<u32>,
     // Explicit queries
-    #[serde(default)]
-    pub query: Vec<LayerQueryCfg>,
+    #[serde(default)] pub query: Vec<LayerQueryCfg>,
     /// Width and height of the tile (Default: 4096. Grid default size is 256)
     pub tile_size: Option<u32>,
     /// Simplify geometry (lines and polygons)

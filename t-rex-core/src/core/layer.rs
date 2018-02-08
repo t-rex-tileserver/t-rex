@@ -57,24 +57,22 @@ impl Layer {
         }
     }
     pub fn minzoom(&self) -> u8 {
-        self.query
-            .iter()
-            .map(|q| q.minzoom())
-            .min()
-            .unwrap_or(0)
+        self.query.iter().map(|q| q.minzoom()).min().unwrap_or(0)
     }
     pub fn maxzoom(&self) -> u8 {
-        self.query
-            .iter()
-            .map(|q| q.maxzoom())
-            .max()
-            .unwrap_or(22)
+        self.query.iter().map(|q| q.maxzoom()).max().unwrap_or(22)
     }
     // SQL query for zoom level
     pub fn query(&self, level: u8) -> Option<&String> {
         let mut queries = self.query
             .iter()
-            .map(|ref q| (q.minzoom(), q.maxzoom(), q.sql.as_ref().and_then(|sql| Some(sql))))
+            .map(|ref q| {
+                (
+                    q.minzoom(),
+                    q.maxzoom(),
+                    q.sql.as_ref().and_then(|sql| Some(sql)),
+                )
+            })
             .collect::<Vec<_>>();
         queries.sort_by_key(|ref t| t.0);
         let query = queries
@@ -103,13 +101,11 @@ impl<'a> Config<'a, LayerCfg> for Layer {
         let queries = layer_cfg
             .query
             .iter()
-            .map(|lq| {
-                     LayerQuery {
-                         minzoom: lq.minzoom,
-                         maxzoom: lq.maxzoom,
-                         sql: lq.sql.clone(),
-                     }
-                 })
+            .map(|lq| LayerQuery {
+                minzoom: lq.minzoom,
+                maxzoom: lq.maxzoom,
+                sql: lq.sql.clone(),
+            })
             .collect();
         let style = match layer_cfg.style {
             Some(ref style) => {
@@ -119,20 +115,20 @@ impl<'a> Config<'a, LayerCfg> for Layer {
             None => None,
         };
         Ok(Layer {
-               name: layer_cfg.name.clone(),
-               datasource: layer_cfg.datasource.clone(), //TODO: inherit from parents if None?
-               geometry_field: layer_cfg.geometry_field.clone(),
-               geometry_type: layer_cfg.geometry_type.clone(),
-               srid: layer_cfg.srid,
-               fid_field: layer_cfg.fid_field.clone(),
-               table_name: layer_cfg.table_name.clone(),
-               query_limit: layer_cfg.query_limit,
-               query: queries,
-               tile_size: layer_cfg.tile_size.unwrap_or(4096),
-               simplify: layer_cfg.simplify.unwrap_or(false),
-               buffer_size: layer_cfg.buffer_size,
-               style: style,
-           })
+            name: layer_cfg.name.clone(),
+            datasource: layer_cfg.datasource.clone(), //TODO: inherit from parents if None?
+            geometry_field: layer_cfg.geometry_field.clone(),
+            geometry_type: layer_cfg.geometry_type.clone(),
+            srid: layer_cfg.srid,
+            fid_field: layer_cfg.fid_field.clone(),
+            table_name: layer_cfg.table_name.clone(),
+            query_limit: layer_cfg.query_limit,
+            query: queries,
+            tile_size: layer_cfg.tile_size.unwrap_or(4096),
+            simplify: layer_cfg.simplify.unwrap_or(false),
+            buffer_size: layer_cfg.buffer_size,
+            style: style,
+        })
     }
 
     fn gen_config() -> String {

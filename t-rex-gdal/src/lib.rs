@@ -1,6 +1,6 @@
+extern crate gdal;
 #[macro_use]
 extern crate log;
-extern crate gdal;
 extern crate t_rex_core;
 
 use t_rex_core::core;

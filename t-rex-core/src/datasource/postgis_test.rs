@@ -14,23 +14,25 @@ use core::grid::Grid;
 use core::layer::{Layer, LayerQuery};
 use std::env;
 
-
 #[test]
 #[ignore]
 fn test_from_geom_fields() {
     let conn: Connection = match env::var("DBCONN") {
-            Result::Ok(val) => Connection::connect(&val as &str, postgres::TlsMode::None),
-            Result::Err(_) => panic!("DBCONN undefined"),
-        }
-        .unwrap();
+        Result::Ok(val) => Connection::connect(&val as &str, postgres::TlsMode::None),
+        Result::Err(_) => panic!("DBCONN undefined"),
+    }.unwrap();
     let sql = "SELECT wkb_geometry FROM ne_10m_populated_places LIMIT 1";
     for row in &conn.query(sql, &[]).unwrap() {
         let geom = row.get::<_, Point>("wkb_geometry");
-        assert_eq!(&*format!("{:?}", geom),
-                   "Point { x: -6438719.622820721, y: -4093437.7144101723, srid: Some(3857) }");
+        assert_eq!(
+            &*format!("{:?}", geom),
+            "Point { x: -6438719.622820721, y: -4093437.7144101723, srid: Some(3857) }"
+        );
         let geom = GeometryType::from_geom_field(&row, "wkb_geometry", "POINT");
-        assert_eq!(&*format!("{:?}", geom),
-                   "Ok(Point(Point { x: -6438719.622820721, y: -4093437.7144101723, srid: Some(3857) }))");
+        assert_eq!(
+            &*format!("{:?}", geom),
+            "Ok(Point(Point { x: -6438719.622820721, y: -4093437.7144101723, srid: Some(3857) }))"
+        );
     }
 
     let sql = "SELECT ST_Multi(wkb_geometry) AS wkb_geometry FROM rivers_lake_centerlines WHERE name='Waiau' AND ST_NPoints(wkb_geometry)<10";
@@ -57,56 +59,61 @@ fn test_from_geom_fields() {
 #[ignore]
 fn test_detect_layers() {
     let pg: PostgisInput = match env::var("DBCONN") {
-            Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
-            Result::Err(_) => panic!("DBCONN undefined"),
-        }
-        .unwrap();
+        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+        Result::Err(_) => panic!("DBCONN undefined"),
+    }.unwrap();
     let layers = pg.detect_layers(false);
-    assert!(layers
-                .iter()
-                .any(|ref layer| layer.name == "rivers_lake_centerlines"));
+    assert!(
+        layers
+            .iter()
+            .any(|ref layer| layer.name == "rivers_lake_centerlines")
+    );
 }
 
 #[test]
 #[ignore]
 fn test_detect_columns() {
     let pg: PostgisInput = match env::var("DBCONN") {
-            Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
-            Result::Err(_) => panic!("DBCONN undefined"),
-        }
-        .unwrap();
+        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+        Result::Err(_) => panic!("DBCONN undefined"),
+    }.unwrap();
     let layers = pg.detect_layers(false);
     let layer = layers
         .iter()
         .find(|ref layer| layer.name == "rivers_lake_centerlines")
         .unwrap();
     let cols = pg.detect_data_columns(&layer, None);
-    assert_eq!(cols,
-               vec![("fid".to_string(), "".to_string()),
-                    ("scalerank".to_string(), "FLOAT8".to_string()),
-                    ("name".to_string(), "".to_string())]);
+    assert_eq!(
+        cols,
+        vec![
+            ("fid".to_string(), "".to_string()),
+            ("scalerank".to_string(), "FLOAT8".to_string()),
+            ("name".to_string(), "".to_string()),
+        ]
+    );
 }
 
 #[test]
 #[ignore]
 fn test_extent_query() {
     let pg: PostgisInput = match env::var("DBCONN") {
-            Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
-            Result::Err(_) => panic!("DBCONN undefined"),
-        }
-        .unwrap();
+        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+        Result::Err(_) => panic!("DBCONN undefined"),
+    }.unwrap();
     let layers = pg.detect_layers(false);
     let layer = &layers
-                     .iter()
-                     .find(|ref layer| layer.name == "rivers_lake_centerlines")
-                     .unwrap();
-    assert_eq!(pg.layer_extent(&layer),
-               Some(Extent {
-                        minx: -164.90347246002037,
-                        miny: -52.1577287739643,
-                        maxx: 177.2111922535212,
-                        maxy: 75.79348379113983,
-                    }));
+        .iter()
+        .find(|ref layer| layer.name == "rivers_lake_centerlines")
+        .unwrap();
+    assert_eq!(
+        pg.layer_extent(&layer),
+        Some(Extent {
+            minx: -164.90347246002037,
+            miny: -52.1577287739643,
+            maxx: 177.2111922535212,
+            maxy: 75.79348379113983,
+        })
+    );
 }
 
 #[test]
@@ -126,8 +133,10 @@ fn test_feature_query() {
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
                "SELECT ST_SetSRID(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,-1)");
     layer.srid = Some(3857);
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
-               "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+    assert_eq!(
+        pg.build_query(&layer, 3857, None).unwrap().sql,
+        "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)"
+    );
 
     // clipping
     layer.buffer_size = Some(10);
@@ -140,8 +149,10 @@ fn test_feature_query() {
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
                "SELECT geometry FROM osm_place_point WHERE geometry && ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)");
     layer.buffer_size = Some(0);
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
-               "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+    assert_eq!(
+        pg.build_query(&layer, 3857, None).unwrap().sql,
+        "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)"
+    );
 
     layer.buffer_size = None;
     layer.geometry_type = Some("POLYGON".to_string());
@@ -154,32 +165,42 @@ fn test_feature_query() {
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
                "SELECT ST_Multi(ST_SimplifyPreserveTopology(ST_Multi(geometry),$5::FLOAT8/2)) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
     layer.geometry_type = Some("POINT".to_string());
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
-               "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+    assert_eq!(
+        pg.build_query(&layer, 3857, None).unwrap().sql,
+        "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)"
+    );
 
     layer.simplify = false;
     layer.query_limit = Some(1);
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
-               // No LIMIT clause added - limited when retrieving records
-               "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+    assert_eq!(
+        pg.build_query(&layer, 3857, None).unwrap().sql,
+        // No LIMIT clause added - limited when retrieving records
+        "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)"
+    );
 
     // user queries
-    layer.query = vec![LayerQuery {
-                           minzoom: Some(0),
-                           maxzoom: Some(22),
-                           sql: Some(String::from("SELECT geometry AS geom FROM osm_place_point")),
-                       }];
+    layer.query = vec![
+        LayerQuery {
+            minzoom: Some(0),
+            maxzoom: Some(22),
+            sql: Some(String::from("SELECT geometry AS geom FROM osm_place_point")),
+        },
+    ];
     layer.query_limit = None;
     assert_eq!(pg.build_query(&layer, 3857, layer.query[0].sql.as_ref())
                    .unwrap()
                    .sql,
                "SELECT * FROM (SELECT geometry AS geom FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
-    layer.query = vec![LayerQuery {
-                           minzoom: Some(0),
-                           maxzoom: Some(22),
-                           sql: Some(String::from("SELECT * FROM osm_place_point WHERE name='Bern'")),
-                       }];
+    layer.query = vec![
+        LayerQuery {
+            minzoom: Some(0),
+            maxzoom: Some(22),
+            sql: Some(String::from(
+                "SELECT * FROM osm_place_point WHERE name='Bern'",
+            )),
+        },
+    ];
     assert_eq!(pg.build_query(&layer, 3857, layer.query[0].sql.as_ref())
                    .unwrap()
                    .sql,
@@ -236,10 +257,9 @@ fn test_query_params() {
 #[ignore]
 fn test_retrieve_features() {
     let mut pg: PostgisInput = match env::var("DBCONN") {
-            Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
-            Result::Err(_) => panic!("DBCONN undefined"),
-        }
-        .unwrap();
+        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+        Result::Err(_) => panic!("DBCONN undefined"),
+    }.unwrap();
 
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("ne_10m_populated_places"));
@@ -256,35 +276,42 @@ fn test_retrieve_features() {
     let mut reccnt = 0;
     pg.prepare_queries(&layer, 3857);
     pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
-        assert_eq!("Ok(Point(Point { x: 831219.9062494118, y: 5928485.165733484, srid: Some(3857) }))",
-                   &*format!("{:?}", feat.geometry()));
+        assert_eq!(
+            "Ok(Point(Point { x: 831219.9062494118, y: 5928485.165733484, srid: Some(3857) }))",
+            &*format!("{:?}", feat.geometry())
+        );
         assert_eq!(4, feat.attributes().len());
         assert_eq!(None, feat.fid());
         reccnt += 1;
     });
     assert_eq!(1, reccnt);
 
-    layer.query = vec![LayerQuery {
-                           minzoom: Some(0),
-                           maxzoom: Some(22),
-                           sql: Some(String::from("SELECT * FROM ne_10m_populated_places")),
-                       }];
+    layer.query = vec![
+        LayerQuery {
+            minzoom: Some(0),
+            maxzoom: Some(22),
+            sql: Some(String::from("SELECT * FROM ne_10m_populated_places")),
+        },
+    ];
     layer.fid_field = Some(String::from("fid"));
     pg.prepare_queries(&layer, 3857);
     pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
-        assert_eq!("Ok(Point(Point { x: 831219.9062494118, y: 5928485.165733484, srid: Some(3857) }))",
-                   &*format!("{:?}", feat.geometry()));
+        assert_eq!(
+            "Ok(Point(Point { x: 831219.9062494118, y: 5928485.165733484, srid: Some(3857) }))",
+            &*format!("{:?}", feat.geometry())
+        );
         assert_eq!(feat.attributes()[0].key, "fid");
         assert_eq!(feat.attributes()[1].key, "scalerank"); //Numeric
         assert_eq!(feat.attributes()[2].key, "name");
         assert_eq!(feat.attributes()[3].key, "pop_max"); //Numeric
         assert_eq!(feat.attributes()[0].value, FeatureAttrValType::Int(6478));
         assert_eq!(feat.attributes()[1].value, FeatureAttrValType::Double(4.0));
-        assert_eq!(feat.attributes()[2].value,
-                   FeatureAttrValType::String("Bern".to_string()));
+        assert_eq!(
+            feat.attributes()[2].value,
+            FeatureAttrValType::String("Bern".to_string())
+        );
         assert_eq!(feat.fid(), Some(6478));
     });
-
 }
 
 #[test]

@@ -5,8 +5,8 @@
 
 use datasource::DatasourceInput;
 use gdal;
-use gdal::vector::{Dataset, Geometry, WkbType, FieldValue};
-use gdal::spatial_ref::{SpatialRef, CoordTransform};
+use gdal::vector::{Dataset, FieldValue, Geometry, WkbType};
+use gdal::spatial_ref::{CoordTransform, SpatialRef};
 use core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use core::geom::{self, GeometryType};
 use core::grid::Extent;
@@ -16,7 +16,6 @@ use core::Config;
 use core::config::DatasourceCfg;
 use std::path::Path;
 
-
 pub struct GdalDatasource {
     pub path: String,
     // We don't store the Dataset, because we need mut access for getting layers
@@ -24,10 +23,11 @@ pub struct GdalDatasource {
 
 impl GdalDatasource {
     pub fn new(path: &str) -> GdalDatasource {
-        GdalDatasource { path: path.to_string() }
+        GdalDatasource {
+            path: path.to_string(),
+        }
     }
 }
-
 
 trait ToGeo {
     fn to_geo(&self, srid: Option<i32>) -> GeometryType;
@@ -41,82 +41,80 @@ impl ToGeo for Geometry {
         let ring = |n: usize| {
             let ring = unsafe { self._get_geometry(n) };
             return match ring.to_geo(srid) {
-                       GeometryType::LineString(r) => r,
-                       _ => panic!("Expected to get a LineString"),
-                   };
+                GeometryType::LineString(r) => r,
+                _ => panic!("Expected to get a LineString"),
+            };
         };
 
         match geometry_type {
             WkbType::WkbPoint => {
                 let (x, y, _) = self.get_point(0);
                 GeometryType::Point(geom::Point {
-                                        x: x,
-                                        y: y,
-                                        srid: srid,
-                                    })
+                    x: x,
+                    y: y,
+                    srid: srid,
+                })
             }
             WkbType::WkbMultipoint => {
                 let point_count = self.geometry_count();
                 let coords = (0..point_count)
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
-                             GeometryType::Point(p) => p,
-                             _ => panic!("Expected to get a Point"),
-                         })
+                        GeometryType::Point(p) => p,
+                        _ => panic!("Expected to get a Point"),
+                    })
                     .collect();
                 GeometryType::MultiPoint(geom::MultiPoint {
-                                             points: coords,
-                                             srid: srid,
-                                         })
+                    points: coords,
+                    srid: srid,
+                })
             }
             WkbType::WkbLinestring => {
                 let coords = self.get_point_vec()
                     .iter()
-                    .map(|&(x, y, _)| {
-                             geom::Point {
-                                 x: x,
-                                 y: y,
-                                 srid: srid,
-                             }
-                         })
+                    .map(|&(x, y, _)| geom::Point {
+                        x: x,
+                        y: y,
+                        srid: srid,
+                    })
                     .collect();
                 GeometryType::LineString(geom::LineString {
-                                             points: coords,
-                                             srid: srid,
-                                         })
+                    points: coords,
+                    srid: srid,
+                })
             }
             WkbType::WkbMultilinestring => {
                 let string_count = self.geometry_count();
                 let strings = (0..string_count)
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
-                             GeometryType::LineString(s) => s,
-                             _ => panic!("Expected to get a LineString"),
-                         })
+                        GeometryType::LineString(s) => s,
+                        _ => panic!("Expected to get a LineString"),
+                    })
                     .collect();
                 GeometryType::MultiLineString(geom::MultiLineString {
-                                                  lines: strings,
-                                                  srid: srid,
-                                              })
+                    lines: strings,
+                    srid: srid,
+                })
             }
             WkbType::WkbPolygon => {
                 let ring_count = self.geometry_count();
                 let rings = (0..ring_count).map(|n| ring(n)).collect();
                 GeometryType::Polygon(geom::Polygon {
-                                          rings: rings,
-                                          srid: srid,
-                                      })
+                    rings: rings,
+                    srid: srid,
+                })
             }
             WkbType::WkbMultipolygon => {
                 let string_count = self.geometry_count();
                 let strings = (0..string_count)
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
-                             GeometryType::Polygon(s) => s,
-                             _ => panic!("Expected to get a Polygon"),
-                         })
+                        GeometryType::Polygon(s) => s,
+                        _ => panic!("Expected to get a Polygon"),
+                    })
                     .collect();
                 GeometryType::MultiPolygon(geom::MultiPolygon {
-                                               polygons: strings,
-                                               srid: srid,
-                                           })
+                    polygons: strings,
+                    srid: srid,
+                })
             }
             /* TODO:
             WkbType::WkbGeometrycollection => {
@@ -141,20 +139,21 @@ fn new_transform(src_srid: i32, dest_srid: i32) -> Result<CoordTransform, gdal::
 }
 
 /// Projected extent
-fn transform_extent(extent: &Extent,
-                    src_srid: i32,
-                    dest_srid: i32)
-                    -> Result<Extent, gdal::errors::Error> {
+fn transform_extent(
+    extent: &Extent,
+    src_srid: i32,
+    dest_srid: i32,
+) -> Result<Extent, gdal::errors::Error> {
     let transform = new_transform(src_srid, dest_srid)?;
     let xs = &mut [extent.minx, extent.maxx];
     let ys = &mut [extent.miny, extent.maxy];
     transform.transform_coords(xs, ys, &mut [0.0, 0.0])?;
     Ok(Extent {
-           minx: *xs.get(0).unwrap(),
-           miny: *ys.get(0).unwrap(),
-           maxx: *xs.get(1).unwrap(),
-           maxy: *ys.get(1).unwrap(),
-       })
+        minx: *xs.get(0).unwrap(),
+        miny: *ys.get(0).unwrap(),
+        maxx: *xs.get(1).unwrap(),
+        maxy: *ys.get(1).unwrap(),
+    })
 }
 
 pub fn ogr_layer_name(path: &str, id: isize) -> Result<String, gdal::errors::Error> {
@@ -171,19 +170,15 @@ struct VectorFeature<'a> {
     feature: &'a gdal::vector::Feature<'a>,
 }
 
-
 impl<'a> Feature for VectorFeature<'a> {
     fn fid(&self) -> Option<u64> {
-        self.layer
-            .fid_field
-            .as_ref()
-            .and_then(|fid| {
-                          let field_value = self.feature.field(&fid);
-                          match field_value {
-                              Ok(FieldValue::IntegerValue(v)) => Some(v as u64),
-                              _ => None,
-                          }
-                      })
+        self.layer.fid_field.as_ref().and_then(|fid| {
+            let field_value = self.feature.field(&fid);
+            match field_value {
+                Ok(FieldValue::IntegerValue(v)) => Some(v as u64),
+                _ => None,
+            }
+        })
     }
     fn attributes(&self) -> Vec<FeatureAttr> {
         let mut attrs = Vec::new();
@@ -194,10 +189,12 @@ impl<'a> Feature for VectorFeature<'a> {
                 Ok(FieldValue::IntegerValue(v)) => Some(FeatureAttrValType::Int(v as i64)),
                 Ok(FieldValue::RealValue(v)) => Some(FeatureAttrValType::Double(v)),
                 Err(err) => {
-                    warn!("Layer '{}' - skipping field '{}': {}",
-                          self.layer.name,
-                          field.name(),
-                          err);
+                    warn!(
+                        "Layer '{}' - skipping field '{}': {}",
+                        self.layer.name,
+                        field.name(),
+                        err
+                    );
                     None
                 }
             };
@@ -229,7 +226,9 @@ impl<'a> Feature for VectorFeature<'a> {
 impl DatasourceInput for GdalDatasource {
     /// New instance with connected pool
     fn connected(&self) -> GdalDatasource {
-        GdalDatasource { path: self.path.clone() }
+        GdalDatasource {
+            path: self.path.clone(),
+        }
     }
     fn detect_layers(&self, _detect_geometry_types: bool) -> Vec<Layer> {
         let mut layers: Vec<Layer> = Vec::new();
@@ -270,27 +269,30 @@ impl DatasourceInput for GdalDatasource {
         // TODO: Prepare gdal::vector::Layer, CoordTransform
         match layer.srid {
             None => {
-                warn!("Layer '{}': Unknown SRS - assuming SRID {}",
-                      layer.name,
-                      grid_srid);
+                warn!(
+                    "Layer '{}': Unknown SRS - assuming SRID {}",
+                    layer.name, grid_srid
+                );
             }
             Some(srid) => {
                 if srid != grid_srid {
-                    info!("Layer '{}': Reprojecting geometry from SRID {} to {}",
-                          layer.name,
-                          srid,
-                          grid_srid);
+                    info!(
+                        "Layer '{}': Reprojecting geometry from SRID {} to {}",
+                        layer.name, srid, grid_srid
+                    );
                 }
             }
         }
     }
-    fn retrieve_features<F>(&self,
-                            layer: &Layer,
-                            extent: &Extent,
-                            zoom: u8,
-                            grid: &Grid,
-                            mut read: F)
-        where F: FnMut(&Feature)
+    fn retrieve_features<F>(
+        &self,
+        layer: &Layer,
+        extent: &Extent,
+        zoom: u8,
+        grid: &Grid,
+        mut read: F,
+    ) where
+        F: FnMut(&Feature),
     {
         let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
         let layer_name = layer.table_name.as_ref().unwrap();
@@ -326,11 +328,12 @@ impl DatasourceInput for GdalDatasource {
                 }
             }
         };
-        let bbox = Geometry::bbox(bbox_extent.minx,
-                                  bbox_extent.miny,
-                                  bbox_extent.maxx,
-                                  bbox_extent.maxy)
-                .unwrap();
+        let bbox = Geometry::bbox(
+            bbox_extent.minx,
+            bbox_extent.miny,
+            bbox_extent.maxx,
+            bbox_extent.maxy,
+        ).unwrap();
         ogr_layer.set_spatial_filter(&bbox);
 
         let fields_defn = ogr_layer.defn().fields().collect::<Vec<_>>();
@@ -355,7 +358,6 @@ impl DatasourceInput for GdalDatasource {
     }
 }
 
-
 impl<'a> Config<'a, DatasourceCfg> for GdalDatasource {
     fn from_config(ds_cfg: &DatasourceCfg) -> Result<Self, String> {
         Ok(GdalDatasource::new(ds_cfg.path.as_ref().unwrap()))
@@ -371,10 +373,12 @@ path = "<filename-or-connection-spec>"
         toml.to_string()
     }
     fn gen_runtime_config(&self) -> String {
-        format!(r#"
+        format!(
+            r#"
 [[datasource]]
 path = "{}"
 "#,
-                self.path)
+            self.path
+        )
     }
 }

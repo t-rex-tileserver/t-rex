@@ -7,7 +7,6 @@ use core::layer::Layer;
 use core::config::Config;
 use service::tileset::Tileset;
 
-
 fn layer_from_config(toml: &str) -> Result<Layer, String> {
     use core::parse_config;
 
@@ -48,21 +47,33 @@ fn test_toml_decode() {
     assert_eq!(cfg.query[1].minzoom, Some(10));
     assert_eq!(cfg.query[1].minzoom(), 10);
     assert_eq!(cfg.query[1].maxzoom(), 14);
-    assert_eq!(cfg.query[1].sql,
-               Some("SELECT name,wkb_geometry FROM places_z10".to_string()));
+    assert_eq!(
+        cfg.query[1].sql,
+        Some("SELECT name,wkb_geometry FROM places_z10".to_string())
+    );
     assert_eq!(cfg.minzoom(), 2);
     assert_eq!(cfg.maxzoom(), 22);
     assert_eq!(cfg.query(1), None);
-    assert_eq!(cfg.query(2),
-               Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
-    assert_eq!(cfg.query(9),
-               Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
-    assert_eq!(cfg.query(10),
-               Some(&"SELECT name,wkb_geometry FROM places_z10".to_string()));
-    assert_eq!(cfg.query(14),
-               Some(&"SELECT name,wkb_geometry FROM places_z10".to_string()));
-    assert_eq!(cfg.query(15),
-               Some(&"SELECT name,wkb_geometry FROM places_z2".to_string()));
+    assert_eq!(
+        cfg.query(2),
+        Some(&"SELECT name,wkb_geometry FROM places_z2".to_string())
+    );
+    assert_eq!(
+        cfg.query(9),
+        Some(&"SELECT name,wkb_geometry FROM places_z2".to_string())
+    );
+    assert_eq!(
+        cfg.query(10),
+        Some(&"SELECT name,wkb_geometry FROM places_z10".to_string())
+    );
+    assert_eq!(
+        cfg.query(14),
+        Some(&"SELECT name,wkb_geometry FROM places_z10".to_string())
+    );
+    assert_eq!(
+        cfg.query(15),
+        Some(&"SELECT name,wkb_geometry FROM places_z2".to_string())
+    );
 
     // Minimal config
     let toml = r#"
@@ -106,9 +117,10 @@ fn test_toml_decode() {
         "#;
     let cfg = layer_from_config(toml);
     println!("{:?}", cfg);
-    assert_eq!(cfg.err(),
-               Some(" - invalid type: integer `0`, expected a string for key `table_name`"
-                        .to_string()));
+    assert_eq!(
+        cfg.err(),
+        Some(" - invalid type: integer `0`, expected a string for key `table_name`".to_string())
+    );
 }
 
 #[test]
@@ -143,14 +155,18 @@ fn test_layers_from_config() {
     let layers = tileset.layers;
     assert_eq!(layers.len(), 2);
     assert_eq!(layers[0].name, "points");
-    assert_eq!(layers[0].table_name,
-               Some("ne_10m_populated_places".to_string()));
+    assert_eq!(
+        layers[0].table_name,
+        Some("ne_10m_populated_places".to_string())
+    );
     assert_eq!(layers[0].buffer_size, Some(10));
     assert_eq!(layers[1].table_name, None);
     assert_eq!(layers[1].buffer_size, None); // serde distincts between '-' and '_'
 
     // errors
     let emptyconfig: Result<TilesetCfg, _> = parse_config("".to_string(), "");
-    assert_eq!(emptyconfig.err(),
-               Some(" - missing field `name`".to_string()));
+    assert_eq!(
+        emptyconfig.err(),
+        Some(" - missing field `name`".to_string())
+    );
 }

@@ -5,7 +5,6 @@
 
 use service::glstyle_converter::toml_style_to_gljson;
 
-
 #[test]
 pub fn color_stops() {
     use toml::Value;
