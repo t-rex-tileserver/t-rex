@@ -132,19 +132,24 @@ impl ToGeo for Geometry {
     }
 }
 
-fn new_transform(src_srid: i32, dest_srid: i32) -> Result<CoordTransform, gdal::errors::Error> {
-    let sref_in = SpatialRef::from_epsg(src_srid as u32)?;
-    let sref_out = SpatialRef::from_epsg(dest_srid as u32)?;
-    CoordTransform::new(&sref_in, &sref_out)
-}
-
 /// Projected extent
 fn transform_extent(
     extent: &Extent,
     src_srid: i32,
     dest_srid: i32,
 ) -> Result<Extent, gdal::errors::Error> {
-    let transform = new_transform(src_srid, dest_srid)?;
+    let sref_in = SpatialRef::from_epsg(src_srid as u32)?;
+    let sref_out = SpatialRef::from_epsg(dest_srid as u32)?;
+    transform_extent_sref(extent, &sref_in, &sref_out)
+}
+
+/// Projected extent
+fn transform_extent_sref(
+    extent: &Extent,
+    src_sref: &SpatialRef,
+    dest_sref: &SpatialRef,
+) -> Result<Extent, gdal::errors::Error> {
+    let transform = CoordTransform::new(src_sref, dest_sref)?;
     let xs = &mut [extent.minx, extent.maxx];
     let ys = &mut [extent.miny, extent.maxy];
     transform.transform_coords(xs, ys, &mut [0.0, 0.0])?;
@@ -262,17 +267,85 @@ impl DatasourceInput for GdalDatasource {
     fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent> {
         transform_extent(extent, 4326, dest_srid).ok()
     }
-    fn layer_extent(&self, _layer: &Layer) -> Option<Extent> {
-        None // TODO
+    fn layer_extent(&self, layer: &Layer) -> Option<Extent> {
+        let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
+        let layer_name = layer.table_name.as_ref().unwrap();
+        debug!("retrieve_features layer: {}", layer_name);
+        let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
+        let extent = match ogr_layer.get_extent(true) {
+            Err(e) => {
+                warn!("Layer '{}': Unable to get extent: {}", layer.name, e);
+                None
+            }
+            Ok(extent) => Some(Extent {
+                minx: extent.MinX,
+                miny: extent.MinY,
+                maxx: extent.MaxX,
+                maxy: extent.MaxY,
+            }),
+        };
+
+        let layer_sref = match ogr_layer.spatial_reference() {
+            Err(e) => {
+                warn!(
+                    "Layer '{}': Unable to get spatial reference: {}",
+                    layer.name, e
+                );
+                return None;
+            }
+            Ok(sref) => sref,
+        };
+
+        let wgs84_sref = match SpatialRef::from_epsg(4326) {
+            Err(e) => {
+                warn!("Unable to get EPSG:4326 spatial reference: {}", e);
+                return None;
+            }
+            Ok(sref) => sref,
+        };
+
+        match extent {
+            Some(extent) => match transform_extent_sref(&extent, &layer_sref, &wgs84_sref) {
+                Ok(extent) => Some(extent),
+                Err(e) => {
+                    error!("Unable to transform {:?}: {}", extent, e);
+                    None
+                }
+            },
+            None => None,
+        }
     }
     fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
         // TODO: Prepare gdal::vector::Layer, CoordTransform
         match layer.srid {
             None => {
-                warn!(
-                    "Layer '{}': Unknown SRS - assuming SRID {}",
-                    layer.name, grid_srid
-                );
+                // TODO: this is suprisingly iffy
+                // let layer_name = layer.table_name.as_ref().unwrap();
+                // let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
+                // let sref = ogr_layer.spatial_reference();
+                // match sref {
+                //     Err(e) => {
+                //         error!(
+                //             "Layer '{}': Unable to obtain SRS - will assume SRID {}",
+                //             layer.name, grid_srid
+                //         );
+                //     }
+                //     Ok(sref) => match sref.auth_code() {
+                //         Some(srid) if srid != grid_srid => {
+                //             info!(
+                //                 "Layer '{}': Reprojecting geometry from SRID {} to {}",
+                //                 layer.name, srid, grid_srid
+                //             );
+                //         }
+                //         None => {
+                //             // TODO
+                //         }
+                //     },
+                // }
+                // warn!(
+                //     "Layer '{}': Unknown SRS - assuming SRID {}",
+                //     layer.name, grid_srid
+                // );
             }
             Some(srid) => {
                 if srid != grid_srid {
@@ -299,9 +372,32 @@ impl DatasourceInput for GdalDatasource {
         debug!("retrieve_features layer: {}", layer_name);
         let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
 
-        let transform = match layer.srid {
-            Some(srid) if srid != grid.srid => new_transform(srid, grid.srid).ok(),
-            _ => None,
+        let layer_sref = layer
+            .srid
+            .map(|srid| SpatialRef::from_epsg(srid as u32))
+            .unwrap_or_else(|| ogr_layer.spatial_reference())
+            .or_else(|_| SpatialRef::from_epsg(grid.srid as u32));
+        let layer_sref = match layer_sref {
+            Err(e) => {
+                error!(
+                    "Layer '{}': Unable to get spatial reference: {}",
+                    layer.name, e
+                );
+                return;
+            }
+            Ok(sref) => sref,
+        };
+        let grid_sref = match SpatialRef::from_epsg(grid.srid as u32) {
+            Err(e) => {
+                error!("Unable to get grid spatial reference: {}", e);
+                return;
+            }
+            Ok(sref) => sref,
+        };
+        let transform = if layer_sref != grid_sref {
+            CoordTransform::new(&layer_sref, &grid_sref).ok()
+        } else {
+            None
         };
 
         let mut bbox_extent = if let Some(pixels) = layer.buffer_size {
@@ -318,9 +414,8 @@ impl DatasourceInput for GdalDatasource {
         };
 
         // Spatial filter must be in layer SRS
-        let layer_srid = layer.srid.unwrap_or(grid.srid);
-        if layer_srid != grid.srid {
-            match transform_extent(&bbox_extent, grid.srid, layer_srid) {
+        if layer_sref != grid_sref {
+            match transform_extent_sref(&bbox_extent, &grid_sref, &layer_sref) {
                 Ok(extent) => bbox_extent = extent,
                 Err(e) => {
                     error!("Unable to transform {:?}: {}", bbox_extent, e);
