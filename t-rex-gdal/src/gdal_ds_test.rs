@@ -20,7 +20,7 @@ fn test_gdal_api() {
     let name_field = feature.field("NAME").unwrap();
     let geometry = feature.geometry();
     assert_eq!(
-        name_field.to_string(),
+        name_field.into_string(),
         Some("Colonia del Sacramento".to_string())
     );
     #[cfg(not(target_os = "macos"))]

@@ -5,7 +5,7 @@
 
 use datasource::DatasourceInput;
 use gdal;
-use gdal::vector::{Dataset, FieldValue, Geometry, WkbType};
+use gdal::vector::{Dataset, FieldValue, Geometry, OGRwkbGeometryType};
 use gdal::spatial_ref::{CoordTransform, SpatialRef};
 use core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use core::geom::{self, GeometryType};
@@ -47,7 +47,7 @@ impl ToGeo for Geometry {
         };
 
         match geometry_type {
-            WkbType::WkbPoint => {
+            OGRwkbGeometryType::wkbPoint => {
                 let (x, y, _) = self.get_point(0);
                 GeometryType::Point(geom::Point {
                     x: x,
@@ -55,7 +55,7 @@ impl ToGeo for Geometry {
                     srid: srid,
                 })
             }
-            WkbType::WkbMultipoint => {
+            OGRwkbGeometryType::wkbMultiPoint => {
                 let point_count = self.geometry_count();
                 let coords = (0..point_count)
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
@@ -68,7 +68,7 @@ impl ToGeo for Geometry {
                     srid: srid,
                 })
             }
-            WkbType::WkbLinestring => {
+            OGRwkbGeometryType::wkbLineString => {
                 let coords = self.get_point_vec()
                     .iter()
                     .map(|&(x, y, _)| geom::Point {
@@ -82,7 +82,7 @@ impl ToGeo for Geometry {
                     srid: srid,
                 })
             }
-            WkbType::WkbMultilinestring => {
+            OGRwkbGeometryType::wkbMultiLineString => {
                 let string_count = self.geometry_count();
                 let strings = (0..string_count)
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
@@ -95,7 +95,7 @@ impl ToGeo for Geometry {
                     srid: srid,
                 })
             }
-            WkbType::WkbPolygon => {
+            OGRwkbGeometryType::wkbPolygon => {
                 let ring_count = self.geometry_count();
                 let rings = (0..ring_count).map(|n| ring(n)).collect();
                 GeometryType::Polygon(geom::Polygon {
@@ -103,7 +103,7 @@ impl ToGeo for Geometry {
                     srid: srid,
                 })
             }
-            WkbType::WkbMultipolygon => {
+            OGRwkbGeometryType::wkbMultiPolygon => {
                 let string_count = self.geometry_count();
                 let strings = (0..string_count)
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
@@ -117,7 +117,7 @@ impl ToGeo for Geometry {
                 })
             }
             /* TODO:
-            WkbType::WkbGeometrycollection => {
+            OGRwkbGeometryType::wkbGeometryCollection => {
                 let item_count = self.geometry_count();
                 let geometry_list = (0..item_count)
                     .map(|n| unsafe { self._get_geometry(n) }.to_geo(srid))
