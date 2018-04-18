@@ -329,11 +329,15 @@ impl MvtService {
         for layer in self.get_tileset_layers(tileset) {
             if zoom >= layer.minzoom() && zoom <= layer.maxzoom() {
                 let mut mvt_layer = tile.new_layer(layer);
-                self.ds(&layer)
-                    .unwrap()
-                    .retrieve_features(&layer, &extent, zoom, &self.grid, |feat| {
+                self.ds(&layer).unwrap().retrieve_features(
+                    &layer,
+                    &extent,
+                    zoom,
+                    &self.grid,
+                    |feat| {
                         tile.add_feature(&mut mvt_layer, feat);
-                    });
+                    },
+                );
                 tile.add_layer(mvt_layer);
             }
         }
