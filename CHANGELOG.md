@@ -1,9 +1,16 @@
 <a name="0.8.2"></a>
-## 0.8.2 (UNRELEASED)
+## 0.8.2 (2018-04-18)
 
 #### Features
 
+* Implement layer_extent for GDAL, make SRID optional (Thanks @lnicola!)
 * Use tileset extent when generating cache (Thanks @lnicola!)
+* Update to rust-postgis 0.6.0 with support for Geometry
+  and GeometryCollection (Thanks @kestred!)
+
+#### Bug Fixes
+
+* Fix scrolling issues in t-rex-viewer (Thanks @OSHistory!)
 
 <a name="0.8.1"></a>
 ## 0.8.1 (2017-10-05)
