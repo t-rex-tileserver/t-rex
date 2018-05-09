@@ -96,6 +96,7 @@ pub struct TilesetCfg {
     //? pub minzoom: Option<u8>,
     //? pub maxzoom: Option<u8>,
     //? pub center: [0.0, 0.0, 2],
+    pub attribution: Option<String>,
     #[serde(rename = "layer")]
     pub layers: Vec<LayerCfg>,
     // Inline style

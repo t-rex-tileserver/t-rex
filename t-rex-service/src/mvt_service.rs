@@ -118,7 +118,7 @@ impl MvtService {
             "id": tileset,
             "name": tileset,
             "description": tileset,
-            "attribution": "",
+            "attribution": ts.attribution(),
             "format": "pbf",
             "version": "2.0.0",
             "scheme": "xyz",
