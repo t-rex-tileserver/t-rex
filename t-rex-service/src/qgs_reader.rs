@@ -155,6 +155,7 @@ pub fn read_qgs(fname: &str) -> (Datasources, Tileset) {
     let mut datasources = Datasources::new();
     let mut tileset = Tileset {
         name: qgs_name.to_string(),
+        attribution: None,
         extent: None,
         layers: Vec::new(),
     };

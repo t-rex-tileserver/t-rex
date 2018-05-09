@@ -11,6 +11,7 @@ use core::config::TilesetCfg;
 /// Collection of layers in one MVT
 pub struct Tileset {
     pub name: String,
+    pub attribution: Option<String>,
     pub extent: Option<Extent>,
     pub layers: Vec<Layer>,
 }
@@ -28,6 +29,9 @@ impl Tileset {
     }
     pub fn maxzoom(&self) -> u8 {
         22 // TODO: from layers or config (see also MvtService#get_stylejson)
+    }
+    pub fn attribution(&self) -> String {
+        self.attribution.clone().unwrap_or("".to_string())
     }
     pub fn get_extent(&self) -> &Extent {
         self.extent.as_ref().unwrap_or(&WORLD_EXTENT)
@@ -53,6 +57,7 @@ impl<'a> Config<'a, TilesetCfg> for Tileset {
             .collect();
         Ok(Tileset {
             name: tileset_cfg.name.clone(),
+            attribution: tileset_cfg.attribution.clone(),
             extent: tileset_cfg.extent.clone(),
             layers: layers,
         })
