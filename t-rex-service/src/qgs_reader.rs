@@ -155,8 +155,12 @@ pub fn read_qgs(fname: &str) -> (Datasources, Tileset) {
     let mut datasources = Datasources::new();
     let mut tileset = Tileset {
         name: qgs_name.to_string(),
+        minzoom: None,
+        maxzoom: None,
         attribution: None,
         extent: None,
+        center: None,
+        start_zoom: None,
         layers: Vec::new(),
     };
     for qgslayer in projectlayers.find_all("maplayer") {

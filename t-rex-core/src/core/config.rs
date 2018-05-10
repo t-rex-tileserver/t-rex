@@ -93,9 +93,10 @@ pub struct UserGridCfg {
 pub struct TilesetCfg {
     pub name: String,
     pub extent: Option<Extent>,
-    //? pub minzoom: Option<u8>,
-    //? pub maxzoom: Option<u8>,
-    //? pub center: [0.0, 0.0, 2],
+    pub minzoom: Option<u8>,
+    pub maxzoom: Option<u8>,
+    pub center: Option<(f64, f64)>,
+    pub start_zoom: Option<u8>,
     pub attribution: Option<String>,
     #[serde(rename = "layer")]
     pub layers: Vec<LayerCfg>,

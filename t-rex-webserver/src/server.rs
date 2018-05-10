@@ -258,8 +258,12 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
                     set_layer_buffer_defaults(&mut l, simplify, clip);
                     let tileset = Tileset {
                         name: l.name.clone(),
+                        minzoom: None,
+                        maxzoom: None,
                         attribution: None,
                         extent: extent,
+                        center: None,
+                        start_zoom: None,
                         layers: vec![l],
                     };
                     tilesets.push(tileset);
