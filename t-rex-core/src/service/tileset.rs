@@ -11,8 +11,12 @@ use core::config::TilesetCfg;
 /// Collection of layers in one MVT
 pub struct Tileset {
     pub name: String,
+    pub minzoom: Option<u8>,
+    pub maxzoom: Option<u8>,
     pub attribution: Option<String>,
     pub extent: Option<Extent>,
+    pub center: Option<(f64, f64)>,
+    pub start_zoom: Option<u8>,
     pub layers: Vec<Layer>,
 }
 
@@ -25,10 +29,10 @@ pub static WORLD_EXTENT: Extent = Extent {
 
 impl Tileset {
     pub fn minzoom(&self) -> u8 {
-        0 // TODO: from layers or config?
+        self.minzoom.unwrap_or(0) // TODO: from layers or config
     }
     pub fn maxzoom(&self) -> u8 {
-        22 // TODO: from layers or config (see also MvtService#get_stylejson)
+        self.maxzoom.unwrap_or(22) // TODO: from layers or config (see also MvtService#get_stylejson)
     }
     pub fn attribution(&self) -> String {
         self.attribution.clone().unwrap_or("".to_string())
@@ -37,14 +41,18 @@ impl Tileset {
         self.extent.as_ref().unwrap_or(&WORLD_EXTENT)
     }
     pub fn get_center(&self) -> (f64, f64) {
-        let ext = self.get_extent();
-        (
-            ext.maxx - (ext.maxx - ext.minx) / 2.0,
-            ext.maxy - (ext.maxy - ext.miny) / 2.0,
-        )
+        if self.center.is_none() {
+            let ext = self.get_extent();
+            (
+                ext.maxx - (ext.maxx - ext.minx) / 2.0,
+                ext.maxy - (ext.maxy - ext.miny) / 2.0,
+            )
+        } else {
+            self.center.unwrap()
+        }
     }
     pub fn get_start_zoom(&self) -> u8 {
-        2 // TODO: from config
+        self.start_zoom.unwrap_or(2)
     }
 }
 
@@ -57,8 +65,12 @@ impl<'a> Config<'a, TilesetCfg> for Tileset {
             .collect();
         Ok(Tileset {
             name: tileset_cfg.name.clone(),
+            minzoom: tileset_cfg.minzoom.clone(),
+            maxzoom: tileset_cfg.maxzoom.clone(),
             attribution: tileset_cfg.attribution.clone(),
             extent: tileset_cfg.extent.clone(),
+            center: tileset_cfg.center.clone(),
+            start_zoom: tileset_cfg.start_zoom.clone(),
             layers: layers,
         })
     }

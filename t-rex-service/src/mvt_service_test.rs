@@ -31,6 +31,8 @@ fn mvt_service() -> MvtService {
     layer.query_limit = Some(1);
     let tileset = Tileset {
         name: "points".to_string(),
+        minzoom: None,
+        maxzoom: Some(14),
         attribution: Some("Attribution".to_string()),
         extent: Some(Extent {
             minx: -179.58998,
