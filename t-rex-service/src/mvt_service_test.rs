@@ -31,8 +31,10 @@ fn mvt_service() -> MvtService {
     layer.query_limit = Some(1);
     let tileset = Tileset {
         name: "points".to_string(),
-        minzoom: None,
-        maxzoom: Some(14),
+        minzoom: Some(0),
+        maxzoom: Some(22),
+        center: None,
+        start_zoom: Some(3),
         attribution: Some("Attribution".to_string()),
         extent: Some(Extent {
             minx: -179.58998,
@@ -471,6 +473,8 @@ predefined = "web_mercator"
 
 [[tileset]]
 name = "points"
+minzoom = 0 # Optional override of zoom limits broadcasted to tilejson descriptor
+maxzoom = 22
 attribution = "© Contributeurs de OpenStreetMap" # Acknowledgment of ownership, authorship or copyright.
 
 [[tileset.layer]]
