@@ -135,6 +135,8 @@ impl<'a> Config<'a, LayerCfg> for Layer {
         let toml = r#"
 [[tileset]]
 name = "points"
+minzoom = 0 # Optional override of zoom limits broadcasted to tilejson descriptor
+maxzoom = 22
 attribution = "© Contributeurs de OpenStreetMap" # Acknowledgment of ownership, authorship or copyright.
 
 [[tileset.layer]]

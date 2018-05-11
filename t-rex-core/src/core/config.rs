@@ -169,6 +169,8 @@ predefined = "web_mercator"
 
 [[tileset]]
 name = ""
+minzoom = 0 # Optional override of zoom limits broadcasted to tilejson descriptor
+maxzoom = 22
 attribution = "© Contributeurs de OpenStreetMap" # Acknowledgment of ownership, authorship or copyright.
 
 [[tileset.layer]]
