@@ -753,7 +753,7 @@ impl DatasourceInput for PostgisInput {
             read(&feature);
             cnt += 1;
             if cnt == query_limit {
-                info!("Feature count limited (query_limit={})", cnt);
+                info!("Feature count limited (name={}, query_limit={})", layer.name, cnt);
                 break;
             }
         }
