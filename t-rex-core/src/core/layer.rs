@@ -135,6 +135,7 @@ impl<'a> Config<'a, LayerCfg> for Layer {
         let toml = r#"
 [[tileset]]
 name = "points"
+attribution = "© Contributeurs de OpenStreetMap" # Acknowledgment of ownership, authorship or copyright.
 
 [[tileset.layer]]
 name = "points"

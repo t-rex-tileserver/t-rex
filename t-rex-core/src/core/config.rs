@@ -168,6 +168,7 @@ predefined = "web_mercator"
 
 [[tileset]]
 name = ""
+attribution = "© Contributeurs de OpenStreetMap" # Acknowledgment of ownership, authorship or copyright.
 
 [[tileset.layer]]
 name = ""

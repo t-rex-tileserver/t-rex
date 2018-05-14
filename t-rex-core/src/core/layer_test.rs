@@ -131,6 +131,7 @@ fn test_layers_from_config() {
     let toml = r#"
         #[[tileset]]
         name = "ne"
+        attribution = "© Contributeurs de OpenStreetMap" # Acknowledgment of ownership, authorship or copyright.
 
         #[[tileset.layer]]
         [[layer]]
