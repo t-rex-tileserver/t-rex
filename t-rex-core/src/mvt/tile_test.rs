@@ -13,6 +13,7 @@ use core::screen;
 use mvt::vector_tile;
 use mvt::geom_encoder::EncodableGeom;
 use mvt::tile::{ScreenGeom, Tile};
+use protobuf::Message;
 use std::fs::File;
 
 #[test]

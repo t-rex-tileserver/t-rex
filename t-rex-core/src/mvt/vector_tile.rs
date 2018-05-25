@@ -23,26 +23,6 @@ pub struct Tile {
 unsafe impl ::std::marker::Sync for Tile {}
 
 impl Tile {
-    pub fn new() -> Tile {
-        ::std::default::Default::default()
-    }
-
-    pub fn default_instance() -> &'static Tile {
-        static mut instance: ::protobuf::lazy::Lazy<Tile> = ::protobuf::lazy::Lazy {
-            lock: ::protobuf::lazy::ONCE_INIT,
-            ptr: 0 as *const Tile,
-        };
-        unsafe {
-            instance.get(|| {
-                Tile {
-                    layers: ::protobuf::RepeatedField::new(),
-                    unknown_fields: ::protobuf::UnknownFields::new(),
-                    cached_size: ::std::cell::Cell::new(0),
-                }
-            })
-        }
-    }
-
     // repeated .vector_tile.Tile.Layer layers = 3;
 
     pub fn clear_layers(&mut self) {
@@ -70,6 +50,26 @@ impl Tile {
 }
 
 impl ::protobuf::Message for Tile {
+    fn new() -> Tile {
+        ::std::default::Default::default()
+    }
+
+    fn default_instance() -> &'static Tile {
+        static mut instance: ::protobuf::lazy::Lazy<Tile> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const Tile,
+        };
+        unsafe {
+            instance.get(|| {
+                Tile {
+                    layers: ::protobuf::RepeatedField::new(),
+                    unknown_fields: ::protobuf::UnknownFields::new(),
+                    cached_size: ::std::cell::Cell::new(0),
+                }
+            })
+        }
+    }
+
     fn is_initialized(&self) -> bool {
         true
     }
@@ -133,13 +133,7 @@ impl ::protobuf::Message for Tile {
     }
 
     fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
-        ::protobuf::MessageStatic::descriptor_static(None::<Self>)
-    }
-}
-
-impl ::protobuf::MessageStatic for Tile {
-    fn new() -> Tile {
-        Tile::new()
+        Self::descriptor_static()
     }
 }
 
@@ -176,32 +170,6 @@ pub struct Tile_Value {
 unsafe impl ::std::marker::Sync for Tile_Value {}
 
 impl Tile_Value {
-    pub fn new() -> Tile_Value {
-        ::std::default::Default::default()
-    }
-
-    pub fn default_instance() -> &'static Tile_Value {
-        static mut instance: ::protobuf::lazy::Lazy<Tile_Value> = ::protobuf::lazy::Lazy {
-            lock: ::protobuf::lazy::ONCE_INIT,
-            ptr: 0 as *const Tile_Value,
-        };
-        unsafe {
-            instance.get(|| {
-                Tile_Value {
-                    string_value: ::protobuf::SingularField::none(),
-                    float_value: ::std::option::Option::None,
-                    double_value: ::std::option::Option::None,
-                    int_value: ::std::option::Option::None,
-                    uint_value: ::std::option::Option::None,
-                    sint_value: ::std::option::Option::None,
-                    bool_value: ::std::option::Option::None,
-                    unknown_fields: ::protobuf::UnknownFields::new(),
-                    cached_size: ::std::cell::Cell::new(0),
-                }
-            })
-        }
-    }
-
     // optional string string_value = 1;
 
     pub fn clear_string_value(&mut self) {
@@ -354,6 +322,32 @@ impl Tile_Value {
 }
 
 impl ::protobuf::Message for Tile_Value {
+    fn new() -> Tile_Value {
+        ::std::default::Default::default()
+    }
+
+    fn default_instance() -> &'static Tile_Value {
+        static mut instance: ::protobuf::lazy::Lazy<Tile_Value> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const Tile_Value,
+        };
+        unsafe {
+            instance.get(|| {
+                Tile_Value {
+                    string_value: ::protobuf::SingularField::none(),
+                    float_value: ::std::option::Option::None,
+                    double_value: ::std::option::Option::None,
+                    int_value: ::std::option::Option::None,
+                    uint_value: ::std::option::Option::None,
+                    sint_value: ::std::option::Option::None,
+                    bool_value: ::std::option::Option::None,
+                    unknown_fields: ::protobuf::UnknownFields::new(),
+                    cached_size: ::std::cell::Cell::new(0),
+                }
+            })
+        }
+    }
+
     fn is_initialized(&self) -> bool {
         true
     }
@@ -492,13 +486,7 @@ impl ::protobuf::Message for Tile_Value {
     }
 
     fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
-        ::protobuf::MessageStatic::descriptor_static(None::<Self>)
-    }
-}
-
-impl ::protobuf::MessageStatic for Tile_Value {
-    fn new() -> Tile_Value {
-        Tile_Value::new()
+        Self::descriptor_static()
     }
 }
 
@@ -544,29 +532,6 @@ pub struct Tile_Feature {
 unsafe impl ::std::marker::Sync for Tile_Feature {}
 
 impl Tile_Feature {
-    pub fn new() -> Tile_Feature {
-        ::std::default::Default::default()
-    }
-
-    pub fn default_instance() -> &'static Tile_Feature {
-        static mut instance: ::protobuf::lazy::Lazy<Tile_Feature> = ::protobuf::lazy::Lazy {
-            lock: ::protobuf::lazy::ONCE_INIT,
-            ptr: 0 as *const Tile_Feature,
-        };
-        unsafe {
-            instance.get(|| {
-                Tile_Feature {
-                    id: ::std::option::Option::None,
-                    tags: ::std::vec::Vec::new(),
-                    field_type: ::std::option::Option::None,
-                    geometry: ::std::vec::Vec::new(),
-                    unknown_fields: ::protobuf::UnknownFields::new(),
-                    cached_size: ::std::cell::Cell::new(0),
-                }
-            })
-        }
-    }
-
     // optional uint64 id = 1;
 
     pub fn clear_id(&mut self) {
@@ -657,6 +622,29 @@ impl Tile_Feature {
 }
 
 impl ::protobuf::Message for Tile_Feature {
+    fn new() -> Tile_Feature {
+        ::std::default::Default::default()
+    }
+
+    fn default_instance() -> &'static Tile_Feature {
+        static mut instance: ::protobuf::lazy::Lazy<Tile_Feature> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const Tile_Feature,
+        };
+        unsafe {
+            instance.get(|| {
+                Tile_Feature {
+                    id: ::std::option::Option::None,
+                    tags: ::std::vec::Vec::new(),
+                    field_type: ::std::option::Option::None,
+                    geometry: ::std::vec::Vec::new(),
+                    unknown_fields: ::protobuf::UnknownFields::new(),
+                    cached_size: ::std::cell::Cell::new(0),
+                }
+            })
+        }
+    }
+
     fn is_initialized(&self) -> bool {
         true
     }
@@ -762,13 +750,7 @@ impl ::protobuf::Message for Tile_Feature {
     }
 
     fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
-        ::protobuf::MessageStatic::descriptor_static(None::<Self>)
-    }
-}
-
-impl ::protobuf::MessageStatic for Tile_Feature {
-    fn new() -> Tile_Feature {
-        Tile_Feature::new()
+        Self::descriptor_static()
     }
 }
 
@@ -810,31 +792,6 @@ pub struct Tile_Layer {
 unsafe impl ::std::marker::Sync for Tile_Layer {}
 
 impl Tile_Layer {
-    pub fn new() -> Tile_Layer {
-        ::std::default::Default::default()
-    }
-
-    pub fn default_instance() -> &'static Tile_Layer {
-        static mut instance: ::protobuf::lazy::Lazy<Tile_Layer> = ::protobuf::lazy::Lazy {
-            lock: ::protobuf::lazy::ONCE_INIT,
-            ptr: 0 as *const Tile_Layer,
-        };
-        unsafe {
-            instance.get(|| {
-                Tile_Layer {
-                    version: ::std::option::Option::None,
-                    name: ::protobuf::SingularField::none(),
-                    features: ::protobuf::RepeatedField::new(),
-                    keys: ::protobuf::RepeatedField::new(),
-                    values: ::protobuf::RepeatedField::new(),
-                    extent: ::std::option::Option::None,
-                    unknown_fields: ::protobuf::UnknownFields::new(),
-                    cached_size: ::std::cell::Cell::new(0),
-                }
-            })
-        }
-    }
-
     // required uint32 version = 15;
 
     pub fn clear_version(&mut self) {
@@ -986,6 +943,31 @@ impl Tile_Layer {
 }
 
 impl ::protobuf::Message for Tile_Layer {
+    fn new() -> Tile_Layer {
+        ::std::default::Default::default()
+    }
+
+    fn default_instance() -> &'static Tile_Layer {
+        static mut instance: ::protobuf::lazy::Lazy<Tile_Layer> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const Tile_Layer,
+        };
+        unsafe {
+            instance.get(|| {
+                Tile_Layer {
+                    version: ::std::option::Option::None,
+                    name: ::protobuf::SingularField::none(),
+                    features: ::protobuf::RepeatedField::new(),
+                    keys: ::protobuf::RepeatedField::new(),
+                    values: ::protobuf::RepeatedField::new(),
+                    extent: ::std::option::Option::None,
+                    unknown_fields: ::protobuf::UnknownFields::new(),
+                    cached_size: ::std::cell::Cell::new(0),
+                }
+            })
+        }
+    }
+
     fn is_initialized(&self) -> bool {
         if self.version.is_none() {
             return false;
@@ -1111,13 +1093,7 @@ impl ::protobuf::Message for Tile_Layer {
     }
 
     fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
-        ::protobuf::MessageStatic::descriptor_static(None::<Self>)
-    }
-}
-
-impl ::protobuf::MessageStatic for Tile_Layer {
-    fn new() -> Tile_Layer {
-        Tile_Layer::new()
+        Self::descriptor_static()
     }
 }
 
