@@ -39,7 +39,7 @@
 
 * Changed configuration format of datasources
 
-  See [Upgrading](http://t-rex.tileserver.ch/doc/setup/#0-7-x-0-8-0) for conversion help.
+  See [Upgrading](https://t-rex.tileserver.ch/doc/setup/#0-7-x-0-8-0) for conversion help.
 * User defined grid now in [grid.user] block
 * Changed user defined grid units to lower case (m, dd, ft)
 
