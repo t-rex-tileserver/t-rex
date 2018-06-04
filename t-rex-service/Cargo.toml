@@ -12,14 +12,14 @@ workspace = ".."
 doctest = false
 
 [dependencies]
-serde = "*"
-serde_derive = "*"
-serde_json = "*"
-percent-encoding = "*"
-elementtree = "*"
-log = "*"
-clap = "*"
-pbr = "*"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+percent-encoding = "1.0"
+elementtree = "0.5"
+log = "0.4"
+clap = "2.31"
+pbr = "1.0"
 
 [dependencies.t-rex-core]
 path = "../t-rex-core"

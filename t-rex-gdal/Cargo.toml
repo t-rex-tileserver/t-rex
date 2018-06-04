@@ -12,9 +12,8 @@ workspace = ".."
 doctest = false
 
 [dependencies]
-gdal = { git = "https://github.com/georust/rust-gdal.git" }
-# gdal = { path = "../../rust-gdal" }
-log = "*"
+gdal = "0.4"
+log = "0.4"
 
 [dependencies.t-rex-core]
 path = "../t-rex-core"
