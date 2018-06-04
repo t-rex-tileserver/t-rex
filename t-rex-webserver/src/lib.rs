@@ -18,12 +18,7 @@ extern crate serde_json;
 extern crate t_rex_core;
 extern crate t_rex_service;
 
-use t_rex_core::core;
-use t_rex_core::datasource;
-use t_rex_core::service;
-use t_rex_core::cache;
-use t_rex_service::mvt_service;
-use t_rex_service::datasource_type;
-use t_rex_service::read_qgs;
+use t_rex_core::{cache, core, datasource, service};
+use t_rex_service::{datasource_type, mvt_service, read_qgs};
 
 pub mod server;

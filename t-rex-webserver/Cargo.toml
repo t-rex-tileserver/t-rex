@@ -17,10 +17,8 @@ nickel = "0.10"
 hyper = "~0.10" # same as nickel
 serde_json = "1.0"
 rustc-serialize = "0.3"
-toml = "0.4"
 clap = "2.31"
 log = "0.4"
-env_logger = "0.5"
 open = "1.2"
 
 [dependencies.t-rex-core]
