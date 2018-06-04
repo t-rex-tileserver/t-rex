@@ -12,18 +12,18 @@ workspace = ".."
 doctest = false
 
 [dependencies]
-toml = "*"
-fallible-iterator = "*"
-r2d2 = "*"
-r2d2_postgres = "*"
-postgis = "*"
-protobuf = "*"
-serde = "*"
-serde_derive = "*"
-serde_json = "*"
-log = "*"
-flate2 = "*"
+toml = "0.4"
+fallible-iterator = "0.1"
+r2d2 = "0.8"
+r2d2_postgres = "0.14"
+postgis = "0.6"
+protobuf = "2.0"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+log = "0.4"
+flate2 = "1.0"
 
 [dependencies.postgres]
-version = "*"
+version = "0.15"
 features = ["with-native-tls"]
