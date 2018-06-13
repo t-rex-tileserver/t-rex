@@ -5,15 +5,17 @@
 
 extern crate clap;
 #[macro_use]
-extern crate hyper;
-#[macro_use]
 extern crate log;
-#[macro_use]
-extern crate nickel;
+extern crate actix;
+extern crate actix_web;
+extern crate futures;
 extern crate open;
-extern crate rustc_serialize;
+#[macro_use]
+extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate lazy_static;
 
 extern crate t_rex_core;
 extern crate t_rex_service;

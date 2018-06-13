@@ -12,13 +12,13 @@ extern crate time;
 extern crate t_rex_core;
 extern crate t_rex_webserver;
 
-use t_rex_core::core::grid::Extent;
-use t_rex_webserver as webserver;
 use clap::{App, AppSettings, ArgMatches, SubCommand};
+use env_logger::Builder;
+use log::{LevelFilter, Record};
 use std::env;
 use std::io::Write;
-use log::{LevelFilter, Record};
-use env_logger::Builder;
+use t_rex_core::core::grid::Extent;
+use t_rex_webserver as webserver;
 
 fn init_logger() {
     let mut builder = Builder::new();
@@ -94,14 +94,7 @@ fn generate(args: &ArgMatches) {
     });
     service.prepare_feature_queries();
     service.generate(
-        tileset,
-        minzoom,
-        maxzoom,
-        extent,
-        nodes,
-        nodeno,
-        progress,
-        overwrite,
+        tileset, minzoom, maxzoom, extent, nodes, nodeno, progress, overwrite,
     );
 }
 
@@ -151,7 +144,7 @@ fn main() {
             println!("{}", e);
         }
         Result::Ok(matches) => match matches.subcommand() {
-            ("serve", Some(sub_m)) => webserver::server::webserver(sub_m),
+            ("serve", Some(sub_m)) => webserver::server::webserver(sub_m.clone()),
             ("genconfig", Some(sub_m)) => println!("{}", webserver::server::gen_config(sub_m)),
             ("generate", Some(sub_m)) => generate(sub_m),
             _ => {

@@ -3,43 +3,32 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
+use cache::{Filecache, Nocache, Tilecache};
 use core::config::ApplicationCfg;
-use datasource_type::Datasources;
-use datasource::DatasourceInput;
+use core::config::DEFAULT_CONFIG;
 use core::grid::Grid;
 use core::layer::Layer;
-use service::tileset::Tileset;
+use core::{parse_config, read_config, Config};
+use datasource::DatasourceInput;
+use datasource_type::Datasources;
 use mvt_service::MvtService;
 use read_qgs;
-use core::{parse_config, read_config, Config};
-use core::config::DEFAULT_CONFIG;
 use serde_json;
-use cache::{Filecache, Nocache, Tilecache};
+use service::tileset::Tileset;
 
-use nickel::{HttpRouter, MediaType, MiddlewareResult, Nickel, Options, Request, Response,
-             StaticFilesHandler};
-use hyper::header::{AccessControlAllowMethods, AccessControlAllowOrigin, CacheControl,
-                    CacheDirective, ContentEncoding, Encoding};
-use hyper::method::Method;
-use hyper::header;
-use std::collections::HashMap;
-use std::str::FromStr;
+use actix;
+use actix_web::{fs, http::header, http::ContentEncoding, http::Method, middleware,
+                middleware::cors::Cors, server::HttpServer, App, Error, HttpRequest, HttpResponse,
+                Path};
 use clap::ArgMatches;
-use std::str;
-use std::process;
+use futures::future::{result, FutureResult};
 use open;
+use std::collections::HashMap;
+use std::process;
+use std::str;
+use std::str::FromStr;
 
-fn log_request<'mw>(
-    req: &mut Request<MvtService>,
-    res: Response<'mw, MvtService>,
-) -> MiddlewareResult<'mw, MvtService> {
-    info!("{} {}", req.origin.method, req.origin.uri);
-    res.next_middleware()
-}
-
-header! { (ContentType, "Content-Type") => [String] }
-
-#[derive(RustcEncodable)]
+//#[derive(Serialize)]
 struct TilesetInfo {
     name: String,
     layerinfos: String,
@@ -74,7 +63,7 @@ impl TilesetInfo {
 }
 
 struct StaticFiles {
-    files: HashMap<&'static str, (&'static [u8], MediaType)>,
+    files: HashMap<&'static str, (&'static [u8], &'static str)>,
 }
 
 impl StaticFiles {
@@ -85,60 +74,60 @@ impl StaticFiles {
         static_files.add(
             "favicon.ico",
             include_bytes!("static/favicon.ico"),
-            MediaType::Ico,
+            "image/x-icon",
         );
         static_files.add(
             "index.html",
             include_bytes!("static/index.html"),
-            MediaType::Html,
+            "text/html",
         );
         static_files.add(
             "viewer.js",
             include_bytes!("static/viewer.js"),
-            MediaType::Js,
+            "application/javascript",
         );
         static_files.add(
             "viewer.css",
             include_bytes!("static/viewer.css"),
-            MediaType::Css,
+            "text/css",
         );
         static_files.add(
             "maputnik.html",
             include_bytes!("static/maputnik.html"),
-            MediaType::Html,
+            "text/html",
         );
         static_files.add(
             "maputnik.js",
             include_bytes!("static/maputnik.js"),
-            MediaType::Js,
+            "application/javascript",
         );
         static_files.add(
             "maputnik-vendor.js",
             include_bytes!("static/maputnik-vendor.js"),
-            MediaType::Js,
+            "application/javascript",
         );
         static_files.add(
             "img/maputnik.png",
             include_bytes!("static/img/maputnik.png"),
-            MediaType::Png,
+            "image/png",
         );
         static_files.add(
             "fonts/Roboto-Regular.ttf",
             include_bytes!("static/fonts/Roboto-Regular.ttf"),
-            MediaType::Ttf,
+            "font/ttf",
         );
         static_files.add(
             "fonts/Roboto-Medium.ttf",
             include_bytes!("static/fonts/Roboto-Medium.ttf"),
-            MediaType::Ttf,
+            "font/ttf",
         );
         static_files
     }
-    fn add(&mut self, name: &'static str, data: &'static [u8], media_type: MediaType) {
+    fn add(&mut self, name: &'static str, data: &'static [u8], media_type: &'static str) {
         self.files.insert(name, (data, media_type));
     }
-    fn content(&self, base: Option<&str>, name: String) -> Option<&(&[u8], MediaType)> {
-        let mut key = if name == "." {
+    fn content(&self, base: Option<&str>, name: String) -> Option<&(&[u8], &str)> {
+        let mut key = if name == "" {
             "index.html".to_string()
         } else {
             name
@@ -150,7 +139,9 @@ impl StaticFiles {
     }
 }
 
-include!(concat!(env!("OUT_DIR"), "/fonts.rs"));
+lazy_static! {
+    static ref STATIC_FILES: StaticFiles = StaticFiles::init();
+}
 
 static DINO: &'static str = "             xxxxxxxxx
         xxxxxxxxxxxxxxxxxxxxxxxx
@@ -282,171 +273,192 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
     }
 }
 
-pub fn webserver(args: &ArgMatches) {
-    let (mut service, config) = service_from_args(args);
+/// Application state
+struct AppState {
+    service: MvtService,
+}
 
-    let mvt_viewer = config.service.mvt.viewer;
-    let bind: &str = &config.webserver.bind.unwrap_or("127.0.0.1".to_string());
-    let port = config.webserver.port.unwrap_or(6767);
-    let threads = config.webserver.threads.unwrap_or(4) as usize;
-    let cache_max_age = config.webserver.cache_control_max_age.unwrap_or(300);
+fn mvt_metadata(req: HttpRequest<AppState>) -> FutureResult<HttpResponse, Error> {
+    let json = req.state().service.get_mvt_metadata().unwrap();
+    result(Ok(HttpResponse::Ok().json(json)))
+}
 
-    service.prepare_feature_queries();
-    service.init_cache();
+/// Font list for Maputnik
+fn fontstacks(_req: HttpRequest<AppState>) -> Result<HttpResponse, Error> {
+    Ok(HttpResponse::Ok().json(["Roboto Medium", "Roboto Regular"]))
+}
 
-    let mut tileset_infos: Vec<TilesetInfo> = service
-        .tilesets
-        .iter()
-        .map(|set| TilesetInfo::from_tileset(&set))
-        .collect();
-    tileset_infos.sort_by_key(|ti| ti.name.clone());
+// Include method fonts() which returns HashMap with embedded font files
+include!(concat!(env!("OUT_DIR"), "/fonts.rs"));
 
-    let mut server = Nickel::with_data(service);
-    server.options = Options::default().thread_count(Some(threads));
-    // Avoid thread exhaustion caused by hypers keep_alive handling (https://github.com/hyperium/hyper/issues/368)
-    server.keep_alive_timeout(None);
-    server.utilize(log_request);
-
-    server.get(
-        "/**(.style)?.json",
-        middleware! { |_req, mut res|
-            res.set(MediaType::Json);
-            res.set(AccessControlAllowMethods(vec![Method::Get]));
-            res.set(AccessControlAllowOrigin::Any);
-        },
-    );
-
-    server.get(
-        "/index.json",
-        middleware! { |_req, res|
-            let service: &MvtService = res.server_data();
-            let json = service.get_mvt_metadata().unwrap();
-            serde_json::to_vec(&json).unwrap()
-        },
-    );
-
-    // Font list for Maputnik
-    server.get(
-        "/fontstacks.json",
-        middleware! { |_req, _res|
-            let json = json!(["Roboto Medium","Roboto Regular"]);
-            serde_json::to_vec(&json).unwrap()
-        },
-    );
-
-    // Fonts for Maputnik
-    // Example: /fonts/Open%20Sans%20Regular,Arial%20Unicode%20MS%20Regular/0-255.pbf
-    server.get(
-        "/fonts/:fonts/:range.pbf",
-        middleware! { |req, mut res|
-            let fontpbfs = fonts();
-            let fontlist = req.param("fonts").unwrap();
-            let range = req.param("range").unwrap();
-            let mut fonts = fontlist.split(",").collect::<Vec<_>>();
-            fonts.push("Roboto Regular"); // Fallback
-            for font in fonts {
-                let key = format!("fonts/{}/{}.pbf", font.replace("%20", " "), range);
-                debug!("Font lookup: {}", key);
-                if let Some(pbf) = fontpbfs.get(&key as &str) {
-                    res.set_header_fallback(|| ContentType("application/x-protobuf".to_owned()));
-                    res.set_header_fallback(|| ContentEncoding(vec![Encoding::Gzip]));
-                    return res.send(*pbf)
-                }
-            }
-        },
-    );
-
-    server.get(
-        "/:tileset.json",
-        middleware! { |req, res|
-            let service: &MvtService = res.server_data();
-            let tileset = req.param("tileset").unwrap();
-            let host = req.origin.headers.get::<header::Host>().unwrap();
-            let baseurl = format!("http://{}:{}", host.hostname, host.port.unwrap_or(80));
-            let json = service.get_tilejson(&baseurl, &tileset).unwrap();
-            serde_json::to_vec(&json).unwrap()
-        },
-    );
-
-    server.get(
-        "/:tileset.style.json",
-        middleware! { |req, res|
-            let service: &MvtService = res.server_data();
-            let tileset = req.param("tileset").unwrap();
-            let host = req.origin.headers.get::<header::Host>().unwrap();
-            let baseurl = format!("http://{}:{}", host.hostname, host.port.unwrap_or(80));
-            let json = service.get_stylejson(&baseurl, &tileset).unwrap();
-            serde_json::to_vec(&json).unwrap()
-        },
-    );
-
-    server.get(
-        "/:tileset/metadata.json",
-        middleware! { |req, res|
-            let service: &MvtService = res.server_data();
-            let tileset = req.param("tileset").unwrap();
-            let json = service.get_mbtiles_metadata(&tileset).unwrap();
-            serde_json::to_vec(&json).unwrap()
-        },
-    );
-
-    server.get(
-        "/:tileset/:z/:x/:y.pbf",
-        middleware! { |req, mut res|
-            let service: &MvtService = res.server_data();
-
-            let tileset = req.param("tileset").unwrap();
-            let z = req.param("z").unwrap().parse::<u8>().unwrap();
-            let x = req.param("x").unwrap().parse::<u32>().unwrap();
-            let y = req.param("y").unwrap().parse::<u32>().unwrap();
-
-            let accept_encoding = req.origin.headers.get::<header::AcceptEncoding>();
-            let gzip = accept_encoding.is_some() && accept_encoding.unwrap().iter().any(
-                       |ref qit| qit.item == Encoding::Gzip );
-            let tile = service.tile_cached(tileset, x, y, z, gzip);
-            if gzip {
-                res.set_header_fallback(|| ContentEncoding(vec![Encoding::Gzip]));
-            }
-            res.set_header_fallback(|| ContentType("application/x-protobuf".to_owned()));
-            res.set_header_fallback(|| CacheControl(vec![CacheDirective::MaxAge(cache_max_age)]));
-            //res.set_header_fallback(|| ContentLength(tile.len() as u64));
-            res.set(AccessControlAllowMethods(vec![Method::Get]));
-            res.set(AccessControlAllowOrigin::Any);
-
-            tile
-        },
-    );
-
-    if mvt_viewer {
-        let static_files = StaticFiles::init();
-        server.get(
-            "/(:base/)?:static",
-            middleware! { |req, mut res|
-                let mut name = req.param("static").unwrap().to_string();
-                if let Some(format) = req.param("format") {
-                    name = format!("{}.{}", name, format);
-                }
-                if let Some(content) = static_files.content(req.param("base"), name) {
-                    res.set(content.1);
-                    return res.send(content.0)
-                }
-            },
-        );
+/// Fonts for Maputnik
+/// Example: /fonts/Open%20Sans%20Regular,Arial%20Unicode%20MS%20Regular/0-255.pbf
+fn fonts_pbf(
+    (req, params): (HttpRequest<AppState>, Path<(String, String)>),
+) -> Result<HttpResponse, Error> {
+    let fontpbfs = fonts();
+    let fontlist = &params.0;
+    let range = &params.1;
+    let mut fonts = fontlist.split(",").collect::<Vec<_>>();
+    fonts.push("Roboto Regular"); // Fallback
+    let mut resp = HttpResponse::NotFound().finish();
+    for font in fonts {
+        let key = format!("fonts/{}/{}.pbf", font.replace("%20", " "), range);
+        debug!("Font lookup: {}", key);
+        if let Some(pbf) = fontpbfs.get(&key as &str) {
+            resp = HttpResponse::Ok()
+                .content_type("application/x-protobuf")
+                // data is already gzip compressed
+                .content_encoding(ContentEncoding::Identity)
+                .header(header::CONTENT_ENCODING, "gzip")
+                .body(*pbf); // TODO: chunked response
+            break;
+        }
     }
+    Ok(resp)
+}
 
-    server.get("/**", StaticFilesHandler::new("public/"));
+fn req_baseurl(req: &HttpRequest<AppState>) -> String {
+    let conninfo = req.connection_info();
+    format!("{}://{}", conninfo.scheme(), conninfo.host())
+}
 
-    println!("{}", DINO);
+fn tileset_tilejson(
+    (req, tileset): (HttpRequest<AppState>, Path<String>),
+) -> FutureResult<HttpResponse, Error> {
+    let json = req.state()
+        .service
+        .get_tilejson(&req_baseurl(&req), &tileset)
+        .unwrap();
+    result(Ok(HttpResponse::Ok().json(json)))
+}
 
-    let _listening = server
-        .listen((bind, port))
-        .expect("Failed to launch server");
+fn tileset_style_json(
+    (req, tileset): (HttpRequest<AppState>, Path<String>),
+) -> FutureResult<HttpResponse, Error> {
+    let json = req.state()
+        .service
+        .get_stylejson(&req_baseurl(&req), &tileset)
+        .unwrap();
+    result(Ok(HttpResponse::Ok().json(json)))
+}
 
+fn tileset_metadata_json(
+    (req, tileset): (HttpRequest<AppState>, Path<String>),
+) -> FutureResult<HttpResponse, Error> {
+    let json = req.state().service.get_mbtiles_metadata(&tileset).unwrap();
+    result(Ok(HttpResponse::Ok().json(json)))
+}
+
+fn tile_pbf(
+    (req, params): (HttpRequest<AppState>, Path<(String, u8, u32, u32)>),
+) -> FutureResult<HttpResponse, Error> {
+    let tileset = &params.0;
+    let z = params.1;
+    let x = params.2;
+    let y = params.3;
+    let gzip = true;
+    /* TODO:
+    let gzip = accept_encoding.is_some() && accept_encoding.unwrap().iter().any(
+               |ref qit| qit.item == Encoding::Gzip );
+               */
+    let tile = req.state().service.tile_cached(tileset, x, y, z, gzip);
+    let resp = HttpResponse::Ok()
+        .content_type("application/x-protobuf")
+        .if_true(gzip, |r| {
+            // data is already gzip compressed
+            r.content_encoding(ContentEncoding::Identity)
+                .header(header::CONTENT_ENCODING, "gzip");
+        })
+        .body(tile); // TODO: chunked response
+    /* TODO:
+        res.set_header_fallback(|| CacheControl(vec![CacheDirective::MaxAge(cache_max_age)]));
+    */
+    result(Ok(resp))
+}
+
+fn static_file_handler(req: HttpRequest<AppState>) -> Result<HttpResponse, Error> {
+    let key = req.path()[1..].to_string();
+    let resp = if let Some(ref content) = STATIC_FILES.content(None, key) {
+        HttpResponse::Ok().content_type(content.1).body(content.0) // TODO: chunked response
+    } else {
+        HttpResponse::NotFound().finish()
+    };
+    Ok(resp)
+}
+
+pub fn webserver(args: ArgMatches<'static>) {
+    // TODO:
+    // let bind: &str = &config.webserver.bind.unwrap_or("127.0.0.1".to_string());
+    // let port = config.webserver.port.unwrap_or(6767);
+    actix::System::run(move || {
+        HttpServer::new(move || {
+            let (mut service, config) = service_from_args(&args);
+
+            let mvt_viewer = config.service.mvt.viewer;
+            let _threads = config.webserver.threads.unwrap_or(4) as usize; //TODO (?)
+            let _cache_max_age = config.webserver.cache_control_max_age.unwrap_or(300);
+
+            service.prepare_feature_queries();
+            service.init_cache();
+
+            let mut tileset_infos: Vec<TilesetInfo> = service
+                .tilesets
+                .iter()
+                .map(|set| TilesetInfo::from_tileset(&set))
+                .collect();
+            tileset_infos.sort_by_key(|ti| ti.name.clone());
+
+            App::with_state(AppState{service: service})
+                .middleware(middleware::Logger::default())
+                .resource("/index.json", |r| r.method(Method::GET).a(mvt_metadata))
+                /* TODO: CORS does only set allowed_origin. actix-web bug?
+                .configure(|app| {
+                    Cors::for_app(app)
+                        .allowed_origin("*")
+                        .allowed_methods(vec!["GET"])
+                        .allowed_headers(vec![header::ACCEPT])
+                        .resource("/fontstacks.json", |r| r.method(Method::GET).f(fontstacks))
+                        .resource("/fonts/{fonts}/{range}.pbf", |r| r.method(Method::GET).with(fonts_pbf))
+                        .resource("/{tileset}.style.json", |r| r.method(Method::GET).with_async(tileset_style_json))
+                        .resource("/{tileset}/metadata.json", |r| r.method(Method::GET).with_async(tileset_metadata_json))
+                        .resource("/{tileset}.json", |r| r.method(Method::GET).with_async(tileset_tilejson))
+                        .resource("/{tileset}/{z}/{x}/{y}.pbf", |r| r.method(Method::GET).with_async(tile_pbf))
+                        .register()
+                });*/
+                .resource("/fontstacks.json", |r| r.method(Method::GET).f(fontstacks))
+                .resource("/fonts/{fonts}/{range}.pbf", |r| r.method(Method::GET).with(fonts_pbf))
+                .resource("/{tileset}.style.json", |r| r.method(Method::GET).with_async(tileset_style_json))
+                .resource("/{tileset}/metadata.json", |r| r.method(Method::GET).with_async(tileset_metadata_json))
+                .resource("/{tileset}.json", |r| r.method(Method::GET).with_async(tileset_tilejson))
+                .resource("/{tileset}/{z}/{x}/{y}.pbf", |r| r.method(Method::GET).with_async(tile_pbf))
+                .configure(|app| {
+                    /*
+                    if ./public/ exists {
+                        app.handler(
+                            "/",
+                            fs::StaticFiles::new("./public/")
+                        )
+                    }*/
+                    if mvt_viewer {
+                        app.handler("/", static_file_handler)
+                    } else {
+                        app
+                    }
+                })
+        }).bind("127.0.0.1:6767")
+            .expect("Can not start server on given IP/Port")
+            .shutdown_timeout(3) // default: 30s
+            .start();
+        println!("{}", DINO);
+    });
+
+    /* TODO:
     let openbrowser =
         bool::from_str(args.value_of("openbrowser").unwrap_or("true")).unwrap_or(false);
     if openbrowser && mvt_viewer {
         let _res = open::that(format!("http://{}:{}", bind, port));
-    }
+    }*/
 }
 
 pub fn gen_config(args: &ArgMatches) -> String {
@@ -489,9 +501,9 @@ fn test_gen_config() {
 #[test]
 #[ignore]
 fn test_runtime_config() {
-    use std::env;
     use clap::App;
     use core::parse_config;
+    use std::env;
 
     if env::var("DBCONN").is_err() {
         panic!("DBCONN undefined");

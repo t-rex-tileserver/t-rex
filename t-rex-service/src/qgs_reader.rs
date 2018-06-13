@@ -143,8 +143,8 @@ impl GdalLayerInfo {
 }
 
 #[cfg(not(feature = "with-gdal"))]
-pub fn ogr_layer_name(_path: &str, _id: isize) -> String {
-    "".to_string()
+pub fn ogr_layer_name(_path: &str, _id: isize) -> Option<String> {
+    Some("".to_string())
 }
 
 pub fn read_qgs(fname: &str) -> (Datasources, Tileset) {
