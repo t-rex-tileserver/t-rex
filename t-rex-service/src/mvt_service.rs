@@ -3,20 +3,20 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource_type::Datasource;
-use datasource::DatasourceInput;
-use datasource_type::Datasources;
+use cache::{Cache, Tilecache};
 use core::grid::{Extent, ExtentInt, Grid};
 use core::layer::Layer;
-use core::Config;
 use core::ApplicationCfg;
-use service::tileset::{Tileset, WORLD_EXTENT};
+use core::Config;
+use datasource::DatasourceInput;
+use datasource_type::Datasource;
+use datasource_type::Datasources;
 use mvt::tile::Tile;
 use mvt::vector_tile;
-use percent_encoding::percent_decode;
-use cache::{Cache, Tilecache};
-use serde_json;
 use pbr::ProgressBar;
+use percent_encoding::percent_decode;
+use serde_json;
+use service::tileset::{Tileset, WORLD_EXTENT};
 use std::io::Stdout;
 
 /// Mapbox Vector Tile Service

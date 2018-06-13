@@ -3,10 +3,10 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use toml;
-use core::Config;
 use core::config::GridCfg;
 use core::grid::{Extent, ExtentInt, Grid, Origin};
+use core::Config;
+use toml;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct TestGrid {

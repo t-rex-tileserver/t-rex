@@ -3,18 +3,18 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::{DatasourceInput, PostgisInput};
-#[cfg(feature = "with-gdal")]
-use gdal_ds::GdalDatasource;
-#[cfg(not(feature = "with-gdal"))]
-use datasource::DummyDatasource as GdalDatasource;
+use clap::ArgMatches;
+use core::config::{ApplicationCfg, DatasourceCfg};
+use core::feature::Feature;
 use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::Layer;
-use core::feature::Feature;
 use core::Config;
-use core::config::{ApplicationCfg, DatasourceCfg};
-use clap::ArgMatches;
+#[cfg(not(feature = "with-gdal"))]
+use datasource::DummyDatasource as GdalDatasource;
+use datasource::{DatasourceInput, PostgisInput};
+#[cfg(feature = "with-gdal")]
+use gdal_ds::GdalDatasource;
 use std::collections::HashMap;
 
 pub enum Datasource {
@@ -247,8 +247,8 @@ mod gdal_tests {
     #[test]
     fn test_gdal_datasource_from_args() {
         use super::*;
-        use t_rex_core::datasource::DatasourceInput;
         use clap::{App, Arg};
+        use t_rex_core::datasource::DatasourceInput;
 
         const GPKG: &str = "../t-rex-gdal/natural_earth.gpkg";
         let args = App::new("t_rex")

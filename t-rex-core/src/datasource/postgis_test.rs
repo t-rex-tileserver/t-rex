@@ -3,15 +3,15 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::DatasourceInput;
-use datasource::postgis::{PostgisInput, QueryParam};
-use postgres;
-use postgres::Connection;
 use core::feature::FeatureAttrValType;
 use core::geom::*;
 use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::{Layer, LayerQuery};
+use datasource::postgis::{PostgisInput, QueryParam};
+use datasource::DatasourceInput;
+use postgres;
+use postgres::Connection;
 use std::env;
 
 #[test]
@@ -179,28 +179,24 @@ fn test_feature_query() {
     );
 
     // user queries
-    layer.query = vec![
-        LayerQuery {
-            minzoom: Some(0),
-            maxzoom: Some(22),
-            sql: Some(String::from("SELECT geometry AS geom FROM osm_place_point")),
-        },
-    ];
+    layer.query = vec![LayerQuery {
+        minzoom: Some(0),
+        maxzoom: Some(22),
+        sql: Some(String::from("SELECT geometry AS geom FROM osm_place_point")),
+    }];
     layer.query_limit = None;
     assert_eq!(pg.build_query(&layer, 3857, layer.query[0].sql.as_ref())
                    .unwrap()
                    .sql,
                "SELECT * FROM (SELECT geometry AS geom FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
-    layer.query = vec![
-        LayerQuery {
-            minzoom: Some(0),
-            maxzoom: Some(22),
-            sql: Some(String::from(
-                "SELECT * FROM osm_place_point WHERE name='Bern'",
-            )),
-        },
-    ];
+    layer.query = vec![LayerQuery {
+        minzoom: Some(0),
+        maxzoom: Some(22),
+        sql: Some(String::from(
+            "SELECT * FROM osm_place_point WHERE name='Bern'",
+        )),
+    }];
     assert_eq!(pg.build_query(&layer, 3857, layer.query[0].sql.as_ref())
                    .unwrap()
                    .sql,
@@ -286,13 +282,11 @@ fn test_retrieve_features() {
     });
     assert_eq!(1, reccnt);
 
-    layer.query = vec![
-        LayerQuery {
-            minzoom: Some(0),
-            maxzoom: Some(22),
-            sql: Some(String::from("SELECT * FROM ne_10m_populated_places")),
-        },
-    ];
+    layer.query = vec![LayerQuery {
+        minzoom: Some(0),
+        maxzoom: Some(22),
+        sql: Some(String::from("SELECT * FROM ne_10m_populated_places")),
+    }];
     layer.fid_field = Some(String::from("fid"));
     pg.prepare_queries(&layer, 3857);
     pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
@@ -317,8 +311,8 @@ fn test_retrieve_features() {
 #[test]
 #[ignore]
 fn test_tls() {
-    use postgres::TlsMode;
     use postgres::tls::native_tls::NativeTls;
+    use postgres::TlsMode;
     let negotiator = NativeTls::new().unwrap();
     let _conn = match env::var("DBCONN") {
         Result::Ok(val) => Connection::connect(&val as &str, TlsMode::Prefer(&negotiator)),

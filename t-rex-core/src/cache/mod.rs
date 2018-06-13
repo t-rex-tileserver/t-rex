@@ -12,10 +12,10 @@ mod filecache_test;
 pub use self::cache::Cache;
 pub use self::cache::Nocache;
 pub use self::filecache::Filecache;
-use std::io::Read;
-use std::io;
-use core::Config;
 use core::ApplicationCfg;
+use core::Config;
+use std::io;
+use std::io::Read;
 
 pub enum Tilecache {
     Nocache(Nocache),

@@ -3,24 +3,24 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::DatasourceInput;
-use postgres::rows::Row;
-use postgres::types::{self, FromSql, ToSql, Type};
-use postgres::tls::native_tls::NativeTls;
-use fallible_iterator::FallibleIterator;
-use r2d2;
-use r2d2_postgres::{PostgresConnectionManager, TlsMode};
-use std;
-use std::error::Error;
+use core::config::DatasourceCfg;
 use core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use core::geom::*;
 use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
-use core::config::DatasourceCfg;
-use std::collections::BTreeMap;
+use datasource::DatasourceInput;
 use env;
+use fallible_iterator::FallibleIterator;
+use postgres::rows::Row;
+use postgres::tls::native_tls::NativeTls;
+use postgres::types::{self, FromSql, ToSql, Type};
+use r2d2;
+use r2d2_postgres::{PostgresConnectionManager, TlsMode};
+use std;
+use std::collections::BTreeMap;
+use std::error::Error;
 
 impl GeometryType {
     pub fn from_geom_field(row: &Row, idx: &str, type_name: &str) -> Result<GeometryType, String> {
@@ -753,7 +753,10 @@ impl DatasourceInput for PostgisInput {
             read(&feature);
             cnt += 1;
             if cnt == query_limit {
-                info!("Feature count limited (name={}, query_limit={})", layer.name, cnt);
+                info!(
+                    "Feature count limited (name={}, query_limit={})",
+                    layer.name, cnt
+                );
                 break;
             }
         }

@@ -3,12 +3,12 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::layer::Layer;
+use core::config::DatasourceCfg;
+use core::feature::Feature;
 use core::grid::Extent;
 use core::grid::Grid;
-use core::feature::Feature;
+use core::layer::Layer;
 use core::Config;
-use core::config::DatasourceCfg;
 
 pub trait DatasourceInput {
     /// New instance with connected pool

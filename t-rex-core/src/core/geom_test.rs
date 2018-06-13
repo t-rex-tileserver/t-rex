@@ -3,8 +3,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use postgis::ewkb;
 use core::geom::{GeometryType, Point};
+use postgis::ewkb;
 
 #[cfg(test)]
 impl GeometryType {

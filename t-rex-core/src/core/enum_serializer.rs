@@ -9,20 +9,19 @@ pub trait EnumString<T> {
 }
 
 macro_rules! enum_string_serialization {
-    ($enumtype:ident $visitor:ident) => (
-
+    ($enumtype:ident $visitor:ident) => {
         struct $visitor;
 
         impl serde::ser::Serialize for $enumtype {
             fn serialize<__S>(&self, serializer: __S) -> Result<__S::Ok, __S::Error>
-                where __S: serde::ser::Serializer
+            where
+                __S: serde::ser::Serializer,
             {
-                 serializer.serialize_str(&self.as_str())
+                serializer.serialize_str(&self.as_str())
             }
         }
 
-        impl<'de> serde::de::Visitor<'de> for $visitor
-        {
+        impl<'de> serde::de::Visitor<'de> for $visitor {
             type Value = $enumtype;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -30,19 +29,20 @@ macro_rules! enum_string_serialization {
             }
 
             fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-                where E: serde::de::Error
+            where
+                E: serde::de::Error,
             {
                 Self::Value::from_str(value).map_err(serde::de::Error::custom)
             }
-
         }
 
         impl<'de> Deserialize<'de> for $enumtype {
             fn deserialize<D>(deserializer: D) -> Result<$enumtype, D::Error>
-                where D: Deserializer<'de>
+            where
+                D: Deserializer<'de>,
             {
                 deserializer.deserialize_str($visitor)
             }
         }
-    )
+    };
 }

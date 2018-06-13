@@ -5,20 +5,20 @@
 
 #[macro_use]
 mod enum_serializer;
+pub mod config;
+pub mod feature;
 pub mod geom;
-pub mod screen;
 pub mod grid;
 pub mod layer;
-pub mod feature;
-pub mod config;
+pub mod screen;
 
 pub use self::config::{parse_config, read_config, ApplicationCfg, Config};
 
+#[cfg(test)]
+mod config_test;
 #[cfg(test)]
 mod geom_test;
 #[cfg(test)]
 mod grid_test;
 #[cfg(test)]
 mod layer_test;
-#[cfg(test)]
-mod config_test;

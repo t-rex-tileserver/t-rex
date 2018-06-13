@@ -3,9 +3,9 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::Config;
 use core::config::GridCfg;
 use core::enum_serializer::EnumString;
+use core::Config;
 use serde;
 use serde::de::{Deserialize, Deserializer};
 use std::fmt;

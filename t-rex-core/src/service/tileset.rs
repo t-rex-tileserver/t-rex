@@ -3,10 +3,10 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::grid::Extent;
-use core::layer::Layer;
 use core::config::Config;
 use core::config::TilesetCfg;
+use core::grid::Extent;
+use core::layer::Layer;
 
 /// Collection of layers in one MVT
 pub struct Tileset {

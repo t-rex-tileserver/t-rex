@@ -6,8 +6,8 @@
 //! Encode geometries according to MVT spec
 //! https://github.com/mapbox/vector-tile-spec/tree/master/2.1
 
-use std::vec::Vec;
 use core::screen;
+use std::vec::Vec;
 
 /// Command to be executed and the number of times that the command will be executed
 /// https://github.com/mapbox/vector-tile-spec/tree/master/2.1#431-command-integers

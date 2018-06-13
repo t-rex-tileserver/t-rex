@@ -18,10 +18,10 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate toml;
 
+pub mod cache;
 pub mod core;
 pub mod datasource;
 pub mod mvt;
 pub mod service;
-pub mod cache;
 
 use std::env;

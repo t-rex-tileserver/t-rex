@@ -3,10 +3,10 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use std::collections::BTreeMap;
 use serde_json;
-use toml;
 use std;
+use std::collections::BTreeMap;
+use toml;
 
 use toml::Value::{self, Array, Boolean, Datetime, Float, Integer, String, Table};
 

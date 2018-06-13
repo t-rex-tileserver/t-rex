@@ -3,26 +3,26 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use service::tileset::Tileset;
 use core::layer::Layer;
-use datasource_type::{Datasource, Datasources};
-use datasource::PostgisInput;
-#[cfg(feature = "with-gdal")]
-use gdal_ds::{ogr_layer_name, GdalDatasource};
 #[cfg(not(feature = "with-gdal"))]
 use datasource::DummyDatasource as GdalDatasource;
+use datasource::PostgisInput;
+use datasource_type::{Datasource, Datasources};
 use elementtree::Element;
-use std::str::FromStr;
-use std::path::Path;
+#[cfg(feature = "with-gdal")]
+use gdal_ds::{ogr_layer_name, GdalDatasource};
+use service::tileset::Tileset;
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::BufReader;
-use std::io;
 use std::env;
 #[cfg(test)]
-use t_rex_core::core::Config;
-#[cfg(test)]
 use std::error::Error;
+use std::fs::File;
+use std::io;
+use std::io::BufReader;
+use std::path::Path;
+use std::str::FromStr;
+#[cfg(test)]
+use t_rex_core::core::Config;
 
 pub fn get_user_name() -> String {
     env::var("LOGNAME").unwrap_or("".to_string())

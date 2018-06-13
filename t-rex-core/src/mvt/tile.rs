@@ -3,22 +3,22 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::layer::Layer;
 use core::feature::{Feature, FeatureAttrValType};
-use core::grid::Extent;
-use core::geom::GeometryType;
 use core::geom;
+use core::geom::GeometryType;
+use core::grid::Extent;
+use core::layer::Layer;
 use core::screen;
-use mvt::vector_tile;
+use flate2::read::GzDecoder;
+use flate2::write::GzEncoder;
+use flate2::Compression;
 use mvt::geom_encoder::{CommandSequence, EncodableGeom};
+use mvt::vector_tile;
 use protobuf::error::ProtobufError;
 use protobuf::stream::CodedOutputStream;
-use protobuf::{Message, parse_from_reader};
+use protobuf::{parse_from_reader, Message};
 use std::fs::File;
 use std::io::{BufReader, Read, Write};
-use flate2::Compression;
-use flate2::write::GzEncoder;
-use flate2::read::GzDecoder;
 
 pub struct Tile<'a> {
     pub mvt_tile: vector_tile::Tile,
@@ -71,10 +71,7 @@ impl ScreenGeom<geom::MultiPoint> for screen::MultiPoint {
         let mut screen_geom = screen::MultiPoint { points: Vec::new() };
         for point in &multipoint.points {
             screen_geom.points.push(screen::Point::from_geom(
-                extent,
-                reverse_y,
-                tile_size,
-                point,
+                extent, reverse_y, tile_size, point,
             ));
         }
         screen_geom
@@ -91,10 +88,7 @@ impl ScreenGeom<geom::LineString> for screen::LineString {
         let mut screen_geom = screen::LineString { points: Vec::new() };
         for point in &line.points {
             screen_geom.points.push(screen::Point::from_geom(
-                extent,
-                reverse_y,
-                tile_size,
-                point,
+                extent, reverse_y, tile_size, point,
             ));
         }
         screen_geom
@@ -111,10 +105,7 @@ impl ScreenGeom<geom::MultiLineString> for screen::MultiLineString {
         let mut screen_geom = screen::MultiLineString { lines: Vec::new() };
         for line in &multiline.lines {
             screen_geom.lines.push(screen::LineString::from_geom(
-                extent,
-                reverse_y,
-                tile_size,
-                line,
+                extent, reverse_y, tile_size, line,
             ));
         }
         screen_geom
@@ -131,10 +122,7 @@ impl ScreenGeom<geom::Polygon> for screen::Polygon {
         let mut screen_geom = screen::Polygon { rings: Vec::new() };
         for line in &polygon.rings {
             screen_geom.rings.push(screen::LineString::from_geom(
-                extent,
-                reverse_y,
-                tile_size,
-                line,
+                extent, reverse_y, tile_size, line,
             ));
         }
         screen_geom
@@ -153,10 +141,7 @@ impl ScreenGeom<geom::MultiPolygon> for screen::MultiPolygon {
         };
         for polygon in &multipolygon.polygons {
             screen_geom.polygons.push(screen::Polygon::from_geom(
-                extent,
-                reverse_y,
-                tile_size,
-                polygon,
+                extent, reverse_y, tile_size, polygon,
             ));
         }
         screen_geom

@@ -3,15 +3,15 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::{DatasourceInput, PostgisInput};
-use datasource_type::{Datasource, Datasources};
-use core::grid::Grid;
+use cache::{Nocache, Tilecache};
 use core::grid::Extent;
+use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
-use cache::{Nocache, Tilecache};
-use service::tileset::Tileset;
+use datasource::{DatasourceInput, PostgisInput};
+use datasource_type::{Datasource, Datasources};
 use mvt_service::MvtService;
+use service::tileset::Tileset;
 
 fn mvt_service() -> MvtService {
     use std::env;

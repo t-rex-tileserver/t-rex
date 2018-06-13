@@ -45,33 +45,29 @@ fn test_geom_encoding() {
     );
 
     let polygon = screen::Polygon {
-        rings: vec![
-            screen::LineString {
-                points: vec![
-                    screen::Point { x: 3, y: 6 },
-                    screen::Point { x: 8, y: 12 },
-                    screen::Point { x: 20, y: 34 },
-                    screen::Point { x: 3, y: 6 },
-                ],
-            },
-        ],
+        rings: vec![screen::LineString {
+            points: vec![
+                screen::Point { x: 3, y: 6 },
+                screen::Point { x: 8, y: 12 },
+                screen::Point { x: 20, y: 34 },
+                screen::Point { x: 3, y: 6 },
+            ],
+        }],
     };
     assert_eq!(polygon.encode().0, &[9, 6, 12, 18, 10, 12, 24, 44, 15]);
 
     let multipolygon = screen::MultiPolygon {
         polygons: vec![
             screen::Polygon {
-                rings: vec![
-                    screen::LineString {
-                        points: vec![
-                            screen::Point { x: 0, y: 0 },
-                            screen::Point { x: 10, y: 0 },
-                            screen::Point { x: 10, y: 10 },
-                            screen::Point { x: 0, y: 10 },
-                            screen::Point { x: 0, y: 0 },
-                        ],
-                    },
-                ],
+                rings: vec![screen::LineString {
+                    points: vec![
+                        screen::Point { x: 0, y: 0 },
+                        screen::Point { x: 10, y: 0 },
+                        screen::Point { x: 10, y: 10 },
+                        screen::Point { x: 0, y: 10 },
+                        screen::Point { x: 0, y: 0 },
+                    ],
+                }],
             },
             screen::Polygon {
                 rings: vec![

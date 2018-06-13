@@ -3,16 +3,16 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::layer::Layer;
 use core::feature::FeatureAttrValType;
 use core::feature::{FeatureAttr, FeatureStruct};
-use core::grid::Extent;
-use core::geom::GeometryType;
 use core::geom;
+use core::geom::GeometryType;
+use core::grid::Extent;
+use core::layer::Layer;
 use core::screen;
-use mvt::vector_tile;
 use mvt::geom_encoder::EncodableGeom;
 use mvt::tile::{ScreenGeom, Tile};
+use mvt::vector_tile;
 use protobuf::Message;
 use std::fs::File;
 

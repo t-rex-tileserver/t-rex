@@ -3,8 +3,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::Config;
 use core::config::LayerCfg;
+use core::Config;
 use service::glstyle_converter::toml_style_to_gljson;
 use std::collections::HashMap;
 

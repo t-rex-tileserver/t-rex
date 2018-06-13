@@ -3,14 +3,14 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use gdal_ds::GdalDatasource;
-use datasource::DatasourceInput;
 use core::feature::FeatureAttrValType;
 use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::Layer;
-use std::path::Path;
+use datasource::DatasourceInput;
 use gdal::vector::Dataset;
+use gdal_ds::GdalDatasource;
+use std::path::Path;
 
 #[test]
 fn test_gdal_api() {

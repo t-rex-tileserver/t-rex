@@ -3,8 +3,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::layer::Layer;
 use core::config::Config;
+use core::layer::Layer;
 use service::tileset::Tileset;
 
 fn layer_from_config(toml: &str) -> Result<Layer, String> {
@@ -125,8 +125,8 @@ fn test_toml_decode() {
 
 #[test]
 fn test_layers_from_config() {
-    use core::parse_config;
     use core::config::TilesetCfg;
+    use core::parse_config;
 
     let toml = r#"
         #[[tileset]]

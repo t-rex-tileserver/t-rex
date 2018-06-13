@@ -181,8 +181,8 @@ pub fn filters() {
 
 #[test]
 pub fn layer_style_from_config() {
-    use core::read_config;
     use core::config::ApplicationCfg;
+    use core::read_config;
 
     let config: ApplicationCfg = read_config("../t-rex-service/src/test/example.toml").unwrap();
 

@@ -19,9 +19,9 @@ extern crate t_rex_core;
 #[cfg(feature = "with-gdal")]
 extern crate t_rex_gdal;
 
+use t_rex_core::cache;
 use t_rex_core::core;
 use t_rex_core::datasource;
-use t_rex_core::cache;
 use t_rex_core::mvt;
 use t_rex_core::service;
 #[cfg(feature = "with-gdal")]

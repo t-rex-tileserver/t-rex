@@ -3,12 +3,12 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use toml::Value;
-use std;
-use std::io::prelude::*;
-use std::fs::File;
 use core::grid::Extent;
 use serde::Deserialize;
+use std;
+use std::fs::File;
+use std::io::prelude::*;
+use toml::Value;
 
 pub trait Config<'a, C: Deserialize<'a>>
 where

@@ -3,17 +3,17 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::DatasourceInput;
-use gdal;
-use gdal::vector::{Dataset, FieldValue, Geometry, OGRwkbGeometryType};
-use gdal::spatial_ref::{CoordTransform, SpatialRef};
+use core::config::DatasourceCfg;
 use core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use core::geom::{self, GeometryType};
 use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
-use core::config::DatasourceCfg;
+use datasource::DatasourceInput;
+use gdal;
+use gdal::spatial_ref::{CoordTransform, SpatialRef};
+use gdal::vector::{Dataset, FieldValue, Geometry, OGRwkbGeometryType};
 use std::path::Path;
 
 pub struct GdalDatasource {
@@ -445,7 +445,10 @@ impl DatasourceInput for GdalDatasource {
             read(&feat);
             cnt += 1;
             if cnt == query_limit {
-                info!("Feature count limited (name={}, query_limit={})", layer.name, cnt);
+                info!(
+                    "Feature count limited (name={}, query_limit={})",
+                    layer.name, cnt
+                );
                 break;
             }
         }
