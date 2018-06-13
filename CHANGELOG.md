@@ -1,3 +1,11 @@
+<a name="0.9.0"></a>
+## 0.9.0 (UNRELEASED)
+
+#### Features
+
+* Port to asynchronous actix framework
+* New attribution configuration (Thanks frodrigo!)
+
 <a name="0.8.2"></a>
 ## 0.8.2 (2018-04-18)
 

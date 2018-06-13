@@ -66,7 +66,7 @@ Generate tiles for cache:
 For developers
 --------------
 
-t-rex is written in [Rust](https://www.rust-lang.org/).
+t-rex is written in [Rust](https://www.rust-lang.org/). Minimal required rustc version is 1.26.
 
 Build:
 
