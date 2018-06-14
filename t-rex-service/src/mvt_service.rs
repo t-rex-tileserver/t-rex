@@ -340,7 +340,7 @@ impl MvtService {
                 );
                 if mvt_layer.get_features().len() > 0 {
                     tile.add_layer(mvt_layer);
-               }
+                }
             }
         }
         tile.mvt_tile
