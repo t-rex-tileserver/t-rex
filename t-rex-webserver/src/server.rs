@@ -325,17 +325,21 @@ fn tileset_metadata_json(
 }
 
 fn tile_pbf(
-    (req, params): (HttpRequest<AppState>, Path<(String, u8, u32, u32)>),
+    (mut req, params): (HttpRequest<AppState>, Path<(String, u8, u32, u32)>),
 ) -> FutureResult<HttpResponse, Error> {
     let tileset = &params.0;
     let z = params.1;
     let x = params.2;
     let y = params.3;
-    let gzip = true;
-    /* TODO:
-    let gzip = accept_encoding.is_some() && accept_encoding.unwrap().iter().any(
-               |ref qit| qit.item == Encoding::Gzip );
-               */
+    let gzip = req.headers_mut()
+        .get(header::ACCEPT_ENCODING)
+        .and_then(|headerval| {
+            headerval
+                .to_str()
+                .ok()
+                .and_then(|headerstr| Some(headerstr.contains("gzip")))
+        })
+        .unwrap_or(false);
     let tile = req.state().service.tile_cached(tileset, x, y, z, gzip);
     let cache_max_age = req.state()
         .config
