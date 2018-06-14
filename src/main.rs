@@ -14,13 +14,13 @@ extern crate t_rex_webserver;
 
 use clap::{App, AppSettings, ArgMatches, SubCommand};
 use env_logger::Builder;
-use log::{LevelFilter, Record};
+use log::Record;
 use std::env;
 use std::io::Write;
 use t_rex_core::core::grid::Extent;
 use t_rex_webserver as webserver;
 
-fn init_logger() {
+fn init_logger(args: &ArgMatches) {
     let mut builder = Builder::new();
     builder.format(|buf, record: &Record| {
         let t = time::now();
@@ -34,15 +34,17 @@ fn init_logger() {
         )
     });
 
-    match env::var("RUST_LOG") {
-        Result::Ok(val) => {
-            builder.parse(&val);
+    let rust_log_env = env::var("RUST_LOG");
+    let rust_log = if args.value_of("loglevel").is_none() && rust_log_env.is_ok() {
+        rust_log_env.as_ref().unwrap()
+    } else {
+        match args.value_of("loglevel").unwrap_or("info") {
+            "debug" => "debug,tokio=info",
+            loglevel => loglevel,
         }
-        // Set log level to info by default
-        Result::Err(_) => {
-            builder.filter(None, LevelFilter::Info);
-        }
-    }
+    };
+    builder.parse(rust_log);
+    env::set_var("RUST_BACKTRACE", "1");
 
     builder.init();
 }
@@ -100,8 +102,6 @@ fn generate(args: &ArgMatches) {
 }
 
 fn main() {
-    init_logger();
-
     // http://kbknapp.github.io/clap-rs/clap/
     let mut app = App::new("t_rex")
         .version(crate_version!())
@@ -111,6 +111,7 @@ fn main() {
                         .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'
                                               --datasource=[FILE_OR_GDAL_DS] 'GDAL datasource specification'
                                               --qgs=[FILE] 'QGIS project file'
+                                              --loglevel=[error|warn|info|debug|trace] 'Log level (Default: info)'
                                               --simplify=[true|false] 'Simplify geometries'
                                               --clip=[true|false] 'Clip geometries'
                                               --cache=[DIR] 'Use tile cache in DIR'
@@ -123,12 +124,14 @@ fn main() {
                         .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'
                                               --datasource=[FILE_OR_GDAL_DS] 'GDAL datasource specification'
                                               --qgs=[FILE] 'QGIS project file'
+                                              --loglevel=[error|warn|info|debug|trace] 'Log level (Default: info)'
                                               --simplify=[true|false] 'Simplify geometries'
                                               --clip=[true|false] 'Clip geometries'")
                         .about("Generate configuration template"))
         .subcommand(SubCommand::with_name("generate")
                         .setting(AppSettings::AllowLeadingHyphen)
                         .args_from_usage("-c, --config=<FILE> 'Load from custom config file'
+                                              --loglevel=[error|warn|info|debug|trace] 'Log level (Default: info)'
                                               --tileset=[NAME] 'Tileset name'
                                               --minzoom=[LEVEL] 'Minimum zoom level'
                                               --maxzoom=[LEVEL] 'Maximum zoom level'
@@ -145,9 +148,18 @@ fn main() {
             println!("{}", e);
         }
         Result::Ok(matches) => match matches.subcommand() {
-            ("serve", Some(sub_m)) => webserver::server::webserver(sub_m.clone()),
-            ("genconfig", Some(sub_m)) => println!("{}", webserver::server::gen_config(sub_m)),
-            ("generate", Some(sub_m)) => generate(sub_m),
+            ("serve", Some(sub_m)) => {
+                init_logger(sub_m);
+                webserver::server::webserver(sub_m.clone());
+            }
+            ("genconfig", Some(sub_m)) => {
+                init_logger(sub_m);
+                println!("{}", webserver::server::gen_config(sub_m));
+            }
+            ("generate", Some(sub_m)) => {
+                init_logger(sub_m);
+                generate(sub_m);
+            }
             _ => {
                 let _ = app.print_help();
                 println!("");

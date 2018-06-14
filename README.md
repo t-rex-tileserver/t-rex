@@ -62,6 +62,11 @@ Generate tiles for cache:
 
     t_rex generate --config osm2vectortiles.toml
 
+Increase log level:
+
+    t_rex serve --loglevel debug --dbconn postgresql://user:pass@localhost/osm2vectortiles
+
+
 
 For developers
 --------------
@@ -79,10 +84,6 @@ Run tests:
 Run server:
 
     cargo run -- serve --dbconn postgresql://pi@%2Frun%2Fpostgresql/natural_earth_vectors
-
-Set log level:
-
-    RUST_LOG=debug  # error, warn, info, debug, trace
 
 Decode a vector tile:
 

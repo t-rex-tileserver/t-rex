@@ -11,6 +11,7 @@ use core::layer::Layer;
 use core::{parse_config, read_config, Config};
 use datasource::DatasourceInput;
 use datasource_type::Datasources;
+use log::Level;
 use mvt_service::MvtService;
 use read_qgs;
 use service::tileset::Tileset;
@@ -444,7 +445,9 @@ pub fn webserver(args: ArgMatches<'static>) {
             .shutdown_timeout(3) // default: 30s
             .start();
 
-        println!("{}", DINO);
+        if log_enabled!(Level::Info) {
+            println!("{}", DINO);
+        }
 
         if openbrowser && mvt_viewer {
             let _res = open::that(format!("http://{}:{}", &host, port));
