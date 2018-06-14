@@ -343,17 +343,20 @@ fn tile_pbf(
         .cache_control_max_age
         .unwrap_or(300);
 
-    let resp = HttpResponse::Ok()
-        .content_type("application/x-protobuf")
-        .if_true(gzip, |r| {
-            // data is already gzip compressed
-            r.content_encoding(ContentEncoding::Identity)
-                .header(header::CONTENT_ENCODING, "gzip");
-        })
-        .header(header::CACHE_CONTROL, format!("max-age={}", cache_max_age))
-        .body(tile); // TODO: chunked response
-
-    result(Ok(resp))
+    if tile != None {
+        let resp = HttpResponse::Ok()
+            .content_type("application/x-protobuf")
+            .if_true(gzip, |r| {
+                // data is already gzip compressed
+                r.content_encoding(ContentEncoding::Identity)
+                    .header(header::CONTENT_ENCODING, "gzip");
+            })
+            .header(header::CACHE_CONTROL, format!("max-age={}", cache_max_age))
+            .body(tile.unwrap()); // TODO: chunked response
+        result(Ok(resp))
+    } else {
+        result(Ok(HttpResponse::NotFound().finish()))
+    }
 }
 
 fn static_file_handler(req: HttpRequest<AppState>) -> Result<HttpResponse, Error> {

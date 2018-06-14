@@ -338,7 +338,9 @@ impl MvtService {
                         tile.add_feature(&mut mvt_layer, feat);
                     },
                 );
-                tile.add_layer(mvt_layer);
+                if mvt_layer.get_features().len() > 0 {
+                    tile.add_layer(mvt_layer);
+               }
             }
         }
         tile.mvt_tile
@@ -351,7 +353,7 @@ impl MvtService {
         ytile: u32,
         zoom: u8,
         _gzip: bool,
-    ) -> Vec<u8> {
+    ) -> Option<Vec<u8>> {
         // Reverse y for XYZ scheme (TODO: protocol instead of CRS dependent?)
         let y = if self.grid.srid == 3857 {
             self.grid.ytile_from_xyz(ytile, zoom)
@@ -368,17 +370,20 @@ impl MvtService {
         });
         if tile.is_some() {
             //TODO: unzip if gzip == false
-            return tile.unwrap();
+            return tile;
         }
 
         let mvt_tile = self.tile(tileset, xtile, y, zoom);
-
         let mut tilegz = Vec::new();
         Tile::write_gz_to(&mut tilegz, &mvt_tile);
         let _ = self.cache.write(&path, &tilegz);
 
-        //TODO: return unzipped if gzip == false
-        tilegz
+        if mvt_tile.get_layers().len() > 0 {
+            //TODO: return unzipped if gzip == false
+            Some(tilegz)
+        } else {
+            None
+        }
     }
     fn progress_bar(&self, msg: &str, limits: &ExtentInt) -> ProgressBar<Stdout> {
         let tiles =
