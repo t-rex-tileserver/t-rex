@@ -155,7 +155,7 @@ fn set_layer_buffer_defaults(layer: &mut Layer, simplify: bool, clip: bool) {
     };
 }
 
-pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
+pub fn config_from_args(args: &ArgMatches) -> ApplicationCfg {
     if let Some(cfgpath) = args.value_of("config") {
         info!("Reading configuration from '{}'", cfgpath);
         for argname in vec!["dbconn", "datasource", "qgs"] {
@@ -167,12 +167,7 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
             println!("Error reading configuration - {} ", err);
             process::exit(1)
         });
-        let mut svc = MvtService::from_config(&config).unwrap_or_else(|err| {
-            println!("Error reading configuration - {} ", err);
-            process::exit(1)
-        });
-        svc.connect();
-        (svc, config)
+        config
     } else {
         let bind = args.value_of("bind").unwrap_or("127.0.0.1");
         let port =
@@ -180,6 +175,19 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
         let mut config: ApplicationCfg = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
         config.webserver.bind = Some(bind.to_string());
         config.webserver.port = Some(port);
+        config
+    }
+}
+
+pub fn service_from_args(config: &ApplicationCfg, args: &ArgMatches) -> MvtService {
+    if args.value_of("config").is_some() {
+        let mut svc = MvtService::from_config(&config).unwrap_or_else(|err| {
+            println!("Error reading configuration - {} ", err);
+            process::exit(1)
+        });
+        svc.connect();
+        svc
+    } else {
         let cache = match args.value_of("cache") {
             None => Tilecache::Nocache(Nocache),
             Some(dir) => Tilecache::Filecache(Filecache {
@@ -234,7 +242,7 @@ pub fn service_from_args(args: &ArgMatches) -> (MvtService, ApplicationCfg) {
             cache: cache,
         };
         svc.connect(); //TODO: ugly - we connect twice
-        (svc, config)
+        svc
     }
 }
 
@@ -353,15 +361,21 @@ fn static_file_handler(req: HttpRequest<AppState>) -> Result<HttpResponse, Error
 }
 
 pub fn webserver(args: ArgMatches<'static>) {
-    // TODO:
-    // let bind: &str = &config.webserver.bind.unwrap_or("127.0.0.1".to_string());
-    // let port = config.webserver.port.unwrap_or(6767);
+    let config = config_from_args(&args);
+    let host = config.webserver.bind.unwrap_or("127.0.0.1".to_string());
+    let port = config.webserver.port.unwrap_or(6767);
+    let bind_addr = format!("{}:{}", host, port);
+    let mvt_viewer = config.service.mvt.viewer;
+    let openbrowser =
+        bool::from_str(args.value_of("openbrowser").unwrap_or("true")).unwrap_or(false);
+    let _threads = config.webserver.threads.unwrap_or(4) as usize; //TODO (?)
+
     actix::System::run(move || {
         HttpServer::new(move || {
-            let (mut service, config) = service_from_args(&args);
+            let config = config_from_args(&args);
+            let mut service = service_from_args(&config, &args);
 
             let mvt_viewer = config.service.mvt.viewer;
-            let _threads = config.webserver.threads.unwrap_or(4) as usize; //TODO (?)
             let _cache_max_age = config.webserver.cache_control_max_age.unwrap_or(300);
 
             service.prepare_feature_queries();
@@ -404,19 +418,17 @@ pub fn webserver(args: ArgMatches<'static>) {
                         app
                     }
                 })
-        }).bind("127.0.0.1:6767")
+        }).bind(&bind_addr)
             .expect("Can not start server on given IP/Port")
             .shutdown_timeout(3) // default: 30s
             .start();
-        println!("{}", DINO);
-    });
 
-    /* TODO:
-    let openbrowser =
-        bool::from_str(args.value_of("openbrowser").unwrap_or("true")).unwrap_or(false);
-    if openbrowser && mvt_viewer {
-        let _res = open::that(format!("http://{}:{}", bind, port));
-    }*/
+        println!("{}", DINO);
+
+        if openbrowser && mvt_viewer {
+            let _res = open::that(format!("http://{}:{}", &host, port));
+        }
+    });
 }
 
 pub fn gen_config(args: &ArgMatches) -> String {
@@ -432,7 +444,7 @@ threads = 4
     if args.value_of("dbconn").is_some() || args.value_of("datasource").is_some()
         || args.value_of("qgs").is_some()
     {
-        let (service, _) = service_from_args(args);
+        let service = service_from_args(&config_from_args(args), args);
         config = service.gen_runtime_config();
     } else {
         config = MvtService::gen_config();

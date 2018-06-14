@@ -48,7 +48,8 @@ fn init_logger() {
 }
 
 fn generate(args: &ArgMatches) {
-    let (mut service, config) = webserver::server::service_from_args(args);
+    let config = webserver::server::config_from_args(&args);
+    let mut service = webserver::server::service_from_args(&config, &args);
     config
         .cache
         .expect("Missing configuration entry base in [cache.file]");
