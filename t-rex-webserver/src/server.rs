@@ -16,7 +16,7 @@ use read_qgs;
 use service::tileset::Tileset;
 
 use actix;
-use actix_web::{fs, http::header, http::ContentEncoding, http::Method, middleware,
+use actix_web::{http::header, http::ContentEncoding, http::Method, middleware,
                 middleware::cors::Cors, server::HttpServer, App, Error, HttpRequest, HttpResponse,
                 Path};
 use clap::ArgMatches;
@@ -404,14 +404,19 @@ pub fn webserver(args: ArgMatches<'static>) {
                 .resource("/{tileset}/metadata.json", |r| r.method(Method::GET).with_async(tileset_metadata_json))
                 .resource("/{tileset}.json", |r| r.method(Method::GET).with_async(tileset_tilejson))
                 .resource("/{tileset}/{z}/{x}/{y}.pbf", |r| r.method(Method::GET).with_async(tile_pbf))
+                /* TODO: conflicts with static_file_handler
                 .configure(|app| {
-                    /*
-                    if ./public/ exists {
+                    if path::Path::new("./public/").is_dir() {
+                        info!("Serving static files from directory 'public'");
                         app.handler(
                             "/",
                             fs::StaticFiles::new("./public/")
                         )
-                    }*/
+                    } else {
+                        app
+                    }
+                })*/
+                .configure(|app| {
                     if mvt_viewer {
                         app.handler("/", static_file_handler)
                     } else {
