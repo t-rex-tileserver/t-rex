@@ -249,6 +249,7 @@ pub fn service_from_args(config: &ApplicationCfg, args: &ArgMatches) -> MvtServi
 /// Application state
 struct AppState {
     service: MvtService,
+    config: ApplicationCfg,
 }
 
 fn mvt_metadata(req: HttpRequest<AppState>) -> FutureResult<HttpResponse, Error> {
@@ -336,6 +337,12 @@ fn tile_pbf(
                |ref qit| qit.item == Encoding::Gzip );
                */
     let tile = req.state().service.tile_cached(tileset, x, y, z, gzip);
+    let cache_max_age = req.state()
+        .config
+        .webserver
+        .cache_control_max_age
+        .unwrap_or(300);
+
     let resp = HttpResponse::Ok()
         .content_type("application/x-protobuf")
         .if_true(gzip, |r| {
@@ -343,10 +350,9 @@ fn tile_pbf(
             r.content_encoding(ContentEncoding::Identity)
                 .header(header::CONTENT_ENCODING, "gzip");
         })
+        .header(header::CACHE_CONTROL, format!("max-age={}", cache_max_age))
         .body(tile); // TODO: chunked response
-    /* TODO:
-        res.set_header_fallback(|| CacheControl(vec![CacheDirective::MaxAge(cache_max_age)]));
-    */
+
     result(Ok(resp))
 }
 
@@ -362,7 +368,11 @@ fn static_file_handler(req: HttpRequest<AppState>) -> Result<HttpResponse, Error
 
 pub fn webserver(args: ArgMatches<'static>) {
     let config = config_from_args(&args);
-    let host = config.webserver.bind.unwrap_or("127.0.0.1".to_string());
+    let host = config
+        .webserver
+        .bind
+        .clone()
+        .unwrap_or("127.0.0.1".to_string());
     let port = config.webserver.port.unwrap_or(6767);
     let bind_addr = format!("{}:{}", host, port);
     let mvt_viewer = config.service.mvt.viewer;
@@ -376,12 +386,11 @@ pub fn webserver(args: ArgMatches<'static>) {
             let mut service = service_from_args(&config, &args);
 
             let mvt_viewer = config.service.mvt.viewer;
-            let _cache_max_age = config.webserver.cache_control_max_age.unwrap_or(300);
 
             service.prepare_feature_queries();
             service.init_cache();
 
-            App::with_state(AppState{service: service})
+            App::with_state(AppState{service, config})
                 .middleware(middleware::Logger::default())
                 .resource("/index.json", |r| r.method(Method::GET).a(mvt_metadata))
                 /* TODO: CORS does only set allowed_origin. actix-web bug?
