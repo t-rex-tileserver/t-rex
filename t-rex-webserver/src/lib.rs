@@ -11,10 +11,6 @@ extern crate actix_web;
 extern crate futures;
 extern crate open;
 #[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
-#[macro_use]
 extern crate lazy_static;
 
 extern crate t_rex_core;

@@ -13,7 +13,6 @@ use datasource::DatasourceInput;
 use datasource_type::Datasources;
 use mvt_service::MvtService;
 use read_qgs;
-use serde_json;
 use service::tileset::Tileset;
 
 use actix;
@@ -27,40 +26,6 @@ use std::collections::HashMap;
 use std::process;
 use std::str;
 use std::str::FromStr;
-
-//#[derive(Serialize)]
-struct TilesetInfo {
-    name: String,
-    layerinfos: String,
-    hasviewer: bool,
-}
-
-impl TilesetInfo {
-    fn from_tileset(set: &Tileset) -> TilesetInfo {
-        let mut hasviewer = true;
-        let layerinfos: Vec<String> = set.layers
-            .iter()
-            .map(|l| {
-                let geom_type = l.geometry_type.clone().unwrap_or("UNKNOWN".to_string());
-                hasviewer = hasviewer
-                    && [
-                        "POINT",
-                        "LINESTRING",
-                        "POLYGON",
-                        "MULTPOINT",
-                        "MULTILINESTRING",
-                        "MULTIPOLYGON",
-                    ].contains(&(&geom_type as &str));
-                format!("{} [{}]", &l.name, &geom_type)
-            })
-            .collect();
-        TilesetInfo {
-            name: set.name.clone(),
-            layerinfos: format!("{}", layerinfos.join(", ")),
-            hasviewer: hasviewer,
-        }
-    }
-}
 
 struct StaticFiles {
     files: HashMap<&'static str, (&'static [u8], &'static str)>,
@@ -294,7 +259,7 @@ include!(concat!(env!("OUT_DIR"), "/fonts.rs"));
 /// Fonts for Maputnik
 /// Example: /fonts/Open%20Sans%20Regular,Arial%20Unicode%20MS%20Regular/0-255.pbf
 fn fonts_pbf(
-    (req, params): (HttpRequest<AppState>, Path<(String, String)>),
+    (_req, params): (HttpRequest<AppState>, Path<(String, String)>),
 ) -> Result<HttpResponse, Error> {
     let fontpbfs = fonts();
     let fontlist = &params.0;
@@ -401,13 +366,6 @@ pub fn webserver(args: ArgMatches<'static>) {
 
             service.prepare_feature_queries();
             service.init_cache();
-
-            let mut tileset_infos: Vec<TilesetInfo> = service
-                .tilesets
-                .iter()
-                .map(|set| TilesetInfo::from_tileset(&set))
-                .collect();
-            tileset_infos.sort_by_key(|ti| ti.name.clone());
 
             App::with_state(AppState{service: service})
                 .middleware(middleware::Logger::default())
