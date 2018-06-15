@@ -401,12 +401,10 @@ pub fn webserver(args: ArgMatches<'static>) {
             App::with_state(AppState{service, config})
                 .middleware(middleware::Logger::default())
                 .resource("/index.json", |r| r.method(Method::GET).a(mvt_metadata))
-                /* TODO: CORS does only set allowed_origin. actix-web bug?
                 .configure(|app| {
                     Cors::for_app(app)
-                        .allowed_origin("*")
-                        .allowed_methods(vec!["GET"])
-                        .allowed_headers(vec![header::ACCEPT])
+                        .send_wildcard()
+                        .allowed_methods(vec![Method::GET])
                         .resource("/fontstacks.json", |r| r.method(Method::GET).f(fontstacks))
                         .resource("/fonts/{fonts}/{range}.pbf", |r| r.method(Method::GET).with(fonts_pbf))
                         .resource("/{tileset}.style.json", |r| r.method(Method::GET).with_async(tileset_style_json))
@@ -414,13 +412,7 @@ pub fn webserver(args: ArgMatches<'static>) {
                         .resource("/{tileset}.json", |r| r.method(Method::GET).with_async(tileset_tilejson))
                         .resource("/{tileset}/{z}/{x}/{y}.pbf", |r| r.method(Method::GET).with_async(tile_pbf))
                         .register()
-                });*/
-                .resource("/fontstacks.json", |r| r.method(Method::GET).f(fontstacks))
-                .resource("/fonts/{fonts}/{range}.pbf", |r| r.method(Method::GET).with(fonts_pbf))
-                .resource("/{tileset}.style.json", |r| r.method(Method::GET).with_async(tileset_style_json))
-                .resource("/{tileset}/metadata.json", |r| r.method(Method::GET).with_async(tileset_metadata_json))
-                .resource("/{tileset}.json", |r| r.method(Method::GET).with_async(tileset_tilejson))
-                .resource("/{tileset}/{z}/{x}/{y}.pbf", |r| r.method(Method::GET).with_async(tile_pbf))
+                })
                 /* TODO: conflicts with static_file_handler
                 .configure(|app| {
                     if path::Path::new("./public/").is_dir() {
