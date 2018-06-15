@@ -540,7 +540,8 @@ impl MvtService {
         if let &Datasource::Postgis(ref pg) = ds {
             if layer.query(0).is_none() {
                 let query = pg.build_query_sql(layer, 3857, None, true).unwrap();
-                cfg.push_str(&format!("#sql = \"\"\"{}\"\"\"\n", query))
+                // Remove quotes from column names for better readability
+                cfg.push_str(&format!("#sql = \"\"\"{}\"\"\"\n", query.replace('"', "")))
             }
         }
         cfg

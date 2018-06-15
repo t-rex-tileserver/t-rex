@@ -574,9 +574,9 @@ impl DatasourceInput for PostgisInput {
             let geomtype: String = row.get("type");
             let mut layer = Layer::new(&table_name);
             layer.table_name = if schema != "public" {
-                Some(format!("{}.{}", schema, table_name))
+                Some(format!("\"{}\".\"{}\"", schema, table_name))
             } else {
-                Some(table_name.clone())
+                Some(format!("\"{}\"", table_name))
             };
             layer.geometry_field = Some(geometry_column.clone());
             layer.geometry_type = match &geomtype as &str {

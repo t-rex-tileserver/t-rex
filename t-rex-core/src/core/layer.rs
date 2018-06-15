@@ -163,7 +163,10 @@ geometry_type = "POINT"
             lines.push(format!("datasource = \"{}\"", ds));
         }
         match self.table_name {
-            Some(ref table_name) => lines.push(format!(r#"table_name = "{}""#, table_name)),
+            // Remove quotes for better readability
+            Some(ref table_name) => {
+                lines.push(format!(r#"table_name = "{}""#, table_name.replace('"', "")))
+            }
             _ => lines.push(r#"#table_name = "mytable""#.to_string()),
         }
         match self.geometry_field {
@@ -186,8 +189,6 @@ geometry_type = "POINT"
         }
         if self.tile_size != 4096 {
             lines.push(format!(r#"tile_size = "{}""#, self.tile_size));
-        } else {
-            lines.push(format!(r#"#tile_size = "{}""#, self.tile_size));
         }
         match self.buffer_size {
             Some(ref buffer_size) => lines.push(format!("buffer_size = {}", buffer_size)),
