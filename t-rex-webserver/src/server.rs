@@ -18,8 +18,8 @@ use service::tileset::Tileset;
 
 use actix;
 use actix_web::{http::header, http::ContentEncoding, http::Method, middleware,
-                middleware::cors::Cors, server::HttpServer, App, Error, HttpRequest, HttpResponse,
-                Path};
+                middleware::cors::Cors, server::HttpServer, App, Error, HttpMessage, HttpRequest,
+                HttpResponse, Path};
 use clap::ArgMatches;
 use futures::future::{result, FutureResult};
 use open;
@@ -326,13 +326,13 @@ fn tileset_metadata_json(
 }
 
 fn tile_pbf(
-    (mut req, params): (HttpRequest<AppState>, Path<(String, u8, u32, u32)>),
+    (req, params): (HttpRequest<AppState>, Path<(String, u8, u32, u32)>),
 ) -> FutureResult<HttpResponse, Error> {
     let tileset = &params.0;
     let z = params.1;
     let x = params.2;
     let y = params.3;
-    let gzip = req.headers_mut()
+    let gzip = req.headers()
         .get(header::ACCEPT_ENCODING)
         .and_then(|headerval| {
             headerval
