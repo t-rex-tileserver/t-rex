@@ -17,13 +17,15 @@ use read_qgs;
 use service::tileset::Tileset;
 
 use actix;
-use actix_web::{http::header, http::ContentEncoding, http::Method, middleware,
-                middleware::cors::Cors, server::HttpServer, App, Error, HttpMessage, HttpRequest,
-                HttpResponse, Path};
+use actix_web::{
+    fs, http::header, http::ContentEncoding, http::Method, middleware, middleware::cors::Cors,
+    server::HttpServer, App, Error, HttpMessage, HttpRequest, HttpResponse, Path,
+};
 use clap::ArgMatches;
 use futures::future::{result, FutureResult};
 use open;
 use std::collections::HashMap;
+use std::path;
 use std::process;
 use std::str;
 use std::str::FromStr;
@@ -386,7 +388,6 @@ pub fn webserver(args: ArgMatches<'static>) {
     let mvt_viewer = config.service.mvt.viewer;
     let openbrowser =
         bool::from_str(args.value_of("openbrowser").unwrap_or("true")).unwrap_or(false);
-    let _threads = config.webserver.threads.unwrap_or(4) as usize; //TODO (?)
 
     let sys = actix::System::new("t-rex");
 
@@ -395,11 +396,12 @@ pub fn webserver(args: ArgMatches<'static>) {
         let mut service = service_from_args(&config, &args);
 
         let mvt_viewer = config.service.mvt.viewer;
+        let static_dirs = config.webserver.static_.clone();
 
         service.prepare_feature_queries();
         service.init_cache();
 
-        App::with_state(AppState{service, config})
+        let mut app = App::with_state(AppState{service, config})
             .middleware(middleware::Logger::default())
             .resource("/index.json", |r| r.method(Method::GET).a(mvt_metadata))
             .configure(|app| {
@@ -413,26 +415,23 @@ pub fn webserver(args: ArgMatches<'static>) {
                     .resource("/{tileset}.json", |r| r.method(Method::GET).with_async(tileset_tilejson))
                     .resource("/{tileset}/{z}/{x}/{y}.pbf", |r| r.method(Method::GET).with_async(tile_pbf))
                     .register()
-            })
-            /* TODO: conflicts with static_file_handler
-            .configure(|app| {
-                if path::Path::new("./public/").is_dir() {
-                    info!("Serving static files from directory 'public'");
-                    app.handler(
-                        "/",
-                        fs::StaticFiles::new("./public/")
-                    )
-                } else {
-                    app
-                }
-            })*/
-            .configure(|app| {
-                if mvt_viewer {
-                    app.handler("/", static_file_handler)
-                } else {
-                    app
-                }
-            })
+            });
+        for static_dir in &static_dirs {
+            let dir = &static_dir.dir;
+            if path::Path::new(dir).is_dir() {
+                info!("Serving static files from directory '{}'", dir);
+                app = app.handler(
+                    &static_dir.path,
+                    fs::StaticFiles::new(dir)
+                );
+            } else {
+                warn!("Static file directory '{}' not found", dir);
+            }
+        }
+        if mvt_viewer {
+            app = app.handler("/", static_file_handler);
+        }
+        app
     }).bind(&bind_addr)
         .expect("Can not start server on given IP/Port")
         .shutdown_timeout(3) // default: 30s
@@ -455,11 +454,15 @@ pub fn gen_config(args: &ArgMatches) -> String {
 # Bind address. Use 0.0.0.0 to listen on all adresses.
 bind = "127.0.0.1"
 port = 6767
-threads = 4
 #cache_control_max_age = 43200
+
+#[[webserver.static]]
+#path = "/static"
+#dir = "./public/"
 "#;
     let mut config;
-    if args.value_of("dbconn").is_some() || args.value_of("datasource").is_some()
+    if args.value_of("dbconn").is_some()
+        || args.value_of("datasource").is_some()
         || args.value_of("qgs").is_some()
     {
         let service = service_from_args(&config_from_args(args), args);

@@ -155,6 +155,14 @@ pub struct WebserverCfg {
     // Cache-Control headers set by web server
     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control#Expiration
     pub cache_control_max_age: Option<u32>,
+    #[serde(rename = "static", default)]
+    pub static_: Vec<WebserverStaticCfg>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct WebserverStaticCfg {
+    pub path: String,
+    pub dir: String,
 }
 
 pub const DEFAULT_CONFIG: &'static str = r#"
@@ -171,7 +179,6 @@ predefined = "web_mercator"
 name = ""
 minzoom = 0 # Optional override of zoom limits broadcasted to tilejson descriptor
 maxzoom = 22
-attribution = "© Contributeurs de OpenStreetMap" # Acknowledgment of ownership, authorship or copyright.
 
 [[tileset.layer]]
 name = ""
@@ -179,7 +186,6 @@ name = ""
 [webserver]
 bind = "127.0.0.1"
 port = 6767
-threads = 4
 "#;
 
 /// Load and parse the config file into an config struct.

@@ -110,7 +110,8 @@ impl MvtService {
         serde_json::to_value(mvt_info)
     }
     fn get_tilejson_metadata(&self, tileset: &str) -> JsonResult {
-        let ts = self.get_tileset(tileset).unwrap();
+        let ts = self.get_tileset(tileset)
+            .expect(&format!("Tileset '{}' not found", tileset));
         let ext = ts.get_extent();
         let center = ts.get_center();
         let zoom = ts.get_start_zoom();
