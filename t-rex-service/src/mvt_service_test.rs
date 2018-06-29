@@ -473,9 +473,9 @@ predefined = "web_mercator"
 
 [[tileset]]
 name = "points"
-minzoom = 0 # Optional override of zoom limits broadcasted to tilejson descriptor
-maxzoom = 22
-attribution = "© Contributeurs de OpenStreetMap" # Acknowledgment of ownership, authorship or copyright.
+#minzoom = 0 # Optional override of zoom limits broadcasted to tilejson descriptor
+#maxzoom = 22
+#attribution = "© Contributeurs de OpenStreetMap" # Acknowledgment of ownership, authorship or copyright.
 
 [[tileset.layer]]
 name = "points"
@@ -483,7 +483,6 @@ table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
 #fid_field = "id"
-#tile_size = 4096
 #simplify = true
 #buffer_size = 10
 #[[tileset.layer.query]]
