@@ -8,6 +8,7 @@ use core::config::ApplicationCfg;
 use core::config::DEFAULT_CONFIG;
 use core::grid::Grid;
 use core::layer::Layer;
+use core::stats::Statistics;
 use core::{parse_config, read_config, Config};
 use datasource::DatasourceInput;
 use datasource_type::Datasources;
@@ -15,6 +16,7 @@ use log::Level;
 use mvt_service::MvtService;
 use read_qgs;
 use service::tileset::Tileset;
+use std::cell::RefCell;
 
 use actix;
 use actix_web::{
@@ -253,6 +255,7 @@ pub fn service_from_args(config: &ApplicationCfg, args: &ArgMatches) -> MvtServi
 struct AppState {
     service: MvtService,
     config: ApplicationCfg,
+    stats: RefCell<Statistics>,
 }
 
 fn mvt_metadata(req: HttpRequest<AppState>) -> FutureResult<HttpResponse, Error> {
@@ -343,7 +346,10 @@ fn tile_pbf(
                 .and_then(|headerstr| Some(headerstr.contains("gzip")))
         })
         .unwrap_or(false);
-    let tile = req.state().service.tile_cached(tileset, x, y, z, gzip);
+    let mut stats = req.state().stats.borrow_mut();
+    let tile = req.state()
+        .service
+        .tile_cached(tileset, x, y, z, gzip, &mut stats);
     let cache_max_age = req.state()
         .config
         .webserver
@@ -364,6 +370,11 @@ fn tile_pbf(
         HttpResponse::NotFound().finish()
     };
     result(Ok(resp))
+}
+
+fn stats_handler(req: HttpRequest<AppState>) -> Result<String, Error> {
+    let stats = req.state().stats.borrow();
+    Ok(format!("Statistics:\n{:?}", stats))
 }
 
 fn static_file_handler(req: HttpRequest<AppState>) -> Result<HttpResponse, Error> {
@@ -394,6 +405,7 @@ pub fn webserver(args: ArgMatches<'static>) {
     HttpServer::new(move || {
         let config = config_from_args(&args);
         let mut service = service_from_args(&config, &args);
+        let stats = Statistics::new();
 
         let mvt_viewer = config.service.mvt.viewer;
         let static_dirs = config.webserver.static_.clone();
@@ -401,7 +413,7 @@ pub fn webserver(args: ArgMatches<'static>) {
         service.prepare_feature_queries();
         service.init_cache();
 
-        let mut app = App::with_state(AppState{service, config})
+        let mut app = App::with_state(AppState{service, config, stats: RefCell::new(stats)})
             .middleware(middleware::Logger::default())
             .resource("/index.json", |r| r.method(Method::GET).a(mvt_metadata))
             .configure(|app| {
@@ -416,6 +428,9 @@ pub fn webserver(args: ArgMatches<'static>) {
                     .resource("/{tileset}/{z}/{x}/{y}.pbf", |r| r.method(Method::GET).with_async(tile_pbf))
                     .register()
             });
+        if true { // TODO: make stats configurable
+            app = app.handler("/stats", stats_handler);
+        }
         for static_dir in &static_dirs {
             let dir = &static_dir.dir;
             if path::Path::new(dir).is_dir() {

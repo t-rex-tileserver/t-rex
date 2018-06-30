@@ -7,6 +7,7 @@ use cache::{Nocache, Tilecache};
 use core::grid::Extent;
 use core::grid::Grid;
 use core::layer::Layer;
+use core::stats::Statistics;
 use core::Config;
 use datasource::{DatasourceInput, PostgisInput};
 use datasource_type::{Datasource, Datasources};
@@ -58,8 +59,9 @@ fn mvt_service() -> MvtService {
 #[ignore]
 fn test_tile_query() {
     let service = mvt_service();
+    let mut stats = Statistics::new();
 
-    let mvt_tile = service.tile("points", 33, 41, 6);
+    let mvt_tile = service.tile("points", 33, 41, 6, &mut stats);
     println!("{:#?}", mvt_tile);
     let expected = r#"Tile {
     layers: [

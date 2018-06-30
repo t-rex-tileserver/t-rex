@@ -11,6 +11,7 @@ pub mod geom;
 pub mod grid;
 pub mod layer;
 pub mod screen;
+pub mod stats;
 
 pub use self::config::{parse_config, read_config, ApplicationCfg, Config};
 

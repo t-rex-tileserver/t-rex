@@ -6,6 +6,7 @@
 use cache::{Cache, Tilecache};
 use core::grid::{Extent, ExtentInt, Grid};
 use core::layer::Layer;
+use core::stats::Statistics;
 use core::ApplicationCfg;
 use core::Config;
 use datasource::DatasourceInput;
@@ -323,7 +324,14 @@ impl MvtService {
         }
     }
     /// Create vector tile from input at x, y, z in TMS adressing scheme
-    pub fn tile(&self, tileset: &str, xtile: u32, ytile: u32, zoom: u8) -> vector_tile::Tile {
+    pub fn tile(
+        &self,
+        tileset: &str,
+        xtile: u32,
+        ytile: u32,
+        zoom: u8,
+        stats: &mut Statistics,
+    ) -> vector_tile::Tile {
         let extent = self.grid.tile_extent(xtile, ytile, zoom);
         debug!("MVT tile request {:?}", extent);
         let mut tile = Tile::new(&extent, true);
@@ -339,7 +347,12 @@ impl MvtService {
                         tile.add_feature(&mut mvt_layer, feat);
                     },
                 );
-                if mvt_layer.get_features().len() > 0 {
+                let num_features = mvt_layer.get_features().len();
+                stats.add(
+                    format!("feature_count.layer.{}.{}", &layer.name, zoom),
+                    num_features as u64,
+                );
+                if num_features > 0 {
                     tile.add_layer(mvt_layer);
                 }
             }
@@ -354,6 +367,7 @@ impl MvtService {
         ytile: u32,
         zoom: u8,
         _gzip: bool,
+        stats: &mut Statistics,
     ) -> Option<Vec<u8>> {
         // Reverse y for XYZ scheme (TODO: protocol instead of CRS dependent?)
         let y = if self.grid.srid == 3857 {
@@ -374,7 +388,7 @@ impl MvtService {
             return tile;
         }
 
-        let mvt_tile = self.tile(tileset, xtile, y, zoom);
+        let mvt_tile = self.tile(tileset, xtile, y, zoom, stats);
         let mut tilegz = Vec::new();
         Tile::write_gz_to(&mut tilegz, &mvt_tile);
         let _ = self.cache.write(&path, &tilegz);
@@ -449,6 +463,7 @@ impl MvtService {
 
             let tolerance = 0;
             let limits = self.grid.tile_limits(ext_proj, tolerance);
+            let mut stats = Statistics::new();
             for zoom in minzoom..maxzoom + 1 {
                 if zoom > self.grid.maxzoom() {
                     warn!(
@@ -477,8 +492,13 @@ impl MvtService {
 
                         if overwrite || !self.cache.exists(&path) {
                             // Entry doesn't exist, or we're ignoring it, so generate it
-                            let mvt_tile =
-                                self.tile(&tileset.name, xtile as u32, ytile as u32, zoom);
+                            let mvt_tile = self.tile(
+                                &tileset.name,
+                                xtile as u32,
+                                ytile as u32,
+                                zoom,
+                                &mut stats,
+                            );
                             let mut tilegz = Vec::new();
                             Tile::write_gz_to(&mut tilegz, &mvt_tile);
                             let _ = self.cache.write(&path, &tilegz);
@@ -490,6 +510,7 @@ impl MvtService {
                     }
                 }
             }
+            println!("Statistics:\n{:?}", stats);
         }
         if progress {
             println!("");
