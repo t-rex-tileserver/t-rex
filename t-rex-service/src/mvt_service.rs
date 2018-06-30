@@ -19,6 +19,7 @@ use percent_encoding::percent_decode;
 use serde_json;
 use service::tileset::{Tileset, WORLD_EXTENT};
 use std::io::Stdout;
+use std::time::Instant;
 
 /// Mapbox Vector Tile Service
 pub struct MvtService {
@@ -338,6 +339,7 @@ impl MvtService {
         for layer in self.get_tileset_layers(tileset) {
             if zoom >= layer.minzoom() && zoom <= layer.maxzoom() {
                 let mut mvt_layer = tile.new_layer(layer);
+                let now = Instant::now();
                 self.ds(&layer).unwrap().retrieve_features(
                     &layer,
                     &extent,
@@ -346,6 +348,11 @@ impl MvtService {
                     |feat| {
                         tile.add_feature(&mut mvt_layer, feat);
                     },
+                );
+                let elapsed = now.elapsed();
+                stats.add(
+                    format!("tile_ms.layer.{}.{}", &layer.name, zoom),
+                    elapsed.as_secs()*1000+elapsed.subsec_millis() as u64,
                 );
                 let num_features = mvt_layer.get_features().len();
                 stats.add(
