@@ -352,7 +352,7 @@ impl MvtService {
                 let elapsed = now.elapsed();
                 stats.add(
                     format!("tile_ms.layer.{}.{}", &layer.name, zoom),
-                    elapsed.as_secs()*1000+elapsed.subsec_millis() as u64,
+                    elapsed.as_secs() * 1000 + elapsed.subsec_millis() as u64,
                 );
                 let num_features = mvt_layer.get_features().len();
                 stats.add(
@@ -548,6 +548,72 @@ impl MvtService {
                 &format!("{}/metadata.json", &tileset.name),
                 &serde_json::to_vec(&json).unwrap(),
             );
+        }
+    }
+    fn progress_bar_drilldown(&self, zoomlevels: u8, points: u64) -> ProgressBar<Stdout> {
+        let numtiles = zoomlevels as u64 * points;
+        let mut pb = ProgressBar::new(numtiles);
+        pb.message("Tile ");
+        pb.show_speed = false;
+        pb.show_percent = false;
+        pb.show_time_left = false;
+        pb
+    }
+    /// Get statistics from drilldown
+    pub fn drilldown(
+        &self,
+        tileset_name: Option<&str>,
+        minzoom: Option<u8>,
+        maxzoom: Option<u8>,
+        points: Vec<f64>,
+        progress: bool,
+    ) {
+        let minzoom = minzoom.unwrap_or(0);
+        let maxzoom = maxzoom.unwrap_or(self.grid.maxzoom());
+        for tileset in &self.tilesets {
+            if tileset_name.is_some() && tileset_name.unwrap() != &tileset.name {
+                continue;
+            }
+
+            let mut stats = Statistics::new();
+            let mut pb = self.progress_bar_drilldown(
+                maxzoom.min(self.grid.maxzoom()) - minzoom + 1,
+                points.len() as u64 / 2,
+            );
+
+            for point in points.chunks(2) {
+                // Convert point to extent in grid SRS
+                let ext_wgs84 = Extent {
+                    minx: point[0],
+                    miny: point[1],
+                    maxx: point[0],
+                    maxy: point[1],
+                };
+                let ext_proj = self.extent_from_wgs84(&ext_wgs84);
+                debug!("point in grid SRS: {:?}", ext_proj);
+
+                let tolerance = 0;
+                let limits = self.grid.tile_limits(ext_proj, tolerance);
+                for zoom in minzoom..maxzoom + 1 {
+                    if zoom > self.grid.maxzoom() {
+                        continue;
+                    }
+                    let ref limit = limits[zoom as usize];
+                    debug!("level {}: {:?}", zoom, limit);
+                    let xtile = limit.minx;
+                    let ytile = limit.miny;
+                    let _mvt_tile =
+                        self.tile(&tileset.name, xtile as u32, ytile as u32, zoom, &mut stats);
+
+                    if progress {
+                        pb.inc();
+                    }
+                }
+            }
+            println!("Statistics:\n{:?}", stats);
+        }
+        if progress {
+            println!("");
         }
     }
     fn gen_layer_runtime_config(&self, layer: &Layer) -> String {

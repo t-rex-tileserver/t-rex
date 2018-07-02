@@ -44,7 +44,6 @@ fn init_logger(args: &ArgMatches) {
         }
     };
     builder.parse(rust_log);
-    env::set_var("RUST_BACKTRACE", "1");
 
     builder.init();
 }
@@ -101,6 +100,37 @@ fn generate(args: &ArgMatches) {
     );
 }
 
+fn drilldown(args: &ArgMatches) {
+    let config = webserver::server::config_from_args(&args);
+    let mut service = webserver::server::service_from_args(&config, &args);
+    let tileset = args.value_of("tileset");
+    let minzoom = args.value_of("minzoom").map(|s| {
+        s.parse::<u8>()
+            .expect("Error parsing 'minzoom' as integer value")
+    });
+    let maxzoom = args.value_of("maxzoom").map(|s| {
+        s.parse::<u8>()
+            .expect("Error parsing 'maxzoom' as integer value")
+    });
+    let points: Vec<f64> = args.value_of("points")
+        .map(|numlist| {
+            numlist
+                .split(",")
+                .map(|v| {
+                    v.parse()
+                        .expect("Error parsing 'point' as pair of float values")
+                })
+                .collect()
+        })
+        .expect("Missing 'points' list");
+    let progress = args.value_of("progress").map_or(true, |s| {
+        s.parse::<bool>()
+            .expect("Error parsing 'progress' as boolean value")
+    });
+    service.prepare_feature_queries();
+    service.drilldown(tileset, minzoom, maxzoom, points, progress);
+}
+
 fn main() {
     // http://kbknapp.github.io/clap-rs/clap/
     let mut app = App::new("t_rex")
@@ -140,7 +170,17 @@ fn main() {
                                               --nodeno=[NUM] 'Number of this nodes (0 <= n < nodes)'
                                               --progress=[true|false] 'Show progress bar'
                                               --overwrite=[false|true] 'Overwrite previously cached tiles'")
-                        .about("Generate tiles for cache"));
+                        .about("Generate tiles for cache"))
+        .subcommand(SubCommand::with_name("drilldown")
+                        .setting(AppSettings::AllowLeadingHyphen)
+                        .args_from_usage("-c, --config=<FILE> 'Load from custom config file'
+                                              --loglevel=[error|warn|info|debug|trace] 'Log level (Default: info)'
+                                              --tileset=[NAME] 'Tileset name'
+                                              --minzoom=[LEVEL] 'Minimum zoom level'
+                                              --maxzoom=[LEVEL] 'Maximum zoom level'
+                                              --points=[x1,y1,x2,y2,..] 'Drilldown points'
+                                              --progress=[true|false] 'Show progress bar'")
+                        .about("Tile layer statistics"));
 
     match app.get_matches_from_safe_borrow(env::args()) {
         //app.get_matches() prohibits later call of app.print_help()
@@ -159,6 +199,10 @@ fn main() {
             ("generate", Some(sub_m)) => {
                 init_logger(sub_m);
                 generate(sub_m);
+            }
+            ("drilldown", Some(sub_m)) => {
+                init_logger(sub_m);
+                drilldown(sub_m);
             }
             _ => {
                 let _ = app.print_help();
