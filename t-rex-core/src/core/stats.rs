@@ -64,6 +64,29 @@ impl Statistics {
             }
         }
     }
+    pub fn as_csv(&self) -> String {
+        let mut lines = Vec::new();
+        let mut header: Vec<String> = vec!["count", "min", "max", "mean", "stddev"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        let maxkeylen = self.0.keys().map(|k| k.split('.').count()).max().unwrap();
+        header.extend((0..maxkeylen).map(|n| format!("key{}", n)));
+        lines.push(header.join(","));
+        for key in self.0.keys() {
+            let vals = self.results(&key);
+            let mut cols = vec![
+                vals.len.to_string(),
+                vals.min.to_string(),
+                vals.max.to_string(),
+                vals.mean.to_string(),
+                vals.stddev.to_string(),
+            ];
+            cols.extend(key.split('.').map(|k| k.to_string()));
+            lines.push(cols.join(","));
+        }
+        lines.join("\n") + "\n"
+    }
 }
 
 impl fmt::Debug for StatResults {
@@ -102,6 +125,7 @@ fn usage() {
     assert_eq!(stats.results("Layer.layer1").len, 3);
     assert_eq!(stats.results("Layer.layer1").min, 1);
     assert_eq!(stats.results("Layer.layer1").max, 3);
+    assert_eq!(&stats.as_csv(), "count,min,max,mean,stddev,key0,key1\n3,1,3,2,0.816496580927726,Layer,layer1\n1,2,2,2,0,Layer,layer2\n");
 
     assert_eq!(stats.results("Layer.layerx").mean, 0.0);
 }

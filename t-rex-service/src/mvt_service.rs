@@ -18,7 +18,7 @@ use pbr::ProgressBar;
 use percent_encoding::percent_decode;
 use serde_json;
 use service::tileset::{Tileset, WORLD_EXTENT};
-use std::io::Stdout;
+use std::io::{stderr, Stderr, Stdout};
 use std::time::Instant;
 
 /// Mapbox Vector Tile Service
@@ -550,9 +550,9 @@ impl MvtService {
             );
         }
     }
-    fn progress_bar_drilldown(&self, zoomlevels: u8, points: u64) -> ProgressBar<Stdout> {
+    fn progress_bar_drilldown(&self, zoomlevels: u8, points: u64) -> ProgressBar<Stderr> {
         let numtiles = zoomlevels as u64 * points;
-        let mut pb = ProgressBar::new(numtiles);
+        let mut pb = ProgressBar::on(stderr(), numtiles);
         pb.message("Tile ");
         pb.show_speed = false;
         pb.show_percent = false;
@@ -610,10 +610,10 @@ impl MvtService {
                     }
                 }
             }
-            println!("Statistics:\n{:?}", stats);
+            print!("{}", stats.as_csv());
         }
         if progress {
-            println!("");
+            eprintln!("");
         }
     }
     fn gen_layer_runtime_config(&self, layer: &Layer) -> String {
