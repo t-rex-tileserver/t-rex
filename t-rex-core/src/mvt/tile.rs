@@ -309,4 +309,8 @@ impl<'a> Tile<'a> {
         let mut f = File::create(fname).unwrap();
         Self::write_to(&mut f, &self.mvt_tile);
     }
+
+    pub fn size(mvt_tile: &vector_tile::Tile) -> u32 {
+        mvt_tile.compute_size()
+    }
 }

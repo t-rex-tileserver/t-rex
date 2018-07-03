@@ -95,9 +95,10 @@ fn generate(args: &ArgMatches) {
             .expect("Error parsing 'overwrite' as boolean value")
     });
     service.prepare_feature_queries();
-    service.generate(
+    let stats = service.generate(
         tileset, minzoom, maxzoom, extent, nodes, nodeno, progress, overwrite,
     );
+    println!("Statistics:\n{:?}", stats);
 }
 
 fn drilldown(args: &ArgMatches) {
@@ -128,7 +129,8 @@ fn drilldown(args: &ArgMatches) {
             .expect("Error parsing 'progress' as boolean value")
     });
     service.prepare_feature_queries();
-    service.drilldown(tileset, minzoom, maxzoom, points, progress);
+    let stats = service.drilldown(tileset, minzoom, maxzoom, points, progress);
+    print!("{}", stats.as_csv());
 }
 
 fn main() {

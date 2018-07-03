@@ -331,7 +331,7 @@ impl MvtService {
         xtile: u32,
         ytile: u32,
         zoom: u8,
-        stats: &mut Statistics,
+        mut stats: Option<&mut Statistics>,
     ) -> vector_tile::Tile {
         let extent = self.grid.tile_extent(xtile, ytile, zoom);
         debug!("MVT tile request {:?}", extent);
@@ -350,15 +350,17 @@ impl MvtService {
                     },
                 );
                 let elapsed = now.elapsed();
-                stats.add(
-                    format!("tile_ms.layer.{}.{}", &layer.name, zoom),
-                    elapsed.as_secs() * 1000 + elapsed.subsec_millis() as u64,
-                );
                 let num_features = mvt_layer.get_features().len();
-                stats.add(
-                    format!("feature_count.layer.{}.{}", &layer.name, zoom),
-                    num_features as u64,
-                );
+                if let Some(ref mut stats) = stats {
+                    stats.add(
+                        format!("tile_ms.{}.{}.{}", tileset, &layer.name, zoom),
+                        elapsed.as_secs() * 1000 + elapsed.subsec_millis() as u64,
+                    );
+                    stats.add(
+                        format!("feature_count.{}.{}.{}", tileset, &layer.name, zoom),
+                        num_features as u64,
+                    );
+                }
                 if num_features > 0 {
                     tile.add_layer(mvt_layer);
                 }
@@ -374,7 +376,7 @@ impl MvtService {
         ytile: u32,
         zoom: u8,
         _gzip: bool,
-        stats: &mut Statistics,
+        stats: Option<&mut Statistics>,
     ) -> Option<Vec<u8>> {
         // Reverse y for XYZ scheme (TODO: protocol instead of CRS dependent?)
         let y = if self.grid.srid == 3857 {
@@ -440,8 +442,9 @@ impl MvtService {
         nodeno: Option<u8>,
         progress: bool,
         overwrite: bool,
-    ) {
+    ) -> Statistics {
         self.init_cache();
+        let mut stats = Statistics::new();
         let minzoom = minzoom.unwrap_or(0);
         let maxzoom = maxzoom.unwrap_or(self.grid.maxzoom());
         let nodes = nodes.unwrap_or(1) as u64;
@@ -470,7 +473,6 @@ impl MvtService {
 
             let tolerance = 0;
             let limits = self.grid.tile_limits(ext_proj, tolerance);
-            let mut stats = Statistics::new();
             for zoom in minzoom..maxzoom + 1 {
                 if zoom > self.grid.maxzoom() {
                     warn!(
@@ -504,7 +506,7 @@ impl MvtService {
                                 xtile as u32,
                                 ytile as u32,
                                 zoom,
-                                &mut stats,
+                                Some(&mut stats),
                             );
                             let mut tilegz = Vec::new();
                             Tile::write_gz_to(&mut tilegz, &mvt_tile);
@@ -517,11 +519,11 @@ impl MvtService {
                     }
                 }
             }
-            println!("Statistics:\n{:?}", stats);
         }
         if progress {
             println!("");
         }
+        stats
     }
     pub fn init_cache(&self) {
         info!("{}", &self.cache.info());
@@ -567,7 +569,8 @@ impl MvtService {
         maxzoom: Option<u8>,
         points: Vec<f64>,
         progress: bool,
-    ) {
+    ) -> Statistics {
+        let mut stats = Statistics::new();
         let minzoom = minzoom.unwrap_or(0);
         let maxzoom = maxzoom.unwrap_or(self.grid.maxzoom());
         for tileset in &self.tilesets {
@@ -575,7 +578,6 @@ impl MvtService {
                 continue;
             }
 
-            let mut stats = Statistics::new();
             let mut pb = self.progress_bar_drilldown(
                 maxzoom.min(self.grid.maxzoom()) - minzoom + 1,
                 points.len() as u64 / 2,
@@ -602,19 +604,27 @@ impl MvtService {
                     debug!("level {}: {:?}", zoom, limit);
                     let xtile = limit.minx;
                     let ytile = limit.miny;
-                    let _mvt_tile =
-                        self.tile(&tileset.name, xtile as u32, ytile as u32, zoom, &mut stats);
-
+                    let mvt_tile = self.tile(
+                        &tileset.name,
+                        xtile as u32,
+                        ytile as u32,
+                        zoom,
+                        Some(&mut stats),
+                    );
+                    stats.add(
+                        format!("tile_bytes.{}.total.{}", &tileset.name, zoom),
+                        Tile::size(&mvt_tile) as u64,
+                    );
                     if progress {
                         pb.inc();
                     }
                 }
             }
-            print!("{}", stats.as_csv());
         }
         if progress {
             eprintln!("");
         }
+        stats
     }
     fn gen_layer_runtime_config(&self, layer: &Layer) -> String {
         let ds = self.ds(layer).unwrap();
