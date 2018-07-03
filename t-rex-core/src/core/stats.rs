@@ -5,9 +5,12 @@
 
 //! Statistics collector
 
+use serde_json;
 use stats::{MinMax, OnlineStats};
 use std::collections::BTreeMap;
 use std::fmt;
+
+type JsonResult = Result<serde_json::Value, serde_json::error::Error>;
 
 type MeasurementType = u64;
 
@@ -87,6 +90,29 @@ impl Statistics {
         }
         lines.join("\n") + "\n"
     }
+    pub fn as_json(&self) -> JsonResult {
+        let json: Vec<serde_json::Value> = self.0
+            .keys()
+            .map(|key| {
+                let vals = self.results(&key);
+                let mut rec = json!({
+                "key": key,
+                "count": vals.len,
+                "min": vals.min,
+                "max": vals.max,
+                "mean": vals.mean,
+                "stddev": vals.stddev
+                });
+                for (n, k) in key.split('.').enumerate() {
+                    rec.as_object_mut()
+                        .unwrap()
+                        .insert(format!("key{}", n), json!(k));
+                }
+                rec
+            })
+            .collect();
+        Ok(json!(json))
+    }
 }
 
 impl fmt::Debug for StatResults {
@@ -126,6 +152,31 @@ fn usage() {
     assert_eq!(stats.results("Layer.layer1").min, 1);
     assert_eq!(stats.results("Layer.layer1").max, 3);
     assert_eq!(&stats.as_csv(), "count,min,max,mean,stddev,key0,key1\n3,1,3,2,0.816496580927726,Layer,layer1\n1,2,2,2,0,Layer,layer2\n");
+    let jsonstats = format!("{:#}", stats.as_json().unwrap());
+    let expected = r#"[
+  {
+    "count": 3,
+    "key": "Layer.layer1",
+    "key0": "Layer",
+    "key1": "layer1",
+    "max": 3,
+    "mean": 2.0,
+    "min": 1,
+    "stddev": 0.816496580927726
+  },
+  {
+    "count": 1,
+    "key": "Layer.layer2",
+    "key0": "Layer",
+    "key1": "layer2",
+    "max": 2,
+    "mean": 2.0,
+    "min": 2,
+    "stddev": 0.0
+  }
+]"#;
+    println!("{}", jsonstats);
+    assert_eq!(jsonstats, expected);
 
     assert_eq!(stats.results("Layer.layerx").mean, 0.0);
 }

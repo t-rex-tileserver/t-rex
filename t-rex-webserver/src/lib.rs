@@ -12,6 +12,9 @@ extern crate futures;
 extern crate open;
 #[macro_use]
 extern crate lazy_static;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 
 extern crate t_rex_core;
 extern crate t_rex_service;

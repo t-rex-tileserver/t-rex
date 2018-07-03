@@ -19,7 +19,7 @@ use service::tileset::Tileset;
 use actix;
 use actix_web::{
     fs, http::header, http::ContentEncoding, http::Method, middleware, middleware::cors::Cors,
-    server::HttpServer, App, Error, HttpMessage, HttpRequest, HttpResponse, Path,
+    server::HttpServer, App, Error, HttpMessage, HttpRequest, HttpResponse, Path, Query,
 };
 use clap::ArgMatches;
 use futures::future::{result, FutureResult};
@@ -378,6 +378,35 @@ fn static_file_handler(req: HttpRequest<AppState>) -> Result<HttpResponse, Error
     Ok(resp)
 }
 
+#[derive(Deserialize)]
+struct DrilldownParams {
+    minzoom: Option<u8>,
+    maxzoom: Option<u8>,
+    points: String, //x1,y1,x2,y2,..
+}
+
+fn drilldown_handler(
+    (req, params): (HttpRequest<AppState>, Query<DrilldownParams>),
+) -> FutureResult<HttpResponse, Error> {
+    let tileset = None; // all tilesets
+    let progress = false;
+    let points: Vec<f64> = params
+        .points
+        .split(",")
+        .map(|v| {
+            v.parse()
+                .expect("Error parsing 'point' as pair of float values")
+            //FIXME: map_err(|_| error::ErrorInternalServerError("...")
+        })
+        .collect();
+    let stats =
+        req.state()
+            .service
+            .drilldown(tileset, params.minzoom, params.maxzoom, points, progress);
+    let json = stats.as_json().unwrap();
+    result(Ok(HttpResponse::Ok().json(json)))
+}
+
 pub fn webserver(args: ArgMatches<'static>) {
     let config = config_from_args(&args);
     let host = config
@@ -431,6 +460,7 @@ pub fn webserver(args: ArgMatches<'static>) {
             }
         }
         if mvt_viewer {
+            app = app.resource("/drilldown", |r| r.method(Method::GET).with_async(drilldown_handler));
             app = app.handler("/", static_file_handler);
         }
         app
