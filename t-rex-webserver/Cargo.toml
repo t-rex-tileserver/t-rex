@@ -13,7 +13,7 @@ workspace = ".."
 doctest = false
 
 [dependencies]
-actix = { git="https://github.com/actix/actix.git" } # -> 0.6
+actix = "0.7"
 actix-web =  { git = "https://github.com/actix/actix-web.git" } # -> 0.7
 futures = "0.1"
 clap = "2.31"

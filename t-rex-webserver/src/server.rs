@@ -25,7 +25,6 @@ use clap::ArgMatches;
 use futures::future::{result, FutureResult};
 use open;
 use std::collections::HashMap;
-use std::path;
 use std::process;
 use std::str;
 use std::str::FromStr;
@@ -255,13 +254,13 @@ struct AppState {
     config: ApplicationCfg,
 }
 
-fn mvt_metadata(req: HttpRequest<AppState>) -> FutureResult<HttpResponse, Error> {
+fn mvt_metadata(req: &HttpRequest<AppState>) -> FutureResult<HttpResponse, Error> {
     let json = req.state().service.get_mvt_metadata().unwrap();
     result(Ok(HttpResponse::Ok().json(json)))
 }
 
 /// Font list for Maputnik
-fn fontstacks(_req: HttpRequest<AppState>) -> Result<HttpResponse, Error> {
+fn fontstacks(_req: &HttpRequest<AppState>) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().json(["Roboto Medium", "Roboto Regular"]))
 }
 
@@ -368,7 +367,7 @@ fn tile_pbf(
     result(Ok(resp))
 }
 
-fn static_file_handler(req: HttpRequest<AppState>) -> Result<HttpResponse, Error> {
+fn static_file_handler(req: &HttpRequest<AppState>) -> Result<HttpResponse, Error> {
     let key = req.path()[1..].to_string();
     let resp = if let Some(ref content) = STATIC_FILES.content(None, key) {
         HttpResponse::Ok().content_type(content.1).body(content.0) // TODO: chunked response
@@ -449,11 +448,11 @@ pub fn webserver(args: ArgMatches<'static>) {
             });
         for static_dir in &static_dirs {
             let dir = &static_dir.dir;
-            if path::Path::new(dir).is_dir() {
+            if let Ok(handler) = fs::StaticFiles::new(dir) {
                 info!("Serving static files from directory '{}'", dir);
                 app = app.handler(
                     &static_dir.path,
-                    fs::StaticFiles::new(dir)
+                    handler
                 );
             } else {
                 warn!("Static file directory '{}' not found", dir);
