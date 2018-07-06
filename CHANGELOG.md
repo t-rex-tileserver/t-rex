@@ -4,7 +4,17 @@
 #### Features
 
 * Port to asynchronous actix framework
+* New `drilldown` command and service for tileset statistics
+* Configurable directories for static file serving
+* New command line parameter `loglevel`
+* Make `ST_MakeValid` on geometries when clipping optional (`make_valid`)
+* `minzoom`/`maxzoom`, `center` and `start_zoom` configuration on tileset level (Thanks frodrigo!)
 * New attribution configuration (Thanks frodrigo!)
+
+#### Bug Fixes
+
+* Support table names with special characters
+* Omit empty layers in tiles (Thanks @frodrigo!)
 
 <a name="0.8.2"></a>
 ## 0.8.2 (2018-04-18)

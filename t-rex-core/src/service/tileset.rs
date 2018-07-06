@@ -29,10 +29,10 @@ pub static WORLD_EXTENT: Extent = Extent {
 
 impl Tileset {
     pub fn minzoom(&self) -> u8 {
-        self.minzoom.unwrap_or(0) // TODO: from layers or config
+        self.minzoom.unwrap_or(0)
     }
     pub fn maxzoom(&self) -> u8 {
-        self.maxzoom.unwrap_or(22) // TODO: from layers or config (see also MvtService#get_stylejson)
+        self.maxzoom.unwrap_or(22)
     }
     pub fn attribution(&self) -> String {
         self.attribution.clone().unwrap_or("".to_string())
