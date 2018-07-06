@@ -345,22 +345,25 @@ impl PostgisInput {
         if !raw_geom {
             // Clipping
             if layer.buffer_size.is_some() {
+                let valid_geom = if layer.make_valid {
+                    format!("ST_MakeValid({})", geom_name)
+                } else {
+                    String::from(geom_name as &str)
+                };
                 match layer
                     .geometry_type
                     .as_ref()
                     .unwrap_or(&"GEOMETRY".to_string()) as &str
                 {
                     "POLYGON" | "MULTIPOLYGON" => {
-                        geom_expr = format!(
-                            "ST_Buffer(ST_Intersection(ST_MakeValid({}),!bbox!), 0.0)",
-                            geom_expr
-                        );
+                        geom_expr =
+                            format!("ST_Buffer(ST_Intersection({},!bbox!), 0.0)", valid_geom);
                     }
                     "POINT" => {
                         // ST_Intersection not necessary - bbox query in WHERE clause is sufficient
                     }
                     _ => {
-                        geom_expr = format!("ST_Intersection(ST_MakeValid({}),!bbox!)", geom_expr);
+                        geom_expr = format!("ST_Intersection({},!bbox!)", valid_geom);
                     } //Buffer is added to !bbox! when replaced
                 };
             }

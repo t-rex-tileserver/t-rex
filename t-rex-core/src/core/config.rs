@@ -132,6 +132,8 @@ pub struct LayerCfg {
     pub simplify: Option<bool>,
     /// Tile buffer size in pixels (None: no clipping)
     pub buffer_size: Option<u32>,
+    /// Fix invalid geometries before clipping (lines and polygons)
+    pub make_valid: Option<bool>,
     // Inline style
     pub style: Option<Value>,
 }

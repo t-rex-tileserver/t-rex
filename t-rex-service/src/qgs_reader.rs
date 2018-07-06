@@ -297,6 +297,7 @@ geometry_type = "POLYGON"
 srid = 3857
 #fid_field = "id"
 #buffer_size = 10
+#make_valid = true
 simplify = false
 #query_limit = 1000
 #[[tileset.layer.query]]
@@ -315,6 +316,7 @@ table_name = "ne_110m_admin_0_countries"
 #srid = 3857
 #fid_field = "id"
 #buffer_size = 10
+#make_valid = true
 simplify = false
 #query_limit = 1000
 #[[tileset.layer.query]]

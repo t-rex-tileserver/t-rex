@@ -485,6 +485,7 @@ geometry_type = "POINT"
 #fid_field = "id"
 #simplify = true
 #buffer_size = 10
+#make_valid = true
 #[[tileset.layer.query]]
 #minzoom = 0
 #maxzoom = 22

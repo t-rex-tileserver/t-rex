@@ -35,6 +35,8 @@ pub struct Layer {
     pub simplify: bool,
     /// Tile buffer size in pixels (None: no clipping)
     pub buffer_size: Option<u32>,
+    /// Fix invalid geometries before clipping (lines and polygons)
+    pub make_valid: bool,
     // Inline style
     pub style: Option<String>,
 }
@@ -127,6 +129,7 @@ impl<'a> Config<'a, LayerCfg> for Layer {
             tile_size: layer_cfg.tile_size.unwrap_or(4096),
             simplify: layer_cfg.simplify.unwrap_or(false),
             buffer_size: layer_cfg.buffer_size,
+            make_valid: layer_cfg.make_valid.unwrap_or(false),
             style: style,
         })
     }
@@ -147,6 +150,7 @@ geometry_type = "POINT"
 #fid_field = "id"
 #simplify = true
 #buffer_size = 10
+#make_valid = true
 #[[tileset.layer.query]]
 #minzoom = 0
 #maxzoom = 22
@@ -192,6 +196,10 @@ geometry_type = "POINT"
         match self.buffer_size {
             Some(ref buffer_size) => lines.push(format!("buffer_size = {}", buffer_size)),
             _ => lines.push(format!("#buffer_size = 10")),
+        }
+        match self.make_valid {
+            true => lines.push(format!("make_valid = true")),
+            _ => lines.push(format!("#make_valid = true")),
         }
         if self.geometry_type != Some("POINT".to_string()) {
             // simplify is ignored for points
