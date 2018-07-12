@@ -83,7 +83,7 @@ Run tests:
 
 Run server:
 
-    cargo run -- serve --dbconn postgresql://pi@%2Frun%2Fpostgresql/natural_earth_vectors
+    cargo run -- serve --dbconn postgresql://$USER@%2Frun%2Fpostgresql/natural_earth_vectors
 
 Decode a vector tile:
 
@@ -97,13 +97,13 @@ Unit tests which need a PostgreSQL connection are ignored by default.
 To run the database tests, declare the [connection](https://github.com/sfackler/rust-postgres#connecting) in an
 environment variable `DBCONN`. Example:
 
-    export DBCONN=postgresql://user:pass@localhost/natural_earth_vectors
+    export DBCONN=postgresql://$USER@%2Frun%2Fpostgresql/natural_earth_vectors
 
 Creating test database:
 
     # Set Postgresql environment variables when needed: PGHOST, PGPORT, PGUSER, PGPASSWORD
     cd t-rex-service/src/test
-    make
+    make createdb loadfromgpkg
 
 Run the tests with
 

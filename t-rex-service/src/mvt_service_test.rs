@@ -124,10 +124,10 @@ fn test_tile_query() {
                 Tile_Value {
                     string_value: None,
                     float_value: None,
-                    double_value: Some(
+                    double_value: None,
+                    int_value: Some(
                         10
                     ),
-                    int_value: None,
                     uint_value: None,
                     sint_value: None,
                     bool_value: None,
@@ -156,10 +156,10 @@ fn test_tile_query() {
                 Tile_Value {
                     string_value: None,
                     float_value: None,
-                    double_value: Some(
+                    double_value: None,
+                    int_value: Some(
                         11315
                     ),
-                    int_value: None,
                     uint_value: None,
                     sint_value: None,
                     bool_value: None,

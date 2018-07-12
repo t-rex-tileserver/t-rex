@@ -87,7 +87,7 @@ fn test_gdal_retrieve_points() {
         }
         reccnt += 1;
     });
-    assert_eq!(reccnt, 2);
+    assert_eq!(reccnt, 1);
 }
 
 #[test]
@@ -142,7 +142,7 @@ fn test_coord_transformation() {
         }
         reccnt += 1;
     });
-    assert_eq!(reccnt, 2);
+    assert_eq!(reccnt, 1);
 }
 
 #[test]

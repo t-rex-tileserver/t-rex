@@ -87,7 +87,7 @@ fn test_detect_columns() {
         cols,
         vec![
             ("fid".to_string(), "".to_string()),
-            ("scalerank".to_string(), "FLOAT8".to_string()),
+            ("scalerank".to_string(), "".to_string()),
             ("name".to_string(), "".to_string()),
         ]
     );
@@ -302,7 +302,7 @@ fn test_retrieve_features() {
         assert_eq!(feat.attributes()[2].key, "name");
         assert_eq!(feat.attributes()[3].key, "pop_max"); //Numeric
         assert_eq!(feat.attributes()[0].value, FeatureAttrValType::Int(6478));
-        assert_eq!(feat.attributes()[1].value, FeatureAttrValType::Double(4.0));
+        assert_eq!(feat.attributes()[1].value, FeatureAttrValType::Int(4));
         assert_eq!(
             feat.attributes()[2].value,
             FeatureAttrValType::String("Bern".to_string())

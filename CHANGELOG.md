@@ -3,11 +3,11 @@
 
 #### Features
 
-* Port to asynchronous actix framework
+* Port to asynchronous actix web framework
 * New `drilldown` command and service for tileset statistics
 * Configurable directories for static file serving
 * New command line parameter `loglevel`
-* Make `ST_MakeValid` on geometries when clipping optional (`make_valid`)
+* Make `ST_MakeValid` on geometries before clipping optional (`make_valid`)
 * `minzoom`/`maxzoom`, `center` and `start_zoom` configuration on tileset level (Thanks frodrigo!)
 * New attribution configuration (Thanks frodrigo!)
 
