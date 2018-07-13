@@ -6,6 +6,7 @@
 use datasource::DatasourceInput;
 use mvt_service::MvtService;
 use serde_json;
+use std::cmp;
 
 type JsonResult = Result<serde_json::Value, serde_json::error::Error>;
 
@@ -92,20 +93,22 @@ impl MvtService {
         }))
     }
     fn get_tilejson_layers(&self, tileset: &str) -> JsonResult {
+        let ts = self.get_tileset(tileset)
+            .expect(&format!("Tileset '{}' not found", tileset));
         let layers = self.get_tileset_layers(tileset);
         let layers_metadata: Vec<serde_json::Value> = layers
             .iter()
             .map(|layer| {
                 let meta = layer.metadata();
-                let query = layer.query(layer.maxzoom());
+                let query = layer.query(layer.maxzoom(22));
                 let mut meta_json = json!({
                     "id": meta.get("id").unwrap(),
                     "name": meta.get("name").unwrap(),
                     "description": meta.get("description").unwrap(),
                     "srs": meta.get("srs").unwrap(),
                     "properties": {
-                        "minzoom": layer.minzoom(),
-                        "maxzoom": layer.maxzoom(),
+                        "minzoom": cmp::max(ts.minzoom(), layer.minzoom()),
+                        "maxzoom": cmp::min(ts.maxzoom(), layer.maxzoom(22)),
                         "buffer-size": layer.buffer_size.unwrap_or(0)
                     },
                     "fields": {}
@@ -126,21 +129,23 @@ impl MvtService {
     // MVT layers in TileJSON manifest
     // https://github.com/mapbox/tilejson-spec/tree/3.0-vector_layers/3.0#315-vector_layers
     fn get_tilejson_vector_layers(&self, tileset: &str) -> JsonResult {
+        let ts = self.get_tileset(tileset)
+            .expect(&format!("Tileset '{}' not found", tileset));
         let layers = self.get_tileset_layers(tileset);
         let vector_layers: Vec<serde_json::Value> = layers
             .iter()
             .map(|layer| {
                 let meta = layer.metadata();
-                let query = layer.query(layer.maxzoom());
+                let query = layer.query(layer.maxzoom(22));
                 let mut layer_json = json!({
                     "id": meta.get("id").unwrap(),
                     "description": meta.get("description").unwrap(), // Optional
                     // lowest zoom level whose tiles this layer appears in.
                     // must be greater than or equal to the tileset's minzoom
-                    "minzoom": layer.minzoom(),
+                    "minzoom": cmp::max(ts.minzoom(), layer.minzoom()),
                     // highest zoom level whose tiles this layer appears in.
                     // must  be less than or equal to the tileset's maxzoom
-                    "maxzoom": layer.maxzoom(),
+                    "maxzoom": cmp::min(ts.maxzoom(), layer.maxzoom(22)),
                     "fields": {}
                 });
                 //insert fields

@@ -43,15 +43,6 @@ pub struct Layer {
     pub style: Option<String>,
 }
 
-impl LayerQuery {
-    pub fn minzoom(&self) -> u8 {
-        self.minzoom.unwrap_or(0)
-    }
-    pub fn maxzoom(&self) -> u8 {
-        self.maxzoom.unwrap_or(22)
-    }
-}
-
 impl Layer {
     pub fn new(name: &str) -> Layer {
         Layer {
@@ -61,12 +52,22 @@ impl Layer {
         }
     }
     pub fn minzoom(&self) -> u8 {
-        self.minzoom
-            .unwrap_or(self.query.iter().map(|q| q.minzoom()).min().unwrap_or(0))
+        self.minzoom.unwrap_or(
+            self.query
+                .iter()
+                .map(|q| q.minzoom.unwrap_or(0))
+                .min()
+                .unwrap_or(0),
+        )
     }
-    pub fn maxzoom(&self) -> u8 {
-        self.maxzoom
-            .unwrap_or(self.query.iter().map(|q| q.maxzoom()).max().unwrap_or(22))
+    pub fn maxzoom(&self, default: u8) -> u8 {
+        self.maxzoom.unwrap_or(
+            self.query
+                .iter()
+                .map(|q| q.maxzoom.unwrap_or(default))
+                .max()
+                .unwrap_or(default),
+        )
     }
     // SQL query for zoom level
     pub fn query(&self, level: u8) -> Option<&String> {
@@ -74,8 +75,8 @@ impl Layer {
             .iter()
             .map(|ref q| {
                 (
-                    q.minzoom(),
-                    q.maxzoom(),
+                    q.minzoom.unwrap_or(0),
+                    q.maxzoom.unwrap_or(22),
                     q.sql.as_ref().and_then(|sql| Some(sql)),
                 )
             })
@@ -96,7 +97,7 @@ impl Layer {
         metadata.insert("description", "".to_string());
         metadata.insert("buffer-size", self.buffer_size.unwrap_or(0).to_string());
         metadata.insert("minzoom", self.minzoom().to_string());
-        metadata.insert("maxzoom", self.maxzoom().to_string());
+        metadata.insert("maxzoom", self.maxzoom(22).to_string());
         metadata.insert("srs", "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over".to_string());
         metadata
     }
@@ -144,7 +145,7 @@ impl<'a> Config<'a, LayerCfg> for Layer {
         let toml = r#"
 [[tileset]]
 name = "points"
-#minzoom = 0 # Optional override of zoom limits broadcasted to tilejson descriptor
+#minzoom = 0
 #maxzoom = 22
 #attribution = "© Contributeurs de OpenStreetMap" # Acknowledgment of ownership, authorship or copyright.
 

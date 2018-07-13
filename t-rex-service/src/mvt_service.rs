@@ -84,8 +84,8 @@ impl MvtService {
             .expect(&format!("Tileset '{}' not found", tileset));
         let mut tile = Tile::new(&extent, true);
         for layer in self.get_tileset_layers(tileset) {
-            let minzoom = ts.minzoom.unwrap_or(layer.minzoom());
-            let maxzoom = ts.maxzoom.unwrap_or(layer.maxzoom());
+            let minzoom = ts.minzoom();
+            let maxzoom = ts.maxzoom();
             if zoom >= minzoom && zoom <= maxzoom {
                 let mut mvt_layer = tile.new_layer(layer);
                 let now = Instant::now();
@@ -221,11 +221,14 @@ impl MvtService {
             let tolerance = 0;
             let limits = self.grid.tile_limits(ext_proj, tolerance);
 
-            let ts_minzoom = cmp::max(tileset.minzoom.unwrap_or(0), minzoom.unwrap_or(0));
-            let ts_maxzoom = cmp::min(
-                tileset.maxzoom.unwrap_or(self.grid.maxzoom()),
+            let ts_minzoom = cmp::max(tileset.minzoom(), minzoom.unwrap_or(0));
+            let ts_maxzoom = *[
+                tileset.maxzoom(),
                 maxzoom.unwrap_or(99),
-            );
+                self.grid.maxzoom(),
+            ].iter()
+                .min()
+                .unwrap_or(&22);
             if minzoom.is_some() && minzoom.unwrap() < ts_minzoom {
                 warn!("Skipping zoom levels <{}", ts_minzoom);
             }

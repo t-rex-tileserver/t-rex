@@ -29,10 +29,17 @@ pub static WORLD_EXTENT: Extent = Extent {
 
 impl Tileset {
     pub fn minzoom(&self) -> u8 {
-        self.minzoom.unwrap_or(0)
+        self.minzoom
+            .unwrap_or(self.layers.iter().map(|l| l.minzoom()).min().unwrap_or(0))
     }
     pub fn maxzoom(&self) -> u8 {
-        self.maxzoom.unwrap_or(22)
+        self.maxzoom.unwrap_or(
+            self.layers
+                .iter()
+                .map(|l| l.maxzoom(22))
+                .max()
+                .unwrap_or(22),
+        )
     }
     pub fn attribution(&self) -> String {
         self.attribution.clone().unwrap_or("".to_string())
@@ -86,4 +93,39 @@ impl<'a> Config<'a, TilesetCfg> for Tileset {
         }
         config
     }
+}
+
+#[test]
+fn test_zoom() {
+    let mut layer = Layer::new("points");
+    layer.table_name = Some(String::from("ne_10m_populated_places"));
+    layer.geometry_field = Some(String::from("wkb_geometry"));
+    layer.geometry_type = Some(String::from("POINT"));
+    let mut tileset = Tileset {
+        name: "points".to_string(),
+        minzoom: None,
+        maxzoom: None,
+        center: None,
+        start_zoom: Some(3),
+        attribution: None,
+        extent: Some(Extent {
+            minx: -179.58998,
+            miny: -90.00000,
+            maxx: 179.38330,
+            maxy: 82.48332,
+        }),
+        layers: vec![layer],
+    };
+
+    assert_eq!(tileset.minzoom(), 0);
+    assert_eq!(tileset.maxzoom(), 22);
+
+    tileset.layers[0].maxzoom = Some(8);
+    assert_eq!(tileset.maxzoom(), 8);
+
+    tileset.layers[0].minzoom = Some(3);
+    assert_eq!(tileset.minzoom(), 3);
+
+    tileset.minzoom = Some(2);
+    assert_eq!(tileset.minzoom(), 2);
 }

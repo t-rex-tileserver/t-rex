@@ -42,17 +42,17 @@ fn test_toml_decode() {
     assert_eq!(cfg.name, "points");
     assert_eq!(cfg.table_name, Some("ne_10m_populated_places".to_string()));
     assert_eq!(cfg.query.len(), 2);
-    assert_eq!(cfg.query[0].minzoom(), 2);
-    assert_eq!(cfg.query[0].maxzoom(), 22);
+    assert_eq!(cfg.query[0].minzoom, Some(2));
+    assert_eq!(cfg.query[0].maxzoom, None);
     assert_eq!(cfg.query[1].minzoom, Some(10));
-    assert_eq!(cfg.query[1].minzoom(), 10);
-    assert_eq!(cfg.query[1].maxzoom(), 14);
+    assert_eq!(cfg.query[1].minzoom, Some(10));
+    assert_eq!(cfg.query[1].maxzoom, Some(14));
     assert_eq!(
         cfg.query[1].sql,
         Some("SELECT name,wkb_geometry FROM places_z10".to_string())
     );
     assert_eq!(cfg.minzoom(), 2);
-    assert_eq!(cfg.maxzoom(), 22);
+    assert_eq!(cfg.maxzoom(30), 30);
     assert_eq!(cfg.query(1), None);
     assert_eq!(
         cfg.query(2),
@@ -86,7 +86,7 @@ fn test_toml_decode() {
     assert_eq!(cfg.table_name, None);
     assert_eq!(cfg.query.len(), 0);
     assert_eq!(cfg.minzoom(), 0);
-    assert_eq!(cfg.maxzoom(), 22);
+    assert_eq!(cfg.maxzoom(30), 30);
 
     // min/maxzoom in layer
     let toml = r#"
@@ -99,7 +99,7 @@ fn test_toml_decode() {
         "#;
     let cfg = layer_from_config(toml).unwrap();
     assert_eq!(cfg.minzoom(), 1);
-    assert_eq!(cfg.maxzoom(), 12);
+    assert_eq!(cfg.maxzoom(22), 12);
 
     // min/maxzoom override query limits
     let toml = r#"
@@ -120,7 +120,80 @@ fn test_toml_decode() {
         "#;
     let cfg = layer_from_config(toml).unwrap();
     assert_eq!(cfg.minzoom(), 1);
-    assert_eq!(cfg.maxzoom(), 12);
+    assert_eq!(cfg.maxzoom(22), 12);
+
+    // handle empty query limits
+    let toml = r#"
+        #[[tileset.layer]]
+        name = "points"
+        geometry_field = "wkb_geometry"
+        #[[tileset.layer.query]]
+        [[query]]
+        maxzoom = 13
+        sql = "SELECT name,wkb_geometry FROM places_z2"
+        #[[tileset.layer.query]]
+        [[query]]
+        minzoom = 10
+        maxzoom = 14
+        sql = "SELECT name,wkb_geometry FROM places_z10"
+        "#;
+    let cfg = layer_from_config(toml).unwrap();
+    assert_eq!(cfg.minzoom(), 0);
+    assert_eq!(cfg.maxzoom(22), 14);
+    assert_eq!(
+        cfg.query(1),
+        Some(&"SELECT name,wkb_geometry FROM places_z2".to_string())
+    );
+    assert_eq!(
+        cfg.query(9),
+        Some(&"SELECT name,wkb_geometry FROM places_z2".to_string())
+    );
+    assert_eq!(
+        cfg.query(10),
+        Some(&"SELECT name,wkb_geometry FROM places_z10".to_string())
+    );
+    assert_eq!(
+        cfg.query(14),
+        Some(&"SELECT name,wkb_geometry FROM places_z10".to_string())
+    );
+    assert_eq!(cfg.query(15), None);
+
+    let toml = r#"
+        #[[tileset.layer]]
+        name = "points"
+        geometry_field = "wkb_geometry"
+        #[[tileset.layer.query]]
+        [[query]]
+        sql = "SELECT name,wkb_geometry FROM places_z2"
+        #[[tileset.layer.query]]
+        [[query]]
+        minzoom = 10
+        maxzoom = 14
+        sql = "SELECT name,wkb_geometry FROM places_z10"
+        "#;
+    let cfg = layer_from_config(toml).unwrap();
+    assert_eq!(cfg.minzoom(), 0);
+    assert_eq!(cfg.maxzoom(22), 22);
+    assert_eq!(
+        cfg.query(1),
+        Some(&"SELECT name,wkb_geometry FROM places_z2".to_string())
+    );
+    assert_eq!(
+        cfg.query(9),
+        Some(&"SELECT name,wkb_geometry FROM places_z2".to_string())
+    );
+    assert_eq!(
+        cfg.query(10),
+        Some(&"SELECT name,wkb_geometry FROM places_z10".to_string())
+    );
+    assert_eq!(
+        cfg.query(14),
+        Some(&"SELECT name,wkb_geometry FROM places_z10".to_string())
+    );
+    assert_eq!(
+        cfg.query(15),
+        Some(&"SELECT name,wkb_geometry FROM places_z2".to_string())
+    );
 
     // Invalid config: missing required field
     let toml = r#"
