@@ -129,7 +129,12 @@ impl MvtService {
                        ext.miny,
                        ext.maxx,
                        ext.maxy],
+            // Minimum zoom level for which tiles are available.
+            // Optional. Default: 0. >= 0, <= 30.
             "minzoom": ts.minzoom(),
+            // Maximum zoom level for which tiles are available.
+            // Data from tiles at the maxzoom are used when displaying the map at higher zoom levels.
+            // Optional. Default: 30. >= 0, <= 30. (Mapbox Style default: 22)
             "maxzoom": ts.maxzoom(),
             "center": [center.0, center.1, zoom],
             "basename": tileset
@@ -167,7 +172,8 @@ impl MvtService {
             .collect();
         Ok(json!(layers_metadata))
     }
-    /// TileJSON MVT vector layer extension (https://github.com/mapbox/tilejson-spec/issues/14)
+    // MVT layers in TileJSON manifest
+    // https://github.com/mapbox/tilejson-spec/tree/3.0-vector_layers/3.0#315-vector_layers
     fn get_tilejson_vector_layers(&self, tileset: &str) -> JsonResult {
         let layers = self.get_tileset_layers(tileset);
         let vector_layers: Vec<serde_json::Value> = layers
@@ -176,12 +182,16 @@ impl MvtService {
                 let meta = layer.metadata();
                 let query = layer.query(layer.maxzoom());
                 let mut layer_json = json!({
-                "id": meta.get("id").unwrap(),
-                "description": meta.get("description").unwrap(),
-                "minzoom": layer.minzoom(),
-                "maxzoom": layer.maxzoom(),
-                "fields": {}
-            });
+                    "id": meta.get("id").unwrap(),
+                    "description": meta.get("description").unwrap(), // Optional
+                    // lowest zoom level whose tiles this layer appears in.
+                    // must be greater than or equal to the tileset's minzoom
+                    "minzoom": layer.minzoom(),
+                    // highest zoom level whose tiles this layer appears in.
+                    // must  be less than or equal to the tileset's maxzoom
+                    "maxzoom": layer.maxzoom(),
+                    "fields": {}
+                });
                 //insert fields
                 let fields = self.ds(&layer).unwrap().detect_data_columns(&layer, query);
                 for (ref field, _) in fields {
@@ -207,30 +217,12 @@ impl MvtService {
     }
     /// MapboxGL Style JSON (https://www.mapbox.com/mapbox-gl-style-spec/)
     pub fn get_stylejson(&self, baseurl: &str, tileset: &str) -> JsonResult {
-        // TODO: add minZoom/maxZoom for vector source.
-        // Difference between setting the maxZoom for a source, and setting
-        // the maxZoom for a layer:
-        // (https://github.com/mapbox/mapbox-gl-native/issues/9863#issuecomment-325615680)
-        //
-        // Source maxZoom controls from which zoom levels tiles are loaded. If
-        // your custom tile source only has tiles up to z14, please set
-        // maxZoom: 14 so that Mapbox GL doesn't attempt to load z15/z16/...
-        // tiles. As per the style specification, the default value of maxZoom
-        // is 22.
-        // https://www.mapbox.com/mapbox-gl-js/style-spec/#sources-vector-maxzoom
-        //
-        // Layer maxZoom controls when the layer is displayed depending on the
-        // zoom. This is independent of the source zoom level, e.g. we can
-        // show z14 tiles when zoomed to 16. If you specify a maxZoom of 14,
-        // the layer won't be shown at all when the zoom level is >= 14, even
-        // if there are still tiles available.
-        // https://www.mapbox.com/mapbox-gl-js/style-spec/#layer-maxzoom
         let mut stylejson = json!({
             "version": 8,
             "name": "t-rex",
             "metadata": {
+                // prevent compositing in mapbox studio
                 "mapbox:autocomposite": false,
-                "mapbox:type": "template",
                 "maputnik:renderer": "mbgljs"
             },
             "glyphs": format!("{}/fonts/{{fontstack}}/{{range}}.pbf", baseurl),
@@ -247,7 +239,7 @@ impl MvtService {
           "paint": {
             "background-color": "rgba(255, 255, 255, 1)"
           }
-        }); // TODO: from global style
+        }); // TODO: add style.background-color element
         let layers = self.get_tileset_layers(tileset);
         let mut layer_styles: Vec<serde_json::Value> = layers
             .iter()
@@ -269,7 +261,17 @@ impl MvtService {
                     .as_object_mut()
                     .unwrap()
                     .insert("source-layer".to_string(), json!(layer.name));
-                // TODO: support source-layer referencing other layers
+                // Note: source-layer referencing other layers not supported
+
+                // minzoom:
+                // The minimum zoom level for the layer. At zoom levels less than the minzoom, the layer will be hidden.
+                // Optional number between 0 and 24 inclusive.
+                // maxzoom:
+                // The maximum zoom level for the layer. At zoom levels equal to or greater than the maxzoom, the layer will be hidden.
+                // Optional number between 0 and 24 inclusive.
+                // Note: We could use source data min-/maxzoom as default to prevent overzooming
+                // or we could add style.minzoom, style.maxzoom elements
+
                 // Default paint type
                 let default_type = if let Some(ref geomtype) = layer.geometry_type {
                     match &geomtype as &str {

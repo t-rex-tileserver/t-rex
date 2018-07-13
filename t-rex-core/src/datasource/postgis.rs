@@ -416,7 +416,10 @@ impl PostgisInput {
                 "Layer '{}': Reprojecting geometry '{}' from SRID {} to {}",
                 layer.name, geom_name, layer_srid, grid_srid
             );
-            geom_expr = format!("ST_Shift_Longitude(ST_Transform({},{}))", geom_expr, grid_srid);
+            geom_expr = format!(
+                "ST_Shift_Longitude(ST_Transform({},{}))",
+                geom_expr, grid_srid
+            );
         }
 
         if geom_expr.starts_with("ST_") || geom_expr.starts_with("COALESCE") {
