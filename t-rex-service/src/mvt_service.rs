@@ -235,15 +235,15 @@ impl MvtService {
             if maxzoom.is_some() && maxzoom.unwrap() > ts_maxzoom {
                 warn!("Skipping zoom levels >{}", ts_maxzoom);
             }
-            for zoom in ts_minzoom..ts_maxzoom + 1 {
+            for zoom in ts_minzoom..=ts_maxzoom {
                 let ref limit = limits[zoom as usize];
                 debug!("level {}: {:?}", zoom, limit);
                 let mut pb = self.progress_bar(&format!("Level {}: ", zoom), &limit);
                 if progress {
                     pb.tick();
                 }
-                for xtile in limit.minx..limit.maxx + 1 {
-                    for ytile in limit.miny..limit.maxy + 1 {
+                for xtile in limit.minx..=limit.maxx {
+                    for ytile in limit.miny..=limit.maxy {
                         let skip = tileno % nodes != nodeno;
                         tileno += 1;
                         if skip {
@@ -351,7 +351,7 @@ impl MvtService {
 
                 let tolerance = 0;
                 let limits = self.grid.tile_limits(ext_proj, tolerance);
-                for zoom in minzoom..maxzoom + 1 {
+                for zoom in minzoom..=maxzoom {
                     if zoom > self.grid.maxzoom() {
                         continue;
                     }
