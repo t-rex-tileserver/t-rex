@@ -432,7 +432,7 @@ pub fn webserver(args: ArgMatches<'static>) {
         service.init_cache();
 
         let mut app = App::with_state(AppState{service, config})
-            .middleware(middleware::Logger::default())
+            .middleware(middleware::Logger::new("%r %s %b %Dms %a"))
             .resource("/index.json", |r| r.method(Method::GET).a(mvt_metadata))
             .configure(|app| {
                 Cors::for_app(app)
