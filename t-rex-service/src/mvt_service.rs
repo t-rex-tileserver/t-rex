@@ -18,6 +18,7 @@ use pbr::ProgressBar;
 use percent_encoding::percent_decode;
 use serde_json;
 use service::tileset::{Tileset, WORLD_EXTENT};
+use std::cmp;
 use std::io::{stderr, Stderr, Stdout};
 use std::time::Instant;
 
@@ -193,8 +194,6 @@ impl MvtService {
     ) -> Statistics {
         self.init_cache();
         let mut stats = Statistics::new();
-        let minzoom = minzoom.unwrap_or(0);
-        let maxzoom = maxzoom.unwrap_or(self.grid.maxzoom());
         let nodes = nodes.unwrap_or(1) as u64;
         let nodeno = nodeno.unwrap_or(0) as u64;
         let mut tileno: u64 = 0;
@@ -221,14 +220,19 @@ impl MvtService {
 
             let tolerance = 0;
             let limits = self.grid.tile_limits(ext_proj, tolerance);
-            for zoom in minzoom..maxzoom + 1 {
-                if zoom > self.grid.maxzoom() {
-                    warn!(
-                        "Zoom level exceeds maximal zoom level of grid ({}) - skipping",
-                        self.grid.maxzoom()
-                    );
-                    continue;
-                }
+
+            let ts_minzoom = cmp::max(tileset.minzoom.unwrap_or(0), minzoom.unwrap_or(0));
+            let ts_maxzoom = cmp::min(
+                tileset.maxzoom.unwrap_or(self.grid.maxzoom()),
+                maxzoom.unwrap_or(99),
+            );
+            if minzoom.is_some() && minzoom.unwrap() < ts_minzoom {
+                warn!("Skipping zoom levels <{}", ts_minzoom);
+            }
+            if maxzoom.is_some() && maxzoom.unwrap() > ts_maxzoom {
+                warn!("Skipping zoom levels >{}", ts_maxzoom);
+            }
+            for zoom in ts_minzoom..ts_maxzoom + 1 {
                 let ref limit = limits[zoom as usize];
                 debug!("level {}: {:?}", zoom, limit);
                 let mut pb = self.progress_bar(&format!("Level {}: ", zoom), &limit);
