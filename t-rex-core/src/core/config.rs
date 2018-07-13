@@ -126,6 +126,8 @@ pub struct LayerCfg {
     // Explicit queries
     #[serde(default)]
     pub query: Vec<LayerQueryCfg>,
+    pub minzoom: Option<u8>,
+    pub maxzoom: Option<u8>,
     /// Width and height of the tile (Default: 4096. Grid default size is 256)
     pub tile_size: Option<u32>,
     /// Simplify geometry (lines and polygons)

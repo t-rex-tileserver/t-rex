@@ -88,6 +88,40 @@ fn test_toml_decode() {
     assert_eq!(cfg.minzoom(), 0);
     assert_eq!(cfg.maxzoom(), 22);
 
+    // min/maxzoom in layer
+    let toml = r#"
+        #[[tileset.layer]]
+        name = "points"
+        table_name = "ne_10m_populated_places"
+        geometry_field = "wkb_geometry"
+        minzoom = 1
+        maxzoom = 12
+        "#;
+    let cfg = layer_from_config(toml).unwrap();
+    assert_eq!(cfg.minzoom(), 1);
+    assert_eq!(cfg.maxzoom(), 12);
+
+    // min/maxzoom override query limits
+    let toml = r#"
+        #[[tileset.layer]]
+        name = "points"
+        geometry_field = "wkb_geometry"
+        minzoom = 1
+        maxzoom = 12
+        #[[tileset.layer.query]]
+        [[query]]
+        minzoom = 2
+        sql = "SELECT name,wkb_geometry FROM places_z2"
+        #[[tileset.layer.query]]
+        [[query]]
+        minzoom = 10
+        maxzoom = 14
+        sql = "SELECT name,wkb_geometry FROM places_z10"
+        "#;
+    let cfg = layer_from_config(toml).unwrap();
+    assert_eq!(cfg.minzoom(), 1);
+    assert_eq!(cfg.maxzoom(), 12);
+
     // Invalid config: missing required field
     let toml = r#"
         #[[tileset.layer]]

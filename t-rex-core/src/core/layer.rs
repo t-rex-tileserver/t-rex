@@ -29,6 +29,8 @@ pub struct Layer {
     pub query_limit: Option<u32>,
     // Explicit queries
     pub query: Vec<LayerQuery>,
+    pub minzoom: Option<u8>,
+    pub maxzoom: Option<u8>,
     /// Width and height of the tiles
     pub tile_size: u32,
     /// Simplify geometry (lines and polygons)
@@ -59,10 +61,12 @@ impl Layer {
         }
     }
     pub fn minzoom(&self) -> u8 {
-        self.query.iter().map(|q| q.minzoom()).min().unwrap_or(0)
+        self.minzoom
+            .unwrap_or(self.query.iter().map(|q| q.minzoom()).min().unwrap_or(0))
     }
     pub fn maxzoom(&self) -> u8 {
-        self.query.iter().map(|q| q.maxzoom()).max().unwrap_or(22)
+        self.maxzoom
+            .unwrap_or(self.query.iter().map(|q| q.maxzoom()).max().unwrap_or(22))
     }
     // SQL query for zoom level
     pub fn query(&self, level: u8) -> Option<&String> {
@@ -126,6 +130,8 @@ impl<'a> Config<'a, LayerCfg> for Layer {
             table_name: layer_cfg.table_name.clone(),
             query_limit: layer_cfg.query_limit,
             query: queries,
+            minzoom: layer_cfg.minzoom,
+            maxzoom: layer_cfg.maxzoom,
             tile_size: layer_cfg.tile_size.unwrap_or(4096),
             simplify: layer_cfg.simplify.unwrap_or(false),
             buffer_size: layer_cfg.buffer_size,

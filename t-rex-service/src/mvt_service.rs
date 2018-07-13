@@ -79,9 +79,13 @@ impl MvtService {
     ) -> vector_tile::Tile {
         let extent = self.grid.tile_extent(xtile, ytile, zoom);
         debug!("MVT tile request {:?}", extent);
+        let ts = self.get_tileset(tileset)
+            .expect(&format!("Tileset '{}' not found", tileset));
         let mut tile = Tile::new(&extent, true);
         for layer in self.get_tileset_layers(tileset) {
-            if zoom >= layer.minzoom() && zoom <= layer.maxzoom() {
+            let minzoom = ts.minzoom.unwrap_or(layer.minzoom());
+            let maxzoom = ts.maxzoom.unwrap_or(layer.maxzoom());
+            if zoom >= minzoom && zoom <= maxzoom {
                 let mut mvt_layer = tile.new_layer(layer);
                 let now = Instant::now();
                 self.ds(&layer).unwrap().retrieve_features(
