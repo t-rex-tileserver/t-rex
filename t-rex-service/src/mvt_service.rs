@@ -82,10 +82,10 @@ impl MvtService {
         debug!("MVT tile request {:?}", extent);
         let ts = self.get_tileset(tileset)
             .expect(&format!("Tileset '{}' not found", tileset));
+        let minzoom = ts.minzoom();
+        let maxzoom = ts.maxzoom();
         let mut tile = Tile::new(&extent, true);
         for layer in self.get_tileset_layers(tileset) {
-            let minzoom = ts.minzoom();
-            let maxzoom = ts.maxzoom();
             if zoom >= minzoom && zoom <= maxzoom {
                 let mut mvt_layer = tile.new_layer(layer);
                 let now = Instant::now();
@@ -326,17 +326,22 @@ impl MvtService {
         progress: bool,
     ) -> Statistics {
         let mut stats = Statistics::new();
-        let minzoom = minzoom.unwrap_or(0);
-        let maxzoom = maxzoom.unwrap_or(self.grid.maxzoom());
         for tileset in &self.tilesets {
             if tileset_name.is_some() && tileset_name.unwrap() != &tileset.name {
                 continue;
             }
 
-            let mut pb = self.progress_bar_drilldown(
-                maxzoom.min(self.grid.maxzoom()) - minzoom + 1,
-                points.len() as u64 / 2,
-            );
+            let ts_minzoom = cmp::max(tileset.minzoom(), minzoom.unwrap_or(0));
+            let ts_maxzoom = *[
+                tileset.maxzoom(),
+                maxzoom.unwrap_or(99),
+                self.grid.maxzoom(),
+            ].iter()
+                .min()
+                .unwrap_or(&22);
+
+            let mut pb =
+                self.progress_bar_drilldown(ts_maxzoom - ts_minzoom + 1, points.len() as u64 / 2);
 
             for point in points.chunks(2) {
                 // Convert point to extent in grid SRS
@@ -351,10 +356,7 @@ impl MvtService {
 
                 let tolerance = 0;
                 let limits = self.grid.tile_limits(ext_proj, tolerance);
-                for zoom in minzoom..=maxzoom {
-                    if zoom > self.grid.maxzoom() {
-                        continue;
-                    }
+                for zoom in ts_minzoom..=ts_maxzoom {
                     let ref limit = limits[zoom as usize];
                     debug!("level {}: {:?}", zoom, limit);
                     let xtile = limit.minx;
