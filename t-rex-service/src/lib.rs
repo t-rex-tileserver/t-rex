@@ -28,6 +28,7 @@ use t_rex_core::service;
 use t_rex_gdal::gdal_ds;
 
 pub mod datasource_type;
+pub mod metadata;
 pub mod mvt_service;
 #[cfg(test)]
 mod mvt_service_test;
