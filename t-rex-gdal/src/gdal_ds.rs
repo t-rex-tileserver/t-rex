@@ -446,8 +446,8 @@ impl DatasourceInput for GdalDatasource {
             cnt += 1;
             if cnt == query_limit {
                 info!(
-                    "Feature count limited (name={}, query_limit={})",
-                    layer.name, cnt
+                    "Features of layer {} limited to {} (tile query_limit reached, zoom level {})",
+                    layer.name, cnt, zoom
                 );
                 break;
             }
