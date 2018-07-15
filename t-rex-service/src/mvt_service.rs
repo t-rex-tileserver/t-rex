@@ -152,15 +152,12 @@ impl MvtService {
         // Request tile and write into cache
         let mvt_tile = self.tile(tileset, xtile, y, zoom, stats);
         // Spec: A Vector Tile SHOULD contain at least one layer.
-        //       A layer SHOULD contain at least one feature.
-        let empty = mvt_tile.get_layers().len() == 0;
-        // TODO: We should flag empty tiles in cache (#96)
-        let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
-        let _ = self.cache.write(&path, &tilegz);
-
-        if !empty {
+        if mvt_tile.get_layers().len() > 0 {
+            let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
+            let _ = self.cache.write(&path, &tilegz);
             Some(Tile::tile_content(tilegz, gzip))
         } else {
+            debug!("{} - Skipping empty tile", path);
             None
         }
     }
@@ -269,8 +266,10 @@ impl MvtService {
                                 zoom,
                                 Some(&mut stats),
                             );
-                            let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
-                            let _ = self.cache.write(&path, &tilegz);
+                            if mvt_tile.get_layers().len() > 0 {
+                                let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
+                                let _ = self.cache.write(&path, &tilegz);
+                            }
                         }
 
                         if progress {

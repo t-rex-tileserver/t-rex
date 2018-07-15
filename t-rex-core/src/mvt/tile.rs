@@ -316,7 +316,7 @@ impl<'a> Tile<'a> {
             tilegz
         } else {
             let mut gz = GzDecoder::new(&tilegz[..]);
-            let mut unc_tile = Vec::<u8>::with_capacity(tilegz.len());
+            let mut unc_tile = Vec::with_capacity(tilegz.len());
             let _ = gz.read_to_end(&mut unc_tile);
             unc_tile
         }
