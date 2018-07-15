@@ -80,13 +80,9 @@ impl MvtService {
     ) -> vector_tile::Tile {
         let extent = self.grid.tile_extent(xtile, ytile, zoom);
         debug!("MVT tile request {:?}", extent);
-        let ts = self.get_tileset(tileset)
-            .expect(&format!("Tileset '{}' not found", tileset));
-        let minzoom = ts.minzoom();
-        let maxzoom = ts.maxzoom();
         let mut tile = Tile::new(&extent, true);
         for layer in self.get_tileset_layers(tileset) {
-            if zoom >= minzoom && zoom <= maxzoom {
+            if zoom >= layer.minzoom() && zoom <= layer.maxzoom(30) {
                 let mut mvt_layer = tile.new_layer(layer);
                 let now = Instant::now();
                 self.ds(&layer).unwrap().retrieve_features(
@@ -135,6 +131,12 @@ impl MvtService {
         };
         let path = format!("{}/{}/{}/{}.pbf", tileset, zoom, xtile, ytile);
 
+        let ts = self.get_tileset(tileset)
+            .expect(&format!("Tileset '{}' not found", tileset));
+        if zoom < ts.minzoom() || zoom > ts.maxzoom() {
+            return None;
+        }
+
         let mut tile: Option<Vec<u8>> = None;
         self.cache.read(&path, |f| {
             let mut data = Vec::new();
@@ -149,10 +151,14 @@ impl MvtService {
 
         // Request tile and write into cache
         let mvt_tile = self.tile(tileset, xtile, y, zoom, stats);
+        // Spec: A Vector Tile SHOULD contain at least one layer.
+        //       A layer SHOULD contain at least one feature.
+        let empty = mvt_tile.get_layers().len() == 0;
+        // TODO: We should flag empty tiles in cache (#96)
         let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
         let _ = self.cache.write(&path, &tilegz);
 
-        if mvt_tile.get_layers().len() > 0 {
+        if !empty {
             Some(Tile::tile_content(tilegz, gzip))
         } else {
             None
@@ -263,8 +269,7 @@ impl MvtService {
                                 zoom,
                                 Some(&mut stats),
                             );
-                            let mut tilegz = Vec::new();
-                            Tile::write_gz_to(&mut tilegz, &mvt_tile);
+                            let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
                             let _ = self.cache.write(&path, &tilegz);
                         }
 
