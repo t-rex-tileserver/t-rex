@@ -124,7 +124,7 @@ impl MvtService {
         xtile: u32,
         ytile: u32,
         zoom: u8,
-        _gzip: bool,
+        gzip: bool,
         stats: Option<&mut Statistics>,
     ) -> Option<Vec<u8>> {
         // Reverse y for XYZ scheme (TODO: protocol instead of CRS dependent?)
@@ -141,19 +141,19 @@ impl MvtService {
             let _ = f.read_to_end(&mut data);
             tile = Some(data);
         });
-        if tile.is_some() {
-            //TODO: unzip if gzip == false
-            return tile;
+
+        // Return tile from cache
+        if let Some(tilegz) = tile {
+            return Some(Tile::tile_content(tilegz, gzip));
         }
 
+        // Request tile and write into cache
         let mvt_tile = self.tile(tileset, xtile, y, zoom, stats);
-        let mut tilegz = Vec::new();
-        Tile::write_gz_to(&mut tilegz, &mvt_tile);
+        let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
         let _ = self.cache.write(&path, &tilegz);
 
         if mvt_tile.get_layers().len() > 0 {
-            //TODO: return unzipped if gzip == false
-            Some(tilegz)
+            Some(Tile::tile_content(tilegz, gzip))
         } else {
             None
         }

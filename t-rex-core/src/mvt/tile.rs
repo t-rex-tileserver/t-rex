@@ -299,10 +299,27 @@ impl<'a> Tile<'a> {
         parse_from_reader::<vector_tile::Tile>(&mut reader)
     }
 
-    pub fn binary_tile(mvt_tile: &vector_tile::Tile) -> Vec<u8> {
-        let mut v = Vec::new();
+    pub fn tile_bytevec(mvt_tile: &vector_tile::Tile) -> Vec<u8> {
+        let mut v = Vec::with_capacity(mvt_tile.compute_size() as usize);
         Self::write_to(&mut v, mvt_tile);
         v
+    }
+
+    pub fn tile_bytevec_gz(mvt_tile: &vector_tile::Tile) -> Vec<u8> {
+        let mut v = Vec::with_capacity(mvt_tile.compute_size() as usize);
+        Self::write_gz_to(&mut v, &mvt_tile);
+        v
+    }
+
+    pub fn tile_content(tilegz: Vec<u8>, gzip: bool) -> Vec<u8> {
+        if gzip {
+            tilegz
+        } else {
+            let mut gz = GzDecoder::new(&tilegz[..]);
+            let mut unc_tile = Vec::<u8>::with_capacity(tilegz.len());
+            let _ = gz.read_to_end(&mut unc_tile);
+            unc_tile
+        }
     }
 
     pub fn to_file(&self, fname: &str) {
