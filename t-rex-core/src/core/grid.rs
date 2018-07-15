@@ -247,7 +247,7 @@ impl Grid {
         let maxy =
             ((self.extent.maxy - self.extent.miny - 0.01 * unitheight) / unitheight).ceil() as u32;
         let maxx =
-            ((self.extent.maxx - self.extent.miny - 0.01 * unitwidth) / unitwidth).ceil() as u32;
+            ((self.extent.maxx - self.extent.minx - 0.01 * unitwidth) / unitwidth).ceil() as u32;
         (maxx, maxy)
     }
     /// Tile index limits covering extent

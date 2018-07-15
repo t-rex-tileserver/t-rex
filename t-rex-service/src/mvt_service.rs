@@ -245,8 +245,8 @@ impl MvtService {
                 if progress {
                     pb.tick();
                 }
-                for xtile in limit.minx..=limit.maxx {
-                    for ytile in limit.miny..=limit.maxy {
+                for xtile in limit.minx..limit.maxx {
+                    for ytile in limit.miny..limit.maxy {
                         let skip = tileno % nodes != nodeno;
                         tileno += 1;
                         if skip {
