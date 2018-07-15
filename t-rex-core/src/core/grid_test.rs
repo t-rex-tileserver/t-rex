@@ -252,9 +252,9 @@ fn test_grid_from_config() {
         extent,
         Extent {
             minx: 2676000.,
-            miny: -109951160275600.,
+            miny: 1119600.0,
             maxx: 2701600.,
-            maxy: -109951160250000.,
+            maxy: 1145200.0,
         }
     );
 }

@@ -27,6 +27,9 @@ pub struct ExtentInt {
     pub maxy: u32,
 }
 
+// Max grid cell numbers
+type CellIndex = (u32, u32);
+
 #[derive(PartialEq, Debug)]
 pub enum Origin {
     TopLeft,
@@ -79,7 +82,7 @@ impl EnumString<Unit> for Unit {
 enum_string_serialization!(Unit UnitVisitor);
 
 // Credits: MapCache by Thomas Bonfort (http://mapserver.org/mapcache/)
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
 pub struct Grid {
     /// The width and height of an individual tile, in pixels.
     width: u16,
@@ -101,6 +104,8 @@ pub struct Grid {
     /// depending on the unit used by the grid (e.g. resolutions are in meters per
     /// pixel for most grids used in webmapping).
     resolutions: Vec<f64>,
+    /// maxx/maxy for each resolution
+    level_max: Vec<CellIndex>,
     /// Grid origin
     pub origin: Origin,
 }
@@ -108,7 +113,7 @@ pub struct Grid {
 impl Grid {
     /// WGS84 grid
     pub fn wgs84() -> Grid {
-        Grid {
+        let mut grid = Grid {
             width: 256,
             height: 256,
             extent: Extent {
@@ -139,13 +144,16 @@ impl Grid {
                 1.07288360595703e-5,
                 5.36441802978516e-6,
             ],
+            level_max: Vec::new(),
             origin: Origin::BottomLeft,
-        }
+        };
+        grid.level_max = grid.level_max();
+        grid
     }
 
     /// Web Mercator grid (Google maps compatible)
     pub fn web_mercator() -> Grid {
-        Grid {
+        let mut grid = Grid {
             width: 256,
             height: 256,
             extent: Extent {
@@ -182,8 +190,11 @@ impl Grid {
                 0.0746455354347424,
                 0.0373227677173712,
             ],
+            level_max: Vec::new(),
             origin: Origin::BottomLeft,
-        }
+        };
+        grid.level_max = grid.level_max();
+        grid
     }
 
     pub fn nlevels(&self) -> u8 {
@@ -225,12 +236,9 @@ impl Grid {
     }
     /// reverse y tile for XYZ adressing scheme
     pub fn ytile_from_xyz(&self, ytile: u32, zoom: u8) -> u32 {
-        let res = self.resolutions[zoom as usize];
-        let unitheight = self.height as f64 * res;
-        // TODO: cache maxy for each resolution
-        let maxy =
-            ((self.extent.maxy - self.extent.minx - 0.01 * unitheight) / unitheight).ceil() as u32;
-        let y = maxy.saturating_sub(ytile).saturating_sub(1); // y = maxy-ytile-1
+        // y = maxy-ytile-1
+        let maxy = self.level_max[zoom as usize].1;
+        let y = maxy.saturating_sub(ytile).saturating_sub(1);
         y
     }
     /// Extent of a given tile in XYZ adressing scheme
@@ -239,7 +247,7 @@ impl Grid {
         self.tile_extent(xtile, y, zoom)
     }
     /// (maxx, maxy) of grid level
-    pub fn level_limit(&self, zoom: u8) -> (u32, u32) {
+    pub(crate) fn level_limit(&self, zoom: u8) -> CellIndex {
         let res = self.resolutions[zoom as usize];
         let unitheight = self.height as f64 * res;
         let unitwidth = self.width as f64 * res;
@@ -250,17 +258,22 @@ impl Grid {
             ((self.extent.maxx - self.extent.minx - 0.01 * unitwidth) / unitwidth).ceil() as u32;
         (maxx, maxy)
     }
+    /// (maxx, maxy) of all grid levels
+    fn level_max(&self) -> Vec<CellIndex> {
+        (0..self.nlevels())
+            .map(|zoom| self.level_limit(zoom))
+            .collect()
+    }
     /// Tile index limits covering extent
     pub fn tile_limits(&self, extent: Extent, tolerance: i32) -> Vec<ExtentInt> {
         // Based on mapcache_grid_compute_limits
         const EPSILON: f64 = 0.0000001;
-        let nlevels = self.resolutions.len() as u8;
-        (0..nlevels)
+        (0..self.nlevels())
             .map(|i| {
                 let res = self.resolutions[i as usize];
                 let unitheight = self.height as f64 * res;
                 let unitwidth = self.width as f64 * res;
-                let (level_maxx, level_maxy) = self.level_limit(i);
+                let (level_maxx, level_maxy) = self.level_max[i as usize];
 
                 let (mut minx, mut maxx, mut miny, mut maxy) = match self.origin {
                     Origin::BottomLeft => (
@@ -319,15 +332,18 @@ impl<'a> Config<'a, GridCfg> for Grid {
                 _ => Err(format!("Unkown grid '{}'", gridname)),
             }
         } else if let Some(ref usergrid) = grid_cfg.user {
-            Ok(Grid {
+            let mut grid = Grid {
                 width: usergrid.width,
                 height: usergrid.height,
                 extent: usergrid.extent.clone(),
                 srid: usergrid.srid,
                 units: Unit::from_str(&usergrid.units)?,
                 resolutions: usergrid.resolutions.clone(),
+                level_max: Vec::new(),
                 origin: Origin::from_str(&usergrid.origin)?,
-            })
+            };
+            grid.level_max = grid.level_max();
+            Ok(grid)
         } else {
             Err("Invalid grid definition".to_string())
         }
