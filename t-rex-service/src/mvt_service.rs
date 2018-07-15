@@ -154,7 +154,9 @@ impl MvtService {
         // Spec: A Vector Tile SHOULD contain at least one layer.
         if mvt_tile.get_layers().len() > 0 {
             let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
-            let _ = self.cache.write(&path, &tilegz);
+            if let Err(ioerr) = self.cache.write(&path, &tilegz) {
+                error!("Error writing {}: {}", path, ioerr);
+            }
             Some(Tile::tile_content(tilegz, gzip))
         } else {
             debug!("{} - Skipping empty tile", path);
@@ -268,7 +270,9 @@ impl MvtService {
                             );
                             if mvt_tile.get_layers().len() > 0 {
                                 let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
-                                let _ = self.cache.write(&path, &tilegz);
+                                if let Err(ioerr) = self.cache.write(&path, &tilegz) {
+                                    error!("Error writing {}: {}", path, ioerr);
+                                }
                             }
                         }
 
