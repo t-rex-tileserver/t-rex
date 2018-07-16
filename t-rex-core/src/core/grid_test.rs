@@ -193,6 +193,14 @@ fn test_grid_calculations() {
 }
 
 #[test]
+fn test_wgs84_grid() {
+    let grid = Grid::wgs84();
+
+    assert_eq!(grid.pixel_width(10), 76.43702828517625);
+    assert_eq!(grid.scale_denominator(10), 272989.38673277234);
+}
+
+#[test]
 fn test_grid_from_config() {
     use core::parse_config;
 

@@ -8,6 +8,7 @@ use core::enum_serializer::EnumString;
 use core::Config;
 use serde;
 use serde::de::{Deserialize, Deserializer};
+use std::f64::consts;
 use std::fmt;
 
 #[derive(PartialEq, Deserialize, Clone, Debug)]
@@ -204,14 +205,19 @@ impl Grid {
         self.nlevels() - 1
     }
     pub fn pixel_width(&self, zoom: u8) -> f64 {
-        self.resolutions[zoom as usize] //TODO: assumes grid unit 'm'
+        const METERS_PER_DEGREE: f64 = 6378137.0 * 2.0 * consts::PI / 360.0;
+        match self.units {
+            Unit::Meters => self.resolutions[zoom as usize],
+            Unit::Degrees => self.resolutions[zoom as usize] * METERS_PER_DEGREE,
+            Unit::Feet => self.resolutions[zoom as usize] * 0.3048,
+        }
     }
     pub fn scale_denominator(&self, zoom: u8) -> f64 {
-        let pixel_screen_width = 0.00028;
+        const PIXEL_SCREEN_WIDTH: f64 = 0.00028;
         // https://github.com/mapnik/mapnik/wiki/ScaleAndPpi#scale-denominator
         // Mapnik calculates it's default at about 90.7 PPI, which originates from an assumed standard pixel size
         // of 0.28 millimeters as defined by the OGC (Open Geospatial Consortium) SLD (Styled Layer Descriptor) Specification.
-        self.pixel_width(zoom) / pixel_screen_width
+        self.pixel_width(zoom) / PIXEL_SCREEN_WIDTH
     }
     /// Extent of a given tile in the grid given its x, y, and z in TMS adressing scheme
     pub fn tile_extent(&self, xtile: u32, ytile: u32, zoom: u8) -> Extent {
