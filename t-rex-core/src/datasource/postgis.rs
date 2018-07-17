@@ -239,7 +239,7 @@ impl PostgisInput {
         let field = layer.geometry_field.as_ref().unwrap();
         let table = layer.table_name.as_ref().unwrap();
         debug!(
-            "Detecting geometry types for field '{}' in table '{}'",
+            "Detecting geometry types for field '{}' in table {}",
             field, table
         );
 
@@ -251,7 +251,24 @@ impl PostgisInput {
 
         let mut types: Vec<String> = Vec::new();
         for row in &conn.query(&sql, &[]).unwrap() {
-            types.push(row.get("geomtype"));
+            let geomtype = row.get_opt("geomtype");
+            match geomtype.unwrap() {
+                Ok(Some(val)) => {
+                    types.push(val);
+                }
+                Ok(None) => {
+                    warn!(
+                        "Ignoring unknown geometry types for field '{}' in table {}",
+                        field, table
+                    );
+                }
+                Err(err) => {
+                    warn!(
+                        "Error in type detection for field '{}' in table {}: {}",
+                        field, table, err
+                    );
+                }
+            }
         }
         types
     }
@@ -323,6 +340,7 @@ impl PostgisInput {
             .unwrap()
             .get_opt::<_, ewkb::Polygon>("extent");
         match extpoly {
+            Some(Ok(ref poly)) if poly.rings().len() != 2 => None,
             Some(Ok(poly)) => {
                 let p1 = poly.rings().nth(0).unwrap().points().nth(0).unwrap();
                 let p2 = poly.rings().nth(0).unwrap().points().nth(2).unwrap();
@@ -600,14 +618,14 @@ impl DatasourceInput for PostgisInput {
                         } else {
                             let type_list = types.join(", ");
                             warn!(
-                                "Multiple geometry types in '{}.{}': {}",
+                                "Multiple geometry types in {}.{}: {}",
                                 table, field, type_list
                             );
                             Some("GEOMETRY".to_string())
                         }
                     } else {
                         warn!(
-                            "Unknwon geometry type of '{}.{}'",
+                            "Unknwon geometry type of {}.{}",
                             table_name, geometry_column
                         );
                         Some("GEOMETRY".to_string())
