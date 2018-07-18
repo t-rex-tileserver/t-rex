@@ -454,11 +454,7 @@ impl PostgisInput {
                 "Layer '{}': Reprojecting geometry '{}' from SRID {} to {}",
                 layer.name, geom_name, layer_srid, grid_srid
             );
-            geom_expr = format!(
-                // ST_Shift_Longitude fixes some edge cases, but doesn't support
-                // all geometry types
-                "ST_Transform({},{})", geom_expr, grid_srid
-            );
+            geom_expr = format!("ST_Transform({},{})", geom_expr, grid_srid);
         }
 
         if geom_expr.starts_with("ST_") || geom_expr.starts_with("COALESCE") {
@@ -503,9 +499,13 @@ impl PostgisInput {
                 expr = format!("ST_Buffer({},{}*!pixel_width!)", expr, pixels);
             }
         }
-        if layer_srid > 0 && layer_srid != grid_srid {
+        if layer_srid > 0 && layer_srid != env_srid {
             expr = format!("ST_Transform({},{})", expr, layer_srid);
-        };
+        }
+        // Clip bbox to maximal extent of SRID
+        if layer_srid == 4326 {
+            expr = format!("ST_Shift_Longitude({})", expr);
+        }
         expr
     }
     /// Build feature query SQL (also used for generated config).
