@@ -23,6 +23,7 @@ use std::collections::BTreeMap;
 use std::error::Error;
 
 impl GeometryType {
+    /// Convert returned geometry to core::geom::GeometryType based on GeometryType name
     pub fn from_geom_field(row: &Row, idx: &str, type_name: &str) -> Result<GeometryType, String> {
         let field = match type_name {
             //Option<Result<T>> --> Option<Result<GeometryType>>
@@ -34,13 +35,22 @@ impl GeometryType {
             //    row.get_opt::<_, Polygon>(idx).map(|opt| opt.map(|f| GeometryType::Polygon(f))),
             "MULTIPOINT" => row.get_opt::<_, MultiPoint>(idx)
                 .map(|opt| opt.map(|f| GeometryType::MultiPoint(f))),
-            "LINESTRING" | "MULTILINESTRING" => row.get_opt::<_, MultiLineString>(idx)
-                .map(|opt| opt.map(|f| GeometryType::MultiLineString(f))),
-            "POLYGON" | "MULTIPOLYGON" => row.get_opt::<_, MultiPolygon>(idx)
+            "LINESTRING" | "MULTILINESTRING" | "COMPOUNDCURVE" => {
+                row.get_opt::<_, MultiLineString>(idx)
+                    .map(|opt| opt.map(|f| GeometryType::MultiLineString(f)))
+            }
+            "POLYGON" | "MULTIPOLYGON" | "CURVEPOLYGON" => row.get_opt::<_, MultiPolygon>(idx)
                 .map(|opt| opt.map(|f| GeometryType::MultiPolygon(f))),
             "GEOMETRYCOLLECTION" => row.get_opt::<_, GeometryCollection>(idx)
                 .map(|opt| opt.map(|f| GeometryType::GeometryCollection(f))),
             _ => {
+                // PG geometry types:
+                // CIRCULARSTRING, CIRCULARSTRINGM, COMPOUNDCURVE, COMPOUNDCURVEM, CURVEPOLYGON, CURVEPOLYGONM,
+                // GEOMETRY, GEOMETRYCOLLECTION, GEOMETRYCOLLECTIONM, GEOMETRYM,
+                // LINESTRING, LINESTRINGM, MULTICURVE, MULTICURVEM, MULTILINESTRING, MULTILINESTRINGM,
+                // MULTIPOINT, MULTIPOINTM, MULTIPOLYGON, MULTIPOLYGONM, MULTISURFACE, MULTISURFACEM,
+                // POINT, POINTM, POLYGON, POLYGONM,
+                // POLYHEDRALSURFACE, POLYHEDRALSURFACEM, TIN, TINM, TRIANGLE, TRIANGLEM
                 return Err(format!("Unknown geometry type {}", type_name));
             }
         };
@@ -272,7 +282,7 @@ impl PostgisInput {
         }
         types
     }
-    // Return column field names and Rust compatible type conversion
+    /// Return column field names and Rust compatible type conversion
     pub fn detect_columns(&self, layer: &Layer, sql: Option<&String>) -> Vec<(String, String)> {
         let mut query = match sql {
             Some(&ref userquery) => userquery.clone(),
@@ -355,71 +365,81 @@ impl PostgisInput {
         }
     }
     /// Build geometry selection expression for feature query.
-    fn build_geom_expr(&self, layer: &Layer, grid_srid: i32, raw_geom: bool) -> String {
+    fn build_geom_expr(&self, layer: &Layer, grid_srid: i32) -> String {
         let layer_srid = layer.srid.unwrap_or(0);
         let ref geom_name = layer.geometry_field.as_ref().unwrap();
         let mut geom_expr = String::from(geom_name as &str);
 
-        if !raw_geom {
-            // Clipping
-            if layer.buffer_size.is_some() {
-                let valid_geom = if layer.make_valid {
-                    format!("ST_MakeValid({})", geom_name)
-                } else {
-                    String::from(geom_name as &str)
-                };
-                match layer
-                    .geometry_type
-                    .as_ref()
-                    .unwrap_or(&"GEOMETRY".to_string()) as &str
-                {
-                    "POLYGON" | "MULTIPOLYGON" => {
-                        geom_expr =
-                            format!("ST_Buffer(ST_Intersection({},!bbox!), 0.0)", valid_geom);
-                    }
-                    "POINT" => {
-                        // ST_Intersection not necessary - bbox query in WHERE clause is sufficient
-                    }
-                    _ => {
-                        geom_expr = format!("ST_Intersection({},!bbox!)", valid_geom);
-                    } //Buffer is added to !bbox! when replaced
-                };
+        // Convert special geometry types like curves
+        match layer
+            .geometry_type
+            .as_ref()
+            .unwrap_or(&"GEOMETRY".to_string()) as &str
+        {
+            "CURVEPOLYGON" | "COMPOUNDCURVE" => {
+                geom_expr = format!("ST_CurveToLine({})", geom_expr);
             }
+            _ => {}
+        };
 
-            // convert LINESTRING and POLYGON to multi geometries (and fix potential (empty) single types)
+        // Clipping
+        if layer.buffer_size.is_some() {
+            let valid_geom = if layer.make_valid {
+                format!("ST_MakeValid({})", geom_expr)
+            } else {
+                geom_expr.clone()
+            };
             match layer
                 .geometry_type
                 .as_ref()
                 .unwrap_or(&"GEOMETRY".to_string()) as &str
             {
-                "LINESTRING" | "MULTILINESTRING" | "POLYGON" | "MULTIPOLYGON" => {
-                    geom_expr = format!("ST_Multi({})", geom_expr);
+                "POLYGON" | "MULTIPOLYGON" | "CURVEPOLYGON" => {
+                    geom_expr = format!("ST_Buffer(ST_Intersection({},!bbox!), 0.0)", valid_geom);
                 }
-                _ => {}
-            }
+                "POINT" => {
+                    // ST_Intersection not necessary - bbox query in WHERE clause is sufficient
+                }
+                _ => {
+                    geom_expr = format!("ST_Intersection({},!bbox!)", valid_geom);
+                } //Buffer is added to !bbox! when replaced
+            };
+        }
 
-            // Simplify
-            if layer.simplify {
-                geom_expr = match layer
-                    .geometry_type
-                    .as_ref()
-                    .unwrap_or(&"GEOMETRY".to_string()) as &str
-                {
-                    "LINESTRING" | "MULTILINESTRING" => format!(
-                        "ST_Multi(ST_SimplifyPreserveTopology({},!pixel_width!/2))",
-                        geom_expr
-                    ),
-                    "POLYGON" | "MULTIPOLYGON" => {
-                        let empty_geom =
-                            format!("ST_GeomFromText('MULTIPOLYGON EMPTY',{})", layer_srid);
-                        format!("COALESCE(ST_SnapToGrid({}, !pixel_width!/2),{})::geometry(MULTIPOLYGON,{})",
-                                geom_expr,
-                                empty_geom,
-                                layer_srid)
-                    }
-                    _ => geom_expr, // No simplification for points or unknown types
-                };
+        // convert LINESTRING and POLYGON to multi geometries (and fix potential (empty) single types)
+        match layer
+            .geometry_type
+            .as_ref()
+            .unwrap_or(&"GEOMETRY".to_string()) as &str
+        {
+            "MULTIPOINT" | "LINESTRING" | "MULTILINESTRING" | "COMPOUNDCURVE" | "POLYGON"
+            | "MULTIPOLYGON" | "CURVEPOLYGON" => {
+                geom_expr = format!("ST_Multi({})", geom_expr);
             }
+            _ => {}
+        }
+
+        // Simplify
+        if layer.simplify {
+            geom_expr = match layer
+                .geometry_type
+                .as_ref()
+                .unwrap_or(&"GEOMETRY".to_string()) as &str
+            {
+                "LINESTRING" | "MULTILINESTRING" | "COMPOUNDCURVE" => format!(
+                    "ST_Multi(ST_SimplifyPreserveTopology({},!pixel_width!/2))",
+                    geom_expr
+                ),
+                "POLYGON" | "MULTIPOLYGON" | "CURVEPOLYGON" => {
+                    let empty_geom =
+                        format!("ST_GeomFromText('MULTIPOLYGON EMPTY',{})", layer_srid);
+                    format!("COALESCE(ST_SnapToGrid({}, !pixel_width!/2),{})::geometry(MULTIPOLYGON,{})",
+                            geom_expr,
+                            empty_geom,
+                            layer_srid)
+                }
+                _ => geom_expr, // No simplification for points or unknown types
+            };
         }
 
         // Transform geometry to grid SRID
@@ -435,8 +455,9 @@ impl PostgisInput {
                 layer.name, geom_name, layer_srid, grid_srid
             );
             geom_expr = format!(
-                "ST_Shift_Longitude(ST_Transform({},{}))",
-                geom_expr, grid_srid
+                // ST_Shift_Longitude fixes some edge cases, but doesn't support
+                // all geometry types
+                "ST_Transform({},{})", geom_expr, grid_srid
             );
         }
 
@@ -497,12 +518,15 @@ impl PostgisInput {
     ) -> Option<String> {
         let mut query;
         let offline = self.conn_pool.is_none();
-        let geom_expr = self.build_geom_expr(layer, grid_srid, raw_geom);
+        let ref geom_name = layer.geometry_field.as_ref().unwrap();
+        let geom_expr = if raw_geom {
+            // Skip geometry processing when generating user query template
+            geom_name.to_string()
+        } else {
+            self.build_geom_expr(layer, grid_srid)
+        };
         let select_list = self.build_select_list(layer, geom_expr, sql);
-        let intersect_clause = format!(
-            " WHERE {} && !bbox!",
-            layer.geometry_field.as_ref().unwrap()
-        );
+        let intersect_clause = format!(" WHERE {} && !bbox!", geom_name);
 
         if let Some(&ref userquery) = sql {
             // user query
@@ -517,7 +541,6 @@ impl PostgisInput {
             }
         } else {
             // automatic query
-            //TODO: check min-/maxzoom + handle overzoom
             if layer.table_name.is_none() {
                 return None;
             }
