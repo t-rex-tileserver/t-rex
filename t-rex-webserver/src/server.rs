@@ -215,7 +215,9 @@ pub fn service_from_args(config: &ApplicationCfg, args: &ArgMatches) -> MvtServi
                 println!("Either 'config', 'dbconn' or 'datasource' is required");
                 process::exit(1)
             }
-            let detect_geometry_types = true; //TODO: add option (maybe slow for many geometries)
+            let detect_geometry_types = bool::from_str(
+                args.value_of("detect-geometry-types").unwrap_or("true"),
+            ).unwrap_or(false);
             for (_name, ds) in &datasources.datasources {
                 let dsconn = ds.connected();
                 let mut layers = dsconn.detect_layers(detect_geometry_types);

@@ -238,8 +238,8 @@ impl PostgisInput {
     pub fn detect_geometry_types(&self, layer: &Layer) -> Vec<String> {
         let field = layer.geometry_field.as_ref().unwrap();
         let table = layer.table_name.as_ref().unwrap();
-        debug!(
-            "Detecting geometry types for field '{}' in table {}",
+        info!(
+            "Detecting geometry types for field '{}' in table {} (use --detect-geometry-types=false to skip)",
             field, table
         );
 
