@@ -350,7 +350,7 @@ impl PostgisInput {
             .unwrap()
             .get_opt::<_, ewkb::Polygon>("extent");
         match extpoly {
-            Some(Ok(ref poly)) if poly.rings().len() != 2 => None,
+            Some(Ok(ref poly)) if poly.rings().len() != 1 => None,
             Some(Ok(poly)) => {
                 let p1 = poly.rings().nth(0).unwrap().points().nth(0).unwrap();
                 let p2 = poly.rings().nth(0).unwrap().points().nth(2).unwrap();
