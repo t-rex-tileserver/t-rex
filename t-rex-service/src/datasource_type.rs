@@ -47,10 +47,10 @@ impl DatasourceInput for Datasource {
             &Datasource::Gdal(ref ds) => ds.extent_from_wgs84(extent, dest_srid),
         }
     }
-    fn layer_extent(&self, layer: &Layer) -> Option<Extent> {
+    fn layer_extent(&self, layer: &Layer, grid_srid: i32) -> Option<Extent> {
         match self {
-            &Datasource::Postgis(ref ds) => ds.layer_extent(layer),
-            &Datasource::Gdal(ref ds) => ds.layer_extent(layer),
+            &Datasource::Postgis(ref ds) => ds.layer_extent(layer, grid_srid),
+            &Datasource::Gdal(ref ds) => ds.layer_extent(layer, grid_srid),
         }
     }
     fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
@@ -59,7 +59,14 @@ impl DatasourceInput for Datasource {
             &mut Datasource::Gdal(ref mut ds) => ds.prepare_queries(layer, grid_srid),
         }
     }
-    fn retrieve_features<F>(&self, layer: &Layer, extent: &Extent, zoom: u8, grid: &Grid, read: F)
+    fn retrieve_features<F>(
+        &self,
+        layer: &Layer,
+        extent: &Extent,
+        zoom: u8,
+        grid: &Grid,
+        read: F,
+    ) -> u64
     where
         F: FnMut(&Feature),
     {

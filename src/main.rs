@@ -147,6 +147,7 @@ fn main() {
                                               --loglevel=[error|warn|info|debug|trace] 'Log level (Default: info)'
                                               --simplify=[true|false] 'Simplify geometries'
                                               --clip=[true|false] 'Clip geometries'
+                                              --no-transform=[true|false] 'Do not transform to grid SRS'
                                               --cache=[DIR] 'Use tile cache in DIR'
                                               -c, --config=[FILE] 'Load from custom config file'
                                               --bind=[IPADDRESS] 'Bind web server to this address (0.0.0.0 for all)'
@@ -159,7 +160,8 @@ fn main() {
                                               --qgs=[FILE] 'QGIS project file'
                                               --loglevel=[error|warn|info|debug|trace] 'Log level (Default: info)'
                                               --simplify=[true|false] 'Simplify geometries'
-                                              --clip=[true|false] 'Clip geometries'")
+                                              --clip=[true|false] 'Clip geometries'
+                                              --no-transform=[true|false] 'Do not transform to grid SRS'")
                         .about("Generate configuration template"))
         .subcommand(SubCommand::with_name("generate")
                         .setting(AppSettings::AllowLeadingHyphen)

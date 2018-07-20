@@ -106,7 +106,7 @@ fn test_extent_query() {
         .find(|ref layer| layer.name == "rivers_lake_centerlines")
         .unwrap();
     assert_eq!(
-        pg.layer_extent(&layer),
+        pg.layer_extent(&layer, 3857),
         Some(Extent {
             minx: -164.90347246002037,
             miny: -52.1577287739643,
@@ -129,6 +129,10 @@ fn test_feature_query() {
     layer.srid = Some(2056);
     assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
                "SELECT ST_Transform(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_Transform(ST_MakeEnvelope($1,$2,$3,$4,3857),2056)");
+    layer.no_transform = true;
+    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+               "SELECT ST_SetSRID(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,2056)");
+    layer.no_transform = false;
     layer.srid = Some(4326);
     assert_eq!(
         pg.build_query(&layer, 3857, None).unwrap().sql,

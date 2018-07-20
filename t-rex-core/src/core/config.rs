@@ -119,6 +119,8 @@ pub struct LayerCfg {
     pub geometry_type: Option<String>,
     /// Spatial reference system (PostGIS SRID)
     pub srid: Option<i32>,
+    /// Handle geometry like one in grid SRS
+    pub no_transform: Option<bool>,
     pub fid_field: Option<String>,
     // Input for derived queries
     pub table_name: Option<String>,

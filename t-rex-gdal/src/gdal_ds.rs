@@ -267,10 +267,9 @@ impl DatasourceInput for GdalDatasource {
     fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent> {
         transform_extent(extent, 4326, dest_srid).ok()
     }
-    fn layer_extent(&self, layer: &Layer) -> Option<Extent> {
+    fn layer_extent(&self, layer: &Layer, grid_srid: i32) -> Option<Extent> {
         let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
         let layer_name = layer.table_name.as_ref().unwrap();
-        debug!("retrieve_features layer: {}", layer_name);
         let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
         let extent = match ogr_layer.get_extent(true) {
             Err(e) => {
@@ -364,7 +363,8 @@ impl DatasourceInput for GdalDatasource {
         zoom: u8,
         grid: &Grid,
         mut read: F,
-    ) where
+    ) -> u64
+    where
         F: FnMut(&Feature),
     {
         let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
@@ -383,18 +383,18 @@ impl DatasourceInput for GdalDatasource {
                     "Layer '{}': Unable to get spatial reference: {}",
                     layer.name, e
                 );
-                return;
+                return 0;
             }
             Ok(sref) => sref,
         };
         let grid_sref = match SpatialRef::from_epsg(grid.srid as u32) {
             Err(e) => {
                 error!("Unable to get grid spatial reference: {}", e);
-                return;
+                return 0;
             }
             Ok(sref) => sref,
         };
-        let transform = if layer_sref != grid_sref {
+        let transform = if layer_sref != grid_sref && !layer.no_transform {
             CoordTransform::new(&layer_sref, &grid_sref).ok()
         } else {
             None
@@ -419,7 +419,7 @@ impl DatasourceInput for GdalDatasource {
                 Ok(extent) => bbox_extent = extent,
                 Err(e) => {
                     error!("Unable to transform {:?}: {}", bbox_extent, e);
-                    return;
+                    return 0;
                 }
             }
         };
@@ -444,7 +444,7 @@ impl DatasourceInput for GdalDatasource {
             };
             read(&feat);
             cnt += 1;
-            if cnt == query_limit {
+            if cnt == query_limit as u64 {
                 info!(
                     "Features of layer {} limited to {} (tile query_limit reached, zoom level {})",
                     layer.name, cnt, zoom
@@ -452,7 +452,7 @@ impl DatasourceInput for GdalDatasource {
                 break;
             }
         }
-        debug!("Feature count: {}", cnt);
+        cnt
     }
 }
 

@@ -23,6 +23,8 @@ pub struct Layer {
     pub geometry_type: Option<String>,
     /// Spatial reference system (PostGIS SRID)
     pub srid: Option<i32>,
+    /// Handle geometry like one in grid SRS
+    pub no_transform: bool,
     pub fid_field: Option<String>,
     // Input for derived queries
     pub table_name: Option<String>,
@@ -127,6 +129,7 @@ impl<'a> Config<'a, LayerCfg> for Layer {
             geometry_field: layer_cfg.geometry_field.clone(),
             geometry_type: layer_cfg.geometry_type.clone(),
             srid: layer_cfg.srid,
+            no_transform: layer_cfg.no_transform.unwrap_or(false),
             fid_field: layer_cfg.fid_field.clone(),
             table_name: layer_cfg.table_name.clone(),
             query_limit: layer_cfg.query_limit,
@@ -154,7 +157,6 @@ name = "points"
 table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
-#fid_field = "id"
 #simplify = true
 #buffer_size = 10
 #make_valid = true
@@ -193,9 +195,11 @@ geometry_type = "POINT"
             Some(ref srid) => lines.push(format!("srid = {}", srid)),
             _ => lines.push("#srid = 3857".to_string()),
         }
-        match self.fid_field {
-            Some(ref fid_field) => lines.push(format!("fid_field = \"{}\"", fid_field)),
-            _ => lines.push("#fid_field = \"id\"".to_string()),
+        if self.no_transform {
+            lines.push(format!("no_transform = true"));
+        }
+        if let Some(ref fid_field) = self.fid_field {
+            lines.push(format!("fid_field = \"{}\"", fid_field));
         }
         if self.tile_size != 4096 {
             lines.push(format!(r#"tile_size = "{}""#, self.tile_size));

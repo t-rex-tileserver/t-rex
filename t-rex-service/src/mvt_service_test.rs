@@ -285,7 +285,6 @@ name = "points"
 table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
-#fid_field = "id"
 #simplify = true
 #buffer_size = 10
 #make_valid = true

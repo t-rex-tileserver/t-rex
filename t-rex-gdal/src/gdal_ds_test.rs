@@ -42,9 +42,9 @@ fn test_detect_layers() {
     let layers = ds.detect_layers(true);
     println!("{:?}", layers);
     assert_eq!(layers.len(), 3);
-    assert_eq!(format!("{:?}", layers[0]), r#"Layer { name: "ne_10m_populated_places", datasource: None, geometry_field: Some("geom"), geometry_type: None, srid: Some(3857), fid_field: None, table_name: Some("ne_10m_populated_places"), query_limit: None, query: [], minzoom: None, maxzoom: None, tile_size: 4096, simplify: false, buffer_size: None, make_valid: false, style: None }"#);
-    assert_eq!(format!("{:?}", layers[1]), r#"Layer { name: "ne_10m_rivers_lake_centerlines", datasource: None, geometry_field: Some("geom"), geometry_type: None, srid: Some(3857), fid_field: None, table_name: Some("ne_10m_rivers_lake_centerlines"), query_limit: None, query: [], minzoom: None, maxzoom: None, tile_size: 4096, simplify: false, buffer_size: None, make_valid: false, style: None }"#);
-    assert_eq!(format!("{:?}", layers[2]), r#"Layer { name: "ne_110m_admin_0_countries", datasource: None, geometry_field: Some("geom"), geometry_type: None, srid: Some(3857), fid_field: None, table_name: Some("ne_110m_admin_0_countries"), query_limit: None, query: [], minzoom: None, maxzoom: None, tile_size: 4096, simplify: false, buffer_size: None, make_valid: false, style: None }"#);
+    assert_eq!(format!("{:?}", layers[0]), r#"Layer { name: "ne_10m_populated_places", datasource: None, geometry_field: Some("geom"), geometry_type: None, srid: Some(3857), no_transform: false, fid_field: None, table_name: Some("ne_10m_populated_places"), query_limit: None, query: [], minzoom: None, maxzoom: None, tile_size: 4096, simplify: false, buffer_size: None, make_valid: false, style: None }"#);
+    assert_eq!(format!("{:?}", layers[1]), r#"Layer { name: "ne_10m_rivers_lake_centerlines", datasource: None, geometry_field: Some("geom"), geometry_type: None, srid: Some(3857), no_transform: false, fid_field: None, table_name: Some("ne_10m_rivers_lake_centerlines"), query_limit: None, query: [], minzoom: None, maxzoom: None, tile_size: 4096, simplify: false, buffer_size: None, make_valid: false, style: None }"#);
+    assert_eq!(format!("{:?}", layers[2]), r#"Layer { name: "ne_110m_admin_0_countries", datasource: None, geometry_field: Some("geom"), geometry_type: None, srid: Some(3857), no_transform: false, fid_field: None, table_name: Some("ne_110m_admin_0_countries"), query_limit: None, query: [], minzoom: None, maxzoom: None, tile_size: 4096, simplify: false, buffer_size: None, make_valid: false, style: None }"#);
 }
 
 #[test]

@@ -450,11 +450,15 @@ impl PostgisInput {
             );
             geom_expr = format!("ST_SetSRID({},{})", geom_expr, grid_srid)
         } else if layer_srid != grid_srid {
-            info!(
-                "Layer '{}': Reprojecting geometry '{}' from SRID {} to {}",
-                layer.name, geom_name, layer_srid, grid_srid
-            );
-            geom_expr = format!("ST_Transform({},{})", geom_expr, grid_srid);
+            if layer.no_transform {
+                geom_expr = format!("ST_SetSRID({},{})", geom_expr, grid_srid);
+            } else {
+                info!(
+                    "Layer '{}': Reprojecting geometry '{}' from SRID {} to {}",
+                    layer.name, geom_name, layer_srid, grid_srid
+                );
+                geom_expr = format!("ST_Transform({},{})", geom_expr, grid_srid);
+            }
         }
 
         if geom_expr.starts_with("ST_") || geom_expr.starts_with("COALESCE") {
@@ -487,19 +491,18 @@ impl PostgisInput {
     /// Build !bbox! replacement expression for feature query.
     fn build_bbox_expr(&self, layer: &Layer, grid_srid: i32) -> String {
         let layer_srid = layer.srid.unwrap_or(grid_srid); // we assume grid srid as default
-        let env_srid = if layer_srid <= 0 {
+        let env_srid = if layer_srid <= 0 || layer.no_transform {
             layer_srid
         } else {
             grid_srid
         };
-        let mut expr;
-        expr = format!("ST_MakeEnvelope($1,$2,$3,$4,{})", env_srid);
+        let mut expr = format!("ST_MakeEnvelope($1,$2,$3,$4,{})", env_srid);
         if let Some(pixels) = layer.buffer_size {
             if pixels != 0 {
                 expr = format!("ST_Buffer({},{}*!pixel_width!)", expr, pixels);
             }
         }
-        if layer_srid > 0 && layer_srid != env_srid {
+        if layer_srid > 0 && layer_srid != env_srid && !layer.no_transform {
             expr = format!("ST_Transform({},{})", expr, layer_srid);
         }
         // Clip bbox to maximal extent of SRID
@@ -682,10 +685,15 @@ impl DatasourceInput for PostgisInput {
         self.extent_query(sql)
     }
     /// Detect extent of layer (in WGS84)
-    fn layer_extent(&self, layer: &Layer) -> Option<Extent> {
+    fn layer_extent(&self, layer: &Layer, grid_srid: i32) -> Option<Extent> {
         let ref geom_name = layer.geometry_field.as_ref().unwrap();
-        let layer_srid = layer.srid.unwrap_or(0);
-        if !layer.query.is_empty() || layer_srid <= 0 {
+        let src_srid = if layer.no_transform {
+            // Shift coordinates to display extent in grid SRS
+            grid_srid
+        } else {
+            layer.srid.unwrap_or(0)
+        };
+        if !layer.query.is_empty() || src_srid <= 0 {
             info!(
                 "Couldn't detect extent of layer {}, because of custom queries or an unknown SRID",
                 layer.name
@@ -694,7 +702,7 @@ impl DatasourceInput for PostgisInput {
         }
         let extent_sql = format!(
             "ST_Transform(ST_SetSRID(ST_Extent({}),{}),4326)",
-            geom_name, layer_srid
+            geom_name, src_srid
         );
         let sql = format!(
             "SELECT {} AS extent FROM {}",
@@ -743,20 +751,21 @@ impl DatasourceInput for PostgisInput {
         zoom: u8,
         grid: &Grid,
         mut read: F,
-    ) where
+    ) -> u64
+    where
         F: FnMut(&Feature),
     {
         let conn = self.conn();
         let query = self.query(&layer, zoom);
         if query.is_none() {
-            return;
+            return 0;
         }
         let query = query.unwrap();
         let stmt = conn.prepare_cached(&query.sql);
         if let Err(err) = stmt {
             error!("Layer '{}': {}", layer.name, err);
             error!("Query: {}", query.sql);
-            return;
+            return 0;
         };
 
         // Add query params
@@ -787,7 +796,7 @@ impl DatasourceInput for PostgisInput {
             error!("Query: {}", query.sql);
             error!("Param types: {:?}", query.params);
             error!("Param values: {:?}", params);
-            return;
+            return 0;
         };
         debug!("Reading features in layer {}", layer.name);
         let mut cnt = 0;
@@ -799,7 +808,7 @@ impl DatasourceInput for PostgisInput {
             };
             read(&feature);
             cnt += 1;
-            if cnt == query_limit {
+            if cnt == query_limit as u64 {
                 info!(
                     "Features of layer {} limited to {} (tile query_limit reached, zoom level {})",
                     layer.name, cnt, zoom
@@ -807,7 +816,7 @@ impl DatasourceInput for PostgisInput {
                 break;
             }
         }
-        debug!("Feature count: {}", cnt);
+        cnt
     }
 }
 

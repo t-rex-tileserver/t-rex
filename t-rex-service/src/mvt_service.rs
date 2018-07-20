@@ -79,13 +79,16 @@ impl MvtService {
         mut stats: Option<&mut Statistics>,
     ) -> vector_tile::Tile {
         let extent = self.grid.tile_extent(xtile, ytile, zoom);
-        debug!("MVT tile request {:?}", extent);
+        debug!(
+            "{}/{}/{}/{} retrieving with {:?}",
+            tileset, zoom, xtile, ytile, extent
+        );
         let mut tile = Tile::new(&extent, true);
         for layer in self.get_tileset_layers(tileset) {
             if zoom >= layer.minzoom() && zoom <= layer.maxzoom(30) {
                 let mut mvt_layer = tile.new_layer(layer);
                 let now = Instant::now();
-                self.ds(&layer).unwrap().retrieve_features(
+                let num_features = self.ds(&layer).unwrap().retrieve_features(
                     &layer,
                     &extent,
                     zoom,
@@ -95,17 +98,20 @@ impl MvtService {
                     },
                 );
                 let elapsed = now.elapsed();
-                let num_features = mvt_layer.get_features().len();
                 if let Some(ref mut stats) = stats {
                     stats.add(
-                        format!("tile_ms.{}.{}.{}", tileset, &layer.name, zoom),
+                        format!("tile_ms.{}.{}.{}", tileset, layer.name, zoom),
                         elapsed.as_secs() * 1000 + elapsed.subsec_millis() as u64,
                     );
                     stats.add(
-                        format!("feature_count.{}.{}.{}", tileset, &layer.name, zoom),
+                        format!("feature_count.{}.{}.{}", tileset, layer.name, zoom),
                         num_features as u64,
                     );
                 }
+                debug!(
+                    "{}/{}/{}/{} layer {}: {} features",
+                    tileset, zoom, xtile, ytile, layer.name, num_features
+                );
                 if num_features > 0 {
                     tile.add_layer(mvt_layer);
                 }
@@ -391,12 +397,21 @@ impl MvtService {
         }
         stats
     }
-    fn gen_layer_runtime_config(&self, layer: &Layer) -> String {
+    fn gen_layer_runtime_config(&self, layer: &Layer, grid_srid: i32) -> String {
         let ds = self.ds(layer).unwrap();
-        let extent = ds.layer_extent(layer);
         let mut lines = vec!["\n[[tileset]]".to_string()];
         lines.push(format!(r#"name = "{}""#, layer.name));
-        if let Some(ext) = extent {
+        if layer.no_transform {
+            if let Some(layer_srid) = layer.srid {
+                if let Some(ext) = ds.layer_extent(layer, layer_srid) {
+                    lines.push(format!(
+                        r#"# Real extent: [{:.5}, {:.5}, {:.5}, {:.5}]"#,
+                        ext.minx, ext.miny, ext.maxx, ext.maxy
+                    ));
+                }
+            }
+        }
+        if let Some(ext) = ds.layer_extent(layer, grid_srid) {
             lines.push(format!(
                 r#"extent = [{:.5}, {:.5}, {:.5}, {:.5}]"#,
                 ext.minx, ext.miny, ext.maxx, ext.maxy
@@ -451,7 +466,7 @@ impl<'a> Config<'a, ApplicationCfg> for MvtService {
         config.push_str(&self.grid.gen_runtime_config());
         for tileset in &self.tilesets {
             for layer in &tileset.layers {
-                config.push_str(&self.gen_layer_runtime_config(layer));
+                config.push_str(&self.gen_layer_runtime_config(layer, self.grid.srid));
             }
         }
         config.push_str(&self.cache.gen_runtime_config());

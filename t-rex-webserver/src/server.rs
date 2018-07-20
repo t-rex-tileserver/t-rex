@@ -199,6 +199,8 @@ pub fn service_from_args(config: &ApplicationCfg, args: &ArgMatches) -> MvtServi
         };
         let simplify = bool::from_str(args.value_of("simplify").unwrap_or("true")).unwrap_or(false);
         let clip = bool::from_str(args.value_of("clip").unwrap_or("true")).unwrap_or(false);
+        let no_transform =
+            bool::from_str(args.value_of("no-transform").unwrap_or("false")).unwrap_or(false);
         let grid = Grid::web_mercator();
         let mut tilesets = Vec::new();
         let datasources = if let Some(qgs) = args.value_of("qgs") {
@@ -222,7 +224,8 @@ pub fn service_from_args(config: &ApplicationCfg, args: &ArgMatches) -> MvtServi
                 let dsconn = ds.connected();
                 let mut layers = dsconn.detect_layers(detect_geometry_types);
                 while let Some(mut l) = layers.pop() {
-                    let extent = dsconn.layer_extent(&l);
+                    l.no_transform = no_transform;
+                    let extent = dsconn.layer_extent(&l, 3857);
                     set_layer_buffer_defaults(&mut l, simplify, clip);
                     let tileset = Tileset {
                         name: l.name.clone(),

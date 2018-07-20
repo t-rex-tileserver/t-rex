@@ -16,11 +16,19 @@ pub trait DatasourceInput {
     fn detect_layers(&self, detect_geometry_types: bool) -> Vec<Layer>;
     /// Return column field names and Rust compatible type conversion - without geometry column
     fn detect_data_columns(&self, layer: &Layer, sql: Option<&String>) -> Vec<(String, String)>;
-    fn layer_extent(&self, layer: &Layer) -> Option<Extent>;
+    fn layer_extent(&self, layer: &Layer, grid_srid: i32) -> Option<Extent>;
     fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32);
     /// Projected extent
     fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent>;
-    fn retrieve_features<F>(&self, layer: &Layer, extent: &Extent, zoom: u8, grid: &Grid, read: F)
+    /// Retrieve features of one layer. Return feature count.
+    fn retrieve_features<F>(
+        &self,
+        layer: &Layer,
+        extent: &Extent,
+        zoom: u8,
+        grid: &Grid,
+        read: F,
+    ) -> u64
     where
         F: FnMut(&Feature);
 }
@@ -40,7 +48,7 @@ impl DatasourceInput for DummyDatasource {
     fn extent_from_wgs84(&self, _extent: &Extent, _dest_srid: i32) -> Option<Extent> {
         unimplemented!();
     }
-    fn layer_extent(&self, _layer: &Layer) -> Option<Extent> {
+    fn layer_extent(&self, _layer: &Layer, _grid_srid: i32) -> Option<Extent> {
         unimplemented!();
     }
     fn prepare_queries(&mut self, _layer: &Layer, _grid_srid: i32) {}
@@ -51,9 +59,11 @@ impl DatasourceInput for DummyDatasource {
         _zoom: u8,
         _grid: &Grid,
         _read: F,
-    ) where
+    ) -> u64
+    where
         F: FnMut(&Feature),
     {
+        0
     }
 }
 
