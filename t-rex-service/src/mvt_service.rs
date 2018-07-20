@@ -165,6 +165,9 @@ impl MvtService {
             }
             Some(Tile::tile_content(tilegz, gzip))
         } else {
+            // We don't save empty tiles
+            // When serving from file cache return 204 No Content
+            // Nginx: try_files $uri = 204;
             debug!("{} - Skipping empty tile", path);
             None
         }

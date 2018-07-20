@@ -367,7 +367,7 @@ fn tile_pbf(
             .header(header::CACHE_CONTROL, format!("max-age={}", cache_max_age))
             .body(tile) // TODO: chunked response
     } else {
-        HttpResponse::NotFound().finish()
+        HttpResponse::NoContent().finish()
     };
     result(Ok(resp))
 }
