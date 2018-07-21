@@ -14,7 +14,7 @@ doctest = false
 
 [dependencies]
 actix = "0.7"
-actix-web =  { git = "https://github.com/actix/actix-web.git" } # -> 0.7
+actix-web =  "0.7"
 futures = "0.1"
 clap = "2.31"
 log = "0.4"
