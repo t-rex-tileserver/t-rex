@@ -63,7 +63,8 @@ fn test_gdal_retrieve_points() {
         maxy: 5948635.3,
     };
 
-    let ds = GdalDatasource::new("../data/natural_earth.gpkg");
+    let mut ds = GdalDatasource::new("../data/natural_earth.gpkg");
+    ds.prepare_queries(&layer, grid.srid);
     let mut reccnt = 0;
     ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
         if reccnt == 0 {
@@ -97,7 +98,8 @@ fn test_coord_transformation() {
     layer.geometry_field = Some(String::from("geom"));
     layer.srid = Some(3857);
     let grid = Grid::wgs84();
-    let ds = GdalDatasource::new("../data/natural_earth.gpkg");
+    let mut ds = GdalDatasource::new("../data/natural_earth.gpkg");
+    ds.prepare_queries(&layer, grid.srid);
 
     let extent_wgs84 = Extent {
         minx: 7.3828,
@@ -169,7 +171,8 @@ fn test_gdal_retrieve_multilines() {
         .unwrap();
     assert_eq!(gdal_layer.features().count(), 1404);
 
-    let ds = GdalDatasource::new("../data/natural_earth.gpkg");
+    let mut ds = GdalDatasource::new("../data/natural_earth.gpkg");
+    ds.prepare_queries(&layer, grid.srid);
     let mut reccnt = 0;
 
     // without buffer
@@ -227,7 +230,8 @@ fn test_gdal_retrieve_multipolys() {
         maxy: 5948635.3,
     };
 
-    let ds = GdalDatasource::new("../data/natural_earth.gpkg");
+    let mut ds = GdalDatasource::new("../data/natural_earth.gpkg");
+    ds.prepare_queries(&layer, grid.srid);
     let mut reccnt = 0;
     ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
         if reccnt == 0 {

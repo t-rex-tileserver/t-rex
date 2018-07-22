@@ -1604,6 +1604,7 @@ name = "t-rex-gdal"
 version = "0.9.9"
 dependencies = [
  "gdal 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gdal-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "t-rex-core 0.9.9",
 ]

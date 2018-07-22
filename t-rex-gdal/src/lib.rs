@@ -1,4 +1,5 @@
 extern crate gdal;
+extern crate gdal_sys;
 #[macro_use]
 extern crate log;
 extern crate t_rex_core;

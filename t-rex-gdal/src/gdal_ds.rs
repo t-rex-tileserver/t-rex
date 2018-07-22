@@ -14,23 +14,39 @@ use datasource::DatasourceInput;
 use gdal;
 use gdal::spatial_ref::{CoordTransform, SpatialRef};
 use gdal::vector::{Dataset, FieldValue, Geometry, OGRwkbGeometryType};
+use gdal_sys;
+use std::collections::BTreeMap;
 use std::path::Path;
 
 pub struct GdalDatasource {
     pub path: String,
     // We don't store the Dataset, because we need mut access for getting layers
+    // CoordTransform for all layers
+    geom_transform: BTreeMap<String, Option<CoordTransform>>,
+    // CoordTransform for all layers
+    bbox_transform: BTreeMap<String, Option<CoordTransform>>,
 }
 
 impl GdalDatasource {
     pub fn new(path: &str) -> GdalDatasource {
         GdalDatasource {
             path: path.to_string(),
+            geom_transform: BTreeMap::new(),
+            bbox_transform: BTreeMap::new(),
         }
     }
 }
 
 trait ToGeo {
     fn to_geo(&self, srid: Option<i32>) -> GeometryType;
+}
+
+fn ogr_type_name(ogr_type: OGRwkbGeometryType::Type) -> String {
+    use std::ffi::CStr;
+    let rv = unsafe { gdal_sys::OGRGeometryTypeToName(ogr_type) };
+    //_string(rv)
+    let c_str = unsafe { CStr::from_ptr(rv) };
+    c_str.to_string_lossy().into_owned()
 }
 
 impl ToGeo for Geometry {
@@ -127,7 +143,7 @@ impl ToGeo for Geometry {
                                                  })
             }
             */
-            _ => panic!("Unknown geometry type"),
+            geom_type => panic!("Unsupported geometry type {}", &ogr_type_name(geom_type)),
         }
     }
 }
@@ -150,9 +166,17 @@ fn transform_extent_sref(
     dest_sref: &SpatialRef,
 ) -> Result<Extent, gdal::errors::Error> {
     let transform = CoordTransform::new(src_sref, dest_sref)?;
+    transform_extent_tr(extent, &transform)
+}
+
+/// Projected extent
+fn transform_extent_tr(
+    extent: &Extent,
+    transformation: &CoordTransform,
+) -> Result<Extent, gdal::errors::Error> {
     let xs = &mut [extent.minx, extent.maxx];
     let ys = &mut [extent.miny, extent.maxy];
-    transform.transform_coords(xs, ys, &mut [0.0, 0.0])?;
+    transformation.transform_coords(xs, ys, &mut [0.0, 0.0])?;
     Ok(Extent {
         minx: *xs.get(0).unwrap(),
         miny: *ys.get(0).unwrap(),
@@ -233,6 +257,8 @@ impl DatasourceInput for GdalDatasource {
     fn connected(&self) -> GdalDatasource {
         GdalDatasource {
             path: self.path.clone(),
+            geom_transform: BTreeMap::new(),
+            bbox_transform: BTreeMap::new(),
         }
     }
     fn detect_layers(&self, _detect_geometry_types: bool) -> Vec<Layer> {
@@ -285,6 +311,7 @@ impl DatasourceInput for GdalDatasource {
         };
 
         let layer_sref = match ogr_layer.spatial_reference() {
+            //FIXME: use layer.geom_field
             Err(e) => {
                 warn!(
                     "Layer '{}': Unable to get spatial reference: {}",
@@ -293,6 +320,20 @@ impl DatasourceInput for GdalDatasource {
                 return None;
             }
             Ok(sref) => sref,
+        };
+
+        let grid_sref = match SpatialRef::from_epsg(grid_srid as u32) {
+            Err(e) => {
+                error!("Unable to get grid spatial reference: {}", e);
+                return None;
+            }
+            Ok(sref) => sref,
+        };
+
+        let src_sref = if layer.no_transform {
+            grid_sref
+        } else {
+            layer_sref
         };
 
         let wgs84_sref = match SpatialRef::from_epsg(4326) {
@@ -304,7 +345,7 @@ impl DatasourceInput for GdalDatasource {
         };
 
         match extent {
-            Some(extent) => match transform_extent_sref(&extent, &layer_sref, &wgs84_sref) {
+            Some(extent) => match transform_extent_sref(&extent, &src_sref, &wgs84_sref) {
                 Ok(extent) => Some(extent),
                 Err(e) => {
                     error!("Unable to transform {:?}: {}", extent, e);
@@ -315,45 +356,62 @@ impl DatasourceInput for GdalDatasource {
         }
     }
     fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
-        // TODO: Prepare gdal::vector::Layer, CoordTransform
-        match layer.srid {
-            None => {
-                // TODO: this is suprisingly iffy
-                // let layer_name = layer.table_name.as_ref().unwrap();
-                // let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
-                // let sref = ogr_layer.spatial_reference();
-                // match sref {
-                //     Err(e) => {
-                //         error!(
-                //             "Layer '{}': Unable to obtain SRS - will assume SRID {}",
-                //             layer.name, grid_srid
-                //         );
-                //     }
-                //     Ok(sref) => match sref.auth_code() {
-                //         Some(srid) if srid != grid_srid => {
-                //             info!(
-                //                 "Layer '{}': Reprojecting geometry from SRID {} to {}",
-                //                 layer.name, srid, grid_srid
-                //             );
-                //         }
-                //         None => {
-                //             // TODO
-                //         }
-                //     },
-                // }
-                // warn!(
-                //     "Layer '{}': Unknown SRS - assuming SRID {}",
-                //     layer.name, grid_srid
-                // );
+        let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
+        let layer_name = layer.table_name.as_ref().unwrap();
+        let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
+
+        let layer_sref = layer
+            .srid
+            .map(|srid| SpatialRef::from_epsg(srid as u32))
+            .unwrap_or_else(|| ogr_layer.spatial_reference()) //FIXME: use layer.geom_field
+            .or_else(|_| SpatialRef::from_epsg(grid_srid as u32));
+        let layer_sref = match layer_sref {
+            Err(e) => {
+                error!(
+                    "Layer '{}': Unable to get spatial reference: {}",
+                    layer.name, e
+                );
+                return;
             }
-            Some(srid) => {
-                if srid != grid_srid {
-                    info!(
-                        "Layer '{}': Reprojecting geometry from SRID {} to {}",
-                        layer.name, srid, grid_srid
-                    );
-                }
+            Ok(sref) => sref,
+        };
+        let grid_sref = match SpatialRef::from_epsg(grid_srid as u32) {
+            Err(e) => {
+                error!("Unable to get grid spatial reference: {}", e);
+                return;
             }
+            Ok(sref) => sref,
+        };
+        let transform = if layer_sref != grid_sref && !layer.no_transform {
+            info!(
+                "Layer '{}': Reprojecting geometry to SRID {:?}",
+                layer.name, grid_srid
+            );
+            CoordTransform::new(&layer_sref, &grid_sref).ok()
+        } else {
+            None
+        };
+        self.geom_transform.insert(layer.name.clone(), transform);
+        let transform = if layer_sref != grid_sref && !layer.no_transform {
+            CoordTransform::new(&grid_sref, &layer_sref).ok()
+        } else {
+            None
+        };
+        self.bbox_transform.insert(layer.name.clone(), transform);
+
+        if layer.simplify {
+            warn!(
+                "Layer '{}': Simplification not supported for GDAL layers",
+                layer.name
+            );
+        }
+        if layer.buffer_size.is_some() {
+            /*TODO: if layer type != point
+            warn!(
+                "Layer '{}': Clipping not supported for GDAL layers",
+                layer.name
+            );
+            */
         }
     }
     fn retrieve_features<F>(
@@ -372,34 +430,6 @@ impl DatasourceInput for GdalDatasource {
         debug!("retrieve_features layer: {}", layer_name);
         let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
 
-        let layer_sref = layer
-            .srid
-            .map(|srid| SpatialRef::from_epsg(srid as u32))
-            .unwrap_or_else(|| ogr_layer.spatial_reference())
-            .or_else(|_| SpatialRef::from_epsg(grid.srid as u32));
-        let layer_sref = match layer_sref {
-            Err(e) => {
-                error!(
-                    "Layer '{}': Unable to get spatial reference: {}",
-                    layer.name, e
-                );
-                return 0;
-            }
-            Ok(sref) => sref,
-        };
-        let grid_sref = match SpatialRef::from_epsg(grid.srid as u32) {
-            Err(e) => {
-                error!("Unable to get grid spatial reference: {}", e);
-                return 0;
-            }
-            Ok(sref) => sref,
-        };
-        let transform = if layer_sref != grid_sref && !layer.no_transform {
-            CoordTransform::new(&layer_sref, &grid_sref).ok()
-        } else {
-            None
-        };
-
         let mut bbox_extent = if let Some(pixels) = layer.buffer_size {
             let pixel_width = grid.pixel_width(zoom);
             let buf = f64::from(pixels) * pixel_width;
@@ -414,8 +444,9 @@ impl DatasourceInput for GdalDatasource {
         };
 
         // Spatial filter must be in layer SRS
-        if layer_sref != grid_sref {
-            match transform_extent_sref(&bbox_extent, &grid_sref, &layer_sref) {
+        let transformation = self.bbox_transform.get(&layer.name).unwrap();
+        if let Some(ref tr) = transformation {
+            match transform_extent_tr(&bbox_extent, tr) {
                 Ok(extent) => bbox_extent = extent,
                 Err(e) => {
                     error!("Unable to transform {:?}: {}", bbox_extent, e);
@@ -431,6 +462,7 @@ impl DatasourceInput for GdalDatasource {
         ).unwrap();
         ogr_layer.set_spatial_filter(&bbox);
 
+        let transformation = self.geom_transform.get(&layer.name).unwrap();
         let fields_defn = ogr_layer.defn().fields().collect::<Vec<_>>();
         let mut cnt = 0;
         let query_limit = layer.query_limit.unwrap_or(0);
@@ -439,7 +471,7 @@ impl DatasourceInput for GdalDatasource {
                 layer: layer,
                 fields_defn: &fields_defn,
                 grid_srid: grid.srid,
-                transform: transform.as_ref(),
+                transform: transformation.as_ref(),
                 feature: &feature,
             };
             read(&feat);
