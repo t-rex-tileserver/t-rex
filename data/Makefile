@@ -6,13 +6,13 @@ createdb:
 	psql $(DBNAME) -c "CREATE EXTENSION postgis"
 
 loadfromgpkg:
-	ogr2ogr -f PostgreSQL PG:dbname=$(DBNAME) ../../../t-rex-gdal/natural_earth.gpkg
+	ogr2ogr -f PostgreSQL PG:dbname=$(DBNAME) natural_earth.gpkg
 	psql $(DBNAME) -c "CREATE TABLE rivers_lake_centerlines AS SELECT fid,scalerank,name,(ST_DUMP(wkb_geometry)).geom::geometry(LineString,3857) AS wkb_geometry FROM ne_10m_rivers_lake_centerlines"
 	psql $(DBNAME) -c "CREATE TABLE admin_0_countries AS SELECT fid,name,iso_a3,(ST_DUMP(wkb_geometry)).geom::geometry(Polygon,3857) AS wkb_geometry FROM ne_110m_admin_0_countries"
 
 loadwgdal1:
 	@# Support GDAL 1.10 on Travis
-	ogr2ogr -f PostgreSQL PG:dbname=$(DBNAME) ../../../t-rex-gdal/natural_earth.sqlite
+	ogr2ogr -f PostgreSQL PG:dbname=$(DBNAME) natural_earth.sqlite
 	psql $(DBNAME) -c "CREATE TABLE rivers_lake_centerlines AS SELECT ogc_fid AS fid,scalerank,name,(ST_DUMP(wkb_geometry)).geom::geometry(LineString,3857) AS wkb_geometry FROM ne_10m_rivers_lake_centerlines"
 	psql $(DBNAME) -c "CREATE TABLE admin_0_countries AS SELECT ogc_fid AS fid,name,iso_a3,(ST_DUMP(wkb_geometry)).geom::geometry(Polygon,3857) AS wkb_geometry FROM ne_110m_admin_0_countries"
 
@@ -28,13 +28,21 @@ packages/Natural_Earth_quick_start/10m_cultural/ne_10m_populated_places.shp: Nat
 	unzip $<
 	touch $@
 
-../../../t-rex-gdal/natural_earth.gpkg: packages/Natural_Earth_quick_start/10m_cultural/ne_10m_populated_places.shp
+natural_earth.gpkg: packages/Natural_Earth_quick_start/10m_cultural/ne_10m_populated_places.shp
 	SHAPE_ENCODING="ISO-8859-1" ogr2ogr -t_srs EPSG:3857 -select scalerank,name,pop_max -lco FID=fid -f GPKG $@ packages/Natural_Earth_quick_start/10m_cultural/ne_10m_populated_places.shp
 	SHAPE_ENCODING="ISO-8859-1" ogr2ogr -t_srs EPSG:3857 -append -select scalerank,name -nlt PROMOTE_TO_MULTI -lco FID=fid -f GPKG $@ packages/Natural_Earth_quick_start/10m_physical/ne_10m_rivers_lake_centerlines.shp
 	OGR_ENABLE_PARTIAL_REPROJECTION=TRUE SHAPE_ENCODING="ISO-8859-1" ogr2ogr -t_srs EPSG:3857 -append -nlt PROMOTE_TO_MULTI -lco FID=fid -f GPKG $@ -select name,iso_a3 packages/Natural_Earth_quick_start/110m_cultural/ne_110m_admin_0_countries.shp
 
-../../../t-rex-gdal/natural_earth.sqlite: ../../../t-rex-gdal/natural_earth.gpkg
+natural_earth.sqlite: natural_earth.gpkg
 	ogr2ogr -f SQLite $@ $<
+
+# Original creation of avch.gpkg
+
+avch.gpkg: ili2pg
+	ogr2ogr -f GPKG avch.gpkg PG:dbname=avch boflaeche liegenschaft strassenstueck hausnummerpos
+
+ili2pg:
+	ili2pg --import --dbdatabase avch --dbusr $$USER --dbpwd xxx ch_254900.itf
 
 # Swiss grid test data
 # https://www.bfs.admin.ch/bfsstatic/dam/assets/453578/master

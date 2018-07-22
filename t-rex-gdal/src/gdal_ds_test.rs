@@ -15,7 +15,7 @@ use std::path::Path;
 
 #[test]
 fn test_gdal_api() {
-    let mut dataset = Dataset::open(Path::new("natural_earth.gpkg")).unwrap();
+    let mut dataset = Dataset::open(Path::new("../data/natural_earth.gpkg")).unwrap();
     let layer = dataset.layer_by_name("ne_10m_populated_places").unwrap();
     let feature = layer.features().next().unwrap();
     let name_field = feature.field("NAME").unwrap();
@@ -38,7 +38,7 @@ fn test_gdal_api() {
 
 #[test]
 fn test_detect_layers() {
-    let ds = GdalDatasource::new("natural_earth.gpkg");
+    let ds = GdalDatasource::new("../data/natural_earth.gpkg");
     let layers = ds.detect_layers(true);
     println!("{:?}", layers);
     assert_eq!(layers.len(), 3);
@@ -63,7 +63,7 @@ fn test_gdal_retrieve_points() {
         maxy: 5948635.3,
     };
 
-    let ds = GdalDatasource::new("natural_earth.gpkg");
+    let ds = GdalDatasource::new("../data/natural_earth.gpkg");
     let mut reccnt = 0;
     ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
         if reccnt == 0 {
@@ -97,7 +97,7 @@ fn test_coord_transformation() {
     layer.geometry_field = Some(String::from("geom"));
     layer.srid = Some(3857);
     let grid = Grid::wgs84();
-    let ds = GdalDatasource::new("natural_earth.gpkg");
+    let ds = GdalDatasource::new("../data/natural_earth.gpkg");
 
     let extent_wgs84 = Extent {
         minx: 7.3828,
@@ -163,13 +163,13 @@ fn test_gdal_retrieve_multilines() {
         maxy: 5948635.3,
     };
 
-    let mut gdal_ds = Dataset::open(Path::new("natural_earth.gpkg")).unwrap();
+    let mut gdal_ds = Dataset::open(Path::new("../data/natural_earth.gpkg")).unwrap();
     let gdal_layer = gdal_ds
         .layer_by_name(layer.table_name.as_ref().unwrap())
         .unwrap();
     assert_eq!(gdal_layer.features().count(), 1404);
 
-    let ds = GdalDatasource::new("natural_earth.gpkg");
+    let ds = GdalDatasource::new("../data/natural_earth.gpkg");
     let mut reccnt = 0;
 
     // without buffer
@@ -227,7 +227,7 @@ fn test_gdal_retrieve_multipolys() {
         maxy: 5948635.3,
     };
 
-    let ds = GdalDatasource::new("natural_earth.gpkg");
+    let ds = GdalDatasource::new("../data/natural_earth.gpkg");
     let mut reccnt = 0;
     ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
         if reccnt == 0 {

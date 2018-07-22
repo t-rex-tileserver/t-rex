@@ -391,7 +391,7 @@ def my_form_open(dialog, layer, feature):
     </maplayer>
     <maplayer simplifyAlgorithm="0" minimumScale="0" maximumScale="1e+08" simplifyDrawingHints="0" minLabelScale="0" maxLabelScale="1e+08" simplifyDrawingTol="1" readOnly="0" geometry="Polygon" simplifyMaxScale="1" type="vector" hasScaleBasedVisibilityFlag="0" simplifyLocal="1" scaleBasedLabelVisibilityFlag="0">
       <id>natural_earth_ne_110m_admin_0_countries20170927220938393</id>
-      <datasource>../t-rex-gdal/natural_earth.gpkg|layerid=2</datasource>
+      <datasource>../data/natural_earth.gpkg|layerid=2</datasource>
       <keywordList>
         <value></value>
       </keywordList>

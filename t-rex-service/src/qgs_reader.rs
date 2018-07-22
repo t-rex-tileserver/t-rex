@@ -113,7 +113,7 @@ struct GdalLayerInfo {
 
 impl GdalLayerInfo {
     fn from_qgs_ds(fname: &str, ds: &str) -> GdalLayerInfo {
-        // split ds like "../t-rex-gdal/natural_earth.gpkg|layerid=2"
+        // split ds like "../data/natural_earth.gpkg|layerid=2"
         let parts = ds.split('|').collect::<Vec<&str>>();
         // Resolve path relative to project file path
         let ds_path = Path::new(parts[0]);
@@ -251,23 +251,23 @@ fn test_pg_uri() {
 fn test_gdal_ds() {
     let info = GdalLayerInfo::from_qgs_ds(
         "../examples/natural_earth.qgs",
-        "../t-rex-gdal/natural_earth.gpkg|layerid=2",
+        "../data/natural_earth.gpkg|layerid=2",
     );
     println!("{:?}", info);
     assert!(info.path.contains("natural_earth.gpkg"));
     assert_eq!(info.layer_name, "ne_110m_admin_0_countries");
     let info = GdalLayerInfo::from_qgs_ds(
         "../examples/natural_earth.qgs",
-        "../t-rex-gdal/natural_earth.gpkg|layername=ne_10m_rivers_lake_centerlines",
+        "../data/natural_earth.gpkg|layername=ne_10m_rivers_lake_centerlines",
     );
     assert_eq!(info.layer_name, "ne_10m_rivers_lake_centerlines");
     let info = GdalLayerInfo::from_qgs_ds(
         "../examples/natural_earth.qgs",
-        "../t-rex-gdal/natural_earth.gpkg|layerinfo=missing",
+        "../data/natural_earth.gpkg|layerinfo=missing",
     );
     assert_eq!(
         info.layer_name,
-        "<../t-rex-gdal/natural_earth.gpkg|layerinfo=missing>"
+        "<../data/natural_earth.gpkg|layerinfo=missing>"
     );
 }
 
