@@ -45,11 +45,11 @@ ili2pg:
 	ili2pg --import --dbdatabase avch --dbusr $$USER --dbpwd xxx ch_254900.itf
 
 # Swiss grid test data
-# https://www.bfs.admin.ch/bfsstatic/dam/assets/453578/master
-geostat:
-	psql postgres -c "DROP DATABASE IF EXISTS geostat"
-	psql postgres -c "CREATE DATABASE geostat"
-	psql geostat -c "CREATE EXTENSION postgis"
-	SHAPE_ENCODING="ISO-8859-1" ogr2ogr -t_srs EPSG:2056 -nlt PROMOTE_TO_MULTI -f PostgreSQL PG:dbname=geostat geostat_ggg_16/shp/g1k16.shp
-	# ggg_2017-LV95/shp
-	#for i in *.shp; do ogr2ogr -a_srs EPSG:2056 -nlt PROMOTE_TO_MULTI -f PostgreSQL PG:dbname=geostat $i; done
+
+# https://www.bfs.admin.ch/bfs/de/home/dienstleistungen/geostat/geodaten-bundesstatistik/administrative-grenzen/generalisierte-gemeindegrenzen.html
+gd-b-00.03-875-gg18.zip:
+	wget -O gd-b-00.03-875-gg18.zip https://www.bfs.admin.ch/bfsstatic/dam/assets/5247306/master
+
+g1k18.shp: gd-b-00.03-875-gg18.zip
+	unzip -j gd-b-00.03-875-gg18.zip ggg_2018-LV95/shp/g1k18.*
+	touch $@

@@ -256,3 +256,28 @@ fn test_gdal_retrieve_multipolys() {
     });
     assert_eq!(reccnt, 1);
 }
+
+#[test]
+fn test_no_transform() {
+    let mut layer = Layer::new("g1k18");
+    layer.table_name = Some(String::from("g1k18"));
+    let ds = GdalDatasource::new("../data/g1k18.shp");
+    let ext = ds.layer_extent(&layer, 3857);
+    let extent_real = Extent {
+        minx: 5.965261206168108,
+        miny: 45.82055595626555,
+        maxx: 10.560304830191724,
+        maxy: 47.77352198290902,
+    };
+    assert_eq!(ext, Some(extent_real));
+
+    layer.no_transform = true;
+    let ext = ds.layer_extent(&layer, 3857);
+    let extent_fake = Extent {
+        minx: 22.326943667174767,
+        miny: 9.613866318667196,
+        maxx: 25.456790898034118,
+        maxy: 11.562317732408099,
+    };
+    assert_eq!(ext, Some(extent_fake));
+}
