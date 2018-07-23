@@ -9,7 +9,7 @@ dbconn = "postgresql://postgres@127.0.0.1/osm_buildings"
 
 [[datasource]]
 name = "natural_earth"
-path = "natural_earth.gpkg"
+path = "../data/natural_earth.gpkg"
 
 [grid]
 predefined = "web_mercator"

@@ -379,9 +379,24 @@ impl DatasourceInput for GdalDatasource {
         }
     }
     fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
+        if !Path::new(&self.path).exists() {
+            error!(
+                "Layer '{}': Can't open dataset '{}'",
+                layer.name, &self.path
+            );
+            return;
+        }
         let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
         let layer_name = layer.table_name.as_ref().unwrap();
-        let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
+        let ogr_layer = dataset.layer_by_name(layer_name);
+        if ogr_layer.is_err() {
+            error!(
+                "Layer '{}': Can't find dataset layer '{}'",
+                layer.name, layer_name
+            );
+            return;
+        }
+        let ogr_layer = ogr_layer.unwrap();
 
         let grid_sref = match SpatialRef::from_epsg(grid_srid as u32) {
             Err(e) => {
