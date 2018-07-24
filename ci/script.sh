@@ -3,31 +3,25 @@
 set -ex
 
 main() {
+    cargo build --all --target $TARGET --tests --bins
+    cargo run -- --version
+
     if [ ! -z $DISABLE_TESTS ]; then
-        cargo build --target $TARGET
-        cargo build --target $TARGET --release
         return
     fi
-
-    #cargo test --target $TARGET
-    # cross failes with linking -lgdal
-    cargo test --all --target $TARGET --release
 
     cargo test --all --target $TARGET
     # libgdal-dev from ubuntugis drops postgresql-9.4-postgis-2.3
     if [ $TRAVIS_OS_NAME = osx ]; then
         # cross ignores DBCONN env variable (https://github.com/japaric/cross/issues/76)
-        cargo test --all --target $TARGET -- --ignored
+        #cargo test --all --target $TARGET -- --ignored
     fi
-
-    #cargo run --target $TARGET
-    cargo run --target $TARGET --release
 
     if [ $TRAVIS_OS_NAME = linux ]; then
-        ldd target/$TARGET/release/t_rex
+        ldd target/$TARGET/debug/t_rex
     fi
     if [ $TRAVIS_OS_NAME = osx ]; then
-        otool -L target/$TARGET/release/t_rex
+        otool -L target/$TARGET/debug/t_rex
     fi
 }
 

@@ -133,10 +133,26 @@ fn drilldown(args: &ArgMatches) {
     print!("{}", stats.as_csv());
 }
 
+#[cfg(feature = "with-gdal")]
+extern crate t_rex_gdal;
+
+fn version_info() -> String {
+    #[cfg(feature = "with-gdal")]
+    let version = format!(
+        "{} (GDAL version {})",
+        crate_version!(),
+        t_rex_gdal::gdal_version()
+    );
+    #[cfg(not(feature = "with-gdal"))]
+    let version = crate_version!().to_string();
+    version
+}
+
 fn main() {
+    let version_info = version_info();
     // http://kbknapp.github.io/clap-rs/clap/
     let mut app = App::new("t_rex")
-        .version(crate_version!())
+        .version(&version_info as &str)
         .author("Pirmin Kalberer <pka@sourcepole.ch>")
         .about("vector tile server specialized on publishing MVT tiles from your own data")
         .subcommand(SubCommand::with_name("serve")

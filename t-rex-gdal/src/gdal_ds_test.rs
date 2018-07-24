@@ -13,6 +13,12 @@ use gdal::vector::Dataset;
 use gdal_ds::GdalDatasource;
 use std::path::Path;
 
+fn gdal_version() -> i32 {
+    gdal::version::version_info("VERSION_NUM")
+        .parse::<i32>()
+        .unwrap()
+}
+
 #[test]
 fn test_gdal_api() {
     let mut dataset = Dataset::open(Path::new("../data/natural_earth.gpkg")).unwrap();
@@ -149,9 +155,6 @@ fn test_coord_transformation() {
 
 #[test]
 fn test_gdal_retrieve_multilines() {
-    let gdal_version = gdal::version::version_info("VERSION_NUM")
-        .parse::<i32>()
-        .unwrap();
     let mut layer = Layer::new("multilines");
     layer.table_name = Some(String::from("ne_10m_rivers_lake_centerlines"));
     layer.geometry_field = Some(String::from("geom"));
@@ -201,7 +204,7 @@ fn test_gdal_retrieve_multilines() {
             );
             assert_eq!(feat.attributes()[0].value, FeatureAttrValType::Double(6.0));
             assert_eq!(None, feat.fid());
-            if gdal_version < 2020000 {
+            if gdal_version() < 2020000 {
                 // or maybe < 2000000 ?
                 assert_eq!("Ok(MultiLineString(MultiLineStringT { lines: [LineStringT { points: [Point { x: 682757.1012729447, y: 5813200.024936108, srid: Some(3857) }, Point { x: 683572.4295746532, y: 5814895.307100639, srid: Some(3857) }, Point { x: 684405.8762830653, y: 5815700.51643066, srid: Some(3857) }, Point { x: 686063.7104965394, y: 5817684.394041292, srid: Some(3857) }, Point { x: 687404.4725926834, y: 5820284.406662052, srid: Some(3857) }, Point { x: 688545.9322150754, y: 5823494.54626182, srid: Some(3857) }, Point { x: 691689.4757783283, y: 5831092.159555616, srid: Some(3857) }, Point { x: 692287.3831995813, y: 5833289.410580246, srid: Some(3857) }, Point { x: 694633.7168678325, y: 5836484.600127116, srid: Some(3857) }, Point { x: 697804.4380411424, y: 5840698.509721698, srid: Some(3857) }, Point { x: 701428.1193820703, y: 5843830.710570353, srid: Some(3857) }, Point { x: 704852.4982492463, y: 5844947.27781533, srid: Some(3857) }, Point { x: 708512.4164035813, y: 5845118.059404142, srid: Some(3857) }, Point { x: 712136.0977445092, y: 5846050.848060609, srid: Some(3857) }, Point { x: 721612.0244510319, y: 5852583.137171743, srid: Some(3857) }, Point { x: 728741.6174893066, y: 5853983.544356565, srid: Some(3857) }, Point { x: 736161.1050348545, y: 5853746.840167029, srid: Some(3857) }, Point { x: 752766.6247796519, y: 5849447.822084563, srid: Some(3857) }, Point { x: 752676.0327461276, y: 5849717.2707096655, srid: Some(3857) }, Point { x: 761236.9799140673, y: 5847509.349466373, srid: Some(3857) }, Point { x: 763248.1230582818, y: 5846142.818490322, srid: Some(3857) }, Point { x: 764335.2274605598, y: 5845131.196586606, srid: Some(3857) }], srid: Some(3857) }], srid: Some(3857) }))",
                            &*format!("{:?}", feat.geometry()));
@@ -263,11 +266,20 @@ fn test_no_transform() {
     layer.table_name = Some(String::from("g1k18"));
     let ds = GdalDatasource::new("../data/g1k18.shp");
     let ext = ds.layer_extent(&layer, 3857);
-    let extent_real = Extent {
-        minx: 5.965261206168108,
-        miny: 45.82055595626555,
-        maxx: 10.560304830191724,
-        maxy: 47.77352198290902,
+    let extent_real = if gdal_version() < 2020000 {
+        Extent {
+            minx: 5.96526120616811,
+            miny: 45.82055595626557,
+            maxx: 10.560304830191727,
+            maxy: 47.773521982909,
+        }
+    } else {
+        Extent {
+            minx: 5.965261206168108,
+            miny: 45.82055595626555,
+            maxx: 10.560304830191724,
+            maxy: 47.77352198290902,
+        }
     };
     assert_eq!(ext, Some(extent_real));
 
