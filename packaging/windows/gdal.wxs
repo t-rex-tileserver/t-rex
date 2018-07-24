@@ -83,7 +83,7 @@
                 <File Id="filA376E49DDF9ABFBF8F699724956E2934" KeyPath="yes" Source="!(wix.GdalSrcDir)\xdrdll.dll" />
             </Component>
             <Component Id="cmp37AFBAA52D8C0AA19654DEA3C733CE3D" Directory="BINDIR" Guid="*">
-                <File Id="fil7EA2E378A5A665D554FD27807C390845" KeyPath="yes" Source="!(wix.GdalSrcDir)\xerces-c_3_1.dll" />
+                <File Id="fil7EA2E378A5A665D554FD27807C390845" KeyPath="yes" Source="!(wix.GdalSrcDir)\xerces-c_3_2.dll" />
             </Component>
             <Component Id="cmp576957B9B8425A576274047F3428790A" Directory="BINDIR" Guid="*">
                 <File Id="fil376E0D0C3D448263AC74A30EDB338991" KeyPath="yes" Source="!(wix.GdalSrcDir)\zlib1.dll" />
