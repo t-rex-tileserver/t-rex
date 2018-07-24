@@ -41,9 +41,11 @@ install:
   - set PATH=%PATH%;"%WIX%\bin"
 
 test_script:
-  - cargo test --all --target %TARGET%
-  - cargo test --all --target %TARGET% --release
-  # - cargo run --no-default-features --target %TARGET% --release
+  - cargo build --all --tests --bins
+  - cargo run -- --version
+  - cargo test --all
+  - cargo test --all --release
+  # - cargo run --no-default-features --release
 
 before_deploy:
   - cargo rustc --target %TARGET% --release --bin t_rex -- -C lto
