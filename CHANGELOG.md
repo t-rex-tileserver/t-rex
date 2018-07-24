@@ -1,20 +1,32 @@
 <a name="0.9.0"></a>
-## 0.9.0 (UNRELEASED)
+## 0.9.0 (2018-07-24)
 
 #### Features
 
 * Port to asynchronous actix web framework
+* New mode `no-transform` to pretend grid SRS
 * New `drilldown` command and service for tileset statistics
 * Configurable directories for static file serving
+* Add support for PostGIS Compoundcurve and Curvedpolygon
+* New option `detect-geometry-types` for disabling geometry detection
 * New command line parameter `loglevel`
 * Make `ST_MakeValid` on geometries before clipping optional (`make_valid`)
+* Return 204 No Content for empty tiles
 * `minzoom`/`maxzoom`, `center` and `start_zoom` configuration on tileset level (Thanks frodrigo!)
+* Min-/maxzoom limits for tileset are deduced from layer/query limits
 * New attribution configuration (Thanks frodrigo!)
 
 #### Bug Fixes
 
 * Support table names with special characters
 * Omit empty layers in tiles (Thanks @frodrigo!)
+* Return uncompressed tiles if requested
+
+#### Breaking changes
+
+* Serve and seed commands don't deliver/cache tiles out of tileset min-/maxzoom limits
+* Empty tiles are not stored to cache anymore
+* `ST_MakeValid` is not applied by default anymore. Set `make_valid true` to reactivate.
 
 <a name="0.8.2"></a>
 ## 0.8.2 (2018-04-18)
