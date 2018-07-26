@@ -380,11 +380,11 @@ impl DatasourceInput for GdalDatasource {
     }
     fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
         if !Path::new(&self.path).exists() {
-            error!(
+            warn!(
                 "Layer '{}': Can't open dataset '{}'",
                 layer.name, &self.path
             );
-            return;
+            // We continue, because GDAL also supports HTTP adresses
         }
         let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
         let layer_name = layer.table_name.as_ref().unwrap();
@@ -425,10 +425,12 @@ impl DatasourceInput for GdalDatasource {
         self.bbox_transform.insert(layer.name.clone(), transform);
 
         if layer.simplify {
-            warn!(
-                "Layer '{}': Simplification not supported for GDAL layers",
-                layer.name
-            );
+            if layer.geometry_type != Some("POINT".to_string()) {
+                warn!(
+                    "Layer '{}': Simplification not supported for GDAL layers",
+                    layer.name
+                );
+            }
         }
         if layer.buffer_size.is_some() {
             if layer.geometry_type != Some("POINT".to_string()) {
