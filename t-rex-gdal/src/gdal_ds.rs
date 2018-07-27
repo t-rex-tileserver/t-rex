@@ -78,7 +78,8 @@ impl ToGeo for Geometry {
         };
 
         match geometry_type {
-            OGRwkbGeometryType::wkbPoint => {
+            OGRwkbGeometryType::wkbPoint | OGRwkbGeometryType::wkbPoint25D => {
+                // GDAL 2.1: | OGRwkbGeometryType::wkbPointM | OGRwkbGeometryType::wkbPointZM
                 let (x, y, _) = self.get_point(0);
                 GeometryType::Point(geom::Point {
                     x: x,
@@ -86,7 +87,7 @@ impl ToGeo for Geometry {
                     srid: srid,
                 })
             }
-            OGRwkbGeometryType::wkbMultiPoint => {
+            OGRwkbGeometryType::wkbMultiPoint | OGRwkbGeometryType::wkbMultiPoint25D => {
                 let point_count = self.geometry_count();
                 let coords = (0..point_count)
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
@@ -113,7 +114,7 @@ impl ToGeo for Geometry {
                     srid: srid,
                 })
             }
-            OGRwkbGeometryType::wkbMultiLineString => {
+            OGRwkbGeometryType::wkbMultiLineString | OGRwkbGeometryType::wkbMultiLineString25D => {
                 let string_count = self.geometry_count();
                 let strings = (0..string_count)
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
@@ -126,7 +127,7 @@ impl ToGeo for Geometry {
                     srid: srid,
                 })
             }
-            OGRwkbGeometryType::wkbPolygon => {
+            OGRwkbGeometryType::wkbPolygon | OGRwkbGeometryType::wkbPolygon25D => {
                 let ring_count = self.geometry_count();
                 let rings = (0..ring_count).map(|n| ring(n)).collect();
                 GeometryType::Polygon(geom::Polygon {
@@ -134,7 +135,7 @@ impl ToGeo for Geometry {
                     srid: srid,
                 })
             }
-            OGRwkbGeometryType::wkbMultiPolygon => {
+            OGRwkbGeometryType::wkbMultiPolygon | OGRwkbGeometryType::wkbMultiPolygon25D => {
                 let string_count = self.geometry_count();
                 let strings = (0..string_count)
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
