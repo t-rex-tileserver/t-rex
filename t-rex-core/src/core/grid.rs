@@ -329,6 +329,27 @@ impl Grid {
     }
 }
 
+/// Returns the Spherical Mercator (x, y) in meters
+fn lonlat_to_merc(lon: f64, lat: f64) -> (f64, f64) {
+    // from mod web_mercator in grid_test
+    //lng, lat = truncate_lnglat(lng, lat)
+    let x = 6378137.0 * lon.to_radians();
+    let y = 6378137.0 * ((consts::PI * 0.25) + (0.5 * lat.to_radians())).tan().ln();
+    (x, y)
+}
+
+/// Projected extent
+pub fn extent_to_merc(extent: &Extent) -> Extent {
+    let (minx, miny) = lonlat_to_merc(extent.minx, extent.miny);
+    let (maxx, maxy) = lonlat_to_merc(extent.maxx, extent.maxy);
+    Extent {
+        minx,
+        miny,
+        maxx,
+        maxy,
+    }
+}
+
 impl<'a> Config<'a, GridCfg> for Grid {
     fn from_config(grid_cfg: &GridCfg) -> Result<Self, String> {
         if let Some(ref gridname) = grid_cfg.predefined {

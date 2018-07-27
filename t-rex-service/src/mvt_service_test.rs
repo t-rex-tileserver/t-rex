@@ -203,18 +203,10 @@ fn test_projected_extent() {
         maxx: 5.0,
         maxy: 53.0,
     };
-    #[cfg(not(target_os = "macos"))]
     let extent_3857 = Extent {
-        minx: 445277.9631730949,
+        minx: 445277.96317309426,
         miny: 6800125.454397307,
-        maxx: 556597.4539663672,
-        maxy: 6982997.920389788,
-    };
-    #[cfg(target_os = "macos")]
-    let extent_3857 = Extent {
-        minx: 445277.9631730949,
-        miny: 6800125.454397305,
-        maxx: 556597.4539663672,
+        maxx: 556597.4539663679,
         maxy: 6982997.920389788,
     };
 

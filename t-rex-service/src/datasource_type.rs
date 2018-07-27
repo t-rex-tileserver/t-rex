@@ -6,8 +6,7 @@
 use clap::ArgMatches;
 use core::config::{ApplicationCfg, DatasourceCfg};
 use core::feature::Feature;
-use core::grid::Extent;
-use core::grid::Grid;
+use core::grid::{Extent, Grid};
 use core::layer::Layer;
 use core::Config;
 #[cfg(not(feature = "with-gdal"))]

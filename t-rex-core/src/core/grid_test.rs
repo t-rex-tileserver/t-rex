@@ -4,7 +4,7 @@
 //
 
 use core::config::GridCfg;
-use core::grid::{Extent, ExtentInt, Grid, Origin};
+use core::grid::{extent_to_merc, Extent, ExtentInt, Grid, Origin};
 use core::Config;
 use toml;
 
@@ -198,6 +198,23 @@ fn test_wgs84_grid() {
 
     assert_eq!(grid.pixel_width(10), 76.43702828517625);
     assert_eq!(grid.scale_denominator(10), 272989.38673277234);
+}
+
+#[test]
+fn test_projected_extent() {
+    let extent_wgs84 = Extent {
+        minx: 4.0,
+        miny: 52.0,
+        maxx: 5.0,
+        maxy: 53.0,
+    };
+    let extent_3857 = Extent {
+        minx: 445277.96317309426,
+        miny: 6800125.454397307,
+        maxx: 556597.4539663679,
+        maxy: 6982997.920389788,
+    };
+    assert_eq!(extent_to_merc(&extent_wgs84), extent_3857);
 }
 
 #[test]

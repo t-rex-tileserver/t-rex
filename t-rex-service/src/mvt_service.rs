@@ -4,7 +4,7 @@
 //
 
 use cache::{Cache, Tilecache};
-use core::grid::{Extent, ExtentInt, Grid};
+use core::grid::{extent_to_merc, Extent, ExtentInt, Grid};
 use core::layer::Layer;
 use core::stats::Statistics;
 use core::ApplicationCfg;
@@ -186,13 +186,17 @@ impl MvtService {
     /// Projected extent in grid SRS from WGS84
     pub fn extent_from_wgs84(&self, extent: &Extent) -> Extent {
         // TODO: use proj4 (directly)
-        // and maybe fast track for Web Mercator (see fn xy in grid_test)
-        let ds = self.datasources.default().unwrap();
-        ds.extent_from_wgs84(extent, self.grid.srid)
-            .expect(&format!(
-                "Error transforming {:?} to SRID {}",
-                extent, self.grid.srid
-            ))
+        if self.grid.srid == 3857 {
+            // shortcut for Web Mercator
+            extent_to_merc(extent)
+        } else {
+            let ds = self.datasources.default().unwrap();
+            ds.extent_from_wgs84(extent, self.grid.srid)
+                .expect(&format!(
+                    "Error transforming {:?} to SRID {}",
+                    extent, self.grid.srid
+                ))
+        }
     }
     /// Populate tile cache
     pub fn generate(
