@@ -2,7 +2,7 @@
 #
 # docker build -t t-rex -f Dockerfile .
 # docker run t-rex --version
-# docker run -p 6767:6767 -v $PWD:/var/data/in:ro -v /tmp:/var/data/out t-rex serve --bind=0.0.0.0 --openbrowser=false --datasource=t-rex-gdal/natural_earth.gpkg
+# docker run -p 6767:6767 -v $PWD:/var/data/in:ro -v /tmp:/var/data/out t-rex serve --bind=0.0.0.0 --openbrowser=false --datasource=data/natural_earth.gpkg
 
 FROM ubuntu:xenial
 

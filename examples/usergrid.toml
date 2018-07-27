@@ -4,7 +4,7 @@
 viewer = true
 
 [[datasource]]
-dbconn = "postgresql://pi@localhost/geostat"
+dbconn = "postgresql://pi@localhost/t_rex_tests"
 
 [grid.user]
 width = 256
@@ -17,11 +17,11 @@ resolutions = [4000.0,3750.0,3500.0,3250.0,3000.0,2750.0,2500.0,2250.0,2000.0,17
 origin = "TopLeft"
 
 [[tileset]]
-name = "g1k16"
+name = "g1k18"
 extent = [5.96438, 45.81937, 10.55886, 47.77210]
 
 [[tileset.layer]]
-name = "g1k16"
+name = "g1k18"
 geometry_field = "wkb_geometry"
 geometry_type = "MULTIPOLYGON"
 fid_field = "ktnr"
@@ -29,7 +29,7 @@ srid = 2056
 buffer_size = 2
 simplify = true
 [[tileset.layer.query]]
-sql = """SELECT wkb_geometry,ktnr::FLOAT8,ktname FROM g1k16 WHERE wkb_geometry && !bbox!"""
+sql = """SELECT wkb_geometry,ktnr::FLOAT8,ktname FROM geostat.g1k18 WHERE wkb_geometry && !bbox!"""
 
 #[cache.file]
 #base = "/tmp/mvtcache"
@@ -38,5 +38,8 @@ sql = """SELECT wkb_geometry,ktnr::FLOAT8,ktname FROM g1k16 WHERE wkb_geometry &
 # Bind address. Use 0.0.0.0 to listen on all adresses.
 bind = "127.0.0.1"
 port = 6767
-threads = 4
 #cache_control_max_age = 43200
+
+[[webserver.static]]
+path = "/static"
+dir = "./examples/"

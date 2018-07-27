@@ -83,11 +83,11 @@ Run tests:
 
 Run server:
 
-    cargo run -- serve --dbconn postgresql://$USER@%2Frun%2Fpostgresql/natural_earth_vectors
+    cargo run -- serve --dbconn postgresql://$USER@%2Frun%2Fpostgresql/t_rex_tests
 
 Decode a vector tile:
 
-    curl --silent http://127.0.0.1:6767/ne_10m_populated_places/5/31/17.pbf | gunzip -d | protoc --decode=vector_tile.Tile src/mvt/vector_tile.proto
+    curl --silent http://127.0.0.1:6767/ne_10m_populated_places/5/31/17.pbf | protoc --decode=vector_tile.Tile t-rex-core/src/mvt/vector_tile.proto
 
 
 ### Database tests
@@ -97,13 +97,13 @@ Unit tests which need a PostgreSQL connection are ignored by default.
 To run the database tests, declare the [connection](https://github.com/sfackler/rust-postgres#connecting) in an
 environment variable `DBCONN`. Example:
 
-    export DBCONN=postgresql://$USER@%2Frun%2Fpostgresql/natural_earth_vectors
+    export DBCONN=postgresql://$USER@%2Frun%2Fpostgresql/t_rex_tests
 
 Creating test database:
 
     # Set Postgresql environment variables when needed: PGHOST, PGPORT, PGUSER, PGPASSWORD
     cd data
-    make createdb loadfromgpkg
+    make createdb loaddata
 
 Run the tests with
 

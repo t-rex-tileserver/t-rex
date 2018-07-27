@@ -25,7 +25,7 @@ fn mvt_service() -> MvtService {
     datasources.setup();
     let grid = Grid::web_mercator();
     let mut layer = Layer::new("points");
-    layer.table_name = Some(String::from("ne_10m_populated_places"));
+    layer.table_name = Some(String::from("ne.ne_10m_populated_places"));
     layer.geometry_field = Some(String::from("wkb_geometry"));
     layer.geometry_type = Some(String::from("POINT"));
     layer.query_limit = Some(1);

@@ -1,23 +1,22 @@
-DBNAME = natural_earth_vectors
+DBNAME = t_rex_tests
 
 createdb:
 	psql postgres -c "DROP DATABASE IF EXISTS $(DBNAME)"
 	psql postgres -c "CREATE DATABASE $(DBNAME)"
 	psql $(DBNAME) -c "CREATE EXTENSION postgis"
+	psql $(DBNAME) -c "CREATE SCHEMA ne"
+	psql $(DBNAME) -c "CREATE SCHEMA avch"
+	psql $(DBNAME) -c "CREATE SCHEMA geostat"
 
-loadfromgpkg:
-	ogr2ogr -f PostgreSQL PG:dbname=$(DBNAME) natural_earth.gpkg
-	psql $(DBNAME) -c "CREATE TABLE rivers_lake_centerlines AS SELECT fid,scalerank,name,(ST_DUMP(wkb_geometry)).geom::geometry(LineString,3857) AS wkb_geometry FROM ne_10m_rivers_lake_centerlines"
-	psql $(DBNAME) -c "CREATE TABLE admin_0_countries AS SELECT fid,name,iso_a3,(ST_DUMP(wkb_geometry)).geom::geometry(Polygon,3857) AS wkb_geometry FROM ne_110m_admin_0_countries"
-
-loadwgdal1:
-	@# Support GDAL 1.10 on Travis
-	ogr2ogr -f PostgreSQL PG:dbname=$(DBNAME) natural_earth.sqlite
-	psql $(DBNAME) -c "CREATE TABLE rivers_lake_centerlines AS SELECT ogc_fid AS fid,scalerank,name,(ST_DUMP(wkb_geometry)).geom::geometry(LineString,3857) AS wkb_geometry FROM ne_10m_rivers_lake_centerlines"
-	psql $(DBNAME) -c "CREATE TABLE admin_0_countries AS SELECT ogc_fid AS fid,name,iso_a3,(ST_DUMP(wkb_geometry)).geom::geometry(Polygon,3857) AS wkb_geometry FROM ne_110m_admin_0_countries"
+loaddata:
+	ogr2ogr -f PostgreSQL PG:dbname=$(DBNAME) -lco SCHEMA=ne natural_earth.gpkg
+	psql $(DBNAME) -c "CREATE TABLE ne.rivers_lake_centerlines AS SELECT fid,scalerank,name,(ST_DUMP(wkb_geometry)).geom::geometry(LineString,3857) AS wkb_geometry FROM ne.ne_10m_rivers_lake_centerlines"
+	psql $(DBNAME) -c "CREATE TABLE ne.admin_0_countries AS SELECT fid,name,iso_a3,(ST_DUMP(wkb_geometry)).geom::geometry(Polygon,3857) AS wkb_geometry FROM ne.ne_110m_admin_0_countries"
+	ogr2ogr -f PostgreSQL PG:dbname=$(DBNAME) -lco SCHEMA=avch avch.gpkg
+	SHAPE_ENCODING="ISO-8859-1" ogr2ogr -f PostgreSQL PG:dbname=$(DBNAME) -a_srs EPSG:2056 -nlt PROMOTE_TO_MULTI -lco SCHEMA=geostat g1k18.shp
 
 dump:
-	pg_dump -Fc --no-owner -f ne_t_rex_test.dump $(DBNAME)
+	pg_dump -Fc --no-owner -f t_rex_tests.dump $(DBNAME)
 
 # Original creation of natural_earth.gpkg from Natural_Earth_quick_start 2.0
 

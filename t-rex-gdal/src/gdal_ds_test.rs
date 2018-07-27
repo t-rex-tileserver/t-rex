@@ -265,11 +265,13 @@ fn test_no_transform() {
     layer.table_name = Some(String::from("g1k18"));
     let ds = GdalDatasource::new("../data/g1k18.shp");
     let ext = ds.layer_extent(&layer, 3857);
-    let extent_real = "Some(Extent { minx: 5.96526, miny: 45.82056, maxx: 10.56030, maxy: 47.77352 })";
+    let extent_real =
+        "Some(Extent { minx: 5.96526, miny: 45.82056, maxx: 10.56030, maxy: 47.77352 })";
     assert_eq!(format!("{:.5?}", ext), extent_real);
 
     layer.no_transform = true;
     let ext = ds.layer_extent(&layer, 3857);
-    let extent_fake = "Some(Extent { minx: 22.32694, miny: 9.61387, maxx: 25.45679, maxy: 11.56232 })";
+    let extent_fake =
+        "Some(Extent { minx: 22.32694, miny: 9.61387, maxx: 25.45679, maxy: 11.56232 })";
     assert_eq!(format!("{:.5?}", ext), extent_fake);
 }

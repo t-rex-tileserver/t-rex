@@ -21,7 +21,7 @@ fn test_from_geom_fields() {
         Result::Ok(val) => Connection::connect(&val as &str, postgres::TlsMode::None),
         Result::Err(_) => panic!("DBCONN undefined"),
     }.unwrap();
-    let sql = "SELECT wkb_geometry FROM ne_10m_populated_places LIMIT 1";
+    let sql = "SELECT wkb_geometry FROM ne.ne_10m_populated_places LIMIT 1";
     for row in &conn.query(sql, &[]).unwrap() {
         let geom = row.get::<_, Point>("wkb_geometry");
         assert_eq!(
@@ -35,19 +35,20 @@ fn test_from_geom_fields() {
         );
     }
 
-    let sql = "SELECT ST_Multi(wkb_geometry) AS wkb_geometry FROM rivers_lake_centerlines WHERE name='Waiau' AND ST_NPoints(wkb_geometry)<10";
+    let sql = "SELECT ST_Multi(wkb_geometry) AS wkb_geometry FROM ne.rivers_lake_centerlines WHERE name='Waiau' AND ST_NPoints(wkb_geometry)<10";
     for row in &conn.query(sql, &[]).unwrap() {
         let geom = GeometryType::from_geom_field(&row, "wkb_geometry", "LINESTRING");
         assert_eq!(&*format!("{:?}", geom),
                    "Ok(MultiLineString(MultiLineStringT { lines: [LineStringT { points: [Point { x: 18672061.098933436, y: -5690573.725394946, srid: None }, Point { x: 18671798.382036217, y: -5692123.11701991, srid: None }, Point { x: 18671707.790002696, y: -5693530.713572942, srid: None }, Point { x: 18671789.322832868, y: -5694822.281317252, srid: None }, Point { x: 18672061.098933436, y: -5695997.770001522, srid: None }, Point { x: 18670620.68560042, y: -5698245.837796968, srid: None }, Point { x: 18668283.41113552, y: -5700403.997584983, srid: None }, Point { x: 18666082.024720907, y: -5701179.511527114, srid: None }, Point { x: 18665148.926775623, y: -5699253.775757339, srid: None }], srid: None }], srid: Some(3857) }))");
     }
-    let sql = "SELECT wkb_geometry FROM ne_10m_rivers_lake_centerlines WHERE name='Belaya' AND ST_NPoints(wkb_geometry)<10";
+    let sql = "SELECT wkb_geometry FROM ne.ne_10m_rivers_lake_centerlines WHERE name='Belaya' AND ST_NPoints(wkb_geometry)<10";
     for row in &conn.query(sql, &[]).unwrap() {
         let geom = row.get::<_, MultiLineString>("wkb_geometry");
         assert_eq!(&*format!("{:?}", geom),
                    "MultiLineStringT { lines: [LineStringT { points: [Point { x: 5959308.212236793, y: 7539958.36540974, srid: None }, Point { x: 5969998.072192525, y: 7539958.36540974, srid: None }, Point { x: 5972498.412317764, y: 7539118.002915677, srid: None }, Point { x: 5977308.849297845, y: 7535385.962035617, srid: None }], srid: None }], srid: Some(3857) }");
     }
-    let sql = "SELECT wkb_geometry, ST_AsBinary(wkb_geometry) FROM rivers_lake_centerlines LIMIT 1";
+    let sql =
+        "SELECT wkb_geometry, ST_AsBinary(wkb_geometry) FROM ne.rivers_lake_centerlines LIMIT 1";
     let rows = &conn.query(sql, &[]).unwrap();
     assert_eq!(rows.columns()[0].name(), "wkb_geometry");
     assert_eq!(format!("{}", rows.columns()[0].type_()), "geometry");
@@ -270,7 +271,7 @@ fn test_retrieve_features() {
     }.unwrap();
 
     let mut layer = Layer::new("points");
-    layer.table_name = Some(String::from("ne_10m_populated_places"));
+    layer.table_name = Some(String::from("ne.ne_10m_populated_places"));
     layer.geometry_field = Some(String::from("wkb_geometry"));
     layer.geometry_type = Some(String::from("POINT"));
     let grid = Grid::web_mercator();
@@ -297,7 +298,7 @@ fn test_retrieve_features() {
     layer.query = vec![LayerQuery {
         minzoom: Some(0),
         maxzoom: Some(22),
-        sql: Some(String::from("SELECT * FROM ne_10m_populated_places")),
+        sql: Some(String::from("SELECT * FROM ne.ne_10m_populated_places")),
     }];
     layer.fid_field = Some(String::from("fid"));
     pg.prepare_queries(&layer, 3857);
