@@ -30,16 +30,18 @@ fn test_gdal_api() {
         name_field.into_string(),
         Some("Colonia del Sacramento".to_string())
     );
-    #[cfg(not(target_os = "macos"))]
-    assert_eq!(
-        geometry.wkt().unwrap(),
-        "POINT (-6438719.62282072 -4093437.71441017)".to_string()
-    );
-    #[cfg(target_os = "macos")]
-    assert_eq!(
-        geometry.wkt().unwrap(),
-        "POINT (-6438719.622820721007884 -4093437.714410172309726)".to_string()
-    );
+    if gdal_version() >= 2000000 {
+        assert_eq!(
+            geometry.wkt().unwrap(),
+            "POINT (-6438719.62282072 -4093437.71441017)".to_string()
+        );
+    } else {
+        // GDAL 1.11 on MacOS
+        assert_eq!(
+            geometry.wkt().unwrap(),
+            "POINT (-6438719.622820721007884 -4093437.714410172309726)".to_string()
+        );
+    };
 }
 
 #[test]
@@ -113,18 +115,10 @@ fn test_coord_transformation() {
         maxx: 7.7343,
         maxy: 47.0401,
     };
-    #[cfg(not(target_os = "macos"))]
     let extent_3857 = Extent {
         minx: 821849.5366285803,
         miny: 5909489.863677091,
         maxx: 860978.3376424159,
-        maxy: 5948621.871058013,
-    };
-    #[cfg(target_os = "macos")]
-    let extent_3857 = Extent {
-        minx: 821849.5366285803,
-        miny: 5909489.863677091,
-        maxx: 860978.3376424166,
         maxy: 5948621.871058013,
     };
     assert_eq!(
@@ -265,9 +259,16 @@ fn test_no_transform() {
     layer.table_name = Some(String::from("g1k18"));
     let ds = GdalDatasource::new("../data/g1k18.shp");
     let ext = ds.layer_extent(&layer, 3857);
-    let extent_real =
-        "Some(Extent { minx: 5.96526, miny: 45.82056, maxx: 10.56030, maxy: 47.77352 })";
-    assert_eq!(format!("{:.5?}", ext), extent_real);
+    #[cfg(not(target_os = "macos"))]
+    assert_eq!(
+        format!("{:.5?}", ext),
+        "Some(Extent { minx: 5.96526, miny: 45.82056, maxx: 10.56030, maxy: 47.77352 })"
+    );
+    #[cfg(target_os = "macos")] // GDAL 2.3.0
+    assert_eq!(
+        format!("{:.5?}", ext),
+        "Some(Extent { minx: 5.96455, miny: 45.81936, maxx: 10.55885, maxy: 47.77213 })"
+    );
 
     layer.no_transform = true;
     let ext = ds.layer_extent(&layer, 3857);
