@@ -323,6 +323,22 @@ fn test_retrieve_features() {
 
 #[test]
 #[ignore]
+#[should_panic(expected = "geometry_field undefined")]
+fn test_no_geom_field() {
+    let mut pg: PostgisInput = match env::var("DBCONN") {
+        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+        Result::Err(_) => panic!("DBCONN undefined"),
+    }.unwrap();
+
+    let mut layer = Layer::new("points");
+    layer.table_name = Some(String::from("ne.ne_10m_populated_places"));
+    //layer.geometry_field = Some(String::from("wkb_geometry"));
+    layer.geometry_type = Some(String::from("POINT"));
+    pg.prepare_queries(&layer, 3857);
+}
+
+#[test]
+#[ignore]
 fn test_tls() {
     use postgres::tls::native_tls::NativeTls;
     use postgres::TlsMode;

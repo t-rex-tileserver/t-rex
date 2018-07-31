@@ -158,8 +158,14 @@ impl<'a> Feature for FeatureRow<'a> {
     fn geometry(&self) -> Result<GeometryType, String> {
         let geom = GeometryType::from_geom_field(
             &self.row,
-            &self.layer.geometry_field.as_ref().unwrap(),
-            &self.layer.geometry_type.as_ref().unwrap(),
+            &self.layer
+                .geometry_field
+                .as_ref()
+                .expect("geometry_field undefined"),
+            &self.layer
+                .geometry_type
+                .as_ref()
+                .expect("geometry_type undefined"),
         );
         if let Err(ref err) = geom {
             error!("Layer '{}': {}", self.layer.name, err);
@@ -246,8 +252,11 @@ impl PostgisInput {
         pool.get().unwrap()
     }
     pub fn detect_geometry_types(&self, layer: &Layer) -> Vec<String> {
-        let field = layer.geometry_field.as_ref().unwrap();
-        let table = layer.table_name.as_ref().unwrap();
+        let field = layer
+            .geometry_field
+            .as_ref()
+            .expect("geometry_field undefined");
+        let table = layer.table_name.as_ref().expect("geometry_type undefined");
         info!(
             "Detecting geometry types for field '{}' in table {} (use --detect-geometry-types=false to skip)",
             field, table
@@ -347,7 +356,7 @@ impl PostgisInput {
         let rows = conn.query(&sql, &[]).unwrap();
         let extpoly = rows.into_iter()
             .nth(0)
-            .unwrap()
+            .expect("row expected")
             .get_opt::<_, ewkb::Polygon>("extent");
         match extpoly {
             Some(Ok(ref poly)) if poly.rings().len() != 1 => None,
@@ -367,7 +376,10 @@ impl PostgisInput {
     /// Build geometry selection expression for feature query.
     fn build_geom_expr(&self, layer: &Layer, grid_srid: i32) -> String {
         let layer_srid = layer.srid.unwrap_or(0);
-        let ref geom_name = layer.geometry_field.as_ref().unwrap();
+        let ref geom_name = layer
+            .geometry_field
+            .as_ref()
+            .expect("geometry_field undefined");
         let mut geom_expr = String::from(geom_name as &str);
 
         // Convert special geometry types like curves
@@ -521,7 +533,10 @@ impl PostgisInput {
     ) -> Option<String> {
         let mut query;
         let offline = self.conn_pool.is_none();
-        let ref geom_name = layer.geometry_field.as_ref().unwrap();
+        let ref geom_name = layer
+            .geometry_field
+            .as_ref()
+            .expect("geometry_field undefined");
         let geom_expr = if raw_geom {
             // Skip geometry processing when generating user query template
             geom_name.to_string()
@@ -550,7 +565,7 @@ impl PostgisInput {
             query = format!(
                 "SELECT {} FROM {}",
                 select_list,
-                layer.table_name.as_ref().unwrap()
+                layer.table_name.as_ref().expect("table_name undefined")
             );
             query.push_str(&intersect_clause);
         };
@@ -569,7 +584,7 @@ impl PostgisInput {
         }
         let bbox_expr = self.build_bbox_expr(layer, grid_srid);
         let mut query = SqlQuery {
-            sql: sqlquery.unwrap(),
+            sql: sqlquery.expect("sqlquery expected"),
             params: Vec::new(),
         };
         query.replace_params(bbox_expr);
@@ -632,8 +647,11 @@ impl DatasourceInput for PostgisInput {
             layer.geometry_type = match &geomtype as &str {
                 "GEOMETRY" => {
                     if detect_geometry_types {
-                        let field = layer.geometry_field.as_ref().unwrap();
-                        let table = layer.table_name.as_ref().unwrap();
+                        let field = layer
+                            .geometry_field
+                            .as_ref()
+                            .expect("geometry_field undefined");
+                        let table = layer.table_name.as_ref().expect("table_name undefined");
                         let types = self.detect_geometry_types(&layer);
                         if types.len() == 1 {
                             debug!(
@@ -671,7 +689,12 @@ impl DatasourceInput for PostgisInput {
             layer.name, sql
         );
         let cols = self.detect_columns(layer, sql);
-        let filter_cols = vec![layer.geometry_field.as_ref().unwrap()];
+        let filter_cols = vec![
+            layer
+                .geometry_field
+                .as_ref()
+                .expect("geometry_field undefined"),
+        ];
         cols.into_iter()
             .filter(|&(ref col, _)| !filter_cols.contains(&&col))
             .collect()
@@ -686,7 +709,10 @@ impl DatasourceInput for PostgisInput {
     }
     /// Detect extent of layer (in WGS84)
     fn layer_extent(&self, layer: &Layer, grid_srid: i32) -> Option<Extent> {
-        let ref geom_name = layer.geometry_field.as_ref().unwrap();
+        let ref geom_name = layer
+            .geometry_field
+            .as_ref()
+            .expect("geometry_field undefined");
         let src_srid = if layer.no_transform {
             // Shift coordinates to display extent in grid SRS
             grid_srid
@@ -707,12 +733,20 @@ impl DatasourceInput for PostgisInput {
         let sql = format!(
             "SELECT {} AS extent FROM {}",
             extent_sql,
-            layer.table_name.as_ref().unwrap()
+            layer.table_name.as_ref().expect("table_name undefined")
         );
         self.extent_query(sql)
     }
     fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
         let mut queries = BTreeMap::new();
+
+        // Configuration checks (TODO: add config_check to trait)
+        if layer.geometry_field.is_none() {
+            error!("Layer '{}': geometry_field undefined", layer.name);
+        }
+        if layer.query.len() == 0 && layer.table_name.is_none() {
+            error!("Layer '{}': table_name undefined", layer.name);
+        }
 
         for layer_query in &layer.query {
             if let Some(query) = self.build_query(layer, grid_srid, layer_query.sql.as_ref()) {
@@ -789,7 +823,7 @@ impl DatasourceInput for PostgisInput {
         }
 
         let stmt = stmt.unwrap();
-        let trans = conn.transaction().unwrap();
+        let trans = conn.transaction().expect("transaction already active");
         let rows = stmt.lazy_query(&trans, &params.as_slice(), 50);
         if let Err(err) = rows {
             error!("Layer '{}': {}", layer.name, err);
