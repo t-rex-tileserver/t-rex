@@ -375,7 +375,10 @@ fn tile_pbf(
 fn static_file_handler(req: &HttpRequest<AppState>) -> Result<HttpResponse, Error> {
     let key = req.path()[1..].to_string();
     let resp = if let Some(ref content) = STATIC_FILES.content(None, key) {
-        HttpResponse::Ok().content_type(content.1).body(content.0) // TODO: chunked response
+        HttpResponse::Ok()
+            .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*") // TOOD: use Actix middleware
+            .content_type(content.1)
+            .body(content.0) // TODO: chunked response
     } else {
         HttpResponse::NotFound().finish()
     };
@@ -438,11 +441,11 @@ pub fn webserver(args: ArgMatches<'static>) {
 
         let mut app = App::with_state(AppState{service, config})
             .middleware(middleware::Logger::new("%r %s %b %Dms %a"))
-            .resource("/index.json", |r| r.method(Method::GET).a(mvt_metadata))
             .configure(|app| {
                 Cors::for_app(app)
                     .send_wildcard()
                     .allowed_methods(vec![Method::GET])
+                    .resource("/index.json", |r| r.method(Method::GET).a(mvt_metadata))
                     .resource("/fontstacks.json", |r| r.method(Method::GET).f(fontstacks))
                     .resource("/fonts/{fonts}/{range}.pbf", |r| r.method(Method::GET).with(fonts_pbf))
                     .resource("/{tileset}.style.json", |r| r.method(Method::GET).with_async(tileset_style_json))
