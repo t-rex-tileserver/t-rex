@@ -74,9 +74,9 @@ impl StaticFiles {
             "application/javascript",
         );
         static_files.add(
-            "img/maputnik.png",
-            include_bytes!("static/img/maputnik.png"),
-            "image/png",
+            "img/logo-color.svg",
+            include_bytes!("static/img/logo-color.svg"),
+            "image/svg+xml",
         );
         static_files.add(
             "fonts/Roboto-Regular.ttf",
