@@ -11,10 +11,8 @@ main() {
     fi
 
     cargo test --all
-    # libgdal-dev from ubuntugis drops postgresql-9.4-postgis-2.3
-    if [ $TRAVIS_OS_NAME = osx ]; then
-        # cross ignores DBCONN env variable (https://github.com/japaric/cross/issues/76)
-        true #cargo test --all -- --ignored
+    if [ $TRAVIS_OS_NAME = linux ]; then
+        cargo test --all -- --ignored
     fi
 
     if [ $TRAVIS_OS_NAME = linux ]; then

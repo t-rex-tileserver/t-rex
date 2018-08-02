@@ -5,19 +5,11 @@ dist: trusty
 language: rust
 services:
   - docker
-  - postgresql
 sudo: required
-
-addons:
-  postgresql: "9.4"
-  apt:
-    packages:
-    - postgresql-9.4-postgis-2.3
-    - gdal-bin
 
 env:
   global:
-    - DBCONN=postgresql://postgres@127.0.0.1/natural_earth_vectors
+    - DBCONN=postgresql://t_rex:t_rex@127.0.0.1:5439/t_rex_tests
     # This will be part of the release tarball
     - CRATE_NAME=t-rex
     - MAKE_DEB=yes
@@ -62,7 +54,9 @@ matrix:
     #  os: osx
     #  rust: nightly
 
-before_install: set -e
+before_install:
+  - set -e
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then docker run -p 127.0.0.1:5439:5432 -d --name trextestdb sourcepole/trextestdb; fi
 
 install:
   - sh ci/install.sh

@@ -1,20 +1,8 @@
 set -ex
 
-configure_postgis() {
-    if [ $TRAVIS_OS_NAME = linux ]; then
-        export PGUSER=postgres
-        cd t-rex-service/src/test
-        # PostGIS test can't be run, because libgdal-dev from ubuntugis drops postgresql-9.4-postgis-2.3
-        # make createdb loadwgdal1
-    fi
-}
-
 main() {
     curl https://sh.rustup.rs -sSf | \
         sh -s -- -y --default-toolchain $TRAVIS_RUST_VERSION
-
-    ogr2ogr --version
-    configure_postgis
 
     if [ $TRAVIS_OS_NAME = linux ]; then
         # We want GDAL 2.x
