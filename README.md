@@ -81,9 +81,9 @@ Run tests:
 
     cargo test --all
 
-Run server:
+Run server with DB [connection](https://github.com/sfackler/rust-postgres#connecting):
 
-    cargo run -- serve --dbconn postgresql://$USER@%2Frun%2Fpostgresql/t_rex_tests
+    cargo run -- serve --dbconn postgresql://t_rex:t_rex@127.0.0.1:5439/t_rex_tests
 
 Decode a vector tile:
 
@@ -94,20 +94,23 @@ Decode a vector tile:
 
 Unit tests which need a PostgreSQL connection are ignored by default.
 
-To run the database tests, declare the [connection](https://github.com/sfackler/rust-postgres#connecting) in an
-environment variable `DBCONN`. Example:
+Start Test DB:
 
-    export DBCONN=postgresql://$USER@%2Frun%2Fpostgresql/t_rex_tests
+    docker run -p 127.0.0.1:5439:5432 -d --name trextestdb --rm sourcepole/trextestdb
 
-Creating test database:
+To run the database tests, declare the connection in an environment variable `DBCONN`:
 
-    # Set Postgresql environment variables when needed: PGHOST, PGPORT, PGUSER, PGPASSWORD
-    cd data
-    make createdb loaddata
+    export DBCONN=postgresql://t_rex:t_rex@127.0.0.1:5439/t_rex_tests
 
 Run the tests with
 
     cargo test --all -- --ignored
+
+Creating test database locally:
+
+    # Set Postgresql environment variables when needed: PGHOST, PGPORT, PGUSER, PGPASSWORD
+    cd data
+    make createdb loaddata
 
 
 Roadmap
