@@ -75,7 +75,8 @@ impl Layer {
     }
     // SQL query for zoom level
     pub fn query(&self, level: u8) -> Option<&String> {
-        let mut queries = self.query
+        let mut queries = self
+            .query
             .iter()
             .map(|ref q| {
                 (
@@ -106,6 +107,8 @@ impl Layer {
         metadata
     }
 }
+
+const DEFAULT_TOLERANCE: &str = "!pixel_width!/2";
 
 impl<'a> Config<'a, LayerCfg> for Layer {
     fn from_config(layer_cfg: &LayerCfg) -> Result<Self, String> {
@@ -140,7 +143,10 @@ impl<'a> Config<'a, LayerCfg> for Layer {
             maxzoom: layer_cfg.maxzoom,
             tile_size: layer_cfg.tile_size.unwrap_or(4096),
             simplify: layer_cfg.simplify.unwrap_or(false),
-            tolerance: layer_cfg.tolerance.clone().unwrap_or("!pixel_width!/2".to_string()),
+            tolerance: layer_cfg
+                .tolerance
+                .clone()
+                .unwrap_or(DEFAULT_TOLERANCE.to_string()),
             buffer_size: layer_cfg.buffer_size,
             make_valid: layer_cfg.make_valid.unwrap_or(false),
             style: style,
@@ -219,6 +225,9 @@ geometry_type = "POINT"
         if self.geometry_type != Some("POINT".to_string()) {
             // simplify is ignored for points
             lines.push(format!("simplify = {}", self.simplify));
+            if self.simplify && self.tolerance != DEFAULT_TOLERANCE {
+                lines.push(format!("tolerance = \"{}\"", self.tolerance));
+            }
         }
         match self.query_limit {
             Some(ref query_limit) => lines.push(format!("query_limit = {}", query_limit)),

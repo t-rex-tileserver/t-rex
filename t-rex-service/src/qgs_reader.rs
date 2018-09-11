@@ -46,7 +46,8 @@ struct PgLayerInfo {
 
 impl PgLayerInfo {
     fn from_qgs_ds(ds: &str) -> PgLayerInfo {
-        let params: HashMap<&str, &str> = ds.split(' ')
+        let params: HashMap<&str, &str> = ds
+            .split(' ')
             .map(|kv| kv.split('=').collect::<Vec<&str>>())
             .map(|vec| {
                 if vec.len() == 2 {
@@ -149,7 +150,8 @@ pub fn ogr_layer_name(_path: &str, _id: isize) -> Option<String> {
 
 pub fn read_qgs(fname: &str) -> (Datasources, Tileset) {
     let root = read_xml(fname).unwrap();
-    let projectlayers = root.find("projectlayers")
+    let projectlayers = root
+        .find("projectlayers")
         .expect("Invalid or empty QGIS Project file");
     let qgs_name = Path::new(fname).file_stem().unwrap().to_str().unwrap();
     let mut datasources = Datasources::new();
@@ -193,6 +195,10 @@ pub fn read_qgs(fname: &str) -> (Datasources, Tileset) {
             "postgres" => {
                 let info = PgLayerInfo::from_qgs_ds(dsinfo);
                 layer.table_name = Some(info.table_name.replace("\"", ""));
+                if info.geometry_type != "POINT" {
+                    layer.simplify = true;
+                    layer.tolerance = "!pixel_width!/2".to_string(); // DEFAULT_TOLERANCE in layer.rs
+                }
                 layer.geometry_field = Some(info.geometry_field);
                 layer.geometry_type = Some(info.geometry_type);
                 layer.srid = Some(info.srid);
@@ -297,7 +303,7 @@ geometry_type = "POLYGON"
 srid = 3857
 #buffer_size = 10
 #make_valid = true
-simplify = false
+simplify = true
 #query_limit = 1000
 #[[tileset.layer.query]]
 "#;

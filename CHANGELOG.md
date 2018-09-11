@@ -1,3 +1,19 @@
+<a name="0.9.1"></a>
+## 0.9.1 (UNRELEASED)
+
+#### Features
+
+* Add a new tolerance option (Thanks @apzel!)
+* Update Maputnik to 1.4
+* Add support for GDAL 25D geometry types
+* Add support for GDAL network adresses like GeoJSON services
+* Use internal implementation for converting WGS84 extents to Web Mercator
+* Add CORS headers for index.json and static_file_handler
+
+#### Bug Fixes
+
+* Better panic messages for PostGIS driver errors
+
 <a name="0.9.0"></a>
 ## 0.9.0 (2018-07-24)
 
