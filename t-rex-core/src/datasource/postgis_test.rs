@@ -237,7 +237,8 @@ fn test_query_params() {
                            maxzoom: Some(22),
                            sql: Some(String::from("SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way FROM osm_buildings_gen0 WHERE geometry && !bbox!")),
                        }];
-    let query = pg.build_query(&layer, 3857, layer.query[0].sql.as_ref())
+    let query = pg
+        .build_query(&layer, 3857, layer.query[0].sql.as_ref())
         .unwrap();
     assert_eq!(query.sql,
                "SELECT * FROM (SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way FROM osm_buildings_gen0 WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)) AS _q");
@@ -248,7 +249,8 @@ fn test_query_params() {
                            maxzoom: Some(22),
                            sql: Some(String::from("SELECT osm_id, geometry, typen FROM landuse_z13toz14n WHERE !zoom! BETWEEN 13 AND 14) AS landuse_z9toz14n")),
                        }];
-    let query = pg.build_query(&layer, 3857, layer.query[0].sql.as_ref())
+    let query = pg
+        .build_query(&layer, 3857, layer.query[0].sql.as_ref())
         .unwrap();
     assert_eq!(query.sql,
                "SELECT * FROM (SELECT osm_id, geometry, typen FROM landuse_z13toz14n WHERE $5 BETWEEN 13 AND 14) AS landuse_z9toz14n) AS _q WHERE way && ST_MakeEnvelope($1,$2,$3,$4,3857)");
@@ -259,7 +261,8 @@ fn test_query_params() {
                            maxzoom: Some(22),
                            sql: Some(String::from("SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),!pixel_width!/2) AS way FROM osm_buildings")),
                        }];
-    let query = pg.build_query(&layer, 3857, layer.query[0].sql.as_ref())
+    let query = pg
+        .build_query(&layer, 3857, layer.query[0].sql.as_ref())
         .unwrap();
     assert_eq!(query.sql,
                "SELECT * FROM (SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),$5::FLOAT8/2) AS way FROM osm_buildings) AS _q WHERE way && ST_MakeEnvelope($1,$2,$3,$4,3857)");

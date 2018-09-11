@@ -113,7 +113,8 @@ fn drilldown(args: &ArgMatches) {
         s.parse::<u8>()
             .expect("Error parsing 'maxzoom' as integer value")
     });
-    let points: Vec<f64> = args.value_of("points")
+    let points: Vec<f64> = args
+        .value_of("points")
         .map(|numlist| {
             numlist
                 .split(",")

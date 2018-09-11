@@ -101,7 +101,8 @@ impl ToGeo for Geometry {
                 })
             }
             OGRwkbGeometryType::wkbLineString => {
-                let coords = self.get_point_vec()
+                let coords = self
+                    .get_point_vec()
                     .iter()
                     .map(|&(x, y, _)| geom::Point {
                         x: x,

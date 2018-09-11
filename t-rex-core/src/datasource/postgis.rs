@@ -27,21 +27,24 @@ impl GeometryType {
     pub fn from_geom_field(row: &Row, idx: &str, type_name: &str) -> Result<GeometryType, String> {
         let field = match type_name {
             //Option<Result<T>> --> Option<Result<GeometryType>>
-            "POINT" => row.get_opt::<_, Point>(idx)
+            "POINT" => row
+                .get_opt::<_, Point>(idx)
                 .map(|opt| opt.map(|f| GeometryType::Point(f))),
             //"LINESTRING" =>
             //    row.get_opt::<_, LineString>(idx).map(|opt| opt.map(|f| GeometryType::LineString(f))),
             //"POLYGON" =>
             //    row.get_opt::<_, Polygon>(idx).map(|opt| opt.map(|f| GeometryType::Polygon(f))),
-            "MULTIPOINT" => row.get_opt::<_, MultiPoint>(idx)
+            "MULTIPOINT" => row
+                .get_opt::<_, MultiPoint>(idx)
                 .map(|opt| opt.map(|f| GeometryType::MultiPoint(f))),
-            "LINESTRING" | "MULTILINESTRING" | "COMPOUNDCURVE" => {
-                row.get_opt::<_, MultiLineString>(idx)
-                    .map(|opt| opt.map(|f| GeometryType::MultiLineString(f)))
-            }
-            "POLYGON" | "MULTIPOLYGON" | "CURVEPOLYGON" => row.get_opt::<_, MultiPolygon>(idx)
+            "LINESTRING" | "MULTILINESTRING" | "COMPOUNDCURVE" => row
+                .get_opt::<_, MultiLineString>(idx)
+                .map(|opt| opt.map(|f| GeometryType::MultiLineString(f))),
+            "POLYGON" | "MULTIPOLYGON" | "CURVEPOLYGON" => row
+                .get_opt::<_, MultiPolygon>(idx)
                 .map(|opt| opt.map(|f| GeometryType::MultiPolygon(f))),
-            "GEOMETRYCOLLECTION" => row.get_opt::<_, GeometryCollection>(idx)
+            "GEOMETRYCOLLECTION" => row
+                .get_opt::<_, GeometryCollection>(idx)
                 .map(|opt| opt.map(|f| GeometryType::GeometryCollection(f))),
             _ => {
                 // PG geometry types:
@@ -124,7 +127,8 @@ impl<'a> Feature for FeatureRow<'a> {
         let mut attrs = Vec::new();
         for (i, col) in self.row.columns().into_iter().enumerate() {
             if col.name()
-                != self.layer
+                != self
+                    .layer
                     .geometry_field
                     .as_ref()
                     .unwrap_or(&"".to_string())
@@ -158,11 +162,13 @@ impl<'a> Feature for FeatureRow<'a> {
     fn geometry(&self) -> Result<GeometryType, String> {
         let geom = GeometryType::from_geom_field(
             &self.row,
-            &self.layer
+            &self
+                .layer
                 .geometry_field
                 .as_ref()
                 .expect("geometry_field undefined"),
-            &self.layer
+            &self
+                .layer
                 .geometry_type
                 .as_ref()
                 .expect("geometry_type undefined"),
@@ -309,7 +315,8 @@ impl PostgisInput {
                 vec![]
             }
             Ok(stmt) => {
-                let cols: Vec<(String, String)> = stmt.columns()
+                let cols: Vec<(String, String)> = stmt
+                    .columns()
                     .iter()
                     .map(|col| {
                         let name = col.name().to_string();
@@ -354,7 +361,8 @@ impl PostgisInput {
 
         let conn = self.conn();
         let rows = conn.query(&sql, &[]).unwrap();
-        let extpoly = rows.into_iter()
+        let extpoly = rows
+            .into_iter()
             .nth(0)
             .expect("row expected")
             .get_opt::<_, ewkb::Polygon>("extent");
@@ -440,18 +448,15 @@ impl PostgisInput {
             {
                 "LINESTRING" | "MULTILINESTRING" | "COMPOUNDCURVE" => format!(
                     "ST_Multi(ST_SimplifyPreserveTopology({},{}))",
-                    geom_expr,
-                    layer.tolerance
+                    geom_expr, layer.tolerance
                 ),
                 "POLYGON" | "MULTIPOLYGON" | "CURVEPOLYGON" => {
                     let empty_geom =
                         format!("ST_GeomFromText('MULTIPOLYGON EMPTY',{})", layer_srid);
-                    format!("COALESCE(ST_SnapToGrid({}, {}),{})::geometry(MULTIPOLYGON,{})",
-                            geom_expr,
-                            layer.tolerance,
-                            empty_geom,
-                            layer_srid
-                        )
+                    format!(
+                        "COALESCE(ST_SnapToGrid({}, {}),{})::geometry(MULTIPOLYGON,{})",
+                        geom_expr, layer.tolerance, empty_geom, layer_srid
+                    )
                 }
                 _ => geom_expr, // No simplification for points or unknown types
             };
@@ -488,7 +493,8 @@ impl PostgisInput {
         if offline {
             geom_expr
         } else {
-            let mut cols: Vec<String> = self.detect_data_columns(layer, sql)
+            let mut cols: Vec<String> = self
+                .detect_data_columns(layer, sql)
                 .iter()
                 .map(|&(ref name, ref casttype)| {
                     // Wrap column names in double quotes to guarantee validity. Columns might have colons

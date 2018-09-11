@@ -309,7 +309,8 @@ fn req_baseurl(req: &HttpRequest<AppState>) -> String {
 fn tileset_tilejson(
     (req, tileset): (HttpRequest<AppState>, Path<String>),
 ) -> FutureResult<HttpResponse, Error> {
-    let json = req.state()
+    let json = req
+        .state()
         .service
         .get_tilejson(&req_baseurl(&req), &tileset)
         .unwrap();
@@ -319,7 +320,8 @@ fn tileset_tilejson(
 fn tileset_style_json(
     (req, tileset): (HttpRequest<AppState>, Path<String>),
 ) -> FutureResult<HttpResponse, Error> {
-    let json = req.state()
+    let json = req
+        .state()
         .service
         .get_stylejson(&req_baseurl(&req), &tileset)
         .unwrap();
@@ -340,7 +342,8 @@ fn tile_pbf(
     let z = params.1;
     let x = params.2;
     let y = params.3;
-    let gzip = req.headers()
+    let gzip = req
+        .headers()
         .get(header::ACCEPT_ENCODING)
         .and_then(|headerval| {
             headerval
@@ -349,10 +352,12 @@ fn tile_pbf(
                 .and_then(|headerstr| Some(headerstr.contains("gzip")))
         })
         .unwrap_or(false);
-    let tile = req.state()
+    let tile = req
+        .state()
         .service
         .tile_cached(tileset, x, y, z, gzip, None);
-    let cache_max_age = req.state()
+    let cache_max_age = req
+        .state()
         .config
         .webserver
         .cache_control_max_age

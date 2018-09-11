@@ -91,7 +91,8 @@ impl Statistics {
         lines.join("\n") + "\n"
     }
     pub fn as_json(&self) -> JsonResult {
-        let json: Vec<serde_json::Value> = self.0
+        let json: Vec<serde_json::Value> = self
+            .0
             .keys()
             .map(|key| {
                 let vals = self.results(&key);

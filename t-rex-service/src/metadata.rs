@@ -32,10 +32,12 @@ impl MvtService {
             geometry_type: Option<String>,
         }
 
-        let mut tileset_infos: Vec<TilesetInfo> = self.tilesets
+        let mut tileset_infos: Vec<TilesetInfo> = self
+            .tilesets
             .iter()
             .map(|set| {
-                let layerinfos = set.layers
+                let layerinfos = set
+                    .layers
                     .iter()
                     .map(|l| LayerInfo {
                         name: l.name.clone(),
@@ -64,7 +66,8 @@ impl MvtService {
         serde_json::to_value(mvt_info)
     }
     fn get_tilejson_metadata(&self, tileset: &str) -> JsonResult {
-        let ts = self.get_tileset(tileset)
+        let ts = self
+            .get_tileset(tileset)
             .expect(&format!("Tileset '{}' not found", tileset));
         let ext = ts.get_extent();
         let center = ts.get_center();
@@ -93,7 +96,8 @@ impl MvtService {
         }))
     }
     fn get_tilejson_layers(&self, tileset: &str) -> JsonResult {
-        let ts = self.get_tileset(tileset)
+        let ts = self
+            .get_tileset(tileset)
             .expect(&format!("Tileset '{}' not found", tileset));
         let layers = self.get_tileset_layers(tileset);
         let layers_metadata: Vec<serde_json::Value> = layers
@@ -129,7 +133,8 @@ impl MvtService {
     // MVT layers in TileJSON manifest
     // https://github.com/mapbox/tilejson-spec/tree/3.0-vector_layers/3.0#315-vector_layers
     fn get_tilejson_vector_layers(&self, tileset: &str) -> JsonResult {
-        let ts = self.get_tileset(tileset)
+        let ts = self
+            .get_tileset(tileset)
             .expect(&format!("Tileset '{}' not found", tileset));
         let layers = self.get_tileset_layers(tileset);
         let vector_layers: Vec<serde_json::Value> = layers

@@ -62,7 +62,8 @@ impl MvtService {
     pub fn prepare_feature_queries(&mut self) {
         for tileset in &self.tilesets {
             for layer in &tileset.layers {
-                let ds = self.datasources
+                let ds = self
+                    .datasources
                     .datasource_mut(&layer.datasource)
                     .expect(&format!("Datasource of layer `{}` not found", layer.name));
                 ds.prepare_queries(&layer, self.grid.srid);
@@ -137,7 +138,8 @@ impl MvtService {
         };
         let path = format!("{}/{}/{}/{}.pbf", tileset, zoom, xtile, ytile);
 
-        let ts = self.get_tileset(tileset)
+        let ts = self
+            .get_tileset(tileset)
             .expect(&format!("Tileset '{}' not found", tileset));
         if zoom < ts.minzoom() || zoom > ts.maxzoom() {
             return None;
@@ -305,7 +307,8 @@ impl MvtService {
         info!("{}", &self.cache.info());
         for tileset in &self.tilesets {
             // :tileset.json
-            let json = self.get_tilejson(&self.cache.baseurl(), &tileset.name)
+            let json = self
+                .get_tilejson(&self.cache.baseurl(), &tileset.name)
                 .unwrap();
             let _ = self.cache.write(
                 &format!("{}.json", &tileset.name),
@@ -313,7 +316,8 @@ impl MvtService {
             );
 
             // :tileset.style.json
-            let json = self.get_stylejson(&self.cache.baseurl(), &tileset.name)
+            let json = self
+                .get_stylejson(&self.cache.baseurl(), &tileset.name)
                 .unwrap();
             let _ = self.cache.write(
                 &format!("{}.style.json", &tileset.name),
