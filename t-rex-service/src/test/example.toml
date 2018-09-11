@@ -46,7 +46,7 @@ fid_field = "osm_id"
 # Clip polygons with a buffer
 buffer_size = 10
 simplify = true
-tolerance = "!pixel_width!/4"
+tolerance = "!pixel_width!/2"
   # Queries for different zoom levels:
   [[tileset.layer.query]]
   sql = """
