@@ -37,6 +37,8 @@ pub struct Layer {
     pub tile_size: u32,
     /// Simplify geometry (lines and polygons)
     pub simplify: bool,
+    /// Simplification tolerance (default to !pixel_width!/2)
+    pub tolerance: String,
     /// Tile buffer size in pixels (None: no clipping)
     pub buffer_size: Option<u32>,
     /// Fix invalid geometries before clipping (lines and polygons)
@@ -138,6 +140,7 @@ impl<'a> Config<'a, LayerCfg> for Layer {
             maxzoom: layer_cfg.maxzoom,
             tile_size: layer_cfg.tile_size.unwrap_or(4096),
             simplify: layer_cfg.simplify.unwrap_or(false),
+            tolerance: layer_cfg.tolerance.clone().unwrap_or("!pixel_width!/2".to_string()),
             buffer_size: layer_cfg.buffer_size,
             make_valid: layer_cfg.make_valid.unwrap_or(false),
             style: style,
@@ -158,6 +161,7 @@ table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
 #simplify = true
+#tolerance = "!pixel_width!/2"
 #buffer_size = 10
 #make_valid = true
 #[[tileset.layer.query]]

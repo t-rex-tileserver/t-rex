@@ -286,6 +286,7 @@ table_name = "mytable"
 geometry_field = "wkb_geometry"
 geometry_type = "POINT"
 #simplify = true
+#tolerance = "!pixel_width!/2"
 #buffer_size = 10
 #make_valid = true
 #[[tileset.layer.query]]

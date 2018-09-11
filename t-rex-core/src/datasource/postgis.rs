@@ -439,16 +439,19 @@ impl PostgisInput {
                 .unwrap_or(&"GEOMETRY".to_string()) as &str
             {
                 "LINESTRING" | "MULTILINESTRING" | "COMPOUNDCURVE" => format!(
-                    "ST_Multi(ST_SimplifyPreserveTopology({},!pixel_width!/2))",
-                    geom_expr
+                    "ST_Multi(ST_SimplifyPreserveTopology({},{}))",
+                    geom_expr,
+                    layer.tolerance
                 ),
                 "POLYGON" | "MULTIPOLYGON" | "CURVEPOLYGON" => {
                     let empty_geom =
                         format!("ST_GeomFromText('MULTIPOLYGON EMPTY',{})", layer_srid);
-                    format!("COALESCE(ST_SnapToGrid({}, !pixel_width!/2),{})::geometry(MULTIPOLYGON,{})",
+                    format!("COALESCE(ST_SnapToGrid({}, {}),{})::geometry(MULTIPOLYGON,{})",
                             geom_expr,
+                            layer.tolerance,
                             empty_geom,
-                            layer_srid)
+                            layer_srid
+                        )
                 }
                 _ => geom_expr, // No simplification for points or unknown types
             };

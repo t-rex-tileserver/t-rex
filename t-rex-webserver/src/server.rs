@@ -140,6 +140,8 @@ fn set_layer_buffer_defaults(layer: &mut Layer, simplify: bool, clip: bool) {
     if simplify {
         // Limit features by default unless simplify is set to false
         layer.query_limit = Some(1000);
+        // Set default tolerance
+        layer.tolerance = "!pixel_width!/2".to_string();
     }
     layer.buffer_size = match layer.geometry_type {
         Some(ref geom) => {

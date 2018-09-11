@@ -46,6 +46,7 @@ fid_field = "osm_id"
 # Clip polygons with a buffer
 buffer_size = 10
 simplify = true
+tolerance = "!pixel_width!/4"
   # Queries for different zoom levels:
   [[tileset.layer.query]]
   sql = """
@@ -72,6 +73,7 @@ geometry_type = "POLYGON"
 srid = 3857
 buffer_size = 1
 simplify = true
+tolerance = "!pixel_width!/2"
 
 [tileset.layer.style]
   type = "fill"
