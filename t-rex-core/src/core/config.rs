@@ -134,6 +134,8 @@ pub struct LayerCfg {
     pub tile_size: Option<u32>,
     /// Simplify geometry (lines and polygons)
     pub simplify: Option<bool>,
+    /// Simplification tolerance (default to !pixel_width!/2)
+    pub tolerance: Option<String>,
     /// Tile buffer size in pixels (None: no clipping)
     pub buffer_size: Option<u32>,
     /// Fix invalid geometries before clipping (lines and polygons)
