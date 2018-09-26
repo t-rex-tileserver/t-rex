@@ -4,9 +4,29 @@
 //
 
 use core::config::Config;
-use core::config::TilesetCfg;
+use core::config::{TilesetCfg, TilesetCacheCfg};
 use core::grid::Extent;
 use core::layer::Layer;
+
+#[derive(Debug)]
+pub struct CacheLimits {
+    pub minzoom: Option<u8>,
+    pub maxzoom: Option<u8>,
+    pub no_cache: bool,
+}
+
+impl<'a> Config<'a, TilesetCacheCfg> for CacheLimits {
+    fn from_config(cfg: &TilesetCacheCfg) -> Result<Self, String> {
+        Ok(CacheLimits {
+            minzoom: cfg.minzoom.clone(),
+            maxzoom: cfg.maxzoom.clone(),
+            no_cache: cfg.no_cache.unwrap_or(false)
+        })
+    }
+    fn gen_config() -> String {
+        "".to_string()
+    }
+}
 
 /// Collection of layers in one MVT
 pub struct Tileset {
@@ -18,6 +38,7 @@ pub struct Tileset {
     pub center: Option<(f64, f64)>,
     pub start_zoom: Option<u8>,
     pub layers: Vec<Layer>,
+    pub cache_limits: Option<CacheLimits>
 }
 
 pub static WORLD_EXTENT: Extent = Extent {
@@ -61,6 +82,14 @@ impl Tileset {
     pub fn get_start_zoom(&self) -> u8 {
         self.start_zoom.unwrap_or(2)
     }
+    pub fn is_cachable_at(&self, zoom: u8) -> bool {
+        match self.cache_limits {
+            Some(ref cl) => !cl.no_cache
+                && cl.minzoom.unwrap_or(0) <= zoom
+                && cl.maxzoom.unwrap_or(22) >= zoom,
+            None => true
+        }
+    }
 }
 
 impl<'a> Config<'a, TilesetCfg> for Tileset {
@@ -70,6 +99,13 @@ impl<'a> Config<'a, TilesetCfg> for Tileset {
             .iter()
             .map(|layer| Layer::from_config(layer).unwrap())
             .collect();
+        let cache_limits: Option<CacheLimits> = match tileset_cfg.cache_limits {
+            Some(ref cfg) => match CacheLimits::from_config(&cfg) {
+                Ok(cl) => Some(cl),
+                _ => None
+            },
+            None => None
+        };
         Ok(Tileset {
             name: tileset_cfg.name.clone(),
             minzoom: tileset_cfg.minzoom.clone(),
@@ -79,6 +115,7 @@ impl<'a> Config<'a, TilesetCfg> for Tileset {
             center: tileset_cfg.center.clone(),
             start_zoom: tileset_cfg.start_zoom.clone(),
             layers: layers,
+            cache_limits: cache_limits
         })
     }
     fn gen_config() -> String {
