@@ -141,16 +141,21 @@ impl MvtService {
         let ts = self
             .get_tileset(tileset)
             .expect(&format!("Tileset '{}' not found", tileset));
+
         if zoom < ts.minzoom() || zoom > ts.maxzoom() {
             return None;
         }
 
         let mut tile: Option<Vec<u8>> = None;
-        self.cache.read(&path, |f| {
-            let mut data = Vec::new();
-            let _ = f.read_to_end(&mut data);
-            tile = Some(data);
-        });
+        if ts.is_cachable_at(zoom) {
+            self.cache.read(&path, |f| {
+                let mut data = Vec::new();
+                let _ = f.read_to_end(&mut data);
+                tile = Some(data);
+            });
+        } else {
+            debug!("Cache : read ignored for tileset {} at zoom {}", ts.name, zoom);
+        }
 
         // Return tile from cache
         if let Some(tilegz) = tile {
@@ -162,8 +167,12 @@ impl MvtService {
         // Spec: A Vector Tile SHOULD contain at least one layer.
         if mvt_tile.get_layers().len() > 0 {
             let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
-            if let Err(ioerr) = self.cache.write(&path, &tilegz) {
-                error!("Error writing {}: {}", path, ioerr);
+            if ts.is_cachable_at(zoom) {
+                if let Err(ioerr) = self.cache.write(&path, &tilegz) {
+                    error!("Error writing {}: {}", path, ioerr);
+                }
+            } else {
+                debug!("Cache : write ignored for tileset {} at zoom {}", ts.name, zoom);
             }
             Some(Tile::tile_content(tilegz, gzip))
         } else {

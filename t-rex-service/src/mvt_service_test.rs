@@ -43,6 +43,7 @@ fn mvt_service() -> MvtService {
             maxy: 82.48332,
         }),
         layers: vec![layer],
+        cache_limits: None
     };
     let mut service = MvtService {
         datasources: datasources,
@@ -279,6 +280,7 @@ name = "points"
 #minzoom = 0
 #maxzoom = 22
 #attribution = "© Contributeurs de OpenStreetMap" # Acknowledgment of ownership, authorship or copyright.
+#cache_limits = {{minzoom = 0, maxzoom = 22, no_cache = false}}
 
 [[tileset.layer]]
 name = "points"

@@ -238,6 +238,7 @@ pub fn service_from_args(config: &ApplicationCfg, args: &ArgMatches) -> MvtServi
                         center: None,
                         start_zoom: None,
                         layers: vec![l],
+                        cache_limits: None
                     };
                     tilesets.push(tileset);
                 }

@@ -164,6 +164,7 @@ pub fn read_qgs(fname: &str) -> (Datasources, Tileset) {
         center: None,
         start_zoom: None,
         layers: Vec::new(),
+        cache_limits: None
     };
     for qgslayer in projectlayers.find_all("maplayer") {
         let layertype = qgslayer.get_attr("type").expect("Missing attribute 'type'");
