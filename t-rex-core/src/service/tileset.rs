@@ -152,6 +152,7 @@ fn test_zoom() {
             maxy: 82.48332,
         }),
         layers: vec![layer],
+        cache_limits: None
     };
 
     assert_eq!(tileset.minzoom(), 0);
