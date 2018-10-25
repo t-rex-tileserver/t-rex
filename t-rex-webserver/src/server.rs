@@ -219,9 +219,9 @@ pub fn service_from_args(config: &ApplicationCfg, args: &ArgMatches) -> MvtServi
                 println!("Either 'config', 'dbconn' or 'datasource' is required");
                 process::exit(1)
             }
-            let detect_geometry_types = bool::from_str(
-                args.value_of("detect-geometry-types").unwrap_or("true"),
-            ).unwrap_or(false);
+            let detect_geometry_types =
+                bool::from_str(args.value_of("detect-geometry-types").unwrap_or("true"))
+                    .unwrap_or(false);
             for (_name, ds) in &datasources.datasources {
                 let dsconn = ds.connected();
                 let mut layers = dsconn.detect_layers(detect_geometry_types);
@@ -238,7 +238,7 @@ pub fn service_from_args(config: &ApplicationCfg, args: &ArgMatches) -> MvtServi
                         center: None,
                         start_zoom: None,
                         layers: vec![l],
-                        cache_limits: None
+                        cache_limits: None,
                     };
                     tilesets.push(tileset);
                 }
@@ -351,8 +351,7 @@ fn tile_pbf(
                 .to_str()
                 .ok()
                 .and_then(|headerstr| Some(headerstr.contains("gzip")))
-        })
-        .unwrap_or(false);
+        }).unwrap_or(false);
     let tile = req
         .state()
         .service
@@ -371,8 +370,7 @@ fn tile_pbf(
                 // data is already gzip compressed
                 r.content_encoding(ContentEncoding::Identity)
                     .header(header::CONTENT_ENCODING, "gzip");
-            })
-            .header(header::CACHE_CONTROL, format!("max-age={}", cache_max_age))
+            }).header(header::CACHE_CONTROL, format!("max-age={}", cache_max_age))
             .body(tile) // TODO: chunked response
     } else {
         HttpResponse::NoContent().finish()
@@ -412,8 +410,7 @@ fn drilldown_handler(
             v.parse()
                 .expect("Error parsing 'point' as pair of float values")
             //FIXME: map_err(|_| error::ErrorInternalServerError("...")
-        })
-        .collect();
+        }).collect();
     let stats =
         req.state()
             .service
@@ -447,7 +444,7 @@ pub fn webserver(args: ArgMatches<'static>) {
         service.prepare_feature_queries();
         service.init_cache();
 
-        let mut app = App::with_state(AppState{service, config})
+        let mut app = App::with_state(AppState { service, config })
             .middleware(middleware::Logger::new("%r %s %b %Dms %a"))
             .configure(|app| {
                 Cors::for_app(app)
@@ -455,34 +452,38 @@ pub fn webserver(args: ArgMatches<'static>) {
                     .allowed_methods(vec![Method::GET])
                     .resource("/index.json", |r| r.method(Method::GET).a(mvt_metadata))
                     .resource("/fontstacks.json", |r| r.method(Method::GET).f(fontstacks))
-                    .resource("/fonts/{fonts}/{range}.pbf", |r| r.method(Method::GET).with(fonts_pbf))
-                    .resource("/{tileset}.style.json", |r| r.method(Method::GET).with_async(tileset_style_json))
-                    .resource("/{tileset}/metadata.json", |r| r.method(Method::GET).with_async(tileset_metadata_json))
-                    .resource("/{tileset}.json", |r| r.method(Method::GET).with_async(tileset_tilejson))
-                    .resource("/{tileset}/{z}/{x}/{y}.pbf", |r| r.method(Method::GET).with_async(tile_pbf))
-                    .register()
+                    .resource("/fonts/{fonts}/{range}.pbf", |r| {
+                        r.method(Method::GET).with(fonts_pbf)
+                    }).resource("/{tileset}.style.json", |r| {
+                        r.method(Method::GET).with_async(tileset_style_json)
+                    }).resource("/{tileset}/metadata.json", |r| {
+                        r.method(Method::GET).with_async(tileset_metadata_json)
+                    }).resource("/{tileset}.json", |r| {
+                        r.method(Method::GET).with_async(tileset_tilejson)
+                    }).resource("/{tileset}/{z}/{x}/{y}.pbf", |r| {
+                        r.method(Method::GET).with_async(tile_pbf)
+                    }).register()
             });
         for static_dir in &static_dirs {
             let dir = &static_dir.dir;
             if let Ok(handler) = fs::StaticFiles::new(dir) {
                 info!("Serving static files from directory '{}'", dir);
-                app = app.handler(
-                    &static_dir.path,
-                    handler
-                );
+                app = app.handler(&static_dir.path, handler);
             } else {
                 warn!("Static file directory '{}' not found", dir);
             }
         }
         if mvt_viewer {
-            app = app.resource("/drilldown", |r| r.method(Method::GET).with_async(drilldown_handler));
+            app = app.resource("/drilldown", |r| {
+                r.method(Method::GET).with_async(drilldown_handler)
+            });
             app = app.handler("/", static_file_handler);
         }
         app
     }).bind(&bind_addr)
-        .expect("Can not start server on given IP/Port")
-        .shutdown_timeout(3) // default: 30s
-        .start();
+    .expect("Can not start server on given IP/Port")
+    .shutdown_timeout(3) // default: 30s
+    .start();
 
     if log_enabled!(Level::Info) {
         println!("{}", DINO);

@@ -69,8 +69,7 @@ fn generate(args: &ArgMatches) {
             .map(|v| {
                 v.parse()
                     .expect("Error parsing 'extent' as list of float values")
-            })
-            .collect();
+            }).collect();
         Some(Extent {
             minx: arr[0],
             miny: arr[1],
@@ -121,10 +120,8 @@ fn drilldown(args: &ArgMatches) {
                 .map(|v| {
                     v.parse()
                         .expect("Error parsing 'point' as pair of float values")
-                })
-                .collect()
-        })
-        .expect("Missing 'points' list");
+                }).collect()
+        }).expect("Missing 'points' list");
     let progress = args.value_of("progress").map_or(true, |s| {
         s.parse::<bool>()
             .expect("Error parsing 'progress' as boolean value")

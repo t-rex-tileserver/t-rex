@@ -126,12 +126,11 @@ impl<'a> Feature for FeatureRow<'a> {
     fn attributes(&self) -> Vec<FeatureAttr> {
         let mut attrs = Vec::new();
         for (i, col) in self.row.columns().into_iter().enumerate() {
-            if col.name()
-                != self
-                    .layer
-                    .geometry_field
-                    .as_ref()
-                    .unwrap_or(&"".to_string())
+            if col.name() != self
+                .layer
+                .geometry_field
+                .as_ref()
+                .unwrap_or(&"".to_string())
             {
                 let val = self.row.get_opt::<_, Option<FeatureAttrValType>>(i);
                 match val.unwrap() {
@@ -347,8 +346,7 @@ impl PostgisInput {
                             );
                         }
                         (name, cast)
-                    })
-                    .collect();
+                    }).collect();
                 let _ = stmt.finish();
                 cols
             }
@@ -503,8 +501,7 @@ impl PostgisInput {
                     } else {
                         format!("\"{}\"::{}", name, casttype)
                     }
-                })
-                .collect();
+                }).collect();
             cols.insert(0, geom_expr);
             cols.join(",")
         }
@@ -627,8 +624,7 @@ impl DatasourceInput for PostgisInput {
                     r2d2::Pool::builder().max_size(pool_size).build(manager)
                 }
                 _ => Err(e),
-            })
-            .unwrap();
+            }).unwrap();
         PostgisInput {
             connection_url: self.connection_url.clone(),
             conn_pool: Some(pool),

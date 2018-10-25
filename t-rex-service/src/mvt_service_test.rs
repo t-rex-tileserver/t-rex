@@ -43,7 +43,7 @@ fn mvt_service() -> MvtService {
             maxy: 82.48332,
         }),
         layers: vec![layer],
-        cache_limits: None
+        cache_limits: None,
     };
     let mut service = MvtService {
         datasources: datasources,

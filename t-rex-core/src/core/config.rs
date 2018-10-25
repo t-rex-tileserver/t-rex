@@ -102,7 +102,7 @@ pub struct TilesetCfg {
     pub layers: Vec<LayerCfg>,
     // Inline style
     pub style: Option<Value>,
-    pub cache_limits: Option<TilesetCacheCfg>
+    pub cache_limits: Option<TilesetCacheCfg>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -149,7 +149,7 @@ pub struct LayerCfg {
 pub struct TilesetCacheCfg {
     pub minzoom: Option<u8>,
     pub maxzoom: Option<u8>,
-    pub no_cache: Option<bool>
+    pub no_cache: Option<bool>,
 }
 
 #[derive(Deserialize, Debug)]

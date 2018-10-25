@@ -110,8 +110,7 @@ impl Statistics {
                         .insert(format!("key{}", n), json!(k));
                 }
                 rec
-            })
-            .collect();
+            }).collect();
         Ok(json!(json))
     }
 }

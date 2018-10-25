@@ -59,8 +59,7 @@ impl PgLayerInfo {
                         (vec[0], "")
                     }
                 }
-            })
-            .collect();
+            }).collect();
 
         //postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
         let mut uri = "postgresql://".to_string();
@@ -164,7 +163,7 @@ pub fn read_qgs(fname: &str) -> (Datasources, Tileset) {
         center: None,
         start_zoom: None,
         layers: Vec::new(),
-        cache_limits: None
+        cache_limits: None,
     };
     for qgslayer in projectlayers.find_all("maplayer") {
         let layertype = qgslayer.get_attr("type").expect("Missing attribute 'type'");

@@ -84,8 +84,7 @@ impl Layer {
                     q.maxzoom.unwrap_or(22),
                     q.sql.as_ref().and_then(|sql| Some(sql)),
                 )
-            })
-            .collect::<Vec<_>>();
+            }).collect::<Vec<_>>();
         queries.sort_by_key(|ref t| t.0);
         let query = queries
             .iter()
@@ -119,8 +118,7 @@ impl<'a> Config<'a, LayerCfg> for Layer {
                 minzoom: lq.minzoom,
                 maxzoom: lq.maxzoom,
                 sql: lq.sql.clone(),
-            })
-            .collect();
+            }).collect();
         let style = match layer_cfg.style {
             Some(ref style) => {
                 let gljson = toml_style_to_gljson(&style);

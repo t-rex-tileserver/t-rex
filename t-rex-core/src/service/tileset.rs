@@ -4,7 +4,7 @@
 //
 
 use core::config::Config;
-use core::config::{TilesetCfg, TilesetCacheCfg};
+use core::config::{TilesetCacheCfg, TilesetCfg};
 use core::grid::Extent;
 use core::layer::Layer;
 
@@ -20,7 +20,7 @@ impl<'a> Config<'a, TilesetCacheCfg> for CacheLimits {
         Ok(CacheLimits {
             minzoom: cfg.minzoom.clone(),
             maxzoom: cfg.maxzoom.clone(),
-            no_cache: cfg.no_cache.unwrap_or(false)
+            no_cache: cfg.no_cache.unwrap_or(false),
         })
     }
     fn gen_config() -> String {
@@ -38,7 +38,7 @@ pub struct Tileset {
     pub center: Option<(f64, f64)>,
     pub start_zoom: Option<u8>,
     pub layers: Vec<Layer>,
-    pub cache_limits: Option<CacheLimits>
+    pub cache_limits: Option<CacheLimits>,
 }
 
 pub static WORLD_EXTENT: Extent = Extent {
@@ -84,10 +84,10 @@ impl Tileset {
     }
     pub fn is_cachable_at(&self, zoom: u8) -> bool {
         match self.cache_limits {
-            Some(ref cl) => !cl.no_cache
-                && cl.minzoom.unwrap_or(0) <= zoom
-                && cl.maxzoom.unwrap_or(22) >= zoom,
-            None => true
+            Some(ref cl) => {
+                !cl.no_cache && cl.minzoom.unwrap_or(0) <= zoom && cl.maxzoom.unwrap_or(22) >= zoom
+            }
+            None => true,
         }
     }
 }
@@ -102,9 +102,9 @@ impl<'a> Config<'a, TilesetCfg> for Tileset {
         let cache_limits: Option<CacheLimits> = match tileset_cfg.cache_limits {
             Some(ref cfg) => match CacheLimits::from_config(&cfg) {
                 Ok(cl) => Some(cl),
-                _ => None
+                _ => None,
             },
-            None => None
+            None => None,
         };
         Ok(Tileset {
             name: tileset_cfg.name.clone(),
@@ -115,7 +115,7 @@ impl<'a> Config<'a, TilesetCfg> for Tileset {
             center: tileset_cfg.center.clone(),
             start_zoom: tileset_cfg.start_zoom.clone(),
             layers: layers,
-            cache_limits: cache_limits
+            cache_limits: cache_limits,
         })
     }
     fn gen_config() -> String {
@@ -152,7 +152,7 @@ fn test_zoom() {
             maxy: 82.48332,
         }),
         layers: vec![layer],
-        cache_limits: None
+        cache_limits: None,
     };
 
     assert_eq!(tileset.minzoom(), 0);

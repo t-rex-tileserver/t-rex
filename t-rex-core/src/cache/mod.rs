@@ -69,8 +69,7 @@ impl<'a> Config<'a, ApplicationCfg> for Tilecache {
                     baseurl: cache.file.baseurl.clone(),
                 };
                 Tilecache::Filecache(fc)
-            })
-            .or(Some(Tilecache::Nocache(Nocache)))
+            }).or(Some(Tilecache::Nocache(Nocache)))
             .ok_or("".to_string())
     }
     fn gen_config() -> String {

@@ -154,7 +154,10 @@ impl MvtService {
                 tile = Some(data);
             });
         } else {
-            debug!("Cache : read ignored for tileset {} at zoom {}", ts.name, zoom);
+            debug!(
+                "Cache : read ignored for tileset {} at zoom {}",
+                ts.name, zoom
+            );
         }
 
         // Return tile from cache
@@ -172,7 +175,10 @@ impl MvtService {
                     error!("Error writing {}: {}", path, ioerr);
                 }
             } else {
-                debug!("Cache : write ignored for tileset {} at zoom {}", ts.name, zoom);
+                debug!(
+                    "Cache : write ignored for tileset {} at zoom {}",
+                    ts.name, zoom
+                );
             }
             Some(Tile::tile_content(tilegz, gzip))
         } else {
@@ -255,7 +261,8 @@ impl MvtService {
                 tileset.maxzoom(),
                 maxzoom.unwrap_or(99),
                 self.grid.maxzoom(),
-            ].iter()
+            ]
+                .iter()
                 .min()
                 .unwrap_or(&22);
             if minzoom.is_some() && minzoom.unwrap() < ts_minzoom {
@@ -370,7 +377,8 @@ impl MvtService {
                 tileset.maxzoom(),
                 maxzoom.unwrap_or(99),
                 self.grid.maxzoom(),
-            ].iter()
+            ]
+                .iter()
                 .min()
                 .unwrap_or(&22);
 

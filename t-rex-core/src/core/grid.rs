@@ -324,8 +324,7 @@ impl Grid {
                     miny: miny as u32,
                     maxy: maxy as u32,
                 }
-            })
-            .collect()
+            }).collect()
     }
 }
 

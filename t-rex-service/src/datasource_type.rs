@@ -262,8 +262,7 @@ mod gdal_tests {
                 Arg::with_name("datasource")
                     .long("datasource")
                     .takes_value(true),
-            )
-            .get_matches_from(vec!["t_rex", "--datasource", GPKG]);
+            ).get_matches_from(vec!["t_rex", "--datasource", GPKG]);
         assert_eq!(args.value_of("datasource"), Some(GPKG));
         let dss = Datasources::from_args(&args);
         if let Some(&Datasource::Gdal(ref gdal_ds)) = dss.default() {
