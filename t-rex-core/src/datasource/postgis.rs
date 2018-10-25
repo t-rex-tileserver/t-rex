@@ -756,7 +756,7 @@ impl DatasourceInput for PostgisInput {
         for layer_query in &layer.query {
             if let Some(query) = self.build_query(layer, grid_srid, layer_query.sql.as_ref()) {
                 debug!("Query for layer '{}': {}", layer.name, query.sql);
-                for zoom in layer_query.minzoom.unwrap_or(0)..=layer_query.maxzoom.unwrap_or(22) {
+                for zoom in layer_query.minzoom..=layer_query.maxzoom.unwrap_or(22) {
                     if &layer.query(zoom).unwrap_or(&"".to_string())
                         == &layer_query.sql.as_ref().unwrap_or(&"".to_string())
                     {

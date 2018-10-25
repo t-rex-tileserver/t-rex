@@ -10,7 +10,7 @@ use core::layer::Layer;
 
 #[derive(Debug)]
 pub struct CacheLimits {
-    pub minzoom: Option<u8>,
+    pub minzoom: u8,
     pub maxzoom: Option<u8>,
     pub no_cache: bool,
 }
@@ -18,9 +18,9 @@ pub struct CacheLimits {
 impl<'a> Config<'a, TilesetCacheCfg> for CacheLimits {
     fn from_config(cfg: &TilesetCacheCfg) -> Result<Self, String> {
         Ok(CacheLimits {
-            minzoom: cfg.minzoom.clone(),
+            minzoom: cfg.minzoom,
             maxzoom: cfg.maxzoom.clone(),
-            no_cache: cfg.no_cache.unwrap_or(false),
+            no_cache: cfg.no_cache,
         })
     }
     fn gen_config() -> String {
@@ -84,9 +84,7 @@ impl Tileset {
     }
     pub fn is_cachable_at(&self, zoom: u8) -> bool {
         match self.cache_limits {
-            Some(ref cl) => {
-                !cl.no_cache && cl.minzoom.unwrap_or(0) <= zoom && cl.maxzoom.unwrap_or(22) >= zoom
-            }
+            Some(ref cl) => !cl.no_cache && cl.minzoom <= zoom && cl.maxzoom.unwrap_or(22) >= zoom,
             None => true,
         }
     }

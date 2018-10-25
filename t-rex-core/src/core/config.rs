@@ -107,7 +107,8 @@ pub struct TilesetCfg {
 
 #[derive(Deserialize, Debug)]
 pub struct LayerQueryCfg {
-    pub minzoom: Option<u8>,
+    #[serde(default)]
+    pub minzoom: u8,
     pub maxzoom: Option<u8>,
     pub sql: Option<String>,
 }
@@ -121,7 +122,8 @@ pub struct LayerCfg {
     /// Spatial reference system (PostGIS SRID)
     pub srid: Option<i32>,
     /// Handle geometry like one in grid SRS
-    pub no_transform: Option<bool>,
+    #[serde(default)]
+    pub no_transform: bool,
     pub fid_field: Option<String>,
     // Input for derived queries
     pub table_name: Option<String>,
@@ -132,24 +134,40 @@ pub struct LayerCfg {
     pub minzoom: Option<u8>,
     pub maxzoom: Option<u8>,
     /// Width and height of the tile (Default: 4096. Grid default size is 256)
-    pub tile_size: Option<u32>,
+    #[serde(default = "default_tile_size")]
+    pub tile_size: u32,
     /// Simplify geometry (lines and polygons)
-    pub simplify: Option<bool>,
+    #[serde(default)]
+    pub simplify: bool,
     /// Simplification tolerance (default to !pixel_width!/2)
-    pub tolerance: Option<String>,
+    #[serde(default = "default_tolerance")]
+    pub tolerance: String,
     /// Tile buffer size in pixels (None: no clipping)
     pub buffer_size: Option<u32>,
     /// Fix invalid geometries before clipping (lines and polygons)
-    pub make_valid: Option<bool>,
+    #[serde(default)]
+    pub make_valid: bool,
     // Inline style
     pub style: Option<Value>,
 }
 
+pub fn default_tile_size() -> u32 {
+    4096
+}
+
+pub const DEFAULT_TOLERANCE: &str = "!pixel_width!/2";
+
+pub fn default_tolerance() -> String {
+    DEFAULT_TOLERANCE.to_string()
+}
+
 #[derive(Deserialize, Debug)]
 pub struct TilesetCacheCfg {
-    pub minzoom: Option<u8>,
+    #[serde(default)]
+    pub minzoom: u8,
     pub maxzoom: Option<u8>,
-    pub no_cache: Option<bool>,
+    #[serde(default)]
+    pub no_cache: bool,
 }
 
 #[derive(Deserialize, Debug)]

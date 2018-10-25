@@ -3,14 +3,14 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::config::LayerCfg;
+use core::config::{self, LayerCfg};
 use core::Config;
 use service::glstyle_converter::toml_style_to_gljson;
 use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct LayerQuery {
-    pub minzoom: Option<u8>,
+    pub minzoom: u8,
     pub maxzoom: Option<u8>,
     pub sql: Option<String>,
 }
@@ -56,13 +56,8 @@ impl Layer {
         }
     }
     pub fn minzoom(&self) -> u8 {
-        self.minzoom.unwrap_or(
-            self.query
-                .iter()
-                .map(|q| q.minzoom.unwrap_or(0))
-                .min()
-                .unwrap_or(0),
-        )
+        self.minzoom
+            .unwrap_or(self.query.iter().map(|q| q.minzoom).min().unwrap_or(0))
     }
     pub fn maxzoom(&self, default: u8) -> u8 {
         self.maxzoom.unwrap_or(
@@ -80,7 +75,7 @@ impl Layer {
             .iter()
             .map(|ref q| {
                 (
-                    q.minzoom.unwrap_or(0),
+                    q.minzoom,
                     q.maxzoom.unwrap_or(22),
                     q.sql.as_ref().and_then(|sql| Some(sql)),
                 )
@@ -107,8 +102,6 @@ impl Layer {
     }
 }
 
-const DEFAULT_TOLERANCE: &str = "!pixel_width!/2";
-
 impl<'a> Config<'a, LayerCfg> for Layer {
     fn from_config(layer_cfg: &LayerCfg) -> Result<Self, String> {
         let queries = layer_cfg
@@ -132,21 +125,18 @@ impl<'a> Config<'a, LayerCfg> for Layer {
             geometry_field: layer_cfg.geometry_field.clone(),
             geometry_type: layer_cfg.geometry_type.clone(),
             srid: layer_cfg.srid,
-            no_transform: layer_cfg.no_transform.unwrap_or(false),
+            no_transform: layer_cfg.no_transform,
             fid_field: layer_cfg.fid_field.clone(),
             table_name: layer_cfg.table_name.clone(),
             query_limit: layer_cfg.query_limit,
             query: queries,
             minzoom: layer_cfg.minzoom,
             maxzoom: layer_cfg.maxzoom,
-            tile_size: layer_cfg.tile_size.unwrap_or(4096),
-            simplify: layer_cfg.simplify.unwrap_or(false),
-            tolerance: layer_cfg
-                .tolerance
-                .clone()
-                .unwrap_or(DEFAULT_TOLERANCE.to_string()),
+            tile_size: layer_cfg.tile_size,
+            simplify: layer_cfg.simplify,
+            tolerance: layer_cfg.tolerance.clone(),
             buffer_size: layer_cfg.buffer_size,
-            make_valid: layer_cfg.make_valid.unwrap_or(false),
+            make_valid: layer_cfg.make_valid,
             style: style,
         })
     }
@@ -224,7 +214,7 @@ geometry_type = "POINT"
         if self.geometry_type != Some("POINT".to_string()) {
             // simplify is ignored for points
             lines.push(format!("simplify = {}", self.simplify));
-            if self.simplify && self.tolerance != DEFAULT_TOLERANCE {
+            if self.simplify && self.tolerance != config::DEFAULT_TOLERANCE {
                 lines.push(format!("tolerance = \"{}\"", self.tolerance));
             }
         }

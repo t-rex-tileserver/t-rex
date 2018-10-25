@@ -42,10 +42,10 @@ fn test_toml_decode() {
     assert_eq!(cfg.name, "points");
     assert_eq!(cfg.table_name, Some("ne_10m_populated_places".to_string()));
     assert_eq!(cfg.query.len(), 2);
-    assert_eq!(cfg.query[0].minzoom, Some(2));
+    assert_eq!(cfg.query[0].minzoom, 2);
     assert_eq!(cfg.query[0].maxzoom, None);
-    assert_eq!(cfg.query[1].minzoom, Some(10));
-    assert_eq!(cfg.query[1].minzoom, Some(10));
+    assert_eq!(cfg.query[1].minzoom, 10);
+    assert_eq!(cfg.query[1].minzoom, 10);
     assert_eq!(cfg.query[1].maxzoom, Some(14));
     assert_eq!(
         cfg.query[1].sql,
