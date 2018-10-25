@@ -13,7 +13,7 @@ dbconn = "postgresql://pi@localhost/geostat"
 
 [[datasource]]
 name= "gpkg"
-path = "t-rex-gdal/natural_earth.gpkg"
+path = "data/natural_earth.gpkg"
 
 [grid]
 predefined = "web_mercator"

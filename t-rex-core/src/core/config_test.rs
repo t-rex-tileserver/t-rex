@@ -46,6 +46,37 @@ fn test_default_config() {
 }
 
 #[test]
+fn test_missing_geometry_field() {
+    use core::parse_config;
+
+    let toml = r#"
+        [service.mvt]
+        viewer = true
+
+        [[datasource]]
+        dbconn = "postgresql://user:pass@host/database"
+
+        [grid]
+        predefined = "web_mercator"
+
+        [[tileset]]
+        name = "points"
+
+        [[tileset.layer]]
+        name = "points"
+        table_name = "mytable"
+        #MISSING: geometry_field = "wkb_geometry"
+        geometry_type = "POINT"
+
+        [webserver]
+        bind = "127.0.0.1"
+        port = 6767
+        "#;
+    let config: Result<ApplicationCfg, _> = parse_config(toml.to_string(), "");
+    assert_eq!(None, config.err()); //TODO: we should issue an error!
+}
+
+#[test]
 fn test_datasource_compatibility() {
     use core::parse_config;
     // datasource spec beforce 0.8
