@@ -3,7 +3,8 @@
 
 #### Features
 
-* Add a new tolerance option (Thanks @apzel!)
+* New cache_limits option (Thanks @apzel!)
+* New simplification tolerance option (Thanks @apzel!)
 * Update Maputnik to 1.4
 * Add support for GDAL 25D geometry types
 * Add support for GDAL network adresses like GeoJSON services
