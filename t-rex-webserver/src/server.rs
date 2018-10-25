@@ -502,7 +502,6 @@ pub fn gen_config(args: &ArgMatches) -> String {
 # Bind address. Use 0.0.0.0 to listen on all adresses.
 bind = "127.0.0.1"
 port = 6767
-#cache_control_max_age = 43200
 
 #[[webserver.static]]
 #path = "/static"

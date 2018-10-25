@@ -272,7 +272,6 @@ name = "database"
 dbconn = "postgresql://user:pass@host/database"
 {}
 [grid]
-# Predefined grids: web_mercator, wgs84
 predefined = "web_mercator"
 
 [[tileset]]
