@@ -84,7 +84,7 @@ impl Tileset {
     }
     pub fn is_cachable_at(&self, zoom: u8) -> bool {
         match self.cache_limits {
-            Some(ref cl) => !cl.no_cache && cl.minzoom <= zoom && cl.maxzoom.unwrap_or(22) >= zoom,
+            Some(ref cl) => !cl.no_cache && cl.minzoom <= zoom && cl.maxzoom.unwrap_or(99) >= zoom,
             None => true,
         }
     }
