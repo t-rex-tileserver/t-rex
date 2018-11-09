@@ -4,8 +4,10 @@
 //
 
 use core::grid::Extent;
+use regex::Regex;
 use serde::Deserialize;
 use std;
+use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use toml::Value;
@@ -240,8 +242,19 @@ pub fn read_config<'a, T: Deserialize<'a>>(path: &str) -> Result<T, String> {
 
 /// Parse the configuration into an config struct.
 pub fn parse_config<'a, T: Deserialize<'a>>(config_toml: String, path: &str) -> Result<T, String> {
-    config_toml
-        .parse::<Value>()
+    // Replace variables ${var}
+    let re = Regex::new(r"\$\{([[:alnum:]]+)\}").unwrap();
+    let toml = re.replace_all(&config_toml, |cap: &regex::Captures| {
+        match env::var(&cap[1]) {
+            Ok(val) => val,
+            Err(_) => cap[0].to_string(),
+        }
+    });
+    if let Some(cap) = re.captures(&toml) {
+        return Err(format!("Environment variable `{}` undefined", &cap[1]));
+    }
+
+    toml.parse::<Value>()
         .and_then(|cfg| cfg.try_into::<T>())
         .map_err(|err| format!("{} - {}", path, err))
 }

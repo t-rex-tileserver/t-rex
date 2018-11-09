@@ -46,6 +46,53 @@ fn test_default_config() {
 }
 
 #[test]
+fn test_envvar_expansion() {
+    use core::parse_config;
+    use std::env;
+
+    let toml = r#"
+        [service.mvt]
+        viewer = true
+
+        [[datasource]]
+        dbconn = "${MYDBCONN}"
+
+        [grid]
+        predefined = "web_mercator"
+
+        [[tileset]]
+        name = "ts${MYPORT}"
+        minzoom = 0
+        maxzoom = 22
+
+        [[tileset.layer]]
+        name = "layer ${ MYPORT }"
+
+        [webserver]
+        bind = "127.0.0.1"
+        port = ${MYPORT}
+        "#;
+
+    let config: Result<ApplicationCfg, _> = parse_config(toml.to_string(), "");
+    assert_eq!(
+        r#"Environment variable `MYDBCONN` undefined"#,
+        config.err().unwrap()
+    );
+
+    env::set_var("MYDBCONN", "postgresql://pi@localhost/geostat");
+    env::set_var("MYPORT", "9999");
+    let config: ApplicationCfg =
+        parse_config(toml.to_string(), "").expect("parse_config returned Err");
+    assert_eq!(
+        config.datasource[0].dbconn,
+        Some("postgresql://pi@localhost/geostat".to_string())
+    );
+    assert_eq!(&config.tilesets[0].name, "ts9999");
+    assert_eq!(&config.tilesets[0].layers[0].name, "layer ${ MYPORT }");
+    assert_eq!(config.webserver.port, Some(9999));
+}
+
+#[test]
 fn test_missing_geometry_field() {
     use core::parse_config;
 

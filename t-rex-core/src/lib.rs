@@ -12,6 +12,7 @@ extern crate postgres;
 extern crate protobuf;
 extern crate r2d2;
 extern crate r2d2_postgres;
+extern crate regex;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
