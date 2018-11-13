@@ -6,7 +6,7 @@
 * New cache_limits option (Thanks @apzel!)
 * New simplification tolerance option (Thanks @apzel!)
 * Support environment variables in configuration file
-* Update Maputnik to 1.4
+* Update Maputnik to 1.5
 * Add support for GDAL 25D geometry types
 * Add support for GDAL network adresses like GeoJSON services
 * Use internal implementation for converting WGS84 extents to Web Mercator
