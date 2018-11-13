@@ -18,6 +18,8 @@ r2d2 = "0.8"
 r2d2_postgres = "0.14"
 regex = "1"
 postgis = "0.6"
+postgres = "0.15"
+postgres-native-tls = "0.1"
 protobuf = "2.0"
 serde = "1.0"
 serde_derive = "1.0"
@@ -25,7 +27,3 @@ serde_json = "1.0"
 streaming-stats = "0.2.0"
 log = "0.4"
 flate2 = "1.0"
-
-[dependencies.postgres]
-version = "0.15"
-features = ["with-native-tls"]

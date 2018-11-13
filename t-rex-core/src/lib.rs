@@ -9,6 +9,7 @@ extern crate flate2;
 extern crate log;
 extern crate postgis;
 extern crate postgres;
+extern crate postgres_native_tls;
 extern crate protobuf;
 extern crate r2d2;
 extern crate r2d2_postgres;

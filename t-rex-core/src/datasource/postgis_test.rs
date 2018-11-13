@@ -347,7 +347,7 @@ fn test_no_geom_field() {
 #[test]
 #[ignore]
 fn test_tls() {
-    use postgres::tls::native_tls::NativeTls;
+    use postgres_native_tls::NativeTls;
     use postgres::TlsMode;
     let negotiator = NativeTls::new().unwrap();
     let _conn = match env::var("DBCONN") {

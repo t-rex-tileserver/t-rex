@@ -14,7 +14,7 @@ use datasource::DatasourceInput;
 use env;
 use fallible_iterator::FallibleIterator;
 use postgres::rows::Row;
-use postgres::tls::native_tls::NativeTls;
+use postgres_native_tls::NativeTls;
 use postgres::types::{self, FromSql, ToSql, Type};
 use r2d2;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
