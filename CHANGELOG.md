@@ -7,6 +7,7 @@
 * New simplification tolerance option (Thanks @apzel!)
 * Support environment variables in configuration file
 * Update Maputnik to 1.5
+* Update viewer (mapbox-gl 0.51, OL 5.3.0)
 * Add support for GDAL 25D geometry types
 * Add support for GDAL network adresses like GeoJSON services
 * Use internal implementation for converting WGS84 extents to Web Mercator
