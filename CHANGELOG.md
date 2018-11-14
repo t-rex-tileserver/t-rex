@@ -1,5 +1,5 @@
 <a name="0.9.1"></a>
-## 0.9.1 (UNRELEASED)
+## 0.9.1 (2018-11-14)
 
 #### Features
 
@@ -16,6 +16,7 @@
 #### Bug Fixes
 
 * Better panic messages for PostGIS driver errors
+* Fix build with OpenSSL v1.1.1
 
 <a name="0.9.0"></a>
 ## 0.9.0 (2018-07-24)
