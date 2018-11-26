@@ -14,8 +14,8 @@ use datasource::DatasourceInput;
 use env;
 use fallible_iterator::FallibleIterator;
 use postgres::rows::Row;
-use postgres_native_tls::NativeTls;
 use postgres::types::{self, FromSql, ToSql, Type};
+use postgres_native_tls::NativeTls;
 use r2d2;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use std;
@@ -126,11 +126,13 @@ impl<'a> Feature for FeatureRow<'a> {
     fn attributes(&self) -> Vec<FeatureAttr> {
         let mut attrs = Vec::new();
         for (i, col) in self.row.columns().into_iter().enumerate() {
+            // Skip geometry_field and fid_field
             if col.name() != self
                 .layer
                 .geometry_field
                 .as_ref()
                 .unwrap_or(&"".to_string())
+                && col.name() != self.layer.fid_field.as_ref().unwrap_or(&"".to_string())
             {
                 let val = self.row.get_opt::<_, Option<FeatureAttrValType>>(i);
                 match val.unwrap() {

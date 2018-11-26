@@ -314,14 +314,12 @@ fn test_retrieve_features() {
             "Ok(Point(Point { x: 831219.9062494118, y: 5928485.165733484, srid: Some(3857) }))",
             &*format!("{:?}", feat.geometry())
         );
-        assert_eq!(feat.attributes()[0].key, "fid");
-        assert_eq!(feat.attributes()[1].key, "scalerank"); //Numeric
-        assert_eq!(feat.attributes()[2].key, "name");
-        assert_eq!(feat.attributes()[3].key, "pop_max"); //Numeric
-        assert_eq!(feat.attributes()[0].value, FeatureAttrValType::Int(6478));
-        assert_eq!(feat.attributes()[1].value, FeatureAttrValType::Int(4));
+        assert_eq!(feat.attributes()[0].key, "scalerank"); //Numeric
+        assert_eq!(feat.attributes()[1].key, "name");
+        assert_eq!(feat.attributes()[2].key, "pop_max"); //Numeric
+        assert_eq!(feat.attributes()[0].value, FeatureAttrValType::Int(4));
         assert_eq!(
-            feat.attributes()[2].value,
+            feat.attributes()[1].value,
             FeatureAttrValType::String("Bern".to_string())
         );
         assert_eq!(feat.fid(), Some(6478));
@@ -347,8 +345,8 @@ fn test_no_geom_field() {
 #[test]
 #[ignore]
 fn test_tls() {
-    use postgres_native_tls::NativeTls;
     use postgres::TlsMode;
+    use postgres_native_tls::NativeTls;
     let negotiator = NativeTls::new().unwrap();
     let _conn = match env::var("DBCONN") {
         Result::Ok(val) => Connection::connect(&val as &str, TlsMode::Prefer(&negotiator)),

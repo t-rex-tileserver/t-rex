@@ -1,3 +1,10 @@
+<a name="0.9.2"></a>
+## 0.9.2 (UNRELEASED)
+
+#### Bug Fixes
+
+* Avoid duplicated fid_field in attributes
+
 <a name="0.9.1"></a>
 ## 0.9.1 (2018-11-14)
 
