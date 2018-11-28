@@ -1,6 +1,10 @@
 <a name="0.9.2"></a>
 ## 0.9.2 (UNRELEASED)
 
+#### Features
+
+* Support option `detect-geometry-types` in `genconfig` command
+
 #### Bug Fixes
 
 * Avoid duplicated fid_field in attributes

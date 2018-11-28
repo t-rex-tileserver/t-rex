@@ -171,6 +171,7 @@ fn main() {
         .subcommand(SubCommand::with_name("genconfig")
                         .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'
                                               --datasource=[FILE_OR_GDAL_DS] 'GDAL datasource specification'
+                                              --detect-geometry-types=[true|false] 'Detect geometry types when undefined'
                                               --qgs=[FILE] 'QGIS project file'
                                               --loglevel=[error|warn|info|debug|trace] 'Log level (Default: info)'
                                               --simplify=[true|false] 'Simplify geometries'
