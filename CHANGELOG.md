@@ -4,6 +4,7 @@
 #### Features
 
 * Support option `detect-geometry-types` in `genconfig` command
+* Support GDAL M- and ZM-geometry types
 
 #### Bug Fixes
 
