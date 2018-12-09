@@ -71,7 +71,7 @@ Increase log level:
 For developers
 --------------
 
-t-rex is written in [Rust](https://www.rust-lang.org/). Minimal required rustc version is 1.26.
+t-rex is written in [Rust](https://www.rust-lang.org/). Minimal required rustc version is 1.31.
 
 Build:
 

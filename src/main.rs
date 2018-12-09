@@ -5,12 +5,10 @@
 
 #[macro_use]
 extern crate clap;
-extern crate env_logger;
-extern crate log;
-extern crate time;
 
-extern crate t_rex_core;
-extern crate t_rex_webserver;
+use time;
+
+use t_rex_webserver;
 
 use clap::{App, AppSettings, ArgMatches, SubCommand};
 use env_logger::Builder;
@@ -20,9 +18,9 @@ use std::io::Write;
 use t_rex_core::core::grid::Extent;
 use t_rex_webserver as webserver;
 
-fn init_logger(args: &ArgMatches) {
+fn init_logger(args: &ArgMatches<'_>) {
     let mut builder = Builder::new();
-    builder.format(|buf, record: &Record| {
+    builder.format(|buf, record: &Record<'_>| {
         let t = time::now();
         writeln!(
             buf,
@@ -48,7 +46,7 @@ fn init_logger(args: &ArgMatches) {
     builder.init();
 }
 
-fn generate(args: &ArgMatches) {
+fn generate(args: &ArgMatches<'_>) {
     let config = webserver::server::config_from_args(&args);
     let mut service = webserver::server::service_from_args(&config, &args);
     config
@@ -101,7 +99,7 @@ fn generate(args: &ArgMatches) {
     println!("Statistics:\n{:?}", stats);
 }
 
-fn drilldown(args: &ArgMatches) {
+fn drilldown(args: &ArgMatches<'_>) {
     let config = webserver::server::config_from_args(&args);
     let mut service = webserver::server::service_from_args(&config, &args);
     let tileset = args.value_of("tileset");
