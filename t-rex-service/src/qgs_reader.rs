@@ -59,7 +59,8 @@ impl PgLayerInfo {
                         (vec[0], "")
                     }
                 }
-            }).collect();
+            })
+            .collect();
 
         //postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
         let mut uri = "postgresql://".to_string();

@@ -127,11 +127,12 @@ impl<'a> Feature for FeatureRow<'a> {
         let mut attrs = Vec::new();
         for (i, col) in self.row.columns().into_iter().enumerate() {
             // Skip geometry_field and fid_field
-            if col.name() != self
-                .layer
-                .geometry_field
-                .as_ref()
-                .unwrap_or(&"".to_string())
+            if col.name()
+                != self
+                    .layer
+                    .geometry_field
+                    .as_ref()
+                    .unwrap_or(&"".to_string())
                 && col.name() != self.layer.fid_field.as_ref().unwrap_or(&"".to_string())
             {
                 let val = self.row.get_opt::<_, Option<FeatureAttrValType>>(i);
@@ -348,7 +349,8 @@ impl PostgisInput {
                             );
                         }
                         (name, cast)
-                    }).collect();
+                    })
+                    .collect();
                 let _ = stmt.finish();
                 cols
             }
@@ -503,7 +505,8 @@ impl PostgisInput {
                     } else {
                         format!("\"{}\"::{}", name, casttype)
                     }
-                }).collect();
+                })
+                .collect();
             cols.insert(0, geom_expr);
             cols.join(",")
         }
@@ -622,11 +625,13 @@ impl DatasourceInput for PostgisInput {
                     let manager = PostgresConnectionManager::new(
                         self.connection_url.as_ref(),
                         TlsMode::Require(Box::new(negotiator)),
-                    ).unwrap();
+                    )
+                    .unwrap();
                     r2d2::Pool::builder().max_size(pool_size).build(manager)
                 }
                 _ => Err(e),
-            }).unwrap();
+            })
+            .unwrap();
         PostgisInput {
             connection_url: self.connection_url.clone(),
             conn_pool: Some(pool),
@@ -696,12 +701,10 @@ impl DatasourceInput for PostgisInput {
             layer.name, sql
         );
         let cols = self.detect_columns(layer, sql);
-        let filter_cols = vec![
-            layer
-                .geometry_field
-                .as_ref()
-                .expect("geometry_field undefined"),
-        ];
+        let filter_cols = vec![layer
+            .geometry_field
+            .as_ref()
+            .expect("geometry_field undefined")];
         cols.into_iter()
             .filter(|&(ref col, _)| !filter_cols.contains(&&col))
             .collect()

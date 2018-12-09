@@ -42,7 +42,8 @@ impl MvtService {
                     .map(|l| LayerInfo {
                         name: l.name.clone(),
                         geometry_type: l.geometry_type.clone(),
-                    }).collect();
+                    })
+                    .collect();
                 let supported = set.layers.iter().any(|l| {
                     let geom_type = l.geometry_type.clone().unwrap_or("UNKNOWN".to_string());
                     ["POINT", "LINESTRING", "POLYGON"].contains(&(&geom_type as &str))
@@ -56,7 +57,8 @@ impl MvtService {
                     layers: layerinfos,
                     supported: supported,
                 }
-            }).collect();
+            })
+            .collect();
         tileset_infos.sort_by_key(|ti| ti.name.clone());
         let mvt_info = MvtInfo {
             tilesets: tileset_infos,
@@ -124,7 +126,8 @@ impl MvtService {
                         .insert(field.clone(), json!(""));
                 }
                 meta_json
-            }).collect();
+            })
+            .collect();
         Ok(json!(layers_metadata))
     }
     // MVT layers in TileJSON manifest
@@ -159,7 +162,8 @@ impl MvtService {
                         .insert(field.clone(), json!(""));
                 }
                 layer_json
-            }).collect();
+            })
+            .collect();
         Ok(json!(vector_layers))
     }
     /// TileJSON metadata (https://github.com/mapbox/tilejson-spec)
@@ -237,7 +241,8 @@ impl MvtService {
                     }
                 } else {
                     "line"
-                }.to_string();
+                }
+                .to_string();
                 layerjson
                     .as_object_mut()
                     .unwrap()
@@ -245,7 +250,8 @@ impl MvtService {
                     .or_insert(json!(default_type));
 
                 layerjson
-            }).collect();
+            })
+            .collect();
         layer_styles.insert(0, background_layer);
         // Insert layers in stylejson
         let obj = stylejson.as_object_mut().unwrap();

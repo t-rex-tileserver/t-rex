@@ -20,7 +20,8 @@ fn test_from_geom_fields() {
     let conn: Connection = match env::var("DBCONN") {
         Result::Ok(val) => Connection::connect(&val as &str, postgres::TlsMode::None),
         Result::Err(_) => panic!("DBCONN undefined"),
-    }.unwrap();
+    }
+    .unwrap();
     let sql = "SELECT wkb_geometry FROM ne.ne_10m_populated_places LIMIT 1";
     for row in &conn.query(sql, &[]).unwrap() {
         let geom = row.get::<_, Point>("wkb_geometry");
@@ -62,13 +63,12 @@ fn test_detect_layers() {
     let pg: PostgisInput = match env::var("DBCONN") {
         Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
         Result::Err(_) => panic!("DBCONN undefined"),
-    }.unwrap();
+    }
+    .unwrap();
     let layers = pg.detect_layers(false);
-    assert!(
-        layers
-            .iter()
-            .any(|ref layer| layer.name == "rivers_lake_centerlines")
-    );
+    assert!(layers
+        .iter()
+        .any(|ref layer| layer.name == "rivers_lake_centerlines"));
 }
 
 #[test]
@@ -77,7 +77,8 @@ fn test_detect_columns() {
     let pg: PostgisInput = match env::var("DBCONN") {
         Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
         Result::Err(_) => panic!("DBCONN undefined"),
-    }.unwrap();
+    }
+    .unwrap();
     let layers = pg.detect_layers(false);
     let layer = layers
         .iter()
@@ -100,7 +101,8 @@ fn test_extent_query() {
     let pg: PostgisInput = match env::var("DBCONN") {
         Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
         Result::Err(_) => panic!("DBCONN undefined"),
-    }.unwrap();
+    }
+    .unwrap();
     let layers = pg.detect_layers(false);
     let layer = &layers
         .iter()
@@ -275,7 +277,8 @@ fn test_retrieve_features() {
     let mut pg: PostgisInput = match env::var("DBCONN") {
         Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
         Result::Err(_) => panic!("DBCONN undefined"),
-    }.unwrap();
+    }
+    .unwrap();
 
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("ne.ne_10m_populated_places"));
@@ -333,7 +336,8 @@ fn test_no_geom_field() {
     let mut pg: PostgisInput = match env::var("DBCONN") {
         Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
         Result::Err(_) => panic!("DBCONN undefined"),
-    }.unwrap();
+    }
+    .unwrap();
 
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("ne.ne_10m_populated_places"));

@@ -351,7 +351,8 @@ fn tile_pbf(
                 .to_str()
                 .ok()
                 .and_then(|headerstr| Some(headerstr.contains("gzip")))
-        }).unwrap_or(false);
+        })
+        .unwrap_or(false);
     let tile = req
         .state()
         .service
@@ -370,7 +371,8 @@ fn tile_pbf(
                 // data is already gzip compressed
                 r.content_encoding(ContentEncoding::Identity)
                     .header(header::CONTENT_ENCODING, "gzip");
-            }).header(header::CACHE_CONTROL, format!("max-age={}", cache_max_age))
+            })
+            .header(header::CACHE_CONTROL, format!("max-age={}", cache_max_age))
             .body(tile) // TODO: chunked response
     } else {
         HttpResponse::NoContent().finish()
@@ -410,7 +412,8 @@ fn drilldown_handler(
             v.parse()
                 .expect("Error parsing 'point' as pair of float values")
             //FIXME: map_err(|_| error::ErrorInternalServerError("...")
-        }).collect();
+        })
+        .collect();
     let stats =
         req.state()
             .service
@@ -454,15 +457,20 @@ pub fn webserver(args: ArgMatches<'static>) {
                     .resource("/fontstacks.json", |r| r.method(Method::GET).f(fontstacks))
                     .resource("/fonts/{fonts}/{range}.pbf", |r| {
                         r.method(Method::GET).with(fonts_pbf)
-                    }).resource("/{tileset}.style.json", |r| {
+                    })
+                    .resource("/{tileset}.style.json", |r| {
                         r.method(Method::GET).with_async(tileset_style_json)
-                    }).resource("/{tileset}/metadata.json", |r| {
+                    })
+                    .resource("/{tileset}/metadata.json", |r| {
                         r.method(Method::GET).with_async(tileset_metadata_json)
-                    }).resource("/{tileset}.json", |r| {
+                    })
+                    .resource("/{tileset}.json", |r| {
                         r.method(Method::GET).with_async(tileset_tilejson)
-                    }).resource("/{tileset}/{z}/{x}/{y}.pbf", |r| {
+                    })
+                    .resource("/{tileset}/{z}/{x}/{y}.pbf", |r| {
                         r.method(Method::GET).with_async(tile_pbf)
-                    }).register()
+                    })
+                    .register()
             });
         for static_dir in &static_dirs {
             let dir = &static_dir.dir;
@@ -480,7 +488,8 @@ pub fn webserver(args: ArgMatches<'static>) {
             app = app.handler("/", static_file_handler);
         }
         app
-    }).bind(&bind_addr)
+    })
+    .bind(&bind_addr)
     .expect("Can not start server on given IP/Port")
     .shutdown_timeout(3) // default: 30s
     .start();

@@ -19,7 +19,8 @@ fn mvt_service() -> MvtService {
     let pg: PostgisInput = match env::var("DBCONN") {
         Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
         Result::Err(_) => panic!("DBCONN undefined"),
-    }.unwrap();
+    }
+    .unwrap();
     let mut datasources = Datasources::new();
     datasources.add(&"pg".to_string(), Datasource::Postgis(pg));
     datasources.setup();

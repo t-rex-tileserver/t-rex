@@ -258,7 +258,8 @@ impl ToGeo for Geometry {
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
                         GeometryType::Point(p) => p,
                         _ => panic!("Expected to get a Point"),
-                    }).collect();
+                    })
+                    .collect();
                 GeometryType::MultiPoint(geom::MultiPoint {
                     points: coords,
                     srid: srid,
@@ -275,7 +276,8 @@ impl ToGeo for Geometry {
                         x: x,
                         y: y,
                         srid: srid,
-                    }).collect();
+                    })
+                    .collect();
                 GeometryType::LineString(geom::LineString {
                     points: coords,
                     srid: srid,
@@ -290,7 +292,8 @@ impl ToGeo for Geometry {
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
                         GeometryType::LineString(s) => s,
                         _ => panic!("Expected to get a LineString"),
-                    }).collect();
+                    })
+                    .collect();
                 GeometryType::MultiLineString(geom::MultiLineString {
                     lines: strings,
                     srid: srid,
@@ -316,7 +319,8 @@ impl ToGeo for Geometry {
                     .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
                         GeometryType::Polygon(s) => s,
                         _ => panic!("Expected to get a Polygon"),
-                    }).collect();
+                    })
+                    .collect();
                 GeometryType::MultiPolygon(geom::MultiPolygon {
                     polygons: strings,
                     srid: srid,
@@ -665,7 +669,8 @@ impl DatasourceInput for GdalDatasource {
             bbox_extent.miny,
             bbox_extent.maxx,
             bbox_extent.maxy,
-        ).unwrap();
+        )
+        .unwrap();
         ogr_layer.set_spatial_filter(&bbox);
 
         let transformation = self.geom_transform.get(&layer.name).unwrap();

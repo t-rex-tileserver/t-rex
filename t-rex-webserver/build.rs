@@ -12,11 +12,13 @@ fn main() {
     writeln!(
         f,
         "pub fn fonts() -> HashMap<&'static str, &'static [u8]> {{"
-    ).unwrap();
+    )
+    .unwrap();
     writeln!(
         f,
         "let mut fonts = HashMap::<&'static str, &'static [u8]>::new();"
-    ).unwrap();
+    )
+    .unwrap();
     for l1 in fs::read_dir("./src/static/fonts/").unwrap() {
         let l1fn = l1.unwrap().path();
         if l1fn.is_dir() {
@@ -40,7 +42,8 @@ fn main() {
                         .to_string()
                         .replace(std::path::MAIN_SEPARATOR, "/")
                         .replace("//?/", "")
-                ).unwrap();
+                )
+                .unwrap();
             }
         }
     }
