@@ -127,7 +127,7 @@ impl EncodableGeom for screen::MultiPoint {
 
 impl EncodableGeom for screen::LineString {
     fn encode_from(&self, startpos: &screen::Point, seq: &mut CommandSequence) {
-        if self.points.len() > 0 {
+        if self.points.len() > 1 {
             self.points[0].encode_from(startpos, seq);
             seq.push(CommandInteger::new(Command::LineTo, (self.points.len() - 1) as u32).0);
             for i in 1..self.points.len() {
@@ -142,7 +142,7 @@ impl EncodableGeom for screen::LineString {
 impl screen::LineString {
     fn encode_ring_from(&self, startpos: &screen::Point, seq: &mut CommandSequence) {
         // almost same as LineString.encode_from, with ClosePath instead of last point
-        if self.points.len() > 0 {
+        if self.points.len() > 3 {
             self.points[0].encode_from(startpos, seq);
             seq.push(CommandInteger::new(Command::LineTo, (self.points.len() - 2) as u32).0);
             for i in 1..self.points.len() - 1 {

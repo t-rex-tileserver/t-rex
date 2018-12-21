@@ -91,9 +91,11 @@ impl ScreenGeom<geom::LineString> for screen::LineString {
                 extent, reverse_y, tile_size, point,
             ));
         }
+        screen_geom.points.dedup();
         screen_geom
     }
 }
+
 
 impl ScreenGeom<geom::MultiLineString> for screen::MultiLineString {
     fn from_geom(
@@ -260,9 +262,11 @@ impl<'a> Tile<'a> {
             );
         }
         if let Ok(geom) = feature.geometry() {
-            if !geom.is_empty() {
-                mvt_feature.set_field_type(geom.mvt_field_type());
-                mvt_feature.set_geometry(self.encode_geom(geom, mvt_layer.get_extent()).vec());
+            let g_type = geom.mvt_field_type();
+            let enc_geom = self.encode_geom(geom, mvt_layer.get_extent()).vec();
+            if !enc_geom.is_empty() {
+                mvt_feature.set_field_type(g_type);
+                mvt_feature.set_geometry(enc_geom);
                 mvt_layer.mut_features().push(mvt_feature);
             }
         }
