@@ -124,6 +124,22 @@ fn test_bbox() {
 }
 
 #[test]
+fn test_resolutions() {
+    // Formula: http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Resolution_and_Scale
+    // Calculated pixel width results in non-symmetrically grid.tile_extent(0, 0, 0)
+    // const PIXEL_WIDTH_Z0: f64 = 2.0 * 6378137.0 * consts::PI / 256.0; //  = 40075016.68557849 / 256
+    const PIXEL_WIDTH_Z0: f64 = 156543.0339280410; // from mapcache
+    let resolutions: Vec<f64> = (0..23)
+        .map(|z| PIXEL_WIDTH_Z0 / (z as f64).exp2())
+        .collect();
+
+    let grid = Grid::web_mercator();
+    let grid_resolutions: Vec<f64> = (0..23).map(|z| grid.pixel_width(z)).collect();
+
+    assert_eq!(resolutions, grid_resolutions);
+}
+
+#[test]
 fn test_grid_calculations() {
     let grid = Grid::web_mercator();
 
@@ -392,7 +408,10 @@ mod web_mercator {
             (-1017529.7205322663, 7044436.526761846)
         );
         let lnglat = ul(32, 42, 6);
+        #[cfg(not(target_os = "macos"))]
         assert_eq!(xy(lnglat.lon, lnglat.lat), (0.0, -6261721.357121639));
+        #[cfg(target_os = "macos")]
+        assert_eq!(xy(lnglat.lon, lnglat.lat), (0.0, -6261721.35712164));
     }
 
     #[test]
@@ -405,26 +424,6 @@ mod web_mercator {
                 miny: 7005300.768279833,
                 maxx: -978393.962050256,
                 maxy: 7044436.526761846,
-            }
-        );
-        #[cfg(not(target_os = "macos"))]
-        assert_eq!(
-            tile_extent(32, 42, 6),
-            Extent {
-                minx: 0.0,
-                miny: -6887893.492833804,
-                maxx: 626172.1357121639,
-                maxy: -6261721.357121639
-            }
-        );
-        #[cfg(target_os = "macos")]
-        assert_eq!(
-            tile_extent(32, 42, 6),
-            Extent {
-                minx: 0.0,
-                miny: -6887893.4928338025,
-                maxx: 626172.1357121639,
-                maxy: -6261721.35712164
             }
         );
     }

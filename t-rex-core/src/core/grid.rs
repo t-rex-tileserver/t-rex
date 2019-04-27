@@ -165,12 +165,7 @@ impl Grid {
             },
             srid: 3857,
             units: Unit::Meters,
-            // Formula: http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Resolution_and_Scale
-            // const PIXEL_WIDTH_Z0: f64 = 156543.0339280410; // from mapcache
-            // calculated: const PIXEL_WIDTH_Z0: f64 = 2.0 * 6378137.0 * consts::PI / 256.0; //  = 40075016.68557849 / 256
-            // let resolutions: Vec<f64> = (0..23).map(|z| {
-            //     PIXEL_WIDTH_Z0 / (z as f64).exp2()
-            // }).collect();
+            // for calculation see fn test_resolutions
             resolutions: vec![
                 156543.0339280410,
                 78271.5169640205,
