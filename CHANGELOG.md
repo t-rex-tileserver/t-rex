@@ -1,5 +1,5 @@
 <a name="0.9.2"></a>
-## 0.9.2 (UNRELEASED)
+## 0.9.2 (2019-04-27)
 
 #### Features
 
@@ -9,6 +9,9 @@
 #### Bug Fixes
 
 * Avoid duplicated fid_field in attributes
+* Prevent invalid geometries by filtering repeated points
+  and check for minimum number of points (Thanks @nimix!)
+* Adjust Mercator grid resolutions to avoid negative coordinates instead of 0.0
 
 <a name="0.9.1"></a>
 ## 0.9.1 (2018-11-14)
