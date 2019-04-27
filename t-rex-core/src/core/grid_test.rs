@@ -407,6 +407,7 @@ mod web_mercator {
                 maxy: 7044436.526761846,
             }
         );
+        #[cfg(not(target_os = "macos"))]
         assert_eq!(
             tile_extent(32, 42, 6),
             Extent {
@@ -414,6 +415,16 @@ mod web_mercator {
                 miny: -6887893.492833804,
                 maxx: 626172.1357121639,
                 maxy: -6261721.357121639
+            }
+        );
+        #[cfg(target_os = "macos")]
+        assert_eq!(
+            tile_extent(32, 42, 6),
+            Extent {
+                minx: 0.0,
+                miny: -6887893.4928338025,
+                maxx: 626172.1357121639,
+                maxy: -6261721.35712164
             }
         );
     }
