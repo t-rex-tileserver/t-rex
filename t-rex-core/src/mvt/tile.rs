@@ -96,7 +96,6 @@ impl ScreenGeom<geom::LineString> for screen::LineString {
     }
 }
 
-
 impl ScreenGeom<geom::MultiLineString> for screen::MultiLineString {
     fn from_geom(
         extent: &Extent,

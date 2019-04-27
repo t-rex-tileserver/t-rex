@@ -60,19 +60,31 @@ fn test_bbox() {
         extent,
         Extent {
             minx: -1017529.7205322683,
-            miny: 7005300.768279828,
-            maxx: -978393.9620502591,
-            maxy: 7044436.526761841,
+            miny: 7005300.768279836,
+            maxx: -978393.9620502554,
+            maxy: 7044436.526761845
         }
     );
+
     let extent = grid.tile_extent(486, 691, 10);
     assert_eq!(
         extent,
         Extent {
             minx: -1017529.7205322683,
-            miny: 7005300.768279828,
-            maxx: -978393.9620502591,
-            maxy: 7044436.526761841,
+            miny: 7005300.768279836,
+            maxx: -978393.9620502554,
+            maxy: 7044436.526761845
+        }
+    );
+
+    let extent = grid.tile_extent(32, 42, 6);
+    assert_eq!(
+        extent,
+        Extent {
+            minx: 0.0,
+            miny: 6261721.357121639,
+            maxx: 626172.1357121654,
+            maxy: 6887893.492833804
         }
     );
 
@@ -83,8 +95,8 @@ fn test_bbox() {
         Extent {
             minx: -1017529.7205322683,
             miny: -20037508.342789248,
-            maxx: -978393.9620502591,
-            maxy: -19998372.58430724,
+            maxx: -978393.9620502554,
+            maxy: -19998372.58430724
         }
     );
 
@@ -92,10 +104,10 @@ fn test_bbox() {
     assert_eq!(
         extent_ch,
         Extent {
-            minx: 958826.0828092434,
-            miny: 5987771.04774756,
-            maxx: 978393.9620502479,
-            maxy: 6007338.926988564,
+            minx: 958826.0828092508,
+            miny: 5987771.047747567,
+            maxx: 978393.9620502554,
+            maxy: 6007338.926988572
         }
     );
 
@@ -115,8 +127,8 @@ fn test_bbox() {
 fn test_grid_calculations() {
     let grid = Grid::web_mercator();
 
-    assert_eq!(grid.pixel_width(10), 152.8740565703525);
-    assert_eq!(grid.scale_denominator(10), 545978.7734655447);
+    assert_eq!(grid.pixel_width(10), 152.87405657035254);
+    assert_eq!(grid.scale_denominator(10), 545978.7734655448);
 
     assert_eq!(grid.level_limit(0), (1, 1));
     assert_eq!(grid.level_limit(10), (1024, 1024));
@@ -174,10 +186,10 @@ fn test_grid_calculations() {
     assert_eq!(
         extent,
         Extent {
-            minx: 782715.1696402021,
-            miny: 5792092.25533751,
-            maxx: 939258.2035682425,
-            maxy: 5948635.289265554,
+            minx: 782715.1696402058,
+            miny: 5792092.255337518,
+            maxx: 939258.2035682462,
+            maxy: 5948635.289265558
         }
     );
     let limits = grid.tile_limits(extent, 0);
@@ -362,14 +374,25 @@ mod web_mercator {
                 lat: 53.33087298301705,
             }
         );
+        assert_eq!(
+            ul(32, 42, 6),
+            LngLat {
+                lon: 0.0,
+                lat: -48.92249926375824,
+            }
+        );
     }
 
     #[test]
     fn test_xy() {
-        let ul = ul(486, 332, 10);
-        let xy_ = xy(ul.lon, ul.lat);
-        assert_eq!(xy_, (-1017529.7205322663, 7044436.526761846));
         assert_eq!(xy(0.0, 0.0), (0.0, -0.0000000007081154551613622));
+        let lnglat = ul(486, 332, 10);
+        assert_eq!(
+            xy(lnglat.lon, lnglat.lat),
+            (-1017529.7205322663, 7044436.526761846)
+        );
+        let lnglat = ul(32, 42, 6);
+        assert_eq!(xy(lnglat.lon, lnglat.lat), (0.0, -6261721.357121639));
     }
 
     #[test]
@@ -382,6 +405,15 @@ mod web_mercator {
                 miny: 7005300.768279833,
                 maxx: -978393.962050256,
                 maxy: 7044436.526761846,
+            }
+        );
+        assert_eq!(
+            tile_extent(32, 42, 6),
+            Extent {
+                minx: 0.0,
+                miny: -6887893.492833804,
+                maxx: 626172.1357121639,
+                maxy: -6261721.357121639
             }
         );
     }
