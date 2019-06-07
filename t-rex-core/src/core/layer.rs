@@ -43,6 +43,8 @@ pub struct Layer {
     pub buffer_size: Option<u32>,
     /// Fix invalid geometries before clipping (lines and polygons)
     pub make_valid: bool,
+    /// Apply ST_Shift_Longitude to (transformed) bbox
+    pub shift_longitude: bool,
     // Inline style
     pub style: Option<String>,
 }
@@ -139,6 +141,7 @@ impl<'a> Config<'a, LayerCfg> for Layer {
             tolerance: layer_cfg.tolerance.clone(),
             buffer_size: layer_cfg.buffer_size,
             make_valid: layer_cfg.make_valid,
+            shift_longitude: layer_cfg.shift_longitude,
             style: style,
         })
     }
@@ -212,6 +215,9 @@ geometry_type = "POINT"
         match self.make_valid {
             true => lines.push(format!("make_valid = true")),
             _ => lines.push(format!("#make_valid = true")),
+        }
+        if self.shift_longitude {
+            lines.push(format!("shift_longitude = true"));
         }
         if self.geometry_type != Some("POINT".to_string()) {
             // simplify is ignored for points

@@ -149,6 +149,9 @@ pub struct LayerCfg {
     /// Fix invalid geometries before clipping (lines and polygons)
     #[serde(default)]
     pub make_valid: bool,
+    /// Apply ST_Shift_Longitude to (transformed) bbox
+    #[serde(default)]
+    pub shift_longitude: bool,
     // Inline style
     pub style: Option<Value>,
 }

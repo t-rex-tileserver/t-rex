@@ -1,3 +1,14 @@
+<a name="0.9.3"></a>
+## 0.9.3 (UNRELEASED)
+
+#### Features
+
+* New option `shift_longitude` for applying `ST_Shift_Longitude` to (transformed) bbox
+
+#### Breaking changes
+
+* `ST_Shift_Longitude` not applied by default for WGS 84 geometries
+
 <a name="0.9.2"></a>
 ## 0.9.2 (2019-04-27)
 

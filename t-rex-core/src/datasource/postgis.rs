@@ -529,7 +529,7 @@ impl PostgisInput {
             expr = format!("ST_Transform({},{})", expr, layer_srid);
         }
         // Clip bbox to maximal extent of SRID
-        if layer_srid == 4326 {
+        if layer.shift_longitude {
             expr = format!("ST_Shift_Longitude({})", expr);
         }
         expr
@@ -608,7 +608,6 @@ impl PostgisInput {
 }
 
 impl DatasourceInput for PostgisInput {
-    /// New instance with connected pool
     /// New instance with connected pool
     fn connected(&self) -> PostgisInput {
         let pool_size = 10; //FIXME: make configurable
