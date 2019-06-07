@@ -307,7 +307,11 @@ fn test_build_mvt() {
 
     mvt_tile.mut_layers().push(mvt_layer);
     println!("{:#?}", mvt_tile);
-    assert_eq!(TILE_EXAMPLE, &*format!("{:#?}", mvt_tile));
+    // Ignore trailing commas because of https://github.com/rust-lang/rust/pull/59076/
+    assert_eq!(
+        TILE_EXAMPLE.replace(",\n", "\n"),
+        &*format!("{:#?}", mvt_tile).replace(",\n", "\n")
+    );
 }
 
 #[test]
@@ -364,7 +368,10 @@ fn test_build_mvt_with_helpers() {
 
     tile.add_layer(mvt_layer);
     println!("{:#?}", tile.mvt_tile);
-    assert_eq!(TILE_EXAMPLE, &*format!("{:#?}", tile.mvt_tile));
+    assert_eq!(
+        TILE_EXAMPLE.replace(",\n", "\n"),
+        &*format!("{:#?}", tile.mvt_tile).replace(",\n", "\n")
+    );
 
     let mut path = env::temp_dir();
     path.push("out.pbf");

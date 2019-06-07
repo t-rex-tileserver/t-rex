@@ -191,7 +191,10 @@ fn test_tile_query() {
         value: 0
     }
 }"#;
-    assert_eq!(expected, &*format!("{:#.0?}", mvt_tile));
+    assert_eq!(
+        expected.replace(",\n", "\n"),
+        &*format!("{:#.0?}", mvt_tile).replace(",\n", "\n")
+    );
 }
 
 #[test]
