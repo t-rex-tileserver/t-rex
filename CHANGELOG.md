@@ -1,3 +1,10 @@
+<a name="0.10.0"></a>
+## 0.10.0 (UNRELEASED)
+
+#### Features
+
+* Migrate web server to Actix web 1.0
+
 <a name="0.9.3"></a>
 ## 0.9.3 (2019-06-09)
 

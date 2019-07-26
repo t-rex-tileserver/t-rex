@@ -7,14 +7,17 @@ readme = "../README.md"
 license = "MIT"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 build = "build.rs"
+edition = "2018"
 workspace = ".."
 
 [lib]
 doctest = false
 
 [dependencies]
-actix = "0.7"
-actix-web =  "0.7"
+actix-web = "1.0.5"
+actix-cors = "0.1.0"
+actix-files = "0.1.4"
+actix-rt = "0.2.4"
 futures = "0.1"
 clap = "2.31"
 log = "0.4"

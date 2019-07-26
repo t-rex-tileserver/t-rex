@@ -3,26 +3,27 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use cache::{Filecache, Nocache, Tilecache};
-use core::config::ApplicationCfg;
-use core::config::DEFAULT_CONFIG;
-use core::grid::Grid;
-use core::layer::Layer;
-use core::{parse_config, read_config, Config};
-use datasource::DatasourceInput;
-use datasource_type::Datasources;
-use log::Level;
-use mvt_service::MvtService;
-use read_qgs;
-use service::tileset::Tileset;
+use crate::cache::{Filecache, Nocache, Tilecache};
+use crate::core::config::ApplicationCfg;
+use crate::core::config::DEFAULT_CONFIG;
+use crate::core::grid::Grid;
+use crate::core::layer::Layer;
+use crate::core::{parse_config, read_config, Config};
+use crate::datasource::DatasourceInput;
+use crate::datasource_type::Datasources;
+use crate::mvt_service::MvtService;
+use crate::read_qgs;
+use crate::service::tileset::Tileset;
 
-use actix;
-use actix_web::{
-    fs, http::header, http::ContentEncoding, http::Method, middleware, middleware::cors::Cors,
-    server::HttpServer, App, Error, HttpMessage, HttpRequest, HttpResponse, Path, Query,
-};
+use actix_cors::Cors;
+use actix_files as fs;
+use actix_rt;
+use actix_web::http::{header, ContentEncoding};
+use actix_web::middleware::{BodyEncoding, Compress};
+use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer, Result};
 use clap::ArgMatches;
-use futures::future::{result, FutureResult};
+use futures::{future::ok, Future};
+use log::Level;
 use open;
 use std::collections::HashMap;
 use std::process;
@@ -262,13 +263,13 @@ struct AppState {
     config: ApplicationCfg,
 }
 
-fn mvt_metadata(req: &HttpRequest<AppState>) -> FutureResult<HttpResponse, Error> {
-    let json = req.state().service.get_mvt_metadata().unwrap();
-    result(Ok(HttpResponse::Ok().json(json)))
+fn mvt_metadata(state: web::Data<AppState>) -> impl Future<Item = HttpResponse, Error = Error> {
+    let json = state.service.get_mvt_metadata().unwrap();
+    ok(HttpResponse::Ok().json(json))
 }
 
 /// Font list for Maputnik
-fn fontstacks(_req: &HttpRequest<AppState>) -> Result<HttpResponse, Error> {
+fn fontstacks() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().json(["Roboto Medium", "Roboto Regular"]))
 }
 
@@ -277,9 +278,7 @@ include!(concat!(env!("OUT_DIR"), "/fonts.rs"));
 
 /// Fonts for Maputnik
 /// Example: /fonts/Open%20Sans%20Regular,Arial%20Unicode%20MS%20Regular/0-255.pbf
-fn fonts_pbf(
-    (_req, params): (HttpRequest<AppState>, Path<(String, String)>),
-) -> Result<HttpResponse, Error> {
+fn fonts_pbf(params: web::Path<(String, String)>) -> Result<HttpResponse, Error> {
     let fontpbfs = fonts();
     let fontlist = &params.0;
     let range = &params.1;
@@ -293,7 +292,7 @@ fn fonts_pbf(
             resp = HttpResponse::Ok()
                 .content_type("application/x-protobuf")
                 // data is already gzip compressed
-                .content_encoding(ContentEncoding::Identity)
+                .encoding(ContentEncoding::Identity)
                 .header(header::CONTENT_ENCODING, "gzip")
                 .body(*pbf); // TODO: chunked response
             break;
@@ -302,43 +301,48 @@ fn fonts_pbf(
     Ok(resp)
 }
 
-fn req_baseurl(req: &HttpRequest<AppState>) -> String {
+fn req_baseurl(req: &HttpRequest) -> String {
     let conninfo = req.connection_info();
     format!("{}://{}", conninfo.scheme(), conninfo.host())
 }
 
 fn tileset_tilejson(
-    (req, tileset): (HttpRequest<AppState>, Path<String>),
-) -> FutureResult<HttpResponse, Error> {
-    let json = req
-        .state()
+    state: web::Data<AppState>,
+    tileset: web::Path<String>,
+    req: HttpRequest,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    let json = state
         .service
         .get_tilejson(&req_baseurl(&req), &tileset)
         .unwrap();
-    result(Ok(HttpResponse::Ok().json(json)))
+    ok(HttpResponse::Ok().json(json))
 }
 
 fn tileset_style_json(
-    (req, tileset): (HttpRequest<AppState>, Path<String>),
-) -> FutureResult<HttpResponse, Error> {
-    let json = req
-        .state()
+    state: web::Data<AppState>,
+    tileset: web::Path<String>,
+    req: HttpRequest,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    let json = state
         .service
         .get_stylejson(&req_baseurl(&req), &tileset)
         .unwrap();
-    result(Ok(HttpResponse::Ok().json(json)))
+    ok(HttpResponse::Ok().json(json))
 }
 
 fn tileset_metadata_json(
-    (req, tileset): (HttpRequest<AppState>, Path<String>),
-) -> FutureResult<HttpResponse, Error> {
-    let json = req.state().service.get_mbtiles_metadata(&tileset).unwrap();
-    result(Ok(HttpResponse::Ok().json(json)))
+    state: web::Data<AppState>,
+    tileset: web::Path<String>,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    let json = state.service.get_mbtiles_metadata(&tileset).unwrap();
+    ok(HttpResponse::Ok().json(json))
 }
 
 fn tile_pbf(
-    (req, params): (HttpRequest<AppState>, Path<(String, u8, u32, u32)>),
-) -> FutureResult<HttpResponse, Error> {
+    state: web::Data<AppState>,
+    params: web::Path<(String, u8, u32, u32)>,
+    req: HttpRequest,
+) -> impl Future<Item = HttpResponse, Error = Error> {
     let tileset = &params.0;
     let z = params.1;
     let x = params.2;
@@ -353,23 +357,15 @@ fn tile_pbf(
                 .and_then(|headerstr| Some(headerstr.contains("gzip")))
         })
         .unwrap_or(false);
-    let tile = req
-        .state()
-        .service
-        .tile_cached(tileset, x, y, z, gzip, None);
-    let cache_max_age = req
-        .state()
-        .config
-        .webserver
-        .cache_control_max_age
-        .unwrap_or(300);
+    let tile = state.service.tile_cached(tileset, x, y, z, gzip, None);
+    let cache_max_age = state.config.webserver.cache_control_max_age.unwrap_or(300);
 
     let resp = if let Some(tile) = tile {
         HttpResponse::Ok()
             .content_type("application/x-protobuf")
             .if_true(gzip, |r| {
                 // data is already gzip compressed
-                r.content_encoding(ContentEncoding::Identity)
+                r.encoding(ContentEncoding::Identity)
                     .header(header::CONTENT_ENCODING, "gzip");
             })
             .header(header::CACHE_CONTROL, format!("max-age={}", cache_max_age))
@@ -377,10 +373,10 @@ fn tile_pbf(
     } else {
         HttpResponse::NoContent().finish()
     };
-    result(Ok(resp))
+    ok(resp)
 }
 
-fn static_file_handler(req: &HttpRequest<AppState>) -> Result<HttpResponse, Error> {
+fn static_file_handler(req: HttpRequest) -> Result<HttpResponse, Error> {
     let key = req.path()[1..].to_string();
     let resp = if let Some(ref content) = STATIC_FILES.content(None, key) {
         HttpResponse::Ok()
@@ -401,8 +397,9 @@ struct DrilldownParams {
 }
 
 fn drilldown_handler(
-    (req, params): (HttpRequest<AppState>, Query<DrilldownParams>),
-) -> FutureResult<HttpResponse, Error> {
+    state: web::Data<AppState>,
+    params: web::Query<DrilldownParams>,
+) -> impl Future<Item = HttpResponse, Error = Error> {
     let tileset = None; // all tilesets
     let progress = false;
     let points: Vec<f64> = params
@@ -414,12 +411,11 @@ fn drilldown_handler(
             //FIXME: map_err(|_| error::ErrorInternalServerError("...")
         })
         .collect();
-    let stats =
-        req.state()
-            .service
-            .drilldown(tileset, params.minzoom, params.maxzoom, points, progress);
+    let stats = state
+        .service
+        .drilldown(tileset, params.minzoom, params.maxzoom, points, progress);
     let json = stats.as_json().unwrap();
-    result(Ok(HttpResponse::Ok().json(json)))
+    ok(HttpResponse::Ok().json(json))
 }
 
 pub fn webserver(args: ArgMatches<'static>) {
@@ -435,7 +431,7 @@ pub fn webserver(args: ArgMatches<'static>) {
     let openbrowser =
         bool::from_str(args.value_of("openbrowser").unwrap_or("true")).unwrap_or(false);
 
-    let sys = actix::System::new("t-rex");
+    let sys = actix_rt::System::new("t-rex");
 
     HttpServer::new(move || {
         let config = config_from_args(&args);
@@ -447,45 +443,39 @@ pub fn webserver(args: ArgMatches<'static>) {
         service.prepare_feature_queries();
         service.init_cache();
 
-        let mut app = App::with_state(AppState { service, config })
-            .middleware(middleware::Logger::new("%r %s %b %Dms %a"))
-            .configure(|app| {
-                Cors::for_app(app)
-                    .send_wildcard()
-                    .allowed_methods(vec![Method::GET])
-                    .resource("/index.json", |r| r.method(Method::GET).a(mvt_metadata))
-                    .resource("/fontstacks.json", |r| r.method(Method::GET).f(fontstacks))
-                    .resource("/fonts/{fonts}/{range}.pbf", |r| {
-                        r.method(Method::GET).with(fonts_pbf)
-                    })
-                    .resource("/{tileset}.style.json", |r| {
-                        r.method(Method::GET).with_async(tileset_style_json)
-                    })
-                    .resource("/{tileset}/metadata.json", |r| {
-                        r.method(Method::GET).with_async(tileset_metadata_json)
-                    })
-                    .resource("/{tileset}.json", |r| {
-                        r.method(Method::GET).with_async(tileset_tilejson)
-                    })
-                    .resource("/{tileset}/{z}/{x}/{y}.pbf", |r| {
-                        r.method(Method::GET).with_async(tile_pbf)
-                    })
-                    .register()
-            });
+        let mut app = App::new()
+            .data(AppState { service, config })
+            .wrap(middleware::Logger::new("%r %s %b %Dms %a"))
+            .wrap(Compress::default())
+            .wrap(Cors::new().send_wildcard().allowed_methods(vec!["GET"]))
+            .service(web::resource("/index.json").route(web::get().to_async(mvt_metadata)))
+            .service(web::resource("/fontstacks.json").route(web::get().to(fontstacks)))
+            .service(web::resource("/fonts/{fonts}/{range}.pbf").route(web::get().to(fonts_pbf)))
+            .service(
+                web::resource("/{tileset}.style.json")
+                    .route(web::get().to_async(tileset_style_json)),
+            )
+            .service(
+                web::resource("/{tileset}/metadata.json")
+                    .route(web::get().to_async(tileset_metadata_json)),
+            )
+            .service(web::resource("/{tileset}.json").route(web::get().to_async(tileset_tilejson)))
+            .service(
+                web::resource("/{tileset}/{z}/{x}/{y}.pbf").route(web::get().to_async(tile_pbf)),
+            );
         for static_dir in &static_dirs {
             let dir = &static_dir.dir;
-            if let Ok(handler) = fs::StaticFiles::new(dir) {
+            if std::path::Path::new(dir).is_dir() {
                 info!("Serving static files from directory '{}'", dir);
-                app = app.handler(&static_dir.path, handler);
+                app = app.service(fs::Files::new(&static_dir.path, dir));
             } else {
                 warn!("Static file directory '{}' not found", dir);
             }
         }
         if mvt_viewer {
-            app = app.resource("/drilldown", |r| {
-                r.method(Method::GET).with_async(drilldown_handler)
-            });
-            app = app.handler("/", static_file_handler);
+            app = app
+                .service(web::resource("/drilldown").route(web::get().to_async(drilldown_handler)));
+            app = app.default_service(web::to(static_file_handler));
         }
         app
     })
@@ -502,7 +492,7 @@ pub fn webserver(args: ArgMatches<'static>) {
         let _res = open::that(format!("http://{}:{}", &host, port));
     }
 
-    sys.run();
+    sys.run().expect("Couldn't run HttpServer");
 }
 
 pub fn gen_config(args: &ArgMatches) -> String {
@@ -532,7 +522,7 @@ port = 6767
 
 #[test]
 fn test_gen_config() {
-    use core::parse_config;
+    use crate::core::parse_config;
 
     let args = ArgMatches::new();
     let toml = gen_config(&args);
@@ -548,8 +538,8 @@ fn test_gen_config() {
 #[test]
 #[ignore]
 fn test_runtime_config() {
+    use crate::core::parse_config;
     use clap::App;
-    use core::parse_config;
     use std::env;
 
     if env::var("DBCONN").is_err() {
