@@ -4,7 +4,7 @@
 viewer = true
 
 [[datasource]]
-dbconn = "postgresql://pi@localhost/t_rex_tests"
+dbconn = "postgresql://t_rex:t_rex@127.0.0.1:5439/t_rex_tests"
 
 [grid.user]
 width = 256

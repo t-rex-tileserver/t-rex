@@ -21,6 +21,7 @@ use t_rex_core::mvt::tile::Tile;
 use t_rex_core::mvt::vector_tile;
 use t_rex_core::service::tileset::{Tileset, WORLD_EXTENT};
 use tile_grid::grid::{extent_to_merc, Extent, ExtentInt, Grid};
+use tile_grid::grid_iterator::GridIterator;
 
 /// Mapbox Vector Tile Service
 pub struct MvtService {
@@ -271,46 +272,47 @@ impl MvtService {
             if maxzoom.is_some() && maxzoom.unwrap() > ts_maxzoom {
                 warn!("Skipping zoom levels >{}", ts_maxzoom);
             }
-            for zoom in ts_minzoom..=ts_maxzoom {
-                let ref limit = limits[zoom as usize];
-                debug!("level {}: {:?}", zoom, limit);
-                let mut pb = self.progress_bar(&format!("Level {}: ", zoom), &limit);
-                if progress {
+            let griditer = GridIterator::new(ts_minzoom, ts_maxzoom, limits.clone());
+            let mut pb = ProgressBar::new(0);
+            let mut pb_z = !ts_minzoom;
+            for (zoom, xtile, ytile) in griditer {
+                if progress && zoom != pb_z {
+                    pb_z = zoom;
+                    let ref limit = limits[zoom as usize];
+                    debug!("level {}: {:?}", zoom, limit);
+                    pb = self.progress_bar(&format!("Level {}: ", zoom), &limit);
                     pb.tick();
                 }
-                for xtile in limit.minx..limit.maxx {
-                    for ytile in limit.miny..limit.maxy {
-                        let skip = tileno % nodes != nodeno;
-                        tileno += 1;
-                        if skip {
-                            continue;
-                        }
 
-                        // store in xyz schema. TODO: make configurable
-                        let y = self.grid.ytile_from_xyz(ytile, zoom);
-                        let path = format!("{}/{}/{}/{}.pbf", &tileset.name, zoom, xtile, y);
+                let skip = tileno % nodes != nodeno;
+                tileno += 1;
+                if skip {
+                    continue;
+                }
 
-                        if overwrite || !self.cache.exists(&path) {
-                            // Entry doesn't exist, or we're ignoring it, so generate it
-                            let mvt_tile = self.tile(
-                                &tileset.name,
-                                xtile as u32,
-                                ytile as u32,
-                                zoom,
-                                Some(&mut stats),
-                            );
-                            if mvt_tile.get_layers().len() > 0 {
-                                let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
-                                if let Err(ioerr) = self.cache.write(&path, &tilegz) {
-                                    error!("Error writing {}: {}", path, ioerr);
-                                }
-                            }
-                        }
+                // store in xyz schema. TODO: make configurable
+                let y = self.grid.ytile_from_xyz(ytile, zoom);
+                let path = format!("{}/{}/{}/{}.pbf", &tileset.name, zoom, xtile, y);
 
-                        if progress {
-                            pb.inc();
+                if overwrite || !self.cache.exists(&path) {
+                    // Entry doesn't exist, or we're ignoring it, so generate it
+                    let mvt_tile = self.tile(
+                        &tileset.name,
+                        xtile as u32,
+                        ytile as u32,
+                        zoom,
+                        Some(&mut stats),
+                    );
+                    if mvt_tile.get_layers().len() > 0 {
+                        let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
+                        if let Err(ioerr) = self.cache.write(&path, &tilegz) {
+                            error!("Error writing {}: {}", path, ioerr);
                         }
                     }
+                }
+
+                if progress {
+                    pb.inc();
                 }
             }
         }

@@ -17,7 +17,7 @@ pub struct Extent {
 }
 
 /// Min and max grid cell numbers
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct ExtentInt {
     pub minx: u32,
     pub miny: u32,

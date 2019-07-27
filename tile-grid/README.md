@@ -8,11 +8,23 @@ tile-grid is a library for map tile grid calculations.
 
 Included standard grids are Web Mercator and WGS 84.
 
+Usage
+-----
+
+```Rust
+let grid = Grid::web_mercator();
+let tile_limits = grid.tile_limits(grid.extent.clone(), 0);
+let griditer = GridIterator::new(0, 2, tile_limits);
+for (z, x, y) in griditer {
+    println!("Tile {}/{}/{}", z, x, y);
+}
+```
+
 Credits
 -------
 
-* [https://mapserver.org/mapcache/](MapCache) by Thomas Bonfort
-* [https://github.com/mapbox/mercantile](Mercantile) by Sean C. Gillies
+* [MapCache](https://mapserver.org/mapcache/) by Thomas Bonfort
+* [Mercantile](https://github.com/mapbox/mercantile) by Sean C. Gillies
 
 
 License
