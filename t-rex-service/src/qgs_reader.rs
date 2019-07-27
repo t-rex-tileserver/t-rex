@@ -3,15 +3,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::layer::Layer;
-#[cfg(not(feature = "with-gdal"))]
-use datasource::DummyDatasource as GdalDatasource;
-use datasource::PostgisInput;
-use datasource_type::{Datasource, Datasources};
+use crate::datasource_type::{Datasource, Datasources};
 use elementtree::Element;
-#[cfg(feature = "with-gdal")]
-use gdal_ds::{ogr_layer_name, GdalDatasource};
-use service::tileset::Tileset;
 use std::collections::HashMap;
 use std::env;
 #[cfg(test)]
@@ -21,8 +14,15 @@ use std::io;
 use std::io::BufReader;
 use std::path::Path;
 use std::str::FromStr;
+use t_rex_core::core::layer::Layer;
 #[cfg(test)]
 use t_rex_core::core::Config;
+#[cfg(not(feature = "with-gdal"))]
+use t_rex_core::datasource::DummyDatasource as GdalDatasource;
+use t_rex_core::datasource::PostgisInput;
+use t_rex_core::service::tileset::Tileset;
+#[cfg(feature = "with-gdal")]
+use t_rex_gdal::gdal_ds::{ogr_layer_name, GdalDatasource};
 
 pub fn get_user_name() -> String {
     env::var("LOGNAME").unwrap_or("".to_string())

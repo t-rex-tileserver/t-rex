@@ -3,18 +3,18 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::config::DatasourceCfg;
-use core::feature::{Feature, FeatureAttr, FeatureAttrValType};
-use core::geom::{self, GeometryType};
-use core::layer::Layer;
-use core::Config;
-use datasource::DatasourceInput;
 use gdal;
 use gdal::spatial_ref::{CoordTransform, SpatialRef};
 use gdal::vector::{Dataset, FieldValue, Geometry};
 use gdal_sys;
 use std::collections::BTreeMap;
 use std::path::Path;
+use t_rex_core::core::config::DatasourceCfg;
+use t_rex_core::core::feature::{Feature, FeatureAttr, FeatureAttrValType};
+use t_rex_core::core::geom::{self, GeometryType};
+use t_rex_core::core::layer::Layer;
+use t_rex_core::core::Config;
+use t_rex_core::datasource::DatasourceInput;
 use tile_grid::grid::Extent;
 use tile_grid::grid::Grid;
 

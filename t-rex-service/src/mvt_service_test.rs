@@ -3,13 +3,13 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use cache::{Nocache, Tilecache};
-use core::layer::Layer;
-use core::Config;
-use datasource::{DatasourceInput, PostgisInput};
-use datasource_type::{Datasource, Datasources};
-use mvt_service::MvtService;
-use service::tileset::Tileset;
+use crate::datasource_type::{Datasource, Datasources};
+use crate::mvt_service::MvtService;
+use t_rex_core::cache::{Nocache, Tilecache};
+use t_rex_core::core::layer::Layer;
+use t_rex_core::core::Config;
+use t_rex_core::datasource::{DatasourceInput, PostgisInput};
+use t_rex_core::service::tileset::Tileset;
 use tile_grid::grid::Extent;
 use tile_grid::grid::Grid;
 
@@ -67,7 +67,7 @@ fn test_tile_query() {
     layers: [
         Tile_Layer {
             version: Some(
-                2
+                2,
             ),
             name: Some("points"),
             features: [
@@ -81,29 +81,29 @@ fn test_tile_query() {
                         2,
                         2,
                         3,
-                        3
+                        3,
                     ],
                     field_type: Some(
-                        POINT
+                        POINT,
                     ),
                     geometry: [
                         9,
                         2504,
-                        3390
+                        3390,
                     ],
                     unknown_fields: UnknownFields {
-                        fields: None
+                        fields: None,
                     },
-                    cached_size: Cell {
-                        value: 0
-                    }
-                }
+                    cached_size: CachedSize {
+                        size: 0,
+                    },
+                },
             ],
             keys: [
                 "fid",
                 "scalerank",
                 "name",
-                "pop_max"
+                "pop_max",
             ],
             values: [
                 Tile_Value {
@@ -111,34 +111,34 @@ fn test_tile_query() {
                     float_value: None,
                     double_value: None,
                     int_value: Some(
-                        106
+                        106,
                     ),
                     uint_value: None,
                     sint_value: None,
                     bool_value: None,
                     unknown_fields: UnknownFields {
-                        fields: None
+                        fields: None,
                     },
-                    cached_size: Cell {
-                        value: 0
-                    }
+                    cached_size: CachedSize {
+                        size: 0,
+                    },
                 },
                 Tile_Value {
                     string_value: None,
                     float_value: None,
                     double_value: None,
                     int_value: Some(
-                        10
+                        10,
                     ),
                     uint_value: None,
                     sint_value: None,
                     bool_value: None,
                     unknown_fields: UnknownFields {
-                        fields: None
+                        fields: None,
                     },
-                    cached_size: Cell {
-                        value: 0
-                    }
+                    cached_size: CachedSize {
+                        size: 0,
+                    },
                 },
                 Tile_Value {
                     string_value: Some("Delemont"),
@@ -149,47 +149,47 @@ fn test_tile_query() {
                     sint_value: None,
                     bool_value: None,
                     unknown_fields: UnknownFields {
-                        fields: None
+                        fields: None,
                     },
-                    cached_size: Cell {
-                        value: 0
-                    }
+                    cached_size: CachedSize {
+                        size: 0,
+                    },
                 },
                 Tile_Value {
                     string_value: None,
                     float_value: None,
                     double_value: None,
                     int_value: Some(
-                        11315
+                        11315,
                     ),
                     uint_value: None,
                     sint_value: None,
                     bool_value: None,
                     unknown_fields: UnknownFields {
-                        fields: None
+                        fields: None,
                     },
-                    cached_size: Cell {
-                        value: 0
-                    }
-                }
+                    cached_size: CachedSize {
+                        size: 0,
+                    },
+                },
             ],
             extent: Some(
-                4096
+                4096,
             ),
             unknown_fields: UnknownFields {
-                fields: None
+                fields: None,
             },
-            cached_size: Cell {
-                value: 0
-            }
-        }
+            cached_size: CachedSize {
+                size: 0,
+            },
+        },
     ],
     unknown_fields: UnknownFields {
-        fields: None
+        fields: None,
     },
-    cached_size: Cell {
-        value: 0
-    }
+    cached_size: CachedSize {
+        size: 0,
+    },
 }"#;
     assert_eq!(
         expected.replace(",\n", "\n"),

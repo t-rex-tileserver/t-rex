@@ -3,8 +3,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::config::GridCfg;
-use core::Config;
+use crate::core::config::GridCfg;
+use crate::core::Config;
 use tile_grid::grid::{Extent, Grid, Origin, Unit};
 
 #[derive(Deserialize, Debug)]

@@ -3,9 +3,9 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::config::read_config;
-use core::config::ApplicationCfg;
-use core::config::DEFAULT_CONFIG;
+use crate::core::config::read_config;
+use crate::core::config::ApplicationCfg;
+use crate::core::config::DEFAULT_CONFIG;
 
 #[test]
 fn test_load_config() {
@@ -40,14 +40,14 @@ fn test_parse_error() {
 
 #[test]
 fn test_default_config() {
-    use core::parse_config;
+    use crate::core::parse_config;
     let config: ApplicationCfg = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
     assert_eq!(config.webserver.port, Some(6767));
 }
 
 #[test]
 fn test_envvar_expansion() {
-    use core::parse_config;
+    use crate::core::parse_config;
     use std::env;
 
     let toml = r#"
@@ -94,7 +94,7 @@ fn test_envvar_expansion() {
 
 #[test]
 fn test_missing_geometry_field() {
-    use core::parse_config;
+    use crate::core::parse_config;
 
     let toml = r#"
         [service.mvt]
@@ -125,7 +125,7 @@ fn test_missing_geometry_field() {
 
 #[test]
 fn test_datasource_compatibility() {
-    use core::parse_config;
+    use crate::core::parse_config;
     // datasource spec beforce 0.8
     let toml = r#"
         [service.mvt]

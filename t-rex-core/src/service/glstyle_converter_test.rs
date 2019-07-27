@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use service::glstyle_converter::toml_style_to_gljson;
+use crate::service::glstyle_converter::toml_style_to_gljson;
 
 #[test]
 pub fn color_stops() {
@@ -181,8 +181,8 @@ pub fn filters() {
 
 #[test]
 pub fn layer_style_from_config() {
-    use core::config::ApplicationCfg;
-    use core::read_config;
+    use crate::core::config::ApplicationCfg;
+    use crate::core::read_config;
 
     let config: ApplicationCfg = read_config("../t-rex-service/src/test/example.toml").unwrap();
 

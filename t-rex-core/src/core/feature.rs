@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::geom::GeometryType;
+use crate::core::geom::GeometryType;
 
 /// Supported feature attribute value types
 #[derive(Clone, PartialEq, Debug)]

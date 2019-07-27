@@ -3,23 +3,23 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use cache::{Cache, Tilecache};
-use core::layer::Layer;
-use core::stats::Statistics;
-use core::ApplicationCfg;
-use core::Config;
-use datasource::DatasourceInput;
-use datasource_type::Datasource;
-use datasource_type::Datasources;
-use mvt::tile::Tile;
-use mvt::vector_tile;
+use crate::datasource_type::Datasource;
+use crate::datasource_type::Datasources;
 use pbr::ProgressBar;
 use percent_encoding::percent_decode;
 use serde_json;
-use service::tileset::{Tileset, WORLD_EXTENT};
 use std::cmp;
 use std::io::{stderr, Stderr, Stdout};
 use std::time::Instant;
+use t_rex_core::cache::{Cache, Tilecache};
+use t_rex_core::core::layer::Layer;
+use t_rex_core::core::stats::Statistics;
+use t_rex_core::core::ApplicationCfg;
+use t_rex_core::core::Config;
+use t_rex_core::datasource::DatasourceInput;
+use t_rex_core::mvt::tile::Tile;
+use t_rex_core::mvt::vector_tile;
+use t_rex_core::service::tileset::{Tileset, WORLD_EXTENT};
 use tile_grid::grid::{extent_to_merc, Extent, ExtentInt, Grid};
 
 /// Mapbox Vector Tile Service

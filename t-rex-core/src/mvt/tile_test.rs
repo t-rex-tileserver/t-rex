@@ -3,16 +3,15 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::feature::FeatureAttrValType;
-use core::feature::{FeatureAttr, FeatureStruct};
-use core::geom;
-use core::geom::GeometryType;
-use core::layer::Layer;
-use core::screen;
-use mvt::geom_encoder::EncodableGeom;
-use mvt::tile::{ScreenGeom, Tile};
-use mvt::vector_tile;
-use protobuf::Message;
+use crate::core::feature::FeatureAttrValType;
+use crate::core::feature::{FeatureAttr, FeatureStruct};
+use crate::core::geom;
+use crate::core::geom::GeometryType;
+use crate::core::layer::Layer;
+use crate::core::screen;
+use crate::mvt::geom_encoder::EncodableGeom;
+use crate::mvt::tile::{ScreenGeom, Tile};
+use crate::mvt::vector_tile;
 use std::fs::File;
 use tile_grid::grid::Extent;
 
@@ -92,13 +91,13 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
     layers: [
         Tile_Layer {
             version: Some(
-                2
+                2,
             ),
             name: Some("points"),
             features: [
                 Tile_Feature {
                     id: Some(
-                        1
+                        1,
                     ),
                     tags: [
                         0,
@@ -106,53 +105,53 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
                         1,
                         0,
                         2,
-                        1
+                        1,
                     ],
                     field_type: Some(
-                        POINT
+                        POINT,
                     ),
                     geometry: [
                         9,
                         490,
-                        6262
+                        6262,
                     ],
                     unknown_fields: UnknownFields {
-                        fields: None
+                        fields: None,
                     },
-                    cached_size: Cell {
-                        value: 0
-                    }
+                    cached_size: CachedSize {
+                        size: 0,
+                    },
                 },
                 Tile_Feature {
                     id: Some(
-                        2
+                        2,
                     ),
                     tags: [
                         0,
                         2,
                         2,
-                        3
+                        3,
                     ],
                     field_type: Some(
-                        POINT
+                        POINT,
                     ),
                     geometry: [
                         9,
                         490,
-                        6262
+                        6262,
                     ],
                     unknown_fields: UnknownFields {
-                        fields: None
+                        fields: None,
                     },
-                    cached_size: Cell {
-                        value: 0
-                    }
-                }
+                    cached_size: CachedSize {
+                        size: 0,
+                    },
+                },
             ],
             keys: [
                 "hello",
                 "h",
-                "count"
+                "count",
             ],
             values: [
                 Tile_Value {
@@ -164,28 +163,28 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
                     sint_value: None,
                     bool_value: None,
                     unknown_fields: UnknownFields {
-                        fields: None
+                        fields: None,
                     },
-                    cached_size: Cell {
-                        value: 0
-                    }
+                    cached_size: CachedSize {
+                        size: 0,
+                    },
                 },
                 Tile_Value {
                     string_value: None,
                     float_value: None,
                     double_value: Some(
-                        1.23
+                        1.23,
                     ),
                     int_value: None,
                     uint_value: None,
                     sint_value: None,
                     bool_value: None,
                     unknown_fields: UnknownFields {
-                        fields: None
+                        fields: None,
                     },
-                    cached_size: Cell {
-                        value: 0
-                    }
+                    cached_size: CachedSize {
+                        size: 0,
+                    },
                 },
                 Tile_Value {
                     string_value: Some("again"),
@@ -196,47 +195,47 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
                     sint_value: None,
                     bool_value: None,
                     unknown_fields: UnknownFields {
-                        fields: None
+                        fields: None,
                     },
-                    cached_size: Cell {
-                        value: 0
-                    }
+                    cached_size: CachedSize {
+                        size: 0,
+                    },
                 },
                 Tile_Value {
                     string_value: None,
                     float_value: None,
                     double_value: None,
                     int_value: Some(
-                        2
+                        2,
                     ),
                     uint_value: None,
                     sint_value: None,
                     bool_value: None,
                     unknown_fields: UnknownFields {
-                        fields: None
+                        fields: None,
                     },
-                    cached_size: Cell {
-                        value: 0
-                    }
-                }
+                    cached_size: CachedSize {
+                        size: 0,
+                    },
+                },
             ],
             extent: Some(
-                4096
+                4096,
             ),
             unknown_fields: UnknownFields {
-                fields: None
+                fields: None,
             },
-            cached_size: Cell {
-                value: 0
-            }
-        }
+            cached_size: CachedSize {
+                size: 0,
+            },
+        },
     ],
     unknown_fields: UnknownFields {
-        fields: None
+        fields: None,
     },
-    cached_size: Cell {
-        value: 0
-    }
+    cached_size: CachedSize {
+        size: 0,
+    },
 }"#;
 
 #[test]

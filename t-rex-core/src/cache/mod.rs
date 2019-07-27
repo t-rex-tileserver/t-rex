@@ -12,8 +12,8 @@ mod filecache_test;
 pub use self::cache::Cache;
 pub use self::cache::Nocache;
 pub use self::filecache::Filecache;
-use core::ApplicationCfg;
-use core::Config;
+use crate::core::ApplicationCfg;
+use crate::core::Config;
 use std::io;
 use std::io::Read;
 

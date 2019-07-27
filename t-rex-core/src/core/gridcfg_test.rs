@@ -3,14 +3,14 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::config::GridCfg;
+use crate::core::config::GridCfg;
 
-use core::Config;
+use crate::core::Config;
 use tile_grid::grid::{Extent, Grid, Origin};
 
 #[test]
 fn test_grid_from_config() {
-    use core::parse_config;
+    use crate::core::parse_config;
 
     let toml = r#"
         #[grid]

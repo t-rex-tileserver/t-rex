@@ -9,5 +9,4 @@ mod geom_encoder_test;
 pub mod tile;
 #[cfg(test)]
 mod tile_test;
-#[cfg_attr(rustfmt, rustfmt_skip)]
-pub mod vector_tile; // protoc --rust_out . vector_tile.proto
+pub mod vector_tile;

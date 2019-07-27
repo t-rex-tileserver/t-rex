@@ -3,11 +3,11 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::feature::FeatureAttrValType;
-use core::geom::*;
-use core::layer::{Layer, LayerQuery};
-use datasource::postgis::{PostgisInput, QueryParam};
-use datasource::DatasourceInput;
+use crate::core::feature::FeatureAttrValType;
+use crate::core::geom::*;
+use crate::core::layer::{Layer, LayerQuery};
+use crate::datasource::postgis::{PostgisInput, QueryParam};
+use crate::datasource::DatasourceInput;
 use postgres;
 use postgres::Connection;
 use std::env;

@@ -3,16 +3,16 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::feature::{Feature, FeatureAttrValType};
-use core::geom;
-use core::geom::GeometryType;
-use core::layer::Layer;
-use core::screen;
+use crate::core::feature::{Feature, FeatureAttrValType};
+use crate::core::geom;
+use crate::core::geom::GeometryType;
+use crate::core::layer::Layer;
+use crate::core::screen;
+use crate::mvt::geom_encoder::{CommandSequence, EncodableGeom};
+use crate::mvt::vector_tile;
 use flate2::read::GzDecoder;
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use mvt::geom_encoder::{CommandSequence, EncodableGeom};
-use mvt::vector_tile;
 use protobuf::error::ProtobufError;
 use protobuf::stream::CodedOutputStream;
 use protobuf::{parse_from_reader, Message};

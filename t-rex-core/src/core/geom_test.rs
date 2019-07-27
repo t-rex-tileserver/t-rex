@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::geom::{GeometryType, Point};
+use crate::core::geom::{GeometryType, Point};
 use postgis::ewkb;
 
 #[cfg(test)]

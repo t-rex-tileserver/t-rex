@@ -3,10 +3,10 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use datasource::DatasourceInput;
-use mvt_service::MvtService;
+use crate::mvt_service::MvtService;
 use serde_json;
 use std::cmp;
+use t_rex_core::datasource::DatasourceInput;
 
 type JsonResult = Result<serde_json::Value, serde_json::error::Error>;
 
@@ -280,11 +280,11 @@ impl MvtService {
 }
 
 #[cfg(test)]
-use core::Config;
+use t_rex_core::core::Config;
 
 #[test]
 fn test_mvt_metadata() {
-    use core::read_config;
+    use t_rex_core::core::read_config;
 
     let config = read_config("src/test/example.toml").unwrap();
     let service = MvtService::from_config(&config).unwrap();
@@ -327,8 +327,8 @@ fn test_mvt_metadata() {
 #[test]
 #[ignore]
 fn test_tilejson() {
-    use core::read_config;
     use std::env;
+    use t_rex_core::core::read_config;
 
     match env::var("DBCONN") {
         Err(_) => panic!("DBCONN undefined"),
@@ -399,7 +399,7 @@ fn test_tilejson() {
 
 #[test]
 fn test_stylejson() {
-    use core::read_config;
+    use t_rex_core::core::read_config;
 
     let config = read_config("src/test/example.toml").unwrap();
     let service = MvtService::from_config(&config).unwrap();
@@ -447,8 +447,8 @@ fn test_stylejson() {
 #[test]
 #[ignore]
 fn test_mbtiles_metadata() {
-    use core::read_config;
     use std::env;
+    use t_rex_core::core::read_config;
 
     match env::var("DBCONN") {
         Err(_) => panic!("DBCONN undefined"),

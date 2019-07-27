@@ -4,16 +4,16 @@
 //
 
 use clap::ArgMatches;
-use core::config::{ApplicationCfg, DatasourceCfg};
-use core::feature::Feature;
-use core::layer::Layer;
-use core::Config;
-#[cfg(not(feature = "with-gdal"))]
-use datasource::DummyDatasource as GdalDatasource;
-use datasource::{DatasourceInput, PostgisInput};
-#[cfg(feature = "with-gdal")]
-use gdal_ds::GdalDatasource;
 use std::collections::HashMap;
+use t_rex_core::core::config::{ApplicationCfg, DatasourceCfg};
+use t_rex_core::core::feature::Feature;
+use t_rex_core::core::layer::Layer;
+use t_rex_core::core::Config;
+#[cfg(not(feature = "with-gdal"))]
+use t_rex_core::datasource::DummyDatasource as GdalDatasource;
+use t_rex_core::datasource::{DatasourceInput, PostgisInput};
+#[cfg(feature = "with-gdal")]
+use t_rex_gdal::gdal_ds::GdalDatasource;
 use tile_grid::grid::{Extent, Grid};
 
 pub enum Datasource {
@@ -199,7 +199,7 @@ impl Datasources {
 
 #[cfg(test)]
 fn ds_from_config(toml: &str) -> Result<Datasource, String> {
-    use core::parse_config;
+    use t_rex_core::core::parse_config;
 
     let config = parse_config(toml.to_string(), "");
     Datasource::from_config(&config?)

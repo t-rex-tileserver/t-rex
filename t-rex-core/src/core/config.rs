@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::gridcfg::ExtentCfg;
+use crate::core::gridcfg::ExtentCfg;
 use regex::Regex;
 use serde::Deserialize;
 use std;

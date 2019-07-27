@@ -3,8 +3,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::screen;
-use mvt::geom_encoder::EncodableGeom;
+use crate::core::screen;
+use crate::mvt::geom_encoder::EncodableGeom;
 
 #[test]
 fn test_geom_encoding() {

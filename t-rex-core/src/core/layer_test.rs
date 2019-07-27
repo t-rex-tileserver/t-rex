@@ -3,12 +3,12 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::config::Config;
-use core::layer::Layer;
-use service::tileset::Tileset;
+use crate::core::config::Config;
+use crate::core::layer::Layer;
+use crate::service::tileset::Tileset;
 
 fn layer_from_config(toml: &str) -> Result<Layer, String> {
-    use core::parse_config;
+    use crate::core::parse_config;
 
     let config = parse_config(toml.to_string(), "");
     Layer::from_config(&config?)
@@ -232,8 +232,8 @@ fn test_toml_decode() {
 
 #[test]
 fn test_layers_from_config() {
-    use core::config::TilesetCfg;
-    use core::parse_config;
+    use crate::core::config::TilesetCfg;
+    use crate::core::parse_config;
 
     let toml = r#"
         #[[tileset]]

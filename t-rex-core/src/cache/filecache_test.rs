@@ -3,8 +3,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use cache::cache::Cache;
-use cache::filecache::Filecache;
+use crate::cache::cache::Cache;
+use crate::cache::filecache::Filecache;
 use std::fs;
 use std::path::Path;
 

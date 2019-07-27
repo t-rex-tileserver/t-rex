@@ -3,9 +3,9 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::config::Config;
-use core::config::{TilesetCacheCfg, TilesetCfg};
-use core::layer::Layer;
+use crate::core::config::Config;
+use crate::core::config::{TilesetCacheCfg, TilesetCfg};
+use crate::core::layer::Layer;
 use tile_grid::grid::Extent;
 
 #[derive(Debug)]

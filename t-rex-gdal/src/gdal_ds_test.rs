@@ -3,13 +3,13 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::feature::FeatureAttrValType;
-use core::layer::Layer;
-use datasource::DatasourceInput;
+use crate::gdal_ds::GdalDatasource;
 use gdal;
 use gdal::vector::Dataset;
-use gdal_ds::GdalDatasource;
 use std::path::Path;
+use t_rex_core::core::feature::FeatureAttrValType;
+use t_rex_core::core::layer::Layer;
+use t_rex_core::datasource::DatasourceInput;
 use tile_grid::grid::Extent;
 use tile_grid::grid::Grid;
 

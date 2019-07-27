@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use cache::cache::Cache;
+use crate::cache::cache::Cache;
 use std::fs::{self, File};
 use std::io::{self, Read, Write};
 use std::path::Path;
@@ -40,8 +40,8 @@ impl Cache for Filecache {
         let fullpath = format!("{}/{}", self.basepath, path);
         debug!("Filecache.write {}", fullpath);
         let p = Path::new(&fullpath);
-        try!(fs::create_dir_all(p.parent().unwrap()));
-        let mut f = try!(File::create(&fullpath));
+        fs::create_dir_all(p.parent().unwrap())?;
+        let mut f = File::create(&fullpath)?;
         f.write_all(obj)
     }
 

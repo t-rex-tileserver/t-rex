@@ -3,13 +3,12 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::config::DatasourceCfg;
-use core::feature::{Feature, FeatureAttr, FeatureAttrValType};
-use core::geom::*;
-use core::layer::Layer;
-use core::Config;
-use datasource::DatasourceInput;
-use env;
+use crate::core::config::DatasourceCfg;
+use crate::core::feature::{Feature, FeatureAttr, FeatureAttrValType};
+use crate::core::geom::*;
+use crate::core::layer::Layer;
+use crate::core::Config;
+use crate::datasource::DatasourceInput;
 use fallible_iterator::FallibleIterator;
 use postgres::rows::Row;
 use postgres::types::{self, FromSql, ToSql, Type};
@@ -18,6 +17,7 @@ use r2d2;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use std;
 use std::collections::BTreeMap;
+use std::env;
 use std::error::Error;
 use tile_grid::grid::Extent;
 use tile_grid::grid::Grid;

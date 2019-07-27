@@ -3,10 +3,10 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::config::DatasourceCfg;
-use core::feature::Feature;
-use core::layer::Layer;
-use core::Config;
+use crate::core::config::DatasourceCfg;
+use crate::core::feature::Feature;
+use crate::core::layer::Layer;
+use crate::core::Config;
 use tile_grid::grid::Extent;
 use tile_grid::grid::Grid;
 

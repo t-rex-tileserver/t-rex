@@ -3,9 +3,9 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::config::{self, LayerCfg};
-use core::Config;
-use service::glstyle_converter::toml_style_to_gljson;
+use crate::core::config::{self, LayerCfg};
+use crate::core::Config;
+use crate::service::glstyle_converter::toml_style_to_gljson;
 use std::collections::HashMap;
 
 #[derive(Debug)]
