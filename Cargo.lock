@@ -1947,7 +1947,7 @@ dependencies = [
  "t-rex-gdal 0.9.9",
  "t-rex-service 0.9.9",
  "t-rex-webserver 0.9.9",
- "tile-grid 0.1.0",
+ "tile-grid 0.1.1",
  "time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1970,7 +1970,7 @@ dependencies = [
  "serde_derive 1.0.97 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "streaming-stats 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "tile-grid 0.1.0",
+ "tile-grid 0.1.1",
  "toml 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1982,7 +1982,7 @@ dependencies = [
  "gdal-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "t-rex-core 0.9.9",
- "tile-grid 0.1.0",
+ "tile-grid 0.1.1",
 ]
 
 [[package]]
@@ -1999,7 +1999,7 @@ dependencies = [
  "serde_json 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "t-rex-core 0.9.9",
  "t-rex-gdal 0.9.9",
- "tile-grid 0.1.0",
+ "tile-grid 0.1.1",
 ]
 
 [[package]]
@@ -2019,7 +2019,7 @@ dependencies = [
  "serde_derive 1.0.97 (registry+https://github.com/rust-lang/crates.io-index)",
  "t-rex-core 0.9.9",
  "t-rex-service 0.9.9",
- "tile-grid 0.1.0",
+ "tile-grid 0.1.1",
 ]
 
 [[package]]
@@ -2080,7 +2080,7 @@ dependencies = [
 
 [[package]]
 name = "tile-grid"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "time"
