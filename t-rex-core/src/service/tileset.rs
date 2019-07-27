@@ -5,8 +5,8 @@
 
 use core::config::Config;
 use core::config::{TilesetCacheCfg, TilesetCfg};
-use core::grid::Extent;
 use core::layer::Layer;
+use tile_grid::grid::Extent;
 
 #[derive(Debug)]
 pub struct CacheLimits {
@@ -104,12 +104,16 @@ impl<'a> Config<'a, TilesetCfg> for Tileset {
             },
             None => None,
         };
+        let extent = match &tileset_cfg.extent {
+            Some(cfg) => Some(Extent::from(cfg)),
+            None => None,
+        };
         Ok(Tileset {
             name: tileset_cfg.name.clone(),
             minzoom: tileset_cfg.minzoom.clone(),
             maxzoom: tileset_cfg.maxzoom.clone(),
             attribution: tileset_cfg.attribution.clone(),
-            extent: tileset_cfg.extent.clone(),
+            extent,
             center: tileset_cfg.center.clone(),
             start_zoom: tileset_cfg.start_zoom.clone(),
             layers: layers,

@@ -3,15 +3,12 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::config::GridCfg;
-use core::enum_serializer::EnumString;
-use core::Config;
-use serde;
-use serde::de::{Deserialize, Deserializer};
-use std::f64::consts;
-use std::fmt;
+//!Tile grids
 
-#[derive(PartialEq, Deserialize, Clone, Debug)]
+use std::f64::consts;
+
+/// Geographic extent
+#[derive(PartialEq, Clone, Debug)]
 pub struct Extent {
     pub minx: f64,
     pub miny: f64,
@@ -31,30 +28,14 @@ pub struct ExtentInt {
 // Max grid cell numbers
 type CellIndex = (u32, u32);
 
+/// Grid origin
 #[derive(PartialEq, Debug)]
 pub enum Origin {
     TopLeft,
     BottomLeft, //TopRight, BottomRight
 }
 
-impl EnumString<Origin> for Origin {
-    fn from_str(val: &str) -> Result<Origin, String> {
-        match val {
-            "TopLeft" => Ok(Origin::TopLeft),
-            "BottomLeft" => Ok(Origin::BottomLeft),
-            _ => Err(format!("Unexpected enum value '{}'", val)),
-        }
-    }
-    fn as_str(&self) -> &'static str {
-        match *self {
-            Origin::TopLeft => "TopLeft",
-            Origin::BottomLeft => "BottomLeft",
-        }
-    }
-}
-
-enum_string_serialization!(Origin OriginVisitor);
-
+/// Grid units
 #[derive(PartialEq, Debug)]
 pub enum Unit {
     Meters,
@@ -62,31 +43,12 @@ pub enum Unit {
     Feet,
 }
 
-impl EnumString<Unit> for Unit {
-    fn from_str(val: &str) -> Result<Unit, String> {
-        match &val.to_lowercase() as &str {
-            "m" => Ok(Unit::Meters),
-            "dd" => Ok(Unit::Degrees),
-            "ft" => Ok(Unit::Feet),
-            _ => Err(format!("Unexpected enum value '{}'", val)),
-        }
-    }
-    fn as_str(&self) -> &'static str {
-        match *self {
-            Unit::Meters => "m",
-            Unit::Degrees => "dd",
-            Unit::Feet => "ft",
-        }
-    }
-}
-
-enum_string_serialization!(Unit UnitVisitor);
-
-// Credits: MapCache by Thomas Bonfort (http://mapserver.org/mapcache/)
+/// Tile grid
 #[derive(Debug)]
 pub struct Grid {
-    /// The width and height of an individual tile, in pixels.
+    /// The width of an individual tile, in pixels.
     width: u16,
+    /// The height of an individual tile, in pixels.
     height: u16,
     /// The geographical extent covered by the grid, in ground units (e.g. meters, degrees, feet, etc.).
     /// Must be specified as 4 floating point numbers ordered as minx, miny, maxx, maxy.
@@ -114,18 +76,18 @@ pub struct Grid {
 impl Grid {
     /// WGS84 grid
     pub fn wgs84() -> Grid {
-        let mut grid = Grid {
-            width: 256,
-            height: 256,
-            extent: Extent {
+        Grid::new(
+            256,
+            256,
+            Extent {
                 minx: -180.0,
                 miny: -90.0,
                 maxx: 180.0,
                 maxy: 90.0,
             },
-            srid: 4326,
-            units: Unit::Degrees,
-            resolutions: vec![
+            4326,
+            Unit::Degrees,
+            vec![
                 0.703125000000000,
                 0.351562500000000,
                 0.175781250000000,
@@ -145,28 +107,25 @@ impl Grid {
                 1.07288360595703e-5,
                 5.36441802978516e-6,
             ],
-            level_max: Vec::new(),
-            origin: Origin::BottomLeft,
-        };
-        grid.level_max = grid.level_max();
-        grid
+            Origin::BottomLeft,
+        )
     }
 
     /// Web Mercator grid (Google maps compatible)
     pub fn web_mercator() -> Grid {
-        let mut grid = Grid {
-            width: 256,
-            height: 256,
-            extent: Extent {
+        Grid::new(
+            256,
+            256,
+            Extent {
                 minx: -20037508.3427892480,
                 miny: -20037508.3427892480,
                 maxx: 20037508.3427892480,
                 maxy: 20037508.3427892480,
             },
-            srid: 3857,
-            units: Unit::Meters,
+            3857,
+            Unit::Meters,
             // for calculation see fn test_resolutions
-            resolutions: vec![
+            vec![
                 156543.0339280410,
                 78271.5169640205,
                 39135.75848201025,
@@ -191,13 +150,32 @@ impl Grid {
                 0.07464553543474245,
                 0.037322767717371225,
             ],
+            Origin::BottomLeft,
+        )
+    }
+
+    pub fn new(
+        width: u16,
+        height: u16,
+        extent: Extent,
+        srid: i32,
+        units: Unit,
+        resolutions: Vec<f64>,
+        origin: Origin,
+    ) -> Grid {
+        let mut grid = Grid {
+            width,
+            height,
+            extent,
+            srid,
+            units,
+            resolutions,
+            origin,
             level_max: Vec::new(),
-            origin: Origin::BottomLeft,
         };
         grid.level_max = grid.level_max();
         grid
     }
-
     pub fn nlevels(&self) -> u8 {
         self.resolutions.len() as u8
     }
@@ -347,39 +325,5 @@ pub fn extent_to_merc(extent: &Extent) -> Extent {
         miny,
         maxx,
         maxy,
-    }
-}
-
-impl<'a> Config<'a, GridCfg> for Grid {
-    fn from_config(grid_cfg: &GridCfg) -> Result<Self, String> {
-        if let Some(ref gridname) = grid_cfg.predefined {
-            match gridname.as_str() {
-                "wgs84" => Ok(Grid::wgs84()),
-                "web_mercator" => Ok(Grid::web_mercator()),
-                _ => Err(format!("Unkown grid '{}'", gridname)),
-            }
-        } else if let Some(ref usergrid) = grid_cfg.user {
-            let mut grid = Grid {
-                width: usergrid.width,
-                height: usergrid.height,
-                extent: usergrid.extent.clone(),
-                srid: usergrid.srid,
-                units: Unit::from_str(&usergrid.units)?,
-                resolutions: usergrid.resolutions.clone(),
-                level_max: Vec::new(),
-                origin: Origin::from_str(&usergrid.origin)?,
-            };
-            grid.level_max = grid.level_max();
-            Ok(grid)
-        } else {
-            Err("Invalid grid definition".to_string())
-        }
-    }
-    fn gen_config() -> String {
-        let toml = r#"
-[grid]
-predefined = "web_mercator"
-"#;
-        toml.to_string()
     }
 }

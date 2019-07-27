@@ -20,6 +20,7 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 extern crate stats;
+extern crate tile_grid;
 extern crate toml;
 
 pub mod cache;

@@ -6,7 +6,6 @@
 use crate::cache::{Filecache, Nocache, Tilecache};
 use crate::core::config::ApplicationCfg;
 use crate::core::config::DEFAULT_CONFIG;
-use crate::core::grid::Grid;
 use crate::core::layer::Layer;
 use crate::core::{parse_config, read_config, Config};
 use crate::datasource::DatasourceInput;
@@ -14,6 +13,7 @@ use crate::datasource_type::Datasources;
 use crate::mvt_service::MvtService;
 use crate::read_qgs;
 use crate::service::tileset::Tileset;
+use crate::tile_grid::grid::Grid;
 
 use actix_cors::Cors;
 use actix_files as fs;

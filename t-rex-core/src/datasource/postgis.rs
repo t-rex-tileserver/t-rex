@@ -6,8 +6,6 @@
 use core::config::DatasourceCfg;
 use core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use core::geom::*;
-use core::grid::Extent;
-use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
 use datasource::DatasourceInput;
@@ -21,6 +19,8 @@ use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use std;
 use std::collections::BTreeMap;
 use std::error::Error;
+use tile_grid::grid::Extent;
+use tile_grid::grid::Grid;
 
 impl GeometryType {
     /// Convert returned geometry to core::geom::GeometryType based on GeometryType name

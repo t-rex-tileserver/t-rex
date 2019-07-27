@@ -4,7 +4,6 @@
 //
 
 use cache::{Cache, Tilecache};
-use core::grid::{extent_to_merc, Extent, ExtentInt, Grid};
 use core::layer::Layer;
 use core::stats::Statistics;
 use core::ApplicationCfg;
@@ -21,6 +20,7 @@ use service::tileset::{Tileset, WORLD_EXTENT};
 use std::cmp;
 use std::io::{stderr, Stderr, Stdout};
 use std::time::Instant;
+use tile_grid::grid::{extent_to_merc, Extent, ExtentInt, Grid};
 
 /// Mapbox Vector Tile Service
 pub struct MvtService {

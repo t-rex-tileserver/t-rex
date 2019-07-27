@@ -18,6 +18,7 @@ extern crate serde_json;
 extern crate t_rex_core;
 #[cfg(feature = "with-gdal")]
 extern crate t_rex_gdal;
+extern crate tile_grid;
 
 use t_rex_core::cache;
 use t_rex_core::core;

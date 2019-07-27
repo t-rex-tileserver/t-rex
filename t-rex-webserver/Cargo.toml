@@ -26,6 +26,9 @@ lazy_static = "1.0"
 serde = "1.0"
 serde_derive = "1.0"
 
+[dependencies.tile-grid]
+path = "../tile-grid"
+
 [dependencies.t-rex-core]
 path = "../t-rex-core"
 

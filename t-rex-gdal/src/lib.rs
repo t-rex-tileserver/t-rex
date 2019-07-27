@@ -3,6 +3,7 @@ extern crate gdal_sys;
 #[macro_use]
 extern crate log;
 extern crate t_rex_core;
+extern crate tile_grid;
 
 use t_rex_core::core;
 use t_rex_core::datasource;

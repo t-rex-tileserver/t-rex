@@ -5,14 +5,14 @@
 
 use core::feature::FeatureAttrValType;
 use core::geom::*;
-use core::grid::Extent;
-use core::grid::Grid;
 use core::layer::{Layer, LayerQuery};
 use datasource::postgis::{PostgisInput, QueryParam};
 use datasource::DatasourceInput;
 use postgres;
 use postgres::Connection;
 use std::env;
+use tile_grid::grid::Extent;
+use tile_grid::grid::Grid;
 
 #[test]
 #[ignore]

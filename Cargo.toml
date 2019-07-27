@@ -14,6 +14,7 @@ path = "src/main.rs"
 doctest = false
 
 [dependencies]
+tile-grid = { path = "tile-grid" }
 t-rex-core = { path = "t-rex-core" }
 t-rex-gdal = { path = "t-rex-gdal", optional = true }
 t-rex-service = { path = "t-rex-service" }

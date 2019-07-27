@@ -4,11 +4,10 @@
 //
 
 #[macro_use]
-mod enum_serializer;
 pub mod config;
 pub mod feature;
 pub mod geom;
-pub mod grid;
+mod gridcfg;
 pub mod layer;
 pub mod screen;
 pub mod stats;
@@ -20,6 +19,6 @@ mod config_test;
 #[cfg(test)]
 mod geom_test;
 #[cfg(test)]
-mod grid_test;
+mod gridcfg_test;
 #[cfg(test)]
 mod layer_test;

@@ -6,7 +6,6 @@
 use core::feature::{Feature, FeatureAttrValType};
 use core::geom;
 use core::geom::GeometryType;
-use core::grid::Extent;
 use core::layer::Layer;
 use core::screen;
 use flate2::read::GzDecoder;
@@ -19,6 +18,7 @@ use protobuf::stream::CodedOutputStream;
 use protobuf::{parse_from_reader, Message};
 use std::fs::File;
 use std::io::{BufReader, Read, Write};
+use tile_grid::grid::Extent;
 
 pub struct Tile<'a> {
     pub mvt_tile: vector_tile::Tile,

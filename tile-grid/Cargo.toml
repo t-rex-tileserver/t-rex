@@ -1,0 +1,13 @@
+[package]
+name = "tile-grid"
+version = "0.1.0"
+authors = ["Pirmin Kalberer <pka@sourcepole.com>"]
+edition = "2018"
+description = "Library for map tile grid calculations."
+homepage = "https://github.com/t-rex-tileserver/t-rex"
+repository = "https://github.com/t-rex-tileserver/t-rex"
+readme = "README.md"
+license = "MIT"
+keywords = ["geo", "vector-tiles", "wmts", "mercator", "wgs84"]
+
+workspace = ".."

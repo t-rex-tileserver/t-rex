@@ -5,10 +5,10 @@
 
 use core::config::DatasourceCfg;
 use core::feature::Feature;
-use core::grid::Extent;
-use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
+use tile_grid::grid::Extent;
+use tile_grid::grid::Grid;
 
 pub trait DatasourceInput {
     /// New instance with connected pool

@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use core::grid::Extent;
+use core::gridcfg::ExtentCfg;
 use regex::Regex;
 use serde::Deserialize;
 use std;
@@ -74,7 +74,7 @@ pub struct UserGridCfg {
     /// The (minx,miny) point defines the origin of the grid, i.e. the pixel at the bottom left of the
     /// bottom-left most tile is always placed on the (minx,miny) geographical point.
     /// The (maxx,maxy) point is used to determine how many tiles there are for each zoom level.
-    pub extent: Extent,
+    pub extent: ExtentCfg,
     /// Spatial reference system (PostGIS SRID).
     pub srid: i32,
     /// Grid units (m: meters, dd: decimal degrees, ft: feet)
@@ -94,7 +94,7 @@ pub struct UserGridCfg {
 #[derive(Deserialize, Debug)]
 pub struct TilesetCfg {
     pub name: String,
-    pub extent: Option<Extent>,
+    pub extent: Option<ExtentCfg>,
     pub minzoom: Option<u8>,
     pub maxzoom: Option<u8>,
     pub center: Option<(f64, f64)>,

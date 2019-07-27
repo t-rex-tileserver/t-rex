@@ -6,7 +6,6 @@
 use clap::ArgMatches;
 use core::config::{ApplicationCfg, DatasourceCfg};
 use core::feature::Feature;
-use core::grid::{Extent, Grid};
 use core::layer::Layer;
 use core::Config;
 #[cfg(not(feature = "with-gdal"))]
@@ -15,6 +14,7 @@ use datasource::{DatasourceInput, PostgisInput};
 #[cfg(feature = "with-gdal")]
 use gdal_ds::GdalDatasource;
 use std::collections::HashMap;
+use tile_grid::grid::{Extent, Grid};
 
 pub enum Datasource {
     Postgis(PostgisInput),

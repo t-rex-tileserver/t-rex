@@ -6,8 +6,6 @@
 use core::config::DatasourceCfg;
 use core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use core::geom::{self, GeometryType};
-use core::grid::Extent;
-use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
 use datasource::DatasourceInput;
@@ -17,6 +15,8 @@ use gdal::vector::{Dataset, FieldValue, Geometry};
 use gdal_sys;
 use std::collections::BTreeMap;
 use std::path::Path;
+use tile_grid::grid::Extent;
+use tile_grid::grid::Grid;
 
 pub struct GdalDatasource {
     pub path: String,

@@ -9,6 +9,7 @@ extern crate log;
 extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
+extern crate tile_grid;
 
 use t_rex_core::{cache, core, datasource, service};
 use t_rex_service::{datasource_type, mvt_service, read_qgs};

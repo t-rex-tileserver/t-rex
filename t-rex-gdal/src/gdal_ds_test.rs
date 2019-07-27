@@ -4,14 +4,14 @@
 //
 
 use core::feature::FeatureAttrValType;
-use core::grid::Extent;
-use core::grid::Grid;
 use core::layer::Layer;
 use datasource::DatasourceInput;
 use gdal;
 use gdal::vector::Dataset;
 use gdal_ds::GdalDatasource;
 use std::path::Path;
+use tile_grid::grid::Extent;
+use tile_grid::grid::Grid;
 
 fn gdal_version() -> i32 {
     gdal::version::version_info("VERSION_NUM")

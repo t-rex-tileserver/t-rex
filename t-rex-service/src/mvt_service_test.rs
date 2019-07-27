@@ -4,14 +4,14 @@
 //
 
 use cache::{Nocache, Tilecache};
-use core::grid::Extent;
-use core::grid::Grid;
 use core::layer::Layer;
 use core::Config;
 use datasource::{DatasourceInput, PostgisInput};
 use datasource_type::{Datasource, Datasources};
 use mvt_service::MvtService;
 use service::tileset::Tileset;
+use tile_grid::grid::Extent;
+use tile_grid::grid::Grid;
 
 fn mvt_service() -> MvtService {
     use std::env;

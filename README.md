@@ -113,12 +113,6 @@ Creating test database locally:
     make createdb loaddata
 
 
-Roadmap
--------
-
-[See Github board](https://github.com/t-rex-tileserver/t-rex/projects/1)
-
-
 License
 -------
 

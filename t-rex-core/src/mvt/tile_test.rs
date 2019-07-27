@@ -7,7 +7,6 @@ use core::feature::FeatureAttrValType;
 use core::feature::{FeatureAttr, FeatureStruct};
 use core::geom;
 use core::geom::GeometryType;
-use core::grid::Extent;
 use core::layer::Layer;
 use core::screen;
 use mvt::geom_encoder::EncodableGeom;
@@ -15,6 +14,7 @@ use mvt::tile::{ScreenGeom, Tile};
 use mvt::vector_tile;
 use protobuf::Message;
 use std::fs::File;
+use tile_grid::grid::Extent;
 
 #[test]
 fn test_point_to_screen_coords() {

@@ -16,5 +16,8 @@ gdal = "0.4"
 gdal-sys = "0.2"
 log = "0.4"
 
+[dependencies.tile-grid]
+path = "../tile-grid"
+
 [dependencies.t-rex-core]
 path = "../t-rex-core"
