@@ -16,7 +16,7 @@ use log::Record;
 use std::env;
 use std::io::Write;
 use t_rex_webserver as webserver;
-use tile_grid::grid::Extent;
+use tile_grid::Extent;
 
 fn init_logger(args: &ArgMatches<'_>) {
     let mut builder = Builder::new();

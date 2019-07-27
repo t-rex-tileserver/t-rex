@@ -6,7 +6,7 @@
 use crate::core::config::GridCfg;
 
 use crate::core::Config;
-use tile_grid::grid::{Extent, Grid, Origin};
+use tile_grid::{Extent, Grid, Origin};
 
 #[test]
 fn test_grid_from_config() {

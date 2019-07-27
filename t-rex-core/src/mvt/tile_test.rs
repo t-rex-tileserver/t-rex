@@ -13,7 +13,7 @@ use crate::mvt::geom_encoder::EncodableGeom;
 use crate::mvt::tile::{ScreenGeom, Tile};
 use crate::mvt::vector_tile;
 use std::fs::File;
-use tile_grid::grid::Extent;
+use tile_grid::Extent;
 
 #[test]
 fn test_point_to_screen_coords() {

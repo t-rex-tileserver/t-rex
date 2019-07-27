@@ -13,7 +13,7 @@ use crate::datasource_type::Datasources;
 use crate::mvt_service::MvtService;
 use crate::read_qgs;
 use crate::service::tileset::Tileset;
-use crate::tile_grid::grid::Grid;
+use crate::tile_grid::Grid;
 
 use actix_cors::Cors;
 use actix_files as fs;

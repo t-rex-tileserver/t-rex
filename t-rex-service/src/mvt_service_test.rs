@@ -10,8 +10,8 @@ use t_rex_core::core::layer::Layer;
 use t_rex_core::core::Config;
 use t_rex_core::datasource::{DatasourceInput, PostgisInput};
 use t_rex_core::service::tileset::Tileset;
-use tile_grid::grid::Extent;
-use tile_grid::grid::Grid;
+use tile_grid::Extent;
+use tile_grid::Grid;
 
 fn mvt_service() -> MvtService {
     use std::env;

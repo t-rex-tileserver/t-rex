@@ -6,7 +6,7 @@
 use crate::core::config::Config;
 use crate::core::config::{TilesetCacheCfg, TilesetCfg};
 use crate::core::layer::Layer;
-use tile_grid::grid::Extent;
+use tile_grid::Extent;
 
 #[derive(Debug)]
 pub struct CacheLimits {

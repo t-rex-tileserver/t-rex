@@ -10,7 +10,7 @@
 //! ## Predefined grids
 //!
 //! ```rust
-//! use tile_grid::grid::{Extent, Grid};
+//! use tile_grid::{Extent, Grid};
 //!
 //! let grid = Grid::wgs84();
 //! assert_eq!(
@@ -27,8 +27,7 @@
 //! ## Grid iterators
 //!
 //! ```rust
-//! use tile_grid::grid::Grid;
-//! use tile_grid::grid_iterator::GridIterator;
+//! use tile_grid::{Grid, GridIterator};
 //!
 //! let grid = Grid::web_mercator();
 //! let tile_limits = grid.tile_limits(grid.extent.clone(), 0);
@@ -42,7 +41,7 @@
 //! ## Custom grids
 //!
 //! ```rust
-//! use tile_grid::grid::{Extent, Grid, Unit, Origin};
+//! use tile_grid::{Extent, Grid, Unit, Origin};
 //!
 //! let grid = Grid::new(
 //!     256,
@@ -73,7 +72,10 @@
 //! );
 //! ```
 
-pub mod grid;
-pub mod grid_iterator;
+mod grid;
+mod grid_iterator;
 #[cfg(test)]
 mod grid_test;
+
+pub use grid::{extent_to_merc, Extent, ExtentInt, Grid, Origin, Unit};
+pub use grid_iterator::GridIterator;

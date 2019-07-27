@@ -18,7 +18,7 @@ use protobuf::stream::CodedOutputStream;
 use protobuf::{parse_from_reader, Message};
 use std::fs::File;
 use std::io::{BufReader, Read, Write};
-use tile_grid::grid::Extent;
+use tile_grid::Extent;
 
 pub struct Tile<'a> {
     pub mvt_tile: vector_tile::Tile,

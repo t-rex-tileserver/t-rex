@@ -20,8 +20,8 @@ use t_rex_core::datasource::DatasourceInput;
 use t_rex_core::mvt::tile::Tile;
 use t_rex_core::mvt::vector_tile;
 use t_rex_core::service::tileset::{Tileset, WORLD_EXTENT};
-use tile_grid::grid::{extent_to_merc, Extent, ExtentInt, Grid};
-use tile_grid::grid_iterator::GridIterator;
+use tile_grid::GridIterator;
+use tile_grid::{extent_to_merc, Extent, ExtentInt, Grid};
 
 /// Mapbox Vector Tile Service
 pub struct MvtService {

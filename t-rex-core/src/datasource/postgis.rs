@@ -19,8 +19,8 @@ use std;
 use std::collections::BTreeMap;
 use std::env;
 use std::error::Error;
-use tile_grid::grid::Extent;
-use tile_grid::grid::Grid;
+use tile_grid::Extent;
+use tile_grid::Grid;
 
 impl GeometryType {
     /// Convert returned geometry to core::geom::GeometryType based on GeometryType name

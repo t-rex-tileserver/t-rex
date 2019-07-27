@@ -21,7 +21,7 @@ tile_grid = "0"
 ### Predefined grids
 
 ```rust
-use tile_grid::grid::{Extent, Grid};
+use tile_grid::{Extent, Grid};
 
 let grid = Grid::wgs84();
 assert_eq!(
@@ -38,8 +38,7 @@ assert_eq!(
 ### Grid iterators
 
 ```rust
-use tile_grid::grid::Grid;
-use tile_grid::grid_iterator::GridIterator;
+use tile_grid::{Grid, GridIterator};
 
 let grid = Grid::web_mercator();
 let tile_limits = grid.tile_limits(grid.extent.clone(), 0);
@@ -52,7 +51,7 @@ for (z, x, y) in griditer {
 ### Custom grids
 
 ```rust
-use tile_grid::grid::{Extent, Grid, Unit, Origin};
+use tile_grid::{Extent, Grid, Unit, Origin};
 
 let grid = Grid::new(
     256,

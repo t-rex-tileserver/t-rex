@@ -7,8 +7,8 @@ use crate::core::config::DatasourceCfg;
 use crate::core::feature::Feature;
 use crate::core::layer::Layer;
 use crate::core::Config;
-use tile_grid::grid::Extent;
-use tile_grid::grid::Grid;
+use tile_grid::Extent;
+use tile_grid::Grid;
 
 pub trait DatasourceInput {
     /// New instance with connected pool

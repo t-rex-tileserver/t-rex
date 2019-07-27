@@ -14,7 +14,7 @@ use t_rex_core::datasource::DummyDatasource as GdalDatasource;
 use t_rex_core::datasource::{DatasourceInput, PostgisInput};
 #[cfg(feature = "with-gdal")]
 use t_rex_gdal::gdal_ds::GdalDatasource;
-use tile_grid::grid::{Extent, Grid};
+use tile_grid::{Extent, Grid};
 
 pub enum Datasource {
     Postgis(PostgisInput),

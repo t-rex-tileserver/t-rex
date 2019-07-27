@@ -15,8 +15,8 @@ use t_rex_core::core::geom::{self, GeometryType};
 use t_rex_core::core::layer::Layer;
 use t_rex_core::core::Config;
 use t_rex_core::datasource::DatasourceInput;
-use tile_grid::grid::Extent;
-use tile_grid::grid::Grid;
+use tile_grid::Extent;
+use tile_grid::Grid;
 
 pub struct GdalDatasource {
     pub path: String,

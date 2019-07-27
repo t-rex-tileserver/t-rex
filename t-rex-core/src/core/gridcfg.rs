@@ -5,7 +5,7 @@
 
 use crate::core::config::GridCfg;
 use crate::core::Config;
-use tile_grid::grid::{Extent, Grid, Origin, Unit};
+use tile_grid::{Extent, Grid, Origin, Unit};
 
 #[derive(Deserialize, Debug)]
 pub struct ExtentCfg {

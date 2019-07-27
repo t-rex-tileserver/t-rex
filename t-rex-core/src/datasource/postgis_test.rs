@@ -11,8 +11,8 @@ use crate::datasource::DatasourceInput;
 use postgres;
 use postgres::Connection;
 use std::env;
-use tile_grid::grid::Extent;
-use tile_grid::grid::Grid;
+use tile_grid::Extent;
+use tile_grid::Grid;
 
 #[test]
 #[ignore]

@@ -10,8 +10,8 @@ use std::path::Path;
 use t_rex_core::core::feature::FeatureAttrValType;
 use t_rex_core::core::layer::Layer;
 use t_rex_core::datasource::DatasourceInput;
-use tile_grid::grid::Extent;
-use tile_grid::grid::Grid;
+use tile_grid::Extent;
+use tile_grid::Grid;
 
 fn gdal_version() -> i32 {
     gdal::version::version_info("VERSION_NUM")
