@@ -3,12 +3,12 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use crate::datasource_type::{Datasource, Datasources};
+use crate::datasources::{Datasource, Datasources};
 use crate::mvt_service::MvtService;
 use t_rex_core::cache::{Nocache, Tilecache};
 use t_rex_core::core::layer::Layer;
 use t_rex_core::core::Config;
-use t_rex_core::datasource::{DatasourceInput, PostgisDatasource};
+use t_rex_core::datasource::{DatasourceType, PostgisDatasource};
 use t_rex_core::service::tileset::Tileset;
 use tile_grid::Extent;
 use tile_grid::Grid;

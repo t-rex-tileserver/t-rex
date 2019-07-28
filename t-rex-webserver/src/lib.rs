@@ -12,7 +12,7 @@ extern crate serde_derive;
 extern crate tile_grid;
 
 use t_rex_core::{cache, core, datasource, service};
-use t_rex_service::{datasource_type, mvt_service, read_qgs};
+use t_rex_service::{datasources, mvt_service, read_qgs};
 
 mod runtime_config;
 mod server;

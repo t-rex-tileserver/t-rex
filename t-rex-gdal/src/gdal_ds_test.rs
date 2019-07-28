@@ -9,7 +9,7 @@ use gdal::vector::Dataset;
 use std::path::Path;
 use t_rex_core::core::feature::FeatureAttrValType;
 use t_rex_core::core::layer::Layer;
-use t_rex_core::datasource::DatasourceInput;
+use t_rex_core::datasource::DatasourceType;
 use tile_grid::Extent;
 use tile_grid::Grid;
 

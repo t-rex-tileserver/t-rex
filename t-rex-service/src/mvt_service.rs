@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use crate::datasource_type::{Datasource, Datasources};
+use crate::datasources::{Datasource, Datasources};
 use pbr::ProgressBar;
 use percent_encoding::percent_decode;
 use serde_json;
@@ -14,7 +14,7 @@ use t_rex_core::cache::{Cache, Tilecache};
 use t_rex_core::core::layer::Layer;
 use t_rex_core::core::stats::Statistics;
 use t_rex_core::core::{ApplicationCfg, Config};
-use t_rex_core::datasource::DatasourceInput;
+use t_rex_core::datasource::DatasourceType;
 use t_rex_core::mvt::tile::Tile;
 use t_rex_core::mvt::vector_tile;
 use t_rex_core::service::tileset::{Tileset, WORLD_EXTENT};

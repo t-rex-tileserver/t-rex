@@ -14,7 +14,7 @@ use t_rex_core::core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use t_rex_core::core::geom::{self, GeometryType};
 use t_rex_core::core::layer::Layer;
 use t_rex_core::core::Config;
-use t_rex_core::datasource::DatasourceInput;
+use t_rex_core::datasource::DatasourceType;
 use tile_grid::Extent;
 use tile_grid::Grid;
 
@@ -469,7 +469,7 @@ impl<'a> Feature for VectorFeature<'a> {
     }
 }
 
-impl DatasourceInput for GdalDatasource {
+impl DatasourceType for GdalDatasource {
     /// New instance with connected pool
     fn connected(&self) -> GdalDatasource {
         GdalDatasource {

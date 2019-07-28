@@ -8,7 +8,7 @@ use crate::core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use crate::core::geom::*;
 use crate::core::layer::Layer;
 use crate::core::Config;
-use crate::datasource::DatasourceInput;
+use crate::datasource::DatasourceType;
 use fallible_iterator::FallibleIterator;
 use postgres::rows::Row;
 use postgres::types::{self, FromSql, ToSql, Type};
@@ -607,7 +607,7 @@ impl PostgisDatasource {
     }
 }
 
-impl DatasourceInput for PostgisDatasource {
+impl DatasourceType for PostgisDatasource {
     /// New instance with connected pool
     fn connected(&self) -> PostgisDatasource {
         let pool_size = 10; //FIXME: make configurable

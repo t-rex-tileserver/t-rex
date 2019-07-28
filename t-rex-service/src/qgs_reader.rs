@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use crate::datasource_type::{Datasource, Datasources};
+use crate::datasources::{Datasource, Datasources};
 use elementtree::Element;
 use std::collections::HashMap;
 use std::env;

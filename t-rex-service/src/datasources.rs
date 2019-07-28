@@ -11,7 +11,7 @@ use t_rex_core::core::layer::Layer;
 use t_rex_core::core::Config;
 #[cfg(not(feature = "with-gdal"))]
 use t_rex_core::datasource::DummyDatasource as GdalDatasource;
-use t_rex_core::datasource::{DatasourceInput, PostgisDatasource};
+use t_rex_core::datasource::{DatasourceType, PostgisDatasource};
 #[cfg(feature = "with-gdal")]
 use t_rex_gdal::gdal_ds::GdalDatasource;
 use tile_grid::{Extent, Grid};
@@ -21,7 +21,7 @@ pub enum Datasource {
     Gdal(GdalDatasource),
 }
 
-impl DatasourceInput for Datasource {
+impl DatasourceType for Datasource {
     fn connected(&self) -> Datasource {
         match self {
             &Datasource::Postgis(ref ds) => Datasource::Postgis(ds.connected()),
@@ -254,7 +254,7 @@ mod gdal_tests {
     fn test_gdal_datasource_from_args() {
         use super::*;
         use clap::{App, Arg};
-        use t_rex_core::datasource::DatasourceInput;
+        use t_rex_core::datasource::DatasourceType;
 
         const GPKG: &str = "../t-rex-gdal/natural_earth.gpkg";
         let args = App::new("t_rex")

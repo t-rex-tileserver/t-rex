@@ -7,7 +7,7 @@ use crate::core::feature::FeatureAttrValType;
 use crate::core::geom::*;
 use crate::core::layer::{Layer, LayerQuery};
 use crate::datasource::postgis_ds::{PostgisDatasource, QueryParam};
-use crate::datasource::DatasourceInput;
+use crate::datasource::DatasourceType;
 use postgres;
 use postgres::Connection;
 use std::env;

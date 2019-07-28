@@ -13,7 +13,7 @@ extern crate serde_json;
 #[cfg(feature = "with-gdal")]
 extern crate t_rex_gdal;
 
-pub mod datasource_type;
+pub mod datasources;
 pub mod metadata;
 pub mod mvt_service;
 #[cfg(test)]

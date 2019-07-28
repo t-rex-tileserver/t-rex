@@ -10,7 +10,7 @@ use crate::core::Config;
 use tile_grid::Extent;
 use tile_grid::Grid;
 
-pub trait DatasourceInput {
+pub trait DatasourceType {
     /// New instance with connected pool
     fn connected(&self) -> Self;
     fn detect_layers(&self, detect_geometry_types: bool) -> Vec<Layer>;
@@ -35,7 +35,7 @@ pub trait DatasourceInput {
 
 pub struct DummyDatasource;
 
-impl DatasourceInput for DummyDatasource {
+impl DatasourceType for DummyDatasource {
     fn connected(&self) -> DummyDatasource {
         unimplemented!();
     }

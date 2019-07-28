@@ -6,7 +6,7 @@
 use crate::mvt_service::MvtService;
 use serde_json;
 use std::cmp;
-use t_rex_core::datasource::DatasourceInput;
+use t_rex_core::datasource::DatasourceType;
 
 type JsonResult = Result<serde_json::Value, serde_json::error::Error>;
 
