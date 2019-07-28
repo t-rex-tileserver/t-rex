@@ -197,7 +197,7 @@ pub struct SqlQuery {
     pub params: Vec<QueryParam>,
 }
 
-pub struct PostgisInput {
+pub struct PostgisDatasource {
     pub connection_url: String,
     conn_pool: Option<r2d2::Pool<PostgresConnectionManager>>,
     // Queries for all layers and zoom levels
@@ -245,9 +245,9 @@ impl SqlQuery {
     }
 }
 
-impl PostgisInput {
-    pub fn new(connection_url: &str) -> PostgisInput {
-        PostgisInput {
+impl PostgisDatasource {
+    pub fn new(connection_url: &str) -> PostgisDatasource {
+        PostgisDatasource {
             connection_url: connection_url.to_string(),
             conn_pool: None,
             queries: BTreeMap::new(),
@@ -607,9 +607,9 @@ impl PostgisInput {
     }
 }
 
-impl DatasourceInput for PostgisInput {
+impl DatasourceInput for PostgisDatasource {
     /// New instance with connected pool
-    fn connected(&self) -> PostgisInput {
+    fn connected(&self) -> PostgisDatasource {
         let pool_size = 10; //FIXME: make configurable
                             // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
         let manager =
@@ -631,7 +631,7 @@ impl DatasourceInput for PostgisInput {
                 _ => Err(e),
             })
             .unwrap();
-        PostgisInput {
+        PostgisDatasource {
             connection_url: self.connection_url.clone(),
             conn_pool: Some(pool),
             queries: BTreeMap::new(),
@@ -863,13 +863,13 @@ impl DatasourceInput for PostgisInput {
     }
 }
 
-impl<'a> Config<'a, DatasourceCfg> for PostgisInput {
+impl<'a> Config<'a, DatasourceCfg> for PostgisDatasource {
     fn from_config(ds_cfg: &DatasourceCfg) -> Result<Self, String> {
         if let Ok(url) = env::var("TREX_DATASOURCE_URL") {
             // FIXME: this overwrites *all* PostGIS connections instead of a specific one
-            Ok(PostgisInput::new(url.as_str()))
+            Ok(PostgisDatasource::new(url.as_str()))
         } else {
-            Ok(PostgisInput::new(ds_cfg.dbconn.as_ref().unwrap()))
+            Ok(PostgisDatasource::new(ds_cfg.dbconn.as_ref().unwrap()))
         }
     }
 

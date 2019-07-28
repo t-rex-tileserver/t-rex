@@ -8,7 +8,7 @@ use crate::mvt_service::MvtService;
 use t_rex_core::cache::{Nocache, Tilecache};
 use t_rex_core::core::layer::Layer;
 use t_rex_core::core::Config;
-use t_rex_core::datasource::{DatasourceInput, PostgisInput};
+use t_rex_core::datasource::{DatasourceInput, PostgisDatasource};
 use t_rex_core::service::tileset::Tileset;
 use tile_grid::Extent;
 use tile_grid::Grid;
@@ -16,8 +16,8 @@ use tile_grid::Grid;
 fn mvt_service() -> MvtService {
     use std::env;
 
-    let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+    let pg: PostgisDatasource = match env::var("DBCONN") {
+        Result::Ok(val) => Some(PostgisDatasource::new(&val).connected()),
         Result::Err(_) => panic!("DBCONN undefined"),
     }
     .unwrap();

@@ -11,13 +11,13 @@ use t_rex_core::core::layer::Layer;
 use t_rex_core::core::Config;
 #[cfg(not(feature = "with-gdal"))]
 use t_rex_core::datasource::DummyDatasource as GdalDatasource;
-use t_rex_core::datasource::{DatasourceInput, PostgisInput};
+use t_rex_core::datasource::{DatasourceInput, PostgisDatasource};
 #[cfg(feature = "with-gdal")]
 use t_rex_gdal::gdal_ds::GdalDatasource;
 use tile_grid::{Extent, Grid};
 
 pub enum Datasource {
-    Postgis(PostgisInput),
+    Postgis(PostgisDatasource),
     Gdal(GdalDatasource),
 }
 
@@ -79,7 +79,7 @@ impl DatasourceInput for Datasource {
 impl<'a> Config<'a, DatasourceCfg> for Datasource {
     fn from_config(ds_cfg: &DatasourceCfg) -> Result<Self, String> {
         if ds_cfg.dbconn.is_some() {
-            PostgisInput::from_config(ds_cfg).and_then(|ds| Ok(Datasource::Postgis(ds)))
+            PostgisDatasource::from_config(ds_cfg).and_then(|ds| Ok(Datasource::Postgis(ds)))
         } else if ds_cfg.path.is_some() {
             GdalDatasource::from_config(ds_cfg).and_then(|ds| Ok(Datasource::Gdal(ds)))
         } else {
@@ -89,7 +89,7 @@ impl<'a> Config<'a, DatasourceCfg> for Datasource {
     fn gen_config() -> String {
         format!(
             "{}{}",
-            PostgisInput::gen_config(),
+            PostgisDatasource::gen_config(),
             GdalDatasource::gen_config()
         )
     }
@@ -155,7 +155,7 @@ impl Datasources {
         if let Some(dbconn) = args.value_of("dbconn") {
             datasources.add(
                 &"dbconn".to_string(),
-                Datasource::Postgis(PostgisInput::new(dbconn)),
+                Datasource::Postgis(PostgisDatasource::new(dbconn)),
             );
         }
         if let Some(datasource) = args.value_of("datasource") {

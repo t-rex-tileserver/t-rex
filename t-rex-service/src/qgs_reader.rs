@@ -19,7 +19,7 @@ use t_rex_core::core::layer::Layer;
 use t_rex_core::core::Config;
 #[cfg(not(feature = "with-gdal"))]
 use t_rex_core::datasource::DummyDatasource as GdalDatasource;
-use t_rex_core::datasource::PostgisInput;
+use t_rex_core::datasource::PostgisDatasource;
 use t_rex_core::service::tileset::Tileset;
 #[cfg(feature = "with-gdal")]
 use t_rex_gdal::gdal_ds::{ogr_layer_name, GdalDatasource};
@@ -203,7 +203,7 @@ pub fn read_qgs(fname: &str) -> (Datasources, Tileset) {
                 layer.geometry_field = Some(info.geometry_field);
                 layer.geometry_type = Some(info.geometry_type);
                 layer.srid = Some(info.srid);
-                Datasource::Postgis(PostgisInput::new(&info.dbconn))
+                Datasource::Postgis(PostgisDatasource::new(&info.dbconn))
             }
             _ => continue,
         };

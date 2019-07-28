@@ -6,7 +6,7 @@
 use crate::core::feature::FeatureAttrValType;
 use crate::core::geom::*;
 use crate::core::layer::{Layer, LayerQuery};
-use crate::datasource::postgis::{PostgisInput, QueryParam};
+use crate::datasource::postgis_ds::{PostgisDatasource, QueryParam};
 use crate::datasource::DatasourceInput;
 use postgres;
 use postgres::Connection;
@@ -60,8 +60,8 @@ fn test_from_geom_fields() {
 #[test]
 #[ignore]
 fn test_detect_layers() {
-    let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+    let pg: PostgisDatasource = match env::var("DBCONN") {
+        Result::Ok(val) => Some(PostgisDatasource::new(&val).connected()),
         Result::Err(_) => panic!("DBCONN undefined"),
     }
     .unwrap();
@@ -74,8 +74,8 @@ fn test_detect_layers() {
 #[test]
 #[ignore]
 fn test_detect_columns() {
-    let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+    let pg: PostgisDatasource = match env::var("DBCONN") {
+        Result::Ok(val) => Some(PostgisDatasource::new(&val).connected()),
         Result::Err(_) => panic!("DBCONN undefined"),
     }
     .unwrap();
@@ -98,8 +98,8 @@ fn test_detect_columns() {
 #[test]
 #[ignore]
 fn test_extent_query() {
-    let pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+    let pg: PostgisDatasource = match env::var("DBCONN") {
+        Result::Ok(val) => Some(PostgisDatasource::new(&val).connected()),
         Result::Err(_) => panic!("DBCONN undefined"),
     }
     .unwrap();
@@ -121,7 +121,7 @@ fn test_extent_query() {
 
 #[test]
 fn test_feature_query() {
-    let pg = PostgisInput::new("postgresql://pi@localhost/osm2vectortiles");
+    let pg = PostgisDatasource::new("postgresql://pi@localhost/osm2vectortiles");
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));
@@ -236,7 +236,7 @@ fn test_feature_query() {
 
 #[test]
 fn test_query_params() {
-    let pg = PostgisInput::new("postgresql://pi@localhost/osm2vectortiles");
+    let pg = PostgisDatasource::new("postgresql://pi@localhost/osm2vectortiles");
     let mut layer = Layer::new("buildings");
     layer.geometry_field = Some(String::from("way"));
 
@@ -280,8 +280,8 @@ fn test_query_params() {
 #[test]
 #[ignore]
 fn test_retrieve_features() {
-    let mut pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+    let mut pg: PostgisDatasource = match env::var("DBCONN") {
+        Result::Ok(val) => Some(PostgisDatasource::new(&val).connected()),
         Result::Err(_) => panic!("DBCONN undefined"),
     }
     .unwrap();
@@ -339,8 +339,8 @@ fn test_retrieve_features() {
 #[ignore]
 #[should_panic(expected = "geometry_field undefined")]
 fn test_no_geom_field() {
-    let mut pg: PostgisInput = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisInput::new(&val).connected()),
+    let mut pg: PostgisDatasource = match env::var("DBCONN") {
+        Result::Ok(val) => Some(PostgisDatasource::new(&val).connected()),
         Result::Err(_) => panic!("DBCONN undefined"),
     }
     .unwrap();
