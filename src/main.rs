@@ -47,8 +47,8 @@ fn init_logger(args: &ArgMatches<'_>) {
 }
 
 fn generate(args: &ArgMatches<'_>) {
-    let config = webserver::server::config_from_args(&args);
-    let mut service = webserver::server::service_from_args(&config, &args);
+    let config = webserver::config_from_args(&args);
+    let mut service = webserver::service_from_args(&config, &args);
     config
         .cache
         .expect("Missing configuration entry base in [cache.file]");
@@ -100,8 +100,8 @@ fn generate(args: &ArgMatches<'_>) {
 }
 
 fn drilldown(args: &ArgMatches<'_>) {
-    let config = webserver::server::config_from_args(&args);
-    let mut service = webserver::server::service_from_args(&config, &args);
+    let config = webserver::config_from_args(&args);
+    let mut service = webserver::service_from_args(&config, &args);
     let tileset = args.value_of("tileset");
     let minzoom = args.value_of("minzoom").map(|s| {
         s.parse::<u8>()
@@ -211,11 +211,11 @@ fn main() {
         Result::Ok(matches) => match matches.subcommand() {
             ("serve", Some(sub_m)) => {
                 init_logger(sub_m);
-                webserver::server::webserver(sub_m.clone());
+                webserver::webserver(sub_m.clone());
             }
             ("genconfig", Some(sub_m)) => {
                 init_logger(sub_m);
-                println!("{}", webserver::server::gen_config(sub_m));
+                println!("{}", webserver::gen_config(sub_m));
             }
             ("generate", Some(sub_m)) => {
                 init_logger(sub_m);

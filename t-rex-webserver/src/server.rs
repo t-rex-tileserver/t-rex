@@ -3,18 +3,10 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use crate::cache::{Filecache, Nocache, Tilecache};
 use crate::core::config::ApplicationCfg;
-use crate::core::config::DEFAULT_CONFIG;
-use crate::core::layer::Layer;
-use crate::core::{parse_config, read_config, Config};
-use crate::datasource::DatasourceInput;
-use crate::datasource_type::Datasources;
 use crate::mvt_service::MvtService;
-use crate::read_qgs;
-use crate::service::tileset::Tileset;
-use crate::tile_grid::Grid;
-
+use crate::runtime_config::{config_from_args, service_from_args};
+use crate::static_files::StaticFiles;
 use actix_cors::Cors;
 use actix_files as fs;
 use actix_rt;
@@ -26,90 +18,8 @@ use futures::{future::ok, Future};
 use log::Level;
 use open;
 use std::collections::HashMap;
-use std::process;
 use std::str;
 use std::str::FromStr;
-
-struct StaticFiles {
-    files: HashMap<&'static str, (&'static [u8], &'static str)>,
-}
-
-impl StaticFiles {
-    fn init() -> StaticFiles {
-        let mut static_files = StaticFiles {
-            files: HashMap::new(),
-        };
-        static_files.add(
-            "favicon.ico",
-            include_bytes!("static/favicon.ico"),
-            "image/x-icon",
-        );
-        static_files.add(
-            "index.html",
-            include_bytes!("static/index.html"),
-            "text/html",
-        );
-        static_files.add(
-            "viewer.js",
-            include_bytes!("static/viewer.js"),
-            "application/javascript",
-        );
-        static_files.add(
-            "viewer.css",
-            include_bytes!("static/viewer.css"),
-            "text/css",
-        );
-        static_files.add(
-            "maputnik.html",
-            include_bytes!("static/maputnik.html"),
-            "text/html",
-        );
-        static_files.add(
-            "maputnik.js",
-            include_bytes!("static/maputnik.js"),
-            "application/javascript",
-        );
-        static_files.add(
-            "maputnik-vendor.js",
-            include_bytes!("static/maputnik-vendor.js"),
-            "application/javascript",
-        );
-        static_files.add(
-            "img/logo-color.svg",
-            include_bytes!("static/img/logo-color.svg"),
-            "image/svg+xml",
-        );
-        static_files.add(
-            "fonts/Roboto-Regular.ttf",
-            include_bytes!("static/fonts/Roboto-Regular.ttf"),
-            "font/ttf",
-        );
-        static_files.add(
-            "fonts/Roboto-Medium.ttf",
-            include_bytes!("static/fonts/Roboto-Medium.ttf"),
-            "font/ttf",
-        );
-        static_files
-    }
-    fn add(&mut self, name: &'static str, data: &'static [u8], media_type: &'static str) {
-        self.files.insert(name, (data, media_type));
-    }
-    fn content(&self, base: Option<&str>, name: String) -> Option<&(&[u8], &str)> {
-        let mut key = if name == "" {
-            "index.html".to_string()
-        } else {
-            name
-        };
-        if let Some(path) = base {
-            key = format!("{}/{}", path, key);
-        }
-        self.files.get(&key as &str)
-    }
-}
-
-lazy_static! {
-    static ref STATIC_FILES: StaticFiles = StaticFiles::init();
-}
 
 static DINO: &'static str = "             xxxxxxxxx
         xxxxxxxxxxxxxxxxxxxxxxxx
@@ -135,127 +45,6 @@ xxxxxxxxx
 xxxxxxx
 xxxxxx
 xxxxxxx";
-
-fn set_layer_buffer_defaults(layer: &mut Layer, simplify: bool, clip: bool) {
-    layer.simplify = simplify;
-    if simplify {
-        // Limit features by default unless simplify is set to false
-        layer.query_limit = Some(1000);
-        // Set default tolerance
-        layer.tolerance = "!pixel_width!/2".to_string();
-    }
-    layer.buffer_size = match layer.geometry_type {
-        Some(ref geom) => {
-            if clip {
-                if geom.contains("POLYGON") {
-                    Some(1)
-                } else {
-                    Some(0)
-                }
-            } else {
-                None
-            }
-        }
-        None => None,
-    };
-}
-
-pub fn config_from_args(args: &ArgMatches) -> ApplicationCfg {
-    if let Some(cfgpath) = args.value_of("config") {
-        info!("Reading configuration from '{}'", cfgpath);
-        for argname in vec!["dbconn", "datasource", "qgs"] {
-            if args.value_of(argname).is_some() {
-                warn!("Ignoring argument `{}`", argname);
-            }
-        }
-        let config = read_config(cfgpath).unwrap_or_else(|err| {
-            println!("Error reading configuration - {} ", err);
-            process::exit(1)
-        });
-        config
-    } else {
-        let bind = args.value_of("bind").unwrap_or("127.0.0.1");
-        let port =
-            u16::from_str(args.value_of("port").unwrap_or("6767")).expect("Invalid port number");
-        let mut config: ApplicationCfg = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
-        config.webserver.bind = Some(bind.to_string());
-        config.webserver.port = Some(port);
-        config
-    }
-}
-
-pub fn service_from_args(config: &ApplicationCfg, args: &ArgMatches) -> MvtService {
-    if args.value_of("config").is_some() {
-        let mut svc = MvtService::from_config(&config).unwrap_or_else(|err| {
-            println!("Error reading configuration - {} ", err);
-            process::exit(1)
-        });
-        svc.connect();
-        svc
-    } else {
-        let cache = match args.value_of("cache") {
-            None => Tilecache::Nocache(Nocache),
-            Some(dir) => Tilecache::Filecache(Filecache {
-                basepath: dir.to_string(),
-                baseurl: None,
-            }),
-        };
-        let simplify = bool::from_str(args.value_of("simplify").unwrap_or("true")).unwrap_or(false);
-        let clip = bool::from_str(args.value_of("clip").unwrap_or("true")).unwrap_or(false);
-        let no_transform =
-            bool::from_str(args.value_of("no-transform").unwrap_or("false")).unwrap_or(false);
-        let grid = Grid::web_mercator();
-        let mut tilesets = Vec::new();
-        let datasources = if let Some(qgs) = args.value_of("qgs") {
-            info!("Reading configuration from '{}'", qgs);
-            let (datasources, mut tileset) = read_qgs(qgs);
-            for layer in tileset.layers.iter_mut() {
-                set_layer_buffer_defaults(layer, simplify, clip);
-            }
-            tilesets.push(tileset);
-            datasources
-        } else {
-            let datasources = Datasources::from_args(args);
-            if datasources.datasources.is_empty() {
-                println!("Either 'config', 'dbconn' or 'datasource' is required");
-                process::exit(1)
-            }
-            let detect_geometry_types =
-                bool::from_str(args.value_of("detect-geometry-types").unwrap_or("true"))
-                    .unwrap_or(false);
-            for (_name, ds) in &datasources.datasources {
-                let dsconn = ds.connected();
-                let mut layers = dsconn.detect_layers(detect_geometry_types);
-                while let Some(mut l) = layers.pop() {
-                    l.no_transform = no_transform;
-                    let extent = dsconn.layer_extent(&l, 3857);
-                    set_layer_buffer_defaults(&mut l, simplify, clip);
-                    let tileset = Tileset {
-                        name: l.name.clone(),
-                        minzoom: None,
-                        maxzoom: None,
-                        attribution: None,
-                        extent: extent,
-                        center: None,
-                        start_zoom: None,
-                        layers: vec![l],
-                        cache_limits: None,
-                    };
-                    tilesets.push(tileset);
-                }
-            }
-            datasources
-        };
-        let mut svc = MvtService {
-            datasources: datasources,
-            grid: grid,
-            tilesets: tilesets,
-            cache: cache,
-        };
-        svc.connect(); //TODO: ugly - we connect twice
-        svc
-    }
-}
 
 /// Application state
 struct AppState {
@@ -376,6 +165,10 @@ fn tile_pbf(
     ok(resp)
 }
 
+lazy_static! {
+    static ref STATIC_FILES: StaticFiles = StaticFiles::init();
+}
+
 fn static_file_handler(req: HttpRequest) -> Result<HttpResponse, Error> {
     let key = req.path()[1..].to_string();
     let resp = if let Some(ref content) = STATIC_FILES.content(None, key) {
@@ -493,66 +286,4 @@ pub fn webserver(args: ArgMatches<'static>) {
     }
 
     sys.run().expect("Couldn't run HttpServer");
-}
-
-pub fn gen_config(args: &ArgMatches) -> String {
-    let toml = r#"
-[webserver]
-# Bind address. Use 0.0.0.0 to listen on all adresses.
-bind = "127.0.0.1"
-port = 6767
-
-#[[webserver.static]]
-#path = "/static"
-#dir = "./public/"
-"#;
-    let mut config;
-    if args.value_of("dbconn").is_some()
-        || args.value_of("datasource").is_some()
-        || args.value_of("qgs").is_some()
-    {
-        let service = service_from_args(&config_from_args(args), args);
-        config = service.gen_runtime_config();
-    } else {
-        config = MvtService::gen_config();
-    }
-    config.push_str(toml);
-    config
-}
-
-#[test]
-fn test_gen_config() {
-    use crate::core::parse_config;
-
-    let args = ArgMatches::new();
-    let toml = gen_config(&args);
-    println!("{}", toml);
-    assert_eq!(Some("# t-rex configuration"), toml.lines().next());
-
-    let config = parse_config(toml, "").unwrap();
-    let _service = MvtService::from_config(&config).unwrap();
-    //assert_eq!(service.input.connection_url,
-    //           "postgresql://user:pass@host/database");
-}
-
-#[test]
-#[ignore]
-fn test_runtime_config() {
-    use crate::core::parse_config;
-    use clap::App;
-    use std::env;
-
-    if env::var("DBCONN").is_err() {
-        panic!("DBCONN undefined");
-    }
-    let args = App::new("test")
-        .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'")
-        .get_matches_from(vec!["", "--dbconn", &env::var("DBCONN").unwrap()]);
-    let toml = gen_config(&args);
-    println!("{}", toml);
-    assert_eq!(Some("# t-rex configuration"), toml.lines().next());
-
-    let config = parse_config(toml, "").unwrap();
-    let _service = MvtService::from_config(&config).unwrap();
-    //assert_eq!(service.input.connection_url, env::var("DBCONN").unwrap());
 }

@@ -14,4 +14,9 @@ extern crate tile_grid;
 use t_rex_core::{cache, core, datasource, service};
 use t_rex_service::{datasource_type, mvt_service, read_qgs};
 
-pub mod server;
+mod runtime_config;
+mod server;
+mod static_files;
+
+pub use crate::runtime_config::*;
+pub use crate::server::webserver;
