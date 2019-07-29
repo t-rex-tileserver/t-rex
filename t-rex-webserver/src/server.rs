@@ -46,14 +46,8 @@ xxxxxxx
 xxxxxx
 xxxxxxx";
 
-/// Application state
-struct AppState {
-    service: MvtService,
-    config: ApplicationCfg,
-}
-
-fn mvt_metadata(state: web::Data<AppState>) -> impl Future<Item = HttpResponse, Error = Error> {
-    let json = state.service.get_mvt_metadata().unwrap();
+fn mvt_metadata(service: web::Data<MvtService>) -> impl Future<Item = HttpResponse, Error = Error> {
+    let json = service.get_mvt_metadata().unwrap();
     ok(HttpResponse::Ok().json(json))
 }
 
@@ -96,39 +90,34 @@ fn req_baseurl(req: &HttpRequest) -> String {
 }
 
 fn tileset_tilejson(
-    state: web::Data<AppState>,
+    service: web::Data<MvtService>,
     tileset: web::Path<String>,
     req: HttpRequest,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
-    let json = state
-        .service
-        .get_tilejson(&req_baseurl(&req), &tileset)
-        .unwrap();
+    let json = service.get_tilejson(&req_baseurl(&req), &tileset).unwrap();
     ok(HttpResponse::Ok().json(json))
 }
 
 fn tileset_style_json(
-    state: web::Data<AppState>,
+    service: web::Data<MvtService>,
     tileset: web::Path<String>,
     req: HttpRequest,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
-    let json = state
-        .service
-        .get_stylejson(&req_baseurl(&req), &tileset)
-        .unwrap();
+    let json = service.get_stylejson(&req_baseurl(&req), &tileset).unwrap();
     ok(HttpResponse::Ok().json(json))
 }
 
 fn tileset_metadata_json(
-    state: web::Data<AppState>,
+    service: web::Data<MvtService>,
     tileset: web::Path<String>,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
-    let json = state.service.get_mbtiles_metadata(&tileset).unwrap();
+    let json = service.get_mbtiles_metadata(&tileset).unwrap();
     ok(HttpResponse::Ok().json(json))
 }
 
 fn tile_pbf(
-    state: web::Data<AppState>,
+    config: web::Data<ApplicationCfg>,
+    service: web::Data<MvtService>,
     params: web::Path<(String, u8, u32, u32)>,
     req: HttpRequest,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
@@ -146,8 +135,8 @@ fn tile_pbf(
                 .and_then(|headerstr| Some(headerstr.contains("gzip")))
         })
         .unwrap_or(false);
-    let tile = state.service.tile_cached(tileset, x, y, z, gzip, None);
-    let cache_max_age = state.config.webserver.cache_control_max_age.unwrap_or(300);
+    let tile = service.tile_cached(tileset, x, y, z, gzip, None);
+    let cache_max_age = config.webserver.cache_control_max_age.unwrap_or(300);
 
     let resp = if let Some(tile) = tile {
         HttpResponse::Ok()
@@ -190,7 +179,7 @@ struct DrilldownParams {
 }
 
 fn drilldown_handler(
-    state: web::Data<AppState>,
+    service: web::Data<MvtService>,
     params: web::Query<DrilldownParams>,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
     let tileset = None; // all tilesets
@@ -204,9 +193,7 @@ fn drilldown_handler(
             //FIXME: map_err(|_| error::ErrorInternalServerError("...")
         })
         .collect();
-    let stats = state
-        .service
-        .drilldown(tileset, params.minzoom, params.maxzoom, points, progress);
+    let stats = service.drilldown(tileset, params.minzoom, params.maxzoom, points, progress);
     let json = stats.as_json().unwrap();
     ok(HttpResponse::Ok().json(json))
 }
@@ -233,10 +220,8 @@ pub fn webserver(args: ArgMatches<'static>) {
 
     HttpServer::new(move || {
         let mut app = App::new()
-            .data(AppState {
-                service: service.clone(),
-                config: config.clone(),
-            })
+            .data(config.clone())
+            .data(service.clone())
             .wrap(middleware::Logger::new("%r %s %b %Dms %a"))
             .wrap(Compress::default())
             .wrap(Cors::new().send_wildcard().allowed_methods(vec!["GET"]))
