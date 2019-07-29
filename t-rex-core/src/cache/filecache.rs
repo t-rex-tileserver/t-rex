@@ -8,6 +8,7 @@ use std::fs::{self, File};
 use std::io::{self, Read, Write};
 use std::path::Path;
 
+#[derive(Clone)]
 pub struct Filecache {
     pub basepath: String,
     pub baseurl: Option<String>,

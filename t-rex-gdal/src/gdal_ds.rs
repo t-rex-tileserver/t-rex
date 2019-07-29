@@ -9,6 +9,7 @@ use gdal::vector::{Dataset, FieldValue, Geometry};
 use gdal_sys;
 use std::collections::BTreeMap;
 use std::path::Path;
+
 use t_rex_core::core::config::DatasourceCfg;
 use t_rex_core::core::feature::{Feature, FeatureAttr, FeatureAttrValType};
 use t_rex_core::core::geom::{self, GeometryType};
@@ -18,13 +19,12 @@ use t_rex_core::datasource::DatasourceType;
 use tile_grid::Extent;
 use tile_grid::Grid;
 
+#[derive(Clone)]
 pub struct GdalDatasource {
     pub path: String,
     // We don't store the Dataset, because we need mut access for getting layers
-    // CoordTransform for all layers
-    geom_transform: BTreeMap<String, Option<CoordTransform>>,
-    // CoordTransform for all layers
-    bbox_transform: BTreeMap<String, Option<CoordTransform>>,
+    /// SpatialRef WKT for layers which need CoordTransform
+    geom_transform: BTreeMap<String, String>,
 }
 
 impl GdalDatasource {
@@ -32,7 +32,6 @@ impl GdalDatasource {
         GdalDatasource {
             path: path.to_string(),
             geom_transform: BTreeMap::new(),
-            bbox_transform: BTreeMap::new(),
         }
     }
 }
@@ -475,7 +474,6 @@ impl DatasourceType for GdalDatasource {
         GdalDatasource {
             path: self.path.clone(),
             geom_transform: BTreeMap::new(),
-            bbox_transform: BTreeMap::new(),
         }
     }
     fn detect_layers(&self, _detect_geometry_types: bool) -> Vec<Layer> {
@@ -588,24 +586,28 @@ impl DatasourceType for GdalDatasource {
             }
             Ok(sref) => sref,
         };
-        let layer_sref = geom_spatialref(ogr_layer, layer.geometry_field.as_ref());
-        let transform = match layer_sref {
-            Some(ref sref) if !layer.no_transform => {
+        if !layer.no_transform {
+            let layer_sref = geom_spatialref(ogr_layer, layer.geometry_field.as_ref());
+            if let Some(ref sref) = layer_sref {
                 info!(
                     "Layer '{}': Reprojecting geometry to SRID {}",
                     layer.name, grid_srid
                 );
-                CoordTransform::new(sref, &grid_sref).ok()
+                if CoordTransform::new(sref, &grid_sref).is_err() {
+                    error!(
+                        "Layer '{}': Couldn't setup CoordTransform for reprojecting geometry to SRID {}",
+                        layer.name, grid_srid
+                    );
+                } else {
+                    // We don't store prepared CoordTransform because CoordTransform is
+                    // not Sync and cannot be shared between threads safely
+                    self.geom_transform
+                        .insert(layer.name.clone(), sref.to_wkt().unwrap());
+                }
+            } else {
+                warn!("Layer '{}': Couldn't detect spatialref", layer.name);
             }
-            _ => None,
-        };
-        self.geom_transform.insert(layer.name.clone(), transform);
-
-        let transform = match layer_sref {
-            Some(ref sref) if !layer.no_transform => CoordTransform::new(&grid_sref, sref).ok(),
-            _ => None,
-        };
-        self.bbox_transform.insert(layer.name.clone(), transform);
+        }
 
         if layer.simplify {
             if layer.geometry_type != Some("POINT".to_string()) {
@@ -653,17 +655,22 @@ impl DatasourceType for GdalDatasource {
             extent.clone()
         };
 
-        // Spatial filter must be in layer SRS
-        let transformation = self.bbox_transform.get(&layer.name).unwrap();
-        if let Some(ref tr) = transformation {
-            match transform_extent_tr(&bbox_extent, tr) {
+        // CoordTransform for features
+        let mut transformation = None;
+        if let Some(ref wkt) = self.geom_transform.get(&layer.name) {
+            let grid_sref = SpatialRef::from_epsg(grid.srid as u32).unwrap();
+            let layer_sref = SpatialRef::from_wkt(wkt).unwrap();
+            // Spatial filter must be in layer SRS
+            let bbox_tr = CoordTransform::new(&grid_sref, &layer_sref).unwrap();
+            match transform_extent_tr(&bbox_extent, &bbox_tr) {
                 Ok(extent) => bbox_extent = extent,
                 Err(e) => {
                     error!("Unable to transform {:?}: {}", bbox_extent, e);
                     return 0;
                 }
             }
-        };
+            transformation = CoordTransform::new(&layer_sref, &grid_sref).ok();
+        }
         let bbox = Geometry::bbox(
             bbox_extent.minx,
             bbox_extent.miny,
@@ -673,7 +680,6 @@ impl DatasourceType for GdalDatasource {
         .unwrap();
         ogr_layer.set_spatial_filter(&bbox);
 
-        let transformation = self.geom_transform.get(&layer.name).unwrap();
         let fields_defn = ogr_layer.defn().fields().collect::<Vec<_>>();
         let mut cnt = 0;
         let query_limit = layer.query_limit.unwrap_or(0);

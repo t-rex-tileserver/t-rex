@@ -16,6 +16,7 @@ use t_rex_core::datasource::{DatasourceType, PostgisDatasource};
 use t_rex_gdal::gdal_ds::GdalDatasource;
 use tile_grid::{Extent, Grid};
 
+#[derive(Clone)]
 pub enum Datasource {
     Postgis(PostgisDatasource),
     Gdal(GdalDatasource),
@@ -101,6 +102,7 @@ impl<'a> Config<'a, DatasourceCfg> for Datasource {
     }
 }
 
+#[derive(Clone)]
 pub struct Datasources {
     pub datasources: HashMap<String, Datasource>,
     pub default: Option<String>,

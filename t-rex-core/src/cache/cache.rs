@@ -17,6 +17,7 @@ pub trait Cache {
     fn exists(&self, path: &str) -> bool;
 }
 
+#[derive(Clone)]
 pub struct Nocache;
 
 impl Cache for Nocache {

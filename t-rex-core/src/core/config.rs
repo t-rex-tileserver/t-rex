@@ -26,7 +26,7 @@ where
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct ApplicationCfg {
     pub service: ServiceCfg,
     pub datasource: Vec<DatasourceCfg>,
@@ -37,17 +37,17 @@ pub struct ApplicationCfg {
     pub webserver: WebserverCfg,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct ServiceCfg {
     pub mvt: ServiceMvtCfg,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct ServiceMvtCfg {
     pub viewer: bool,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct DatasourceCfg {
     pub name: Option<String>,
     pub default: Option<bool>,
@@ -58,13 +58,13 @@ pub struct DatasourceCfg {
     pub path: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct GridCfg {
     pub predefined: Option<String>,
     pub user: Option<UserGridCfg>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct UserGridCfg {
     /// The width and height of an individual tile, in pixels.
     pub width: u16,
@@ -91,7 +91,7 @@ pub struct UserGridCfg {
     pub origin: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct TilesetCfg {
     pub name: String,
     pub extent: Option<ExtentCfg>,
@@ -107,7 +107,7 @@ pub struct TilesetCfg {
     pub cache_limits: Option<TilesetCacheCfg>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct LayerQueryCfg {
     #[serde(default)]
     pub minzoom: u8,
@@ -115,7 +115,7 @@ pub struct LayerQueryCfg {
     pub sql: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct LayerCfg {
     pub name: String,
     pub datasource: Option<String>,
@@ -166,7 +166,7 @@ pub fn default_tolerance() -> String {
     DEFAULT_TOLERANCE.to_string()
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct TilesetCacheCfg {
     #[serde(default)]
     pub minzoom: u8,
@@ -175,18 +175,18 @@ pub struct TilesetCacheCfg {
     pub no_cache: bool,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct CacheCfg {
     pub file: CacheFileCfg,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct CacheFileCfg {
     pub base: String,
     pub baseurl: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct WebserverCfg {
     pub bind: Option<String>,
     pub port: Option<u16>,

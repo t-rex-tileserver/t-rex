@@ -8,7 +8,7 @@ use crate::core::config::{TilesetCacheCfg, TilesetCfg};
 use crate::core::layer::Layer;
 use tile_grid::Extent;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct CacheLimits {
     pub minzoom: u8,
     pub maxzoom: Option<u8>,
@@ -29,6 +29,7 @@ impl<'a> Config<'a, TilesetCacheCfg> for CacheLimits {
 }
 
 /// Collection of layers in one MVT
+#[derive(Clone)]
 pub struct Tileset {
     pub name: String,
     pub minzoom: Option<u8>,

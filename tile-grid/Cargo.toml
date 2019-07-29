@@ -1,6 +1,6 @@
 [package]
 name = "tile-grid"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Pirmin Kalberer <pka@sourcepole.com>"]
 edition = "2018"
 description = "Library for map tile grid calculations."

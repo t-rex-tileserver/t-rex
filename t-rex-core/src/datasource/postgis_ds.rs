@@ -197,6 +197,7 @@ pub struct SqlQuery {
     pub params: Vec<QueryParam>,
 }
 
+#[derive(Clone)]
 pub struct PostgisDatasource {
     pub connection_url: String,
     conn_pool: Option<r2d2::Pool<PostgresConnectionManager>>,

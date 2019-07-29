@@ -7,7 +7,7 @@ use crate::core::config::GridCfg;
 use crate::core::Config;
 use tile_grid::{Extent, Grid, Origin, Unit};
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct ExtentCfg {
     pub minx: f64,
     pub miny: f64,

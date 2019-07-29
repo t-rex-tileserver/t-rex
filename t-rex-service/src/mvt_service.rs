@@ -21,6 +21,7 @@ use t_rex_core::service::tileset::{Tileset, WORLD_EXTENT};
 use tile_grid::{extent_to_merc, Extent, ExtentInt, Grid, GridIterator};
 
 /// Mapbox Vector Tile Service
+#[derive(Clone)]
 pub struct MvtService {
     pub datasources: Datasources,
     pub grid: Grid,

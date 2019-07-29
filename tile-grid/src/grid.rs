@@ -29,14 +29,14 @@ pub struct ExtentInt {
 type CellIndex = (u32, u32);
 
 /// Grid origin
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum Origin {
     TopLeft,
     BottomLeft, //TopRight, BottomRight
 }
 
 /// Grid units
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum Unit {
     Meters,
     Degrees,
@@ -44,7 +44,7 @@ pub enum Unit {
 }
 
 /// Tile grid
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Grid {
     /// The width of an individual tile, in pixels.
     width: u16,

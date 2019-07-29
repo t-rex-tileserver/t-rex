@@ -223,21 +223,20 @@ pub fn webserver(args: ArgMatches<'static>) {
     let mvt_viewer = config.service.mvt.viewer;
     let openbrowser =
         bool::from_str(args.value_of("openbrowser").unwrap_or("true")).unwrap_or(false);
+    let static_dirs = config.webserver.static_.clone();
+
+    let mut service = service_from_args(&config, &args);
+    service.prepare_feature_queries();
+    service.init_cache();
 
     let sys = actix_rt::System::new("t-rex");
 
     HttpServer::new(move || {
-        let config = config_from_args(&args);
-        let mut service = service_from_args(&config, &args);
-
-        let mvt_viewer = config.service.mvt.viewer;
-        let static_dirs = config.webserver.static_.clone();
-
-        service.prepare_feature_queries();
-        service.init_cache();
-
         let mut app = App::new()
-            .data(AppState { service, config })
+            .data(AppState {
+                service: service.clone(),
+                config: config.clone(),
+            })
             .wrap(middleware::Logger::new("%r %s %b %Dms %a"))
             .wrap(Compress::default())
             .wrap(Cors::new().send_wildcard().allowed_methods(vec!["GET"]))

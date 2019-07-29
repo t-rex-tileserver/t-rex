@@ -17,6 +17,7 @@ use crate::core::Config;
 use std::io;
 use std::io::Read;
 
+#[derive(Clone)]
 pub enum Tilecache {
     Nocache(Nocache),
     Filecache(Filecache),

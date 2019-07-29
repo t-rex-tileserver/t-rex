@@ -8,14 +8,14 @@ use crate::core::Config;
 use crate::service::glstyle_converter::toml_style_to_gljson;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct LayerQuery {
     pub minzoom: u8,
     pub maxzoom: Option<u8>,
     pub sql: Option<String>,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct Layer {
     pub name: String,
     pub datasource: Option<String>,
