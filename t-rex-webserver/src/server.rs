@@ -16,6 +16,7 @@ use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServ
 use clap::ArgMatches;
 use futures::{future::ok, Future};
 use log::Level;
+use num_cpus;
 use open;
 use std::collections::HashMap;
 use std::str;
@@ -207,6 +208,7 @@ pub fn webserver(args: ArgMatches<'static>) {
         .unwrap_or("127.0.0.1".to_string());
     let port = config.webserver.port.unwrap_or(6767);
     let bind_addr = format!("{}:{}", host, port);
+    let workers = config.webserver.threads.unwrap_or(num_cpus::get() as u8);
     let mvt_viewer = config.service.mvt.viewer;
     let openbrowser =
         bool::from_str(args.value_of("openbrowser").unwrap_or("true")).unwrap_or(false);
@@ -256,6 +258,7 @@ pub fn webserver(args: ArgMatches<'static>) {
         }
         app
     })
+    .workers(workers as usize)
     .bind(&bind_addr)
     .expect("Can not start server on given IP/Port")
     .shutdown_timeout(3) // default: 30s

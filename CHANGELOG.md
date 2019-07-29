@@ -4,8 +4,12 @@
 #### Features
 
 * Initialize service only once before starting HttpServer threads
-* Shared DB connection pool for all HttpServer threads
+* Share DB connection pool between all HttpServer threads
 * Migrate web server to Actix web 1.0
+
+#### Bug Fixes
+
+* Respect webserver threads configuration (broken since 0.9.0)
 
 <a name="0.9.3"></a>
 ## 0.9.3 (2019-06-09)
