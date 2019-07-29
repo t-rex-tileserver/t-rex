@@ -157,7 +157,7 @@ impl Datasources {
         if let Some(dbconn) = args.value_of("dbconn") {
             datasources.add(
                 &"dbconn".to_string(),
-                Datasource::Postgis(PostgisDatasource::new(dbconn)),
+                Datasource::Postgis(PostgisDatasource::new(dbconn, None)),
             );
         }
         if let Some(datasource) = args.value_of("datasource") {

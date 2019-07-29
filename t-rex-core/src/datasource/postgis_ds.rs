@@ -200,6 +200,7 @@ pub struct SqlQuery {
 #[derive(Clone)]
 pub struct PostgisDatasource {
     pub connection_url: String,
+    pub pool_size: Option<u16>,
     conn_pool: Option<r2d2::Pool<PostgresConnectionManager>>,
     // Queries for all layers and zoom levels
     queries: BTreeMap<String, BTreeMap<u8, SqlQuery>>,
@@ -247,9 +248,10 @@ impl SqlQuery {
 }
 
 impl PostgisDatasource {
-    pub fn new(connection_url: &str) -> PostgisDatasource {
+    pub fn new(connection_url: &str, pool_size: Option<u16>) -> PostgisDatasource {
         PostgisDatasource {
             connection_url: connection_url.to_string(),
+            pool_size,
             conn_pool: None,
             queries: BTreeMap::new(),
         }
@@ -611,12 +613,12 @@ impl PostgisDatasource {
 impl DatasourceType for PostgisDatasource {
     /// New instance with connected pool
     fn connected(&self) -> PostgisDatasource {
-        let pool_size = 10; //FIXME: make configurable
-                            // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
+        // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
         let manager =
             PostgresConnectionManager::new(self.connection_url.as_ref(), TlsMode::None).unwrap();
+        let pool_size = self.pool_size.unwrap_or(8); // TODO: use number of workers as default pool size
         let pool = r2d2::Pool::builder()
-            .max_size(pool_size)
+            .max_size(pool_size as u32)
             .build(manager)
             .or_else(|e| match e.description() {
                 "unable to initialize connections" => {
@@ -627,13 +629,16 @@ impl DatasourceType for PostgisDatasource {
                         TlsMode::Require(Box::new(negotiator)),
                     )
                     .unwrap();
-                    r2d2::Pool::builder().max_size(pool_size).build(manager)
+                    r2d2::Pool::builder()
+                        .max_size(pool_size as u32)
+                        .build(manager)
                 }
                 _ => Err(e),
             })
             .unwrap();
         PostgisDatasource {
             connection_url: self.connection_url.clone(),
+            pool_size: Some(pool_size),
             conn_pool: Some(pool),
             queries: BTreeMap::new(),
         }
@@ -868,9 +873,12 @@ impl<'a> Config<'a, DatasourceCfg> for PostgisDatasource {
     fn from_config(ds_cfg: &DatasourceCfg) -> Result<Self, String> {
         if let Ok(url) = env::var("TREX_DATASOURCE_URL") {
             // FIXME: this overwrites *all* PostGIS connections instead of a specific one
-            Ok(PostgisDatasource::new(url.as_str()))
+            Ok(PostgisDatasource::new(url.as_str(), None))
         } else {
-            Ok(PostgisDatasource::new(ds_cfg.dbconn.as_ref().unwrap()))
+            Ok(PostgisDatasource::new(
+                ds_cfg.dbconn.as_ref().unwrap(),
+                ds_cfg.pool,
+            ))
         }
     }
 
