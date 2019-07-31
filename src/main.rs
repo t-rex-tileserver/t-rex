@@ -6,17 +6,15 @@
 #[macro_use]
 extern crate clap;
 
-use time;
-
-use t_rex_webserver;
-
 use clap::{App, AppSettings, ArgMatches, SubCommand};
+use dotenv::dotenv;
 use env_logger::Builder;
 use log::Record;
 use std::env;
 use std::io::Write;
 use t_rex_webserver as webserver;
 use tile_grid::Extent;
+use time;
 
 fn init_logger(args: &ArgMatches<'_>) {
     let mut builder = Builder::new();
@@ -148,6 +146,7 @@ fn version_info() -> String {
 }
 
 fn main() {
+    dotenv().ok();
     let version_info = version_info();
     // http://kbknapp.github.io/clap-rs/clap/
     let mut app = App::new("t_rex")
