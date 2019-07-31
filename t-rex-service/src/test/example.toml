@@ -5,7 +5,7 @@ viewer = true
 
 [[datasource]]
 name = "buildings"
-dbconn = "postgresql://postgres@127.0.0.1/osm_buildings"
+dbconn = "{{ env.DBCONN | default(value="postgresql://postgres@127.0.0.1/osm_buildings") }}"
 
 [[datasource]]
 name = "natural_earth"

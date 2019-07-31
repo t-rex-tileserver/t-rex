@@ -13,10 +13,7 @@ fn test_load_config() {
     println!("{:#?}", config);
     let config: ApplicationCfg = config.expect("load_config returned Err");
     assert!(config.service.mvt.viewer);
-    assert_eq!(
-        config.datasource[0].dbconn,
-        Some("postgresql://postgres@127.0.0.1/osm_buildings".to_string())
-    );
+    assert_eq!(config.datasource.len(), 2);
     assert_eq!(config.grid.predefined, Some("web_mercator".to_string()));
     assert_eq!(config.tilesets.len(), 1);
     assert_eq!(config.tilesets[0].name, "osm");
@@ -39,57 +36,76 @@ fn test_parse_error() {
 }
 
 #[test]
-fn test_default_config() {
-    use crate::core::parse_config;
-    let config: ApplicationCfg = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
-    assert_eq!(config.webserver.port, Some(6767));
-}
-
-#[test]
-fn test_envvar_expansion() {
+fn test_template() {
     use crate::core::parse_config;
     use std::env;
 
+    env::set_var("MYDBCONN", "postgresql://pi@localhost/geostat");
+    env::set_var("MYPORT", "9999");
     let toml = r#"
         [service.mvt]
         viewer = true
 
         [[datasource]]
-        dbconn = "${MYDBCONN}"
+        dbconn = "{{ env.MYDBCONN }}"
 
         [grid]
         predefined = "web_mercator"
 
         [[tileset]]
-        name = "ts${MYPORT}"
-        minzoom = 0
-        maxzoom = 22
+        {# env['TSNAME'] is undefined #}
+        name = "{{ env['TSNAME'] | default (value="Default-Tileset") }}"
 
+        {% for n in [1,2,3,] %}
         [[tileset.layer]]
-        name = "layer ${ MYPORT }"
+        name = "layer {{ n }}"
+        {% endfor %}
 
         [webserver]
         bind = "127.0.0.1"
-        port = ${MYPORT}
+        port = {{env["MYPORT"]}}
         "#;
-
-    let config: Result<ApplicationCfg, _> = parse_config(toml.to_string(), "");
-    assert_eq!(
-        r#"Environment variable `MYDBCONN` undefined"#,
-        config.err().unwrap()
-    );
-
-    env::set_var("MYDBCONN", "postgresql://pi@localhost/geostat");
-    env::set_var("MYPORT", "9999");
-    let config: ApplicationCfg =
-        parse_config(toml.to_string(), "").expect("parse_config returned Err");
+    let config: Result<ApplicationCfg, _> = parse_config(toml.to_string(), "inline.toml.tera");
+    assert_eq!(config.as_ref().err(), None);
+    let config = config.unwrap();
     assert_eq!(
         config.datasource[0].dbconn,
         Some("postgresql://pi@localhost/geostat".to_string())
     );
-    assert_eq!(&config.tilesets[0].name, "ts9999");
-    assert_eq!(&config.tilesets[0].layers[0].name, "layer ${ MYPORT }");
+    assert_eq!(&config.tilesets[0].name, "Default-Tileset");
+    assert_eq!(config.tilesets[0].layers.len(), 3);
+    assert_eq!(&config.tilesets[0].layers[0].name, "layer 1");
     assert_eq!(config.webserver.port, Some(9999));
+}
+
+#[test]
+fn test_tera_error() {
+    use crate::core::parse_config;
+
+    let toml = r#"
+        {% if 1 == 1 %}
+        wrong endif
+        {% xendifx %}
+        "#;
+    let config: Result<ApplicationCfg, _> = parse_config(toml.to_string(), "inline.toml.tera");
+    assert_eq!(
+        config.err(),
+        Some("Template error: Failed to parse \'inline.toml.tera\'".to_string())
+    );
+
+    let toml = "# {{ env['UNDEFINED'] }}";
+    let config: Result<ApplicationCfg, _> = parse_config(toml.to_string(), "inline.toml.tera");
+    assert_eq!(
+        config.err(),
+        Some("Template error: Failed to render \'inline.toml.tera\'".to_string())
+    );
+}
+
+#[test]
+fn test_default_config() {
+    use crate::core::parse_config;
+    let config: ApplicationCfg = parse_config(DEFAULT_CONFIG.to_string(), "").unwrap();
+    assert_eq!(config.webserver.port, Some(6767));
 }
 
 #[test]

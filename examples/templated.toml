@@ -1,0 +1,38 @@
+# Requires environment variable SPECIES. E.g. SPECIES=500,720
+
+[service.mvt]
+viewer = true
+
+[[datasource]]
+dbconn = "postgresql://{{env.USER}}@%2Frun%2Fpostgresql/vogeldatenbank"
+name = "dbconn"
+default = true
+
+[grid]
+predefined = "web_mercator"
+
+{% for id in env.SPECIES | split(pat=",") %}
+    [[tileset]]
+    name = "species-{{id}}"
+    # Real extent: [5.97203, 45.81704, 10.53440, 47.77335]
+    extent = [22.33212, 9.61149, 25.44029, 11.56287]
+    minzoom = 6
+    maxzoom = 10
+
+    [[tileset.layer]]
+    name = "density"
+    fid_field = "ogc_fid"
+    geometry_field = "wkb_geometry"
+    geometry_type = "POLYGON"
+    srid = 2056
+    no_transform = true
+    buffer_size = 1
+    simplify = true
+
+    [[tileset.layer.query]]
+    sql = """SELECT wkb_geometry,ogc_fid,value FROM birddata.density WHERE species_id={{id}} AND wkb_geometry && !bbox!"""
+{% endfor %}
+
+[webserver]
+bind = "127.0.0.1"
+port = 6767

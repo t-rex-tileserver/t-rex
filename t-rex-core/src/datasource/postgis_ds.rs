@@ -17,7 +17,7 @@ use r2d2;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use std;
 use std::collections::BTreeMap;
-use std::env;
+
 use std::error::Error;
 use tile_grid::Extent;
 use tile_grid::Grid;
@@ -871,15 +871,10 @@ impl DatasourceType for PostgisDatasource {
 
 impl<'a> Config<'a, DatasourceCfg> for PostgisDatasource {
     fn from_config(ds_cfg: &DatasourceCfg) -> Result<Self, String> {
-        if let Ok(url) = env::var("TREX_DATASOURCE_URL") {
-            // FIXME: this overwrites *all* PostGIS connections instead of a specific one
-            Ok(PostgisDatasource::new(url.as_str(), None))
-        } else {
-            Ok(PostgisDatasource::new(
-                ds_cfg.dbconn.as_ref().unwrap(),
-                ds_cfg.pool,
-            ))
-        }
+        Ok(PostgisDatasource::new(
+            ds_cfg.dbconn.as_ref().unwrap(),
+            ds_cfg.pool,
+        ))
     }
 
     fn gen_config() -> String {

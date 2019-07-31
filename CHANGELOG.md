@@ -3,6 +3,7 @@
 
 #### Features
 
+* [Template](https://tera.netlify.com/docs/templates/) support in configuration files
 * Initialize service only once before starting HttpServer threads
 * Share DB connection pool between all HttpServer threads
 * Migrate web server to Actix web 1.0
@@ -10,6 +11,13 @@
 #### Bug Fixes
 
 * Respect webserver threads configuration (broken since 0.9.0)
+
+#### Breaking changes
+
+* Environment variable expansion `${VARNAME}` is not supported anymore.
+  Use `{{env.VARNAME}}` instead.
+* `TREX_DATASOURCE_URL` is not automatically applied anymore.
+  Use `dbconn = "{{ env.TREX_DATASOURCE_URL }}"` instead.
 
 <a name="0.9.3"></a>
 ## 0.9.3 (2019-06-09)

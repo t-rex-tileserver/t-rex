@@ -185,9 +185,7 @@ fn test_runtime_config() {
     use clap::App;
     use std::env;
 
-    if env::var("DBCONN").is_err() {
-        panic!("DBCONN undefined");
-    }
+    env::var("DBCONN").expect("DBCONN undefined");
     let args = App::new("test")
         .args_from_usage("--dbconn=[SPEC] 'PostGIS connection postgresql://USER@HOST/DBNAME'")
         .get_matches_from(vec!["", "--dbconn", &env::var("DBCONN").unwrap()]);
