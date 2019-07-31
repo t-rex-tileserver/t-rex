@@ -330,12 +330,7 @@ fn test_tilejson() {
     use std::env;
     use t_rex_core::core::read_config;
 
-    match env::var("DBCONN") {
-        Err(_) => panic!("DBCONN undefined"),
-        // Overwrite PG connection in example.toml
-        Ok(dbconn) => env::set_var("TREX_DATASOURCE_URL", dbconn),
-    }
-
+    env::var("DBCONN").expect("DBCONN undefined");
     let config = read_config("src/test/example.toml").unwrap();
     let mut service = MvtService::from_config(&config).unwrap();
     service.connect();

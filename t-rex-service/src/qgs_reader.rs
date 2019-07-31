@@ -22,7 +22,7 @@ use t_rex_core::datasource::DummyDatasource as GdalDatasource;
 use t_rex_core::datasource::PostgisDatasource;
 use t_rex_core::service::tileset::Tileset;
 #[cfg(feature = "with-gdal")]
-use t_rex_gdal::gdal_ds::{ogr_layer_name, GdalDatasource};
+use t_rex_gdal::{ogr_layer_name, GdalDatasource};
 
 pub fn get_user_name() -> String {
     env::var("LOGNAME").unwrap_or("".to_string())

@@ -13,6 +13,78 @@ use t_rex_core::service::tileset::Tileset;
 use tile_grid::Extent;
 use tile_grid::Grid;
 
+#[test]
+#[ignore]
+fn test_layer_queries() {
+    use t_rex_core::core::parse_config;
+
+    let toml = r#"
+        [service.mvt]
+        viewer = true
+
+        [[datasource]]
+        dbconn = "postgresql://pi@%2Frun%2Fpostgresql/vogeldatenbank"
+
+        [grid]
+        predefined = "web_mercator"
+
+        [[tileset]]
+        name = "species-10"
+
+        [[tileset.layer]]
+        name = "density"
+        geometry_field = "wkb_geometry"
+        geometry_type = "POLYGON"
+        srid = 2056
+        no_transform = true
+        buffer_size = 1
+        simplify = true
+        [[tileset.layer.query]]
+        sql = """SELECT wkb_geometry,ogc_fid,value FROM birddata.density WHERE species_id=10 AND wkb_geometry && !bbox!"""
+
+        [[tileset]]
+        name = "species-20"
+
+        [[tileset.layer]]
+        name = "density"
+        geometry_field = "wkb_geometry"
+        geometry_type = "POLYGON"
+        srid = 2056
+        no_transform = true
+        buffer_size = 1
+        simplify = true
+        [[tileset.layer.query]]
+        sql = """SELECT wkb_geometry,ogc_fid,value FROM birddata.density WHERE species_id=20 AND wkb_geometry && !bbox!"""
+
+        [webserver]
+        bind = "127.0.0.1"
+        port = 6767
+        "#;
+    let config = parse_config(toml.to_string(), "");
+    assert_eq!(config.as_ref().err(), None);
+    let mut service =
+        MvtService::from_config(&config.unwrap()).expect("MvtService::from_config failed");
+    service.prepare_feature_queries();
+    let ts = service
+        .get_tileset("species-10")
+        .expect("get_tileset failed");
+    assert_eq!(ts.name, "species-10");
+    let ts_layers = service.get_tileset_layers("species-10");
+    assert_eq!(ts_layers.len(), 1);
+    assert!(ts_layers[0].query[0]
+        .sql
+        .as_ref()
+        .unwrap()
+        .contains("species_id=10"));
+    let ts_layers = service.get_tileset_layers("species-20");
+    assert_eq!(ts_layers.len(), 1);
+    assert!(ts_layers[0].query[0]
+        .sql
+        .as_ref()
+        .unwrap()
+        .contains("species_id=20"));
+}
+
 fn mvt_service() -> MvtService {
     use std::env;
 

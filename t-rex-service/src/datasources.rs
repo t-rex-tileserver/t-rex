@@ -13,7 +13,7 @@ use t_rex_core::core::Config;
 use t_rex_core::datasource::DummyDatasource as GdalDatasource;
 use t_rex_core::datasource::{DatasourceType, PostgisDatasource};
 #[cfg(feature = "with-gdal")]
-use t_rex_gdal::gdal_ds::GdalDatasource;
+use t_rex_gdal::GdalDatasource;
 use tile_grid::{Extent, Grid};
 
 #[derive(Clone)]
