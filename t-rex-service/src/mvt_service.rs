@@ -65,7 +65,7 @@ impl MvtService {
                     .datasources
                     .datasource_mut(&layer.datasource)
                     .expect(&format!("Datasource of layer `{}` not found", layer.name));
-                ds.prepare_queries(&layer, self.grid.srid);
+                ds.prepare_queries(&tileset.name, &layer, self.grid.srid);
             }
         }
     }
@@ -89,6 +89,7 @@ impl MvtService {
                 let mut mvt_layer = tile.new_layer(layer);
                 let now = Instant::now();
                 let num_features = self.ds(&layer).unwrap().retrieve_features(
+                    tileset,
                     &layer,
                     &extent,
                     zoom,

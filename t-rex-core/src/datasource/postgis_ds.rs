@@ -39,8 +39,8 @@ pub struct PostgisDatasource {
     pub connection_url: String,
     pub pool_size: Option<u16>,
     conn_pool: Option<r2d2::Pool<PostgresConnectionManager>>,
-    // Queries for all layers and zoom levels
-    queries: BTreeMap<String, BTreeMap<u8, SqlQuery>>,
+    // Queries for all tileset/layers and zoom levels
+    queries: BTreeMap<String, BTreeMap<String, BTreeMap<u8, SqlQuery>>>,
 }
 
 impl SqlQuery {
@@ -439,8 +439,13 @@ impl PostgisDatasource {
         query.replace_params(bbox_expr);
         Some(query)
     }
-    fn query(&self, layer: &Layer, zoom: u8) -> Option<&SqlQuery> {
-        let ref queries = self.queries[&layer.name];
+    fn query(&self, tileset: &String, layer: &String, zoom: u8) -> Option<&SqlQuery> {
+        let ref queries = self
+            .queries
+            .get(tileset)
+            .expect("Tileset query lookup failed")
+            .get(layer)
+            .expect("Layer query lookup failed");
         queries.get(&zoom)
     }
 }
@@ -587,7 +592,7 @@ impl DatasourceType for PostgisDatasource {
         );
         self.extent_query(sql)
     }
-    fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
+    fn prepare_queries(&mut self, tileset: &str, layer: &Layer, grid_srid: i32) {
         let mut queries = BTreeMap::new();
 
         // Configuration checks (TODO: add config_check to trait)
@@ -626,10 +631,15 @@ impl DatasourceType for PostgisDatasource {
             }
         }
 
-        self.queries.insert(layer.name.clone(), queries);
+        // Insert into self.queries
+        self.queries
+            .entry(tileset.to_string())
+            .or_insert(BTreeMap::new())
+            .insert(layer.name.clone(), queries);
     }
     fn retrieve_features<F>(
         &self,
+        tileset: &str,
         layer: &Layer,
         extent: &Extent,
         zoom: u8,
@@ -640,7 +650,7 @@ impl DatasourceType for PostgisDatasource {
         F: FnMut(&Feature),
     {
         let conn = self.conn();
-        let query = self.query(&layer, zoom);
+        let query = self.query(&tileset.to_string(), &layer.name, zoom);
         if query.is_none() {
             return 0;
         }

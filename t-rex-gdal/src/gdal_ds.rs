@@ -125,7 +125,7 @@ impl DatasourceType for GdalDatasource {
             None => None,
         }
     }
-    fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
+    fn prepare_queries(&mut self, _tileset: &str, layer: &Layer, grid_srid: i32) {
         if !Path::new(&self.path).exists() {
             warn!(
                 "Layer '{}': Can't open dataset '{}'",
@@ -194,6 +194,7 @@ impl DatasourceType for GdalDatasource {
     }
     fn retrieve_features<F>(
         &self,
+        _tileset: &str,
         layer: &Layer,
         extent: &Extent,
         zoom: u8,

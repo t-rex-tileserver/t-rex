@@ -17,12 +17,13 @@ pub trait DatasourceType {
     /// Return column field names and Rust compatible type conversion - without geometry column
     fn detect_data_columns(&self, layer: &Layer, sql: Option<&String>) -> Vec<(String, String)>;
     fn layer_extent(&self, layer: &Layer, grid_srid: i32) -> Option<Extent>;
-    fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32);
+    fn prepare_queries(&mut self, tileset: &str, layer: &Layer, grid_srid: i32);
     /// Projected extent
     fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent>;
     /// Retrieve features of one layer. Return feature count.
     fn retrieve_features<F>(
         &self,
+        tileset: &str,
         layer: &Layer,
         extent: &Extent,
         zoom: u8,
@@ -51,9 +52,10 @@ impl DatasourceType for DummyDatasource {
     fn layer_extent(&self, _layer: &Layer, _grid_srid: i32) -> Option<Extent> {
         unimplemented!();
     }
-    fn prepare_queries(&mut self, _layer: &Layer, _grid_srid: i32) {}
+    fn prepare_queries(&mut self, _tileset: &str, _layer: &Layer, _grid_srid: i32) {}
     fn retrieve_features<F>(
         &self,
+        _tileset: &str,
         _layer: &Layer,
         _extent: &Extent,
         _zoom: u8,

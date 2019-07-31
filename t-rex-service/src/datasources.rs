@@ -53,14 +53,15 @@ impl DatasourceType for Datasource {
             &Datasource::Gdal(ref ds) => ds.layer_extent(layer, grid_srid),
         }
     }
-    fn prepare_queries(&mut self, layer: &Layer, grid_srid: i32) {
+    fn prepare_queries(&mut self, tileset: &str, layer: &Layer, grid_srid: i32) {
         match self {
-            &mut Datasource::Postgis(ref mut ds) => ds.prepare_queries(layer, grid_srid),
-            &mut Datasource::Gdal(ref mut ds) => ds.prepare_queries(layer, grid_srid),
+            &mut Datasource::Postgis(ref mut ds) => ds.prepare_queries(tileset, layer, grid_srid),
+            &mut Datasource::Gdal(ref mut ds) => ds.prepare_queries(tileset, layer, grid_srid),
         }
     }
     fn retrieve_features<F>(
         &self,
+        tileset: &str,
         layer: &Layer,
         extent: &Extent,
         zoom: u8,
@@ -71,8 +72,12 @@ impl DatasourceType for Datasource {
         F: FnMut(&Feature),
     {
         match self {
-            &Datasource::Postgis(ref ds) => ds.retrieve_features(layer, extent, zoom, grid, read),
-            &Datasource::Gdal(ref ds) => ds.retrieve_features(layer, extent, zoom, grid, read),
+            &Datasource::Postgis(ref ds) => {
+                ds.retrieve_features(tileset, layer, extent, zoom, grid, read)
+            }
+            &Datasource::Gdal(ref ds) => {
+                ds.retrieve_features(tileset, layer, extent, zoom, grid, read)
+            }
         }
     }
 }

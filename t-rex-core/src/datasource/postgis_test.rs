@@ -299,8 +299,8 @@ fn test_retrieve_features() {
     };
 
     let mut reccnt = 0;
-    pg.prepare_queries(&layer, 3857);
-    pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
+    pg.prepare_queries("ts", &layer, 3857);
+    pg.retrieve_features("ts", &layer, &extent, 10, &grid, |feat| {
         assert_eq!(
             "Ok(Point(Point { x: 831219.9062494118, y: 5928485.165733484, srid: Some(3857) }))",
             &*format!("{:?}", feat.geometry())
@@ -317,8 +317,8 @@ fn test_retrieve_features() {
         sql: Some(String::from("SELECT * FROM ne.ne_10m_populated_places")),
     }];
     layer.fid_field = Some(String::from("fid"));
-    pg.prepare_queries(&layer, 3857);
-    pg.retrieve_features(&layer, &extent, 10, &grid, |feat| {
+    pg.prepare_queries("ts", &layer, 3857);
+    pg.retrieve_features("ts", &layer, &extent, 10, &grid, |feat| {
         assert_eq!(
             "Ok(Point(Point { x: 831219.9062494118, y: 5928485.165733484, srid: Some(3857) }))",
             &*format!("{:?}", feat.geometry())
@@ -349,7 +349,7 @@ fn test_no_geom_field() {
     layer.table_name = Some(String::from("ne.ne_10m_populated_places"));
     //layer.geometry_field = Some(String::from("wkb_geometry"));
     layer.geometry_type = Some(String::from("POINT"));
-    pg.prepare_queries(&layer, 3857);
+    pg.prepare_queries("ts", &layer, 3857);
 }
 
 #[test]

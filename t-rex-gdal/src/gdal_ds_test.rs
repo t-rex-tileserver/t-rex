@@ -72,9 +72,9 @@ fn test_gdal_retrieve_points() {
     };
 
     let mut ds = GdalDatasource::new("../data/natural_earth.gpkg");
-    ds.prepare_queries(&layer, grid.srid);
+    ds.prepare_queries("ts", &layer, grid.srid);
     let mut reccnt = 0;
-    ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
+    ds.retrieve_features("ts", &layer, &extent, 10, &grid, |feat| {
         if reccnt == 0 {
             assert_eq!(
                 "Ok(Point(Point { x: 831219.91, y: 5928485.17, srid: Some(3857) }))",
@@ -107,7 +107,7 @@ fn test_coord_transformation() {
     layer.srid = Some(3857);
     let grid = Grid::wgs84();
     let mut ds = GdalDatasource::new("../data/natural_earth.gpkg");
-    ds.prepare_queries(&layer, grid.srid);
+    ds.prepare_queries("ts", &layer, grid.srid);
 
     let extent_wgs84 = Extent {
         minx: 7.3828,
@@ -131,7 +131,7 @@ fn test_coord_transformation() {
     assert!(result.is_none());
 
     let mut reccnt = 0;
-    ds.retrieve_features(&layer, &extent_wgs84, 10, &grid, |feat| {
+    ds.retrieve_features("ts", &layer, &extent_wgs84, 10, &grid, |feat| {
         if reccnt == 0 {
             assert_eq!("Ok(Point(Point { x: 7.466975462482421, y: 46.916682758667704, srid: Some(4326) }))",
                        &*format!("{:?}", feat.geometry()));
@@ -169,11 +169,11 @@ fn test_gdal_retrieve_multilines() {
     assert_eq!(gdal_layer.features().count(), 1404);
 
     let mut ds = GdalDatasource::new("../data/natural_earth.gpkg");
-    ds.prepare_queries(&layer, grid.srid);
+    ds.prepare_queries("ts", &layer, grid.srid);
     let mut reccnt = 0;
 
     // without buffer
-    ds.retrieve_features(&layer, &extent, 10, &grid, |_| {
+    ds.retrieve_features("ds", &layer, &extent, 10, &grid, |_| {
         reccnt += 1;
     });
     assert_eq!(reccnt, 0);
@@ -181,13 +181,13 @@ fn test_gdal_retrieve_multilines() {
     // with buffer
     layer.buffer_size = Some(600);
 
-    ds.retrieve_features(&layer, &extent, 22, &grid, |_| {
+    ds.retrieve_features("ds", &layer, &extent, 22, &grid, |_| {
         reccnt += 1;
     });
     assert_eq!(reccnt, 0);
 
     let mut reccnt = 0;
-    ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
+    ds.retrieve_features("ds", &layer, &extent, 10, &grid, |feat| {
         assert_eq!(2, feat.attributes().len());
         assert_eq!(feat.attributes()[0].key, "scalerank");
         assert_eq!(feat.attributes()[1].key, "name");
@@ -227,9 +227,9 @@ fn test_gdal_retrieve_multipolys() {
     };
 
     let mut ds = GdalDatasource::new("../data/natural_earth.gpkg");
-    ds.prepare_queries(&layer, grid.srid);
+    ds.prepare_queries("ds", &layer, grid.srid);
     let mut reccnt = 0;
-    ds.retrieve_features(&layer, &extent, 10, &grid, |feat| {
+    ds.retrieve_features("ds", &layer, &extent, 10, &grid, |feat| {
         if reccnt == 0 {
             assert_eq!("Ok(MultiPolygon(MultiPolygonT { polygons: [PolygonT { rings: [LineStringT { points: [Point { x: 1068024.3649477786, y: 6028202.019",
                        &format!("{:?}", feat.geometry())[0..130]);
