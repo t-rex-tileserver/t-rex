@@ -238,12 +238,10 @@ impl SqlQuery {
         }
     }
     fn valid_sql_for_params(sql: &String) -> String {
-        let mut query: String;
-        query = sql.replace("!bbox!", "ST_MakeEnvelope(0,0,0,0,3857)");
-        query = query.replace("!zoom!", "0");
-        query = query.replace("!pixel_width!", "0");
-        query = query.replace("!scale_denominator!", "0");
-        query
+        sql.replace("!bbox!", "ST_MakeEnvelope(0,0,0,0,3857)")
+            .replace("!zoom!", "0")
+            .replace("!pixel_width!", "0")
+            .replace("!scale_denominator!", "0")
     }
 }
 
