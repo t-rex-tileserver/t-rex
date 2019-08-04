@@ -13,6 +13,7 @@
 #### Bug Fixes
 
 * Fix SQL queries for non-unique layer names
+* Skip tile requests with z > grid.maxzoom
 * Respect webserver threads configuration (broken since 0.9.0)
 
 #### Breaking changes

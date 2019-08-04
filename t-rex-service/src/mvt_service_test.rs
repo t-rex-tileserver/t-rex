@@ -14,7 +14,6 @@ use tile_grid::Extent;
 use tile_grid::Grid;
 
 #[test]
-#[ignore]
 fn test_layer_queries() {
     use t_rex_core::core::parse_config;
 

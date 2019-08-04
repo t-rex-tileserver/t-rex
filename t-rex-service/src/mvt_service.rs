@@ -85,7 +85,7 @@ impl MvtService {
         );
         let mut tile = Tile::new(&extent, true);
         for layer in self.get_tileset_layers(tileset) {
-            if zoom >= layer.minzoom() && zoom <= layer.maxzoom(30) {
+            if zoom >= layer.minzoom() && zoom <= layer.maxzoom(self.grid.maxzoom()) {
                 let mut mvt_layer = tile.new_layer(layer);
                 let now = Instant::now();
                 let num_features = self.ds(&layer).unwrap().retrieve_features(
