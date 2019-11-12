@@ -17,7 +17,7 @@ doctest = false
 
 [dependencies]
 toml = "0.4"
-fallible-iterator = "0.1"
+fallible-iterator = "0.2"
 r2d2 = "0.8"
 r2d2_postgres = "0.14"
 regex = "1"
