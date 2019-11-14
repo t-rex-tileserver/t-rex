@@ -14,7 +14,7 @@ workspace = ".."
 doctest = false
 
 [dependencies]
-actix-web = "1.0.7"
+actix-web = "1.0.9"
 actix-cors = "0.1.0"
 actix-files = "0.1.4"
 actix-rt = "0.2.5"
