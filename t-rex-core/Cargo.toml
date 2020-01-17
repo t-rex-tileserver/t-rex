@@ -16,7 +16,7 @@ workspace = ".."
 doctest = false
 
 [dependencies]
-toml = "0.4"
+toml = "0.5"
 fallible-iterator = "0.1"
 r2d2 = "0.8"
 r2d2_postgres = "0.14"
