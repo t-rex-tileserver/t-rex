@@ -1,10 +1,11 @@
 <a name="0.10.1"></a>
-## 0.10.1 (UNRELEASED)
+## 0.10.1 (2020-02-20)
 
 #### Bug Fixes
 
 * Don't flip Y for Non-Mercator grids when seeding cache (use TMS instead of XYZ)
 * Fix interference of some static URLs with tile URLs
+* Add fonts.json endpoint as requested by Maputnik
 
 <a name="0.10.0"></a>
 ## 0.10.0 (2019-08-04)
