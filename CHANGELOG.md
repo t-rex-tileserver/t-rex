@@ -3,7 +3,7 @@
 
 #### Features
 
-* [Template](https://tera.netlify.com/docs/templates/) support in configuration files
+* [Template](https://tera.netlify.com/docs/#templates) support in configuration files
 * Load environment variables from a file named `.env` in the current directory
   or any of its parents
 * Initialize service only once before starting HttpServer threads
