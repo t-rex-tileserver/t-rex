@@ -17,7 +17,6 @@ Features
 * Tile generation command with simple parallelization
 * Automatic reprojection to grid CRS
 * Support for custom tile grids
-* Embedded styles
 
 
 ### Presentations
@@ -81,7 +80,7 @@ Run tests:
 
     cargo test --all
 
-Run server with DB [connection](https://github.com/sfackler/rust-postgres#connecting):
+Run server with DB [connection](https://github.com/sfackler/rust-postgres/tree/postgres-v0.15.2#connecting):
 
     cargo run -- serve --dbconn postgresql://t_rex:t_rex@127.0.0.1:5439/t_rex_tests
 
