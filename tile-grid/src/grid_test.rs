@@ -352,5 +352,4 @@ mod web_mercator {
             }
         );
     }
-
 }

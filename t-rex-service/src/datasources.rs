@@ -280,5 +280,4 @@ mod gdal_tests {
         }
         dss.default().unwrap().connected();
     }
-
 }

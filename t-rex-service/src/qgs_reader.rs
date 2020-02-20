@@ -229,7 +229,9 @@ fn test_parse_xml() {
 
 #[test]
 fn test_pg_uri() {
-    let info = PgLayerInfo::from_qgs_ds(r#"dbname='natural_earth_vectors' host=localhost port=5432 user='pi' password='xxx' sslmode=allow key='fid' estimatedmetadata=true srid=4326 type=Point table="public"."ne_10m_populated_places_wgs84" (wkb_geometry) sql="#);
+    let info = PgLayerInfo::from_qgs_ds(
+        r#"dbname='natural_earth_vectors' host=localhost port=5432 user='pi' password='xxx' sslmode=allow key='fid' estimatedmetadata=true srid=4326 type=Point table="public"."ne_10m_populated_places_wgs84" (wkb_geometry) sql="#,
+    );
     assert_eq!(
         info.dbconn,
         "postgresql://pi:xxx@localhost:5432/natural_earth_vectors"
@@ -247,7 +249,9 @@ fn test_pg_uri() {
         )
     );
     assert_eq!(info.table_name, r#""public"."admin_0_countries""#);
-    let info = PgLayerInfo::from_qgs_ds(r#"dbname='natural_earth_vectors' port=5432 sslmode=disable key='fid' estimatedmetadata=true srid=4326 type=Point table="public"."ne_10m_populated_places_wgs84" (wkb_geometry) sql="scalerank" &lt; 9"#);
+    let info = PgLayerInfo::from_qgs_ds(
+        r#"dbname='natural_earth_vectors' port=5432 sslmode=disable key='fid' estimatedmetadata=true srid=4326 type=Point table="public"."ne_10m_populated_places_wgs84" (wkb_geometry) sql="scalerank" &lt; 9"#,
+    );
     assert_eq!(
         info.table_name,
         r#""public"."ne_10m_populated_places_wgs84""#
