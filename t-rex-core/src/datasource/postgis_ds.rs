@@ -647,7 +647,7 @@ impl DatasourceType for PostgisDatasource {
         mut read: F,
     ) -> u64
     where
-        F: FnMut(&Feature),
+        F: FnMut(&dyn Feature),
     {
         let conn = self.conn();
         let query = self.query(&tileset.to_string(), &layer.name, zoom);
@@ -670,7 +670,7 @@ impl DatasourceType for PostgisDatasource {
         for param in &query.params {
             match param {
                 &QueryParam::Bbox => {
-                    let mut bbox: Vec<&ToSql> =
+                    let mut bbox: Vec<&dyn ToSql> =
                         vec![&extent.minx, &extent.miny, &extent.maxx, &extent.maxy];
                     params.append(&mut bbox);
                 }

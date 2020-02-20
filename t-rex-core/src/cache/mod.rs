@@ -38,7 +38,7 @@ impl Cache for Tilecache {
     }
     fn read<F>(&self, path: &str, read: F) -> bool
     where
-        F: FnMut(&mut Read),
+        F: FnMut(&mut dyn Read),
     {
         match self {
             &Tilecache::Nocache(ref cache) => cache.read(path, read),

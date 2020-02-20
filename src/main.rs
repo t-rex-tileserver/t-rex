@@ -39,7 +39,7 @@ fn init_logger(args: &ArgMatches<'_>) {
             loglevel => loglevel,
         }
     };
-    builder.parse(rust_log);
+    builder.parse_filters(rust_log);
 
     builder.init();
 }

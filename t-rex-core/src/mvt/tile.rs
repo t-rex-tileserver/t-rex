@@ -223,7 +223,7 @@ impl<'a> Tile<'a> {
         mvt_feature.mut_tags().push(validx as u32);
     }
 
-    pub fn add_feature(&self, mut mvt_layer: &mut vector_tile::Tile_Layer, feature: &Feature) {
+    pub fn add_feature(&self, mut mvt_layer: &mut vector_tile::Tile_Layer, feature: &dyn Feature) {
         let mut mvt_feature = vector_tile::Tile_Feature::new();
         if let Some(fid) = feature.fid() {
             mvt_feature.set_id(fid);
@@ -275,13 +275,13 @@ impl<'a> Tile<'a> {
         self.mvt_tile.mut_layers().push(mvt_layer);
     }
 
-    pub fn write_to(mut out: &mut Write, mvt_tile: &vector_tile::Tile) {
+    pub fn write_to(mut out: &mut dyn Write, mvt_tile: &vector_tile::Tile) {
         let mut os = CodedOutputStream::new(&mut out);
         let _ = mvt_tile.write_to(&mut os);
         os.flush().unwrap();
     }
 
-    pub fn write_gz_to(out: &mut Write, mvt_tile: &vector_tile::Tile) {
+    pub fn write_gz_to(out: &mut dyn Write, mvt_tile: &vector_tile::Tile) {
         let mut gz = GzEncoder::new(out, Compression::default());
         {
             let mut os = CodedOutputStream::new(&mut gz);
@@ -291,12 +291,12 @@ impl<'a> Tile<'a> {
         let _ = gz.finish();
     }
 
-    pub fn read_from(fin: &mut Read) -> Result<vector_tile::Tile, ProtobufError> {
+    pub fn read_from(fin: &mut dyn Read) -> Result<vector_tile::Tile, ProtobufError> {
         let mut reader = BufReader::new(fin);
         parse_from_reader::<vector_tile::Tile>(&mut reader)
     }
 
-    pub fn read_gz_from(fin: &mut Read) -> Result<vector_tile::Tile, ProtobufError> {
+    pub fn read_gz_from(fin: &mut dyn Read) -> Result<vector_tile::Tile, ProtobufError> {
         let gz = GzDecoder::new(fin);
         let mut reader = BufReader::new(gz);
         parse_from_reader::<vector_tile::Tile>(&mut reader)

@@ -69,7 +69,7 @@ impl DatasourceType for Datasource {
         read: F,
     ) -> u64
     where
-        F: FnMut(&Feature),
+        F: FnMut(&dyn Feature),
     {
         match self {
             &Datasource::Postgis(ref ds) => {

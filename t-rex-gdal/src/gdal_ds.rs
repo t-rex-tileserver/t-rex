@@ -202,7 +202,7 @@ impl DatasourceType for GdalDatasource {
         mut read: F,
     ) -> u64
     where
-        F: FnMut(&Feature),
+        F: FnMut(&dyn Feature),
     {
         let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
         let layer_name = layer.table_name.as_ref().unwrap();

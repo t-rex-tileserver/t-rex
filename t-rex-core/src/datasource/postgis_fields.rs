@@ -68,7 +68,7 @@ impl FromSql for FeatureAttrValType {
             _ => false,
         }
     }
-    fn from_sql(ty: &Type, raw: &[u8]) -> Result<Self, Box<std::error::Error + Sync + Send>> {
+    fn from_sql(ty: &Type, raw: &[u8]) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
         match ty {
             &types::VARCHAR | &types::TEXT | &types::CHAR_ARRAY => {
                 <String>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::String(v)))
@@ -88,7 +88,7 @@ impl FromSql for FeatureAttrValType {
             &types::INT8 => <i64>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Int(v))),
             &types::BOOL => <bool>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Bool(v))),
             _ => {
-                let err: Box<std::error::Error + Sync + Send> =
+                let err: Box<dyn std::error::Error + Sync + Send> =
                     format!("cannot convert {} to FeatureAttrValType", ty).into();
                 Err(err)
             }

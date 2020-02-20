@@ -25,7 +25,7 @@ impl Cache for Filecache {
     }
     fn read<F>(&self, path: &str, mut read: F) -> bool
     where
-        F: FnMut(&mut Read),
+        F: FnMut(&mut dyn Read),
     {
         let fullpath = format!("{}/{}", self.basepath, path);
         debug!("Filecache.read {}", fullpath);

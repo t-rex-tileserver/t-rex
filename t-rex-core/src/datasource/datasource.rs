@@ -31,7 +31,7 @@ pub trait DatasourceType {
         read: F,
     ) -> u64
     where
-        F: FnMut(&Feature);
+        F: FnMut(&dyn Feature);
 }
 
 pub struct DummyDatasource;
@@ -63,7 +63,7 @@ impl DatasourceType for DummyDatasource {
         _read: F,
     ) -> u64
     where
-        F: FnMut(&Feature),
+        F: FnMut(&dyn Feature),
     {
         0
     }
