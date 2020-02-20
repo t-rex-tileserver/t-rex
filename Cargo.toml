@@ -1,7 +1,7 @@
 [package]
 name = "t-rex"
 version = "0.10.0"
-description = "vector tile server"
+description = "t-rex vector tile server"
 repository = "https://github.com/t-rex-tileserver/t-rex"
 readme = "README.md"
 license = "MIT"
@@ -30,3 +30,18 @@ default = ["with-gdal"]
 with-gdal = ["t-rex-gdal"]
 
 [workspace]
+
+[package.metadata.deb]
+maintainer = "Pirmin Kalberer <pi_deb@sourcepole.ch>"
+copyright = "2020, Pirmin Kalberer <pi_deb@sourcepole.ch>"
+license-file = ["LICENSE", "4"]
+extended-description = """\
+t-rex is a vector tile server specialized \
+on publishing MVT tiles from your own data."""
+depends = "$auto"
+section = "utility"
+priority = "optional"
+assets = [
+    ["target/release/t_rex", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/t-rex/README", "644"],
+]

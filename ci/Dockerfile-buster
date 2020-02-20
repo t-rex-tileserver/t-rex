@@ -1,0 +1,12 @@
+FROM rust:1-buster
+
+RUN cargo install cargo-deb
+
+RUN apt-get update && apt-get install -y libgdal-dev
+
+WORKDIR /usr/src/app
+COPY . .
+
+RUN cargo deb
+
+RUN ldd target/release/t_rex
