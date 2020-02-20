@@ -4,6 +4,7 @@
 #### Bug Fixes
 
 * Don't flip Y for Non-Mercator grids when seeding cache (use TMS instead of XYZ)
+* Fix interference of some static URLs with tile URLs
 
 <a name="0.10.0"></a>
 ## 0.10.0 (2019-08-04)
