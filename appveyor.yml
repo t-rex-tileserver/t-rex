@@ -2,6 +2,7 @@
 # https://github.com/japaric/trust/tree/v0.1.1
 
 environment:
+  VisualStudioVersion: 8.0
   global:
     RUST_VERSION: stable
     CRATE_NAME: t-rex
@@ -31,17 +32,20 @@ install:
   - curl -sSf -o rustup-init.exe https://win.rustup.rs/
   - rustup-init.exe -y --default-host %TARGET% --default-toolchain %RUST_VERSION%
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
+  - set PATH=%PATH%;"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin"
   - rustc -Vv
   - cargo -V
   - curl -S -O http://download.gisinternals.com/sdk/downloads/release-1800-x64-dev.zip
   - 7z x release-1800-x64-dev.zip
   - set GDAL_HOME=C:\projects\t-rex\release-1800-x64
   - set GDAL_DATA=%GDAL_HOME%\bin\gdal-data
-  - set PATH=%PATH%;%GDAL_HOME%\bin
-  - set PATH=%PATH%;"%WIX%\bin"
+  - set PATH=%GDAL_HOME%\bin;%PATH%
+  - set PATH="%WIX%\bin";%PATH%
+  - echo %PATH%
 
 test_script:
   - cargo build --all --tests --bins
+  - dumpbin /DEPENDENTS target\debug\t_rex.exe
   - cargo run -- --version
   - cargo test --all
   - cargo test --all --release
