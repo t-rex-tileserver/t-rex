@@ -47,6 +47,8 @@ EOF
 
             docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
             docker push sourcepole/t-rex
+            docker tag sourcepole/t-rex:${TRAVIS_TAG#v}
+            docker push sourcepole/t-rex:${TRAVIS_TAG#v}
         fi
    fi
 }
