@@ -229,6 +229,7 @@ pub fn webserver(args: ArgMatches<'static>) {
             .wrap(Cors::new().send_wildcard().allowed_methods(vec!["GET"]))
             .service(web::resource("/index.json").route(web::get().to_async(mvt_metadata)))
             .service(web::resource("/fontstacks.json").route(web::get().to(fontstacks)))
+            .service(web::resource("/fonts.json").route(web::get().to(fontstacks)))
             .service(web::resource("/fonts/{fonts}/{range}.pbf").route(web::get().to(fonts_pbf)));
         for static_dir in &static_dirs {
             let dir = &static_dir.dir;
