@@ -1,6 +1,10 @@
 <a name="0.10.1"></a>
 ## 0.10.1 (UNRELEASED)
 
+#### Bug Fixes
+
+* Don't flip Y for Non-Mercator grids when seeding cache (use TMS instead of XYZ)
+
 <a name="0.10.0"></a>
 ## 0.10.0 (2019-08-04)
 

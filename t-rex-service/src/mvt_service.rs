@@ -289,8 +289,12 @@ impl MvtService {
                     continue;
                 }
 
-                // store in xyz schema. TODO: make configurable
-                let y = self.grid.ytile_from_xyz(ytile, zoom);
+                // Store Mercator tiles in xyz scheme, others in TMS scheme.
+                let y = if self.grid.srid == 3857 {
+                    self.grid.ytile_from_xyz(ytile, zoom)
+                } else {
+                    ytile
+                };
                 let path = format!("{}/{}/{}/{}.pbf", &tileset.name, zoom, xtile, y);
 
                 if overwrite || !self.cache.exists(&path) {
