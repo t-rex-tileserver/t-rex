@@ -10,11 +10,11 @@ use crate::static_files::StaticFiles;
 use actix_cors::Cors;
 use actix_files as fs;
 use actix_rt;
+use actix_web::dev::BodyEncoding;
 use actix_web::http::{header, ContentEncoding};
-use actix_web::middleware::{BodyEncoding, Compress};
-use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer, Result};
+use actix_web::middleware::Compress;
+use actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer, Result};
 use clap::ArgMatches;
-use futures::{future::ok, Future};
 use log::Level;
 use num_cpus;
 use open;
@@ -47,13 +47,13 @@ xxxxxxx
 xxxxxx
 xxxxxxx";
 
-fn mvt_metadata(service: web::Data<MvtService>) -> impl Future<Item = HttpResponse, Error = Error> {
+async fn mvt_metadata(service: web::Data<MvtService>) -> Result<HttpResponse> {
     let json = service.get_mvt_metadata().unwrap();
-    ok(HttpResponse::Ok().json(json))
+    Ok(HttpResponse::Ok().json(json))
 }
 
 /// Font list for Maputnik
-fn fontstacks() -> Result<HttpResponse> {
+async fn fontstacks() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().json(["Roboto Medium", "Roboto Regular"]))
 }
 
@@ -62,7 +62,7 @@ include!(concat!(env!("OUT_DIR"), "/fonts.rs"));
 
 /// Fonts for Maputnik
 /// Example: /fonts/Open%20Sans%20Regular,Arial%20Unicode%20MS%20Regular/0-255.pbf
-fn fonts_pbf(params: web::Path<(String, String)>) -> Result<HttpResponse, Error> {
+async fn fonts_pbf(params: web::Path<(String, String)>) -> Result<HttpResponse> {
     let fontpbfs = fonts();
     let fontlist = &params.0;
     let range = &params.1;
@@ -90,38 +90,38 @@ fn req_baseurl(req: &HttpRequest) -> String {
     format!("{}://{}", conninfo.scheme(), conninfo.host())
 }
 
-fn tileset_tilejson(
+async fn tileset_tilejson(
     service: web::Data<MvtService>,
     tileset: web::Path<String>,
     req: HttpRequest,
-) -> impl Future<Item = HttpResponse, Error = Error> {
+) -> Result<HttpResponse> {
     let json = service.get_tilejson(&req_baseurl(&req), &tileset).unwrap();
-    ok(HttpResponse::Ok().json(json))
+    Ok(HttpResponse::Ok().json(json))
 }
 
-fn tileset_style_json(
+async fn tileset_style_json(
     service: web::Data<MvtService>,
     tileset: web::Path<String>,
     req: HttpRequest,
-) -> impl Future<Item = HttpResponse, Error = Error> {
+) -> Result<HttpResponse> {
     let json = service.get_stylejson(&req_baseurl(&req), &tileset).unwrap();
-    ok(HttpResponse::Ok().json(json))
+    Ok(HttpResponse::Ok().json(json))
 }
 
-fn tileset_metadata_json(
+async fn tileset_metadata_json(
     service: web::Data<MvtService>,
     tileset: web::Path<String>,
-) -> impl Future<Item = HttpResponse, Error = Error> {
+) -> Result<HttpResponse> {
     let json = service.get_mbtiles_metadata(&tileset).unwrap();
-    ok(HttpResponse::Ok().json(json))
+    Ok(HttpResponse::Ok().json(json))
 }
 
-fn tile_pbf(
+async fn tile_pbf(
     config: web::Data<ApplicationCfg>,
     service: web::Data<MvtService>,
     params: web::Path<(String, u8, u32, u32)>,
     req: HttpRequest,
-) -> impl Future<Item = HttpResponse, Error = Error> {
+) -> Result<HttpResponse> {
     let tileset = &params.0;
     let z = params.1;
     let x = params.2;
@@ -152,14 +152,14 @@ fn tile_pbf(
     } else {
         HttpResponse::NoContent().finish()
     };
-    ok(resp)
+    Ok(resp)
 }
 
 lazy_static! {
     static ref STATIC_FILES: StaticFiles = StaticFiles::init();
 }
 
-fn static_file_handler(req: HttpRequest) -> Result<HttpResponse, Error> {
+async fn static_file_handler(req: HttpRequest) -> Result<HttpResponse> {
     let key = req.path()[1..].to_string();
     let resp = if let Some(ref content) = STATIC_FILES.content(None, key) {
         HttpResponse::Ok()
@@ -179,10 +179,10 @@ struct DrilldownParams {
     points: String, //x1,y1,x2,y2,..
 }
 
-fn drilldown_handler(
+async fn drilldown_handler(
     service: web::Data<MvtService>,
     params: web::Query<DrilldownParams>,
-) -> impl Future<Item = HttpResponse, Error = Error> {
+) -> Result<HttpResponse> {
     let tileset = None; // all tilesets
     let progress = false;
     let points: Vec<f64> = params
@@ -196,10 +196,11 @@ fn drilldown_handler(
         .collect();
     let stats = service.drilldown(tileset, params.minzoom, params.maxzoom, points, progress);
     let json = stats.as_json().unwrap();
-    ok(HttpResponse::Ok().json(json))
+    Ok(HttpResponse::Ok().json(json))
 }
 
-pub fn webserver(args: ArgMatches<'static>) {
+#[actix_rt::main]
+pub async fn webserver(args: ArgMatches<'static>) -> std::io::Result<()> {
     let config = config_from_args(&args);
     let host = config
         .webserver
@@ -218,16 +219,19 @@ pub fn webserver(args: ArgMatches<'static>) {
     service.prepare_feature_queries();
     service.init_cache();
 
-    let sys = actix_rt::System::new("t-rex");
-
-    HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         let mut app = App::new()
             .data(config.clone())
             .data(service.clone())
             .wrap(middleware::Logger::new("%r %s %b %Dms %a"))
             .wrap(Compress::default())
-            .wrap(Cors::new().send_wildcard().allowed_methods(vec!["GET"]))
-            .service(web::resource("/index.json").route(web::get().to_async(mvt_metadata)))
+            .wrap(
+                Cors::new()
+                    .send_wildcard()
+                    .allowed_methods(vec!["GET"])
+                    .finish(),
+            )
+            .service(web::resource("/index.json").route(web::get().to(mvt_metadata)))
             .service(web::resource("/fontstacks.json").route(web::get().to(fontstacks)))
             .service(web::resource("/fonts.json").route(web::get().to(fontstacks)))
             .service(web::resource("/fonts/{fonts}/{range}.pbf").route(web::get().to(fonts_pbf)));
@@ -242,20 +246,16 @@ pub fn webserver(args: ArgMatches<'static>) {
         }
         app = app
             .service(
-                web::resource("/{tileset}.style.json")
-                    .route(web::get().to_async(tileset_style_json)),
+                web::resource("/{tileset}.style.json").route(web::get().to(tileset_style_json)),
             )
             .service(
                 web::resource("/{tileset}/metadata.json")
-                    .route(web::get().to_async(tileset_metadata_json)),
+                    .route(web::get().to(tileset_metadata_json)),
             )
-            .service(web::resource("/{tileset}.json").route(web::get().to_async(tileset_tilejson)))
-            .service(
-                web::resource("/{tileset}/{z}/{x}/{y}.pbf").route(web::get().to_async(tile_pbf)),
-            );
+            .service(web::resource("/{tileset}.json").route(web::get().to(tileset_tilejson)))
+            .service(web::resource("/{tileset}/{z}/{x}/{y}.pbf").route(web::get().to(tile_pbf)));
         if mvt_viewer {
-            app = app
-                .service(web::resource("/drilldown").route(web::get().to_async(drilldown_handler)));
+            app = app.service(web::resource("/drilldown").route(web::get().to(drilldown_handler)));
             app = app.default_service(web::to(static_file_handler));
         }
         app
@@ -264,7 +264,7 @@ pub fn webserver(args: ArgMatches<'static>) {
     .bind(&bind_addr)
     .expect("Can not start server on given IP/Port")
     .shutdown_timeout(3) // default: 30s
-    .start();
+    .run();
 
     if log_enabled!(Level::Info) {
         println!("{}", DINO);
@@ -274,5 +274,5 @@ pub fn webserver(args: ArgMatches<'static>) {
         let _res = open::that(format!("http://{}:{}", &host, port));
     }
 
-    sys.run().expect("Couldn't run HttpServer");
+    server.await
 }

@@ -210,7 +210,7 @@ fn main() {
         Result::Ok(matches) => match matches.subcommand() {
             ("serve", Some(sub_m)) => {
                 init_logger(sub_m);
-                webserver::webserver(sub_m.clone());
+                let _ = webserver::webserver(sub_m.clone());
             }
             ("genconfig", Some(sub_m)) => {
                 init_logger(sub_m);
