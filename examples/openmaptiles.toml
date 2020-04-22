@@ -1,0 +1,476 @@
+### Working config for OpenMapTiles schema
+
+[webserver]
+    bind = "0.0.0.0"
+    port = 8081
+
+[service.mvt]
+    viewer = false
+
+[cache.file]
+    base = "/tmp/mvtcache"
+
+[[datasource]]
+    name = "osm"
+    dbconn = "postgresql://openmaptiles:openmaptiles@127.0.0.1/openmaptiles"
+
+[grid]
+    predefined = "web_mercator"
+
+[[tileset]]
+    name = "openmaptiles"
+
+[[tileset.layer]]
+    name = "water"
+    datasource = "osm"
+    geometry_field = "geometry"
+    geometry_type = "POLYGON"
+    srid = 3857
+    buffer_size = 4
+    simplify = true
+    [[tileset.layer.query]]
+        minzoom = 0
+        maxzoom = 5
+        sql = """SELECT geometry, class, intermittent, brunnel FROM layer_water(!bbox!, !zoom!)"""
+    [[tileset.layer.query]] # fix invalid geometries on higher zoom levels
+        minzoom = 6
+        maxzoom = 22
+        sql = """SELECT CASE WHEN ST_IsValid(geometry) THEN geometry ELSE ST_MakeValid(geometry) END as geometry, class, intermittent, brunnel FROM layer_water(!bbox!, !zoom!)"""
+
+[[tileset.layer]]
+name = "waterway"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "LINESTRING"
+srid = 3857
+buffer_size = 4
+[[tileset.layer.query]]
+sql = """SELECT geometry, name, name_en, name_de, NULLIF(tags->'name:am', '') AS
+               "name:am", NULLIF(tags->'name:ar', '') AS "name:ar", NULLIF(tags->'name:az',
+               '') AS "name:az", NULLIF(tags->'name:be', '') AS "name:be", NULLIF(tags->'name:bg',
+               '') AS "name:bg", NULLIF(tags->'name:br', '') AS "name:br", NULLIF(tags->'name:bs',
+               '') AS "name:bs", NULLIF(tags->'name:ca', '') AS "name:ca", NULLIF(tags->'name:co',
+               '') AS "name:co", NULLIF(tags->'name:cs', '') AS "name:cs", NULLIF(tags->'name:cy',
+               '') AS "name:cy", NULLIF(tags->'name:da', '') AS "name:da", NULLIF(tags->'name:de',
+               '') AS "name:de", NULLIF(tags->'name:el', '') AS "name:el", NULLIF(tags->'name:en',
+               '') AS "name:en", NULLIF(tags->'name:eo', '') AS "name:eo", NULLIF(tags->'name:es',
+               '') AS "name:es", NULLIF(tags->'name:et', '') AS "name:et", NULLIF(tags->'name:eu',
+               '') AS "name:eu", NULLIF(tags->'name:fi', '') AS "name:fi", NULLIF(tags->'name:fr',
+               '') AS "name:fr", NULLIF(tags->'name:fy', '') AS "name:fy", NULLIF(tags->'name:ga',
+               '') AS "name:ga", NULLIF(tags->'name:gd', '') AS "name:gd", NULLIF(tags->'name:he',
+               '') AS "name:he", NULLIF(tags->'name:hr', '') AS "name:hr", NULLIF(tags->'name:hu',
+               '') AS "name:hu", NULLIF(tags->'name:hy', '') AS "name:hy", NULLIF(tags->'name:id',
+               '') AS "name:id", NULLIF(tags->'name:is', '') AS "name:is", NULLIF(tags->'name:it',
+               '') AS "name:it", NULLIF(tags->'name:ja', '') AS "name:ja", NULLIF(tags->'name:ja_kana',
+               '') AS "name:ja_kana", NULLIF(tags->'name:ja_rm', '') AS "name:ja_rm", NULLIF(tags->'name:ka',
+               '') AS "name:ka", NULLIF(tags->'name:kk', '') AS "name:kk", NULLIF(tags->'name:kn',
+               '') AS "name:kn", NULLIF(tags->'name:ko', '') AS "name:ko", NULLIF(tags->'name:ko_rm',
+               '') AS "name:ko_rm", NULLIF(tags->'name:ku', '') AS "name:ku", NULLIF(tags->'name:la',
+               '') AS "name:la", NULLIF(tags->'name:lb', '') AS "name:lb", NULLIF(tags->'name:lt',
+               '') AS "name:lt", NULLIF(tags->'name:lv', '') AS "name:lv", NULLIF(tags->'name:mk',
+               '') AS "name:mk", NULLIF(tags->'name:mt', '') AS "name:mt", NULLIF(tags->'name:ml',
+               '') AS "name:ml", NULLIF(tags->'name:nl', '') AS "name:nl", NULLIF(tags->'name:no',
+               '') AS "name:no", NULLIF(tags->'name:oc', '') AS "name:oc", NULLIF(tags->'name:pl',
+               '') AS "name:pl", NULLIF(tags->'name:pt', '') AS "name:pt", NULLIF(tags->'name:rm',
+               '') AS "name:rm", NULLIF(tags->'name:ro', '') AS "name:ro", NULLIF(tags->'name:ru',
+               '') AS "name:ru", NULLIF(tags->'name:sk', '') AS "name:sk", NULLIF(tags->'name:sl',
+               '') AS "name:sl", NULLIF(tags->'name:sq', '') AS "name:sq", NULLIF(tags->'name:sr',
+               '') AS "name:sr", NULLIF(tags->'name:sr-Latn', '') AS "name:sr-Latn", NULLIF(tags->'name:sv',
+               '') AS "name:sv", NULLIF(tags->'name:th', '') AS "name:th", NULLIF(tags->'name:tr',
+               '') AS "name:tr", NULLIF(tags->'name:uk', '') AS "name:uk", NULLIF(tags->'name:zh',
+               '') AS "name:zh", NULLIF(tags->'name_int', '') AS "name_int", NULLIF(tags->'name:latin',
+               '') AS "name:latin", NULLIF(tags->'name:nonlatin', '') AS "name:nonlatin", class,
+               brunnel, intermittent FROM layer_waterway(!bbox!, !zoom!)"""
+
+[[tileset.layer]]
+name = "landcover"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "POLYGON"
+srid = 3857
+buffer_size = 4
+make_valid = true
+[[tileset.layer.query]]
+sql = """SELECT geometry, class, subclass FROM layer_landcover(!bbox!, !zoom!)"""
+
+[[tileset.layer]]
+name = "landuse"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "POLYGON"
+srid = 3857
+buffer_size = 4
+[[tileset.layer.query]]
+sql = """SELECT geometry, class FROM layer_landuse(!bbox!, !zoom!)"""
+
+[[tileset.layer]]
+name = "mountain_peak"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "POINT"
+srid = 3857
+buffer_size = 64
+[[tileset.layer.query]]
+sql = """SELECT osm_id, geometry, name, name_en, name_de, NULLIF(tags->'name:am',
+      '') AS "name:am", NULLIF(tags->'name:ar', '') AS "name:ar", NULLIF(tags->'name:az',
+      '') AS "name:az", NULLIF(tags->'name:be', '') AS "name:be", NULLIF(tags->'name:bg',
+      '') AS "name:bg", NULLIF(tags->'name:br', '') AS "name:br", NULLIF(tags->'name:bs',
+      '') AS "name:bs", NULLIF(tags->'name:ca', '') AS "name:ca", NULLIF(tags->'name:co',
+      '') AS "name:co", NULLIF(tags->'name:cs', '') AS "name:cs", NULLIF(tags->'name:cy',
+      '') AS "name:cy", NULLIF(tags->'name:da', '') AS "name:da", NULLIF(tags->'name:de',
+      '') AS "name:de", NULLIF(tags->'name:el', '') AS "name:el", NULLIF(tags->'name:en',
+      '') AS "name:en", NULLIF(tags->'name:eo', '') AS "name:eo", NULLIF(tags->'name:es',
+      '') AS "name:es", NULLIF(tags->'name:et', '') AS "name:et", NULLIF(tags->'name:eu',
+      '') AS "name:eu", NULLIF(tags->'name:fi', '') AS "name:fi", NULLIF(tags->'name:fr',
+      '') AS "name:fr", NULLIF(tags->'name:fy', '') AS "name:fy", NULLIF(tags->'name:ga',
+      '') AS "name:ga", NULLIF(tags->'name:gd', '') AS "name:gd", NULLIF(tags->'name:he',
+      '') AS "name:he", NULLIF(tags->'name:hr', '') AS "name:hr", NULLIF(tags->'name:hu',
+      '') AS "name:hu", NULLIF(tags->'name:hy', '') AS "name:hy", NULLIF(tags->'name:id',
+      '') AS "name:id", NULLIF(tags->'name:is', '') AS "name:is", NULLIF(tags->'name:it',
+      '') AS "name:it", NULLIF(tags->'name:ja', '') AS "name:ja", NULLIF(tags->'name:ja_kana',
+      '') AS "name:ja_kana", NULLIF(tags->'name:ja_rm', '') AS "name:ja_rm", NULLIF(tags->'name:ka',
+      '') AS "name:ka", NULLIF(tags->'name:kk', '') AS "name:kk", NULLIF(tags->'name:kn',
+      '') AS "name:kn", NULLIF(tags->'name:ko', '') AS "name:ko", NULLIF(tags->'name:ko_rm',
+      '') AS "name:ko_rm", NULLIF(tags->'name:ku', '') AS "name:ku", NULLIF(tags->'name:la',
+      '') AS "name:la", NULLIF(tags->'name:lb', '') AS "name:lb", NULLIF(tags->'name:lt',
+      '') AS "name:lt", NULLIF(tags->'name:lv', '') AS "name:lv", NULLIF(tags->'name:mk',
+      '') AS "name:mk", NULLIF(tags->'name:mt', '') AS "name:mt", NULLIF(tags->'name:ml',
+      '') AS "name:ml", NULLIF(tags->'name:nl', '') AS "name:nl", NULLIF(tags->'name:no',
+      '') AS "name:no", NULLIF(tags->'name:oc', '') AS "name:oc", NULLIF(tags->'name:pl',
+      '') AS "name:pl", NULLIF(tags->'name:pt', '') AS "name:pt", NULLIF(tags->'name:rm',
+      '') AS "name:rm", NULLIF(tags->'name:ro', '') AS "name:ro", NULLIF(tags->'name:ru',
+      '') AS "name:ru", NULLIF(tags->'name:sk', '') AS "name:sk", NULLIF(tags->'name:sl',
+      '') AS "name:sl", NULLIF(tags->'name:sq', '') AS "name:sq", NULLIF(tags->'name:sr',
+      '') AS "name:sr", NULLIF(tags->'name:sr-Latn', '') AS "name:sr-Latn", NULLIF(tags->'name:sv',
+      '') AS "name:sv", NULLIF(tags->'name:th', '') AS "name:th", NULLIF(tags->'name:tr',
+      '') AS "name:tr", NULLIF(tags->'name:uk', '') AS "name:uk", NULLIF(tags->'name:zh',
+      '') AS "name:zh", NULLIF(tags->'name_int', '') AS "name_int", NULLIF(tags->'name:latin',
+      '') AS "name:latin", NULLIF(tags->'name:nonlatin', '') AS "name:nonlatin", class,
+      ele, ele_ft, rank FROM layer_mountain_peak(!bbox!, !zoom!, cast(!pixel_width! as integer))"""
+
+[[tileset.layer]]
+name = "park"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "POINT"
+srid = 3857
+buffer_size = 4
+[[tileset.layer.query]]
+sql = """SELECT geometry, class, name, name_en, name_de, NULLIF(tags->'name:am',
+      '') AS "name:am", NULLIF(tags->'name:ar', '') AS "name:ar", NULLIF(tags->'name:az',
+      '') AS "name:az", NULLIF(tags->'name:be', '') AS "name:be", NULLIF(tags->'name:bg',
+      '') AS "name:bg", NULLIF(tags->'name:br', '') AS "name:br", NULLIF(tags->'name:bs',
+      '') AS "name:bs", NULLIF(tags->'name:ca', '') AS "name:ca", NULLIF(tags->'name:co',
+      '') AS "name:co", NULLIF(tags->'name:cs', '') AS "name:cs", NULLIF(tags->'name:cy',
+      '') AS "name:cy", NULLIF(tags->'name:da', '') AS "name:da", NULLIF(tags->'name:de',
+      '') AS "name:de", NULLIF(tags->'name:el', '') AS "name:el", NULLIF(tags->'name:en',
+      '') AS "name:en", NULLIF(tags->'name:eo', '') AS "name:eo", NULLIF(tags->'name:es',
+      '') AS "name:es", NULLIF(tags->'name:et', '') AS "name:et", NULLIF(tags->'name:eu',
+      '') AS "name:eu", NULLIF(tags->'name:fi', '') AS "name:fi", NULLIF(tags->'name:fr',
+      '') AS "name:fr", NULLIF(tags->'name:fy', '') AS "name:fy", NULLIF(tags->'name:ga',
+      '') AS "name:ga", NULLIF(tags->'name:gd', '') AS "name:gd", NULLIF(tags->'name:he',
+      '') AS "name:he", NULLIF(tags->'name:hr', '') AS "name:hr", NULLIF(tags->'name:hu',
+      '') AS "name:hu", NULLIF(tags->'name:hy', '') AS "name:hy", NULLIF(tags->'name:id',
+      '') AS "name:id", NULLIF(tags->'name:is', '') AS "name:is", NULLIF(tags->'name:it',
+      '') AS "name:it", NULLIF(tags->'name:ja', '') AS "name:ja", NULLIF(tags->'name:ja_kana',
+      '') AS "name:ja_kana", NULLIF(tags->'name:ja_rm', '') AS "name:ja_rm", NULLIF(tags->'name:ka',
+      '') AS "name:ka", NULLIF(tags->'name:kk', '') AS "name:kk", NULLIF(tags->'name:kn',
+      '') AS "name:kn", NULLIF(tags->'name:ko', '') AS "name:ko", NULLIF(tags->'name:ko_rm',
+      '') AS "name:ko_rm", NULLIF(tags->'name:ku', '') AS "name:ku", NULLIF(tags->'name:la',
+      '') AS "name:la", NULLIF(tags->'name:lb', '') AS "name:lb", NULLIF(tags->'name:lt',
+      '') AS "name:lt", NULLIF(tags->'name:lv', '') AS "name:lv", NULLIF(tags->'name:mk',
+      '') AS "name:mk", NULLIF(tags->'name:mt', '') AS "name:mt", NULLIF(tags->'name:ml',
+      '') AS "name:ml", NULLIF(tags->'name:nl', '') AS "name:nl", NULLIF(tags->'name:no',
+      '') AS "name:no", NULLIF(tags->'name:oc', '') AS "name:oc", NULLIF(tags->'name:pl',
+      '') AS "name:pl", NULLIF(tags->'name:pt', '') AS "name:pt", NULLIF(tags->'name:rm',
+      '') AS "name:rm", NULLIF(tags->'name:ro', '') AS "name:ro", NULLIF(tags->'name:ru',
+      '') AS "name:ru", NULLIF(tags->'name:sk', '') AS "name:sk", NULLIF(tags->'name:sl',
+      '') AS "name:sl", NULLIF(tags->'name:sq', '') AS "name:sq", NULLIF(tags->'name:sr',
+      '') AS "name:sr", NULLIF(tags->'name:sr-Latn', '') AS "name:sr-Latn", NULLIF(tags->'name:sv',
+      '') AS "name:sv", NULLIF(tags->'name:th', '') AS "name:th", NULLIF(tags->'name:tr',
+      '') AS "name:tr", NULLIF(tags->'name:uk', '') AS "name:uk", NULLIF(tags->'name:zh',
+      '') AS "name:zh", NULLIF(tags->'name_int', '') AS "name_int", NULLIF(tags->'name:latin',
+      '') AS "name:latin", NULLIF(tags->'name:nonlatin', '') AS "name:nonlatin", rank
+      FROM layer_park(!bbox!, !zoom!, cast(!pixel_width! as integer))"""
+
+[[tileset.layer]]
+name = "boundary"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "LINESTRING"
+srid = 3857
+buffer_size = 4
+[[tileset.layer.query]]
+sql = """SELECT geometry, admin_level, disputed, disputed_name, claimed_by, maritime
+               FROM layer_boundary(!bbox!, !zoom!)"""
+
+[[tileset.layer]]
+name = "aeroway"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "LINESTRING"
+srid = 3857
+buffer_size = 4
+[[tileset.layer.query]]
+sql = """SELECT geometry, ref, class FROM layer_aeroway(!bbox!, !zoom!)"""
+
+[[tileset.layer]]
+name = "transportation"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "LINESTRING"
+srid = 3857
+buffer_size = 4
+[[tileset.layer.query]]
+sql = """SELECT geometry, class, subclass, oneway, ramp, brunnel, service, layer,
+               level, indoor, bicycle, foot, horse, mtb_scale, surface FROM layer_transportation(!bbox!,
+               !zoom!)"""
+
+[[tileset.layer]]
+name = "building"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "POLYGON"
+srid = 3857
+buffer_size = 4
+[[tileset.layer.query]]
+sql = """SELECT geometry, render_height, render_min_height, colour, hide_3d FROM
+               layer_building(!bbox!, !zoom!)"""
+
+[[tileset.layer]]
+name = "water_name"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "POINT"
+srid = 3857
+buffer_size = 256
+[[tileset.layer.query]]
+sql = """SELECT osm_id, geometry, name, name_en, name_de, NULLIF(tags->'name:am',
+               '') AS "name:am", NULLIF(tags->'name:ar', '') AS "name:ar", NULLIF(tags->'name:az',
+               '') AS "name:az", NULLIF(tags->'name:be', '') AS "name:be", NULLIF(tags->'name:bg',
+               '') AS "name:bg", NULLIF(tags->'name:br', '') AS "name:br", NULLIF(tags->'name:bs',
+               '') AS "name:bs", NULLIF(tags->'name:ca', '') AS "name:ca", NULLIF(tags->'name:co',
+               '') AS "name:co", NULLIF(tags->'name:cs', '') AS "name:cs", NULLIF(tags->'name:cy',
+               '') AS "name:cy", NULLIF(tags->'name:da', '') AS "name:da", NULLIF(tags->'name:de',
+               '') AS "name:de", NULLIF(tags->'name:el', '') AS "name:el", NULLIF(tags->'name:en',
+               '') AS "name:en", NULLIF(tags->'name:eo', '') AS "name:eo", NULLIF(tags->'name:es',
+               '') AS "name:es", NULLIF(tags->'name:et', '') AS "name:et", NULLIF(tags->'name:eu',
+               '') AS "name:eu", NULLIF(tags->'name:fi', '') AS "name:fi", NULLIF(tags->'name:fr',
+               '') AS "name:fr", NULLIF(tags->'name:fy', '') AS "name:fy", NULLIF(tags->'name:ga',
+               '') AS "name:ga", NULLIF(tags->'name:gd', '') AS "name:gd", NULLIF(tags->'name:he',
+               '') AS "name:he", NULLIF(tags->'name:hr', '') AS "name:hr", NULLIF(tags->'name:hu',
+               '') AS "name:hu", NULLIF(tags->'name:hy', '') AS "name:hy", NULLIF(tags->'name:id',
+               '') AS "name:id", NULLIF(tags->'name:is', '') AS "name:is", NULLIF(tags->'name:it',
+               '') AS "name:it", NULLIF(tags->'name:ja', '') AS "name:ja", NULLIF(tags->'name:ja_kana',
+               '') AS "name:ja_kana", NULLIF(tags->'name:ja_rm', '') AS "name:ja_rm", NULLIF(tags->'name:ka',
+               '') AS "name:ka", NULLIF(tags->'name:kk', '') AS "name:kk", NULLIF(tags->'name:kn',
+               '') AS "name:kn", NULLIF(tags->'name:ko', '') AS "name:ko", NULLIF(tags->'name:ko_rm',
+               '') AS "name:ko_rm", NULLIF(tags->'name:ku', '') AS "name:ku", NULLIF(tags->'name:la',
+               '') AS "name:la", NULLIF(tags->'name:lb', '') AS "name:lb", NULLIF(tags->'name:lt',
+               '') AS "name:lt", NULLIF(tags->'name:lv', '') AS "name:lv", NULLIF(tags->'name:mk',
+               '') AS "name:mk", NULLIF(tags->'name:mt', '') AS "name:mt", NULLIF(tags->'name:ml',
+               '') AS "name:ml", NULLIF(tags->'name:nl', '') AS "name:nl", NULLIF(tags->'name:no',
+               '') AS "name:no", NULLIF(tags->'name:oc', '') AS "name:oc", NULLIF(tags->'name:pl',
+               '') AS "name:pl", NULLIF(tags->'name:pt', '') AS "name:pt", NULLIF(tags->'name:rm',
+               '') AS "name:rm", NULLIF(tags->'name:ro', '') AS "name:ro", NULLIF(tags->'name:ru',
+               '') AS "name:ru", NULLIF(tags->'name:sk', '') AS "name:sk", NULLIF(tags->'name:sl',
+               '') AS "name:sl", NULLIF(tags->'name:sq', '') AS "name:sq", NULLIF(tags->'name:sr',
+               '') AS "name:sr", NULLIF(tags->'name:sr-Latn', '') AS "name:sr-Latn", NULLIF(tags->'name:sv',
+               '') AS "name:sv", NULLIF(tags->'name:th', '') AS "name:th", NULLIF(tags->'name:tr',
+               '') AS "name:tr", NULLIF(tags->'name:uk', '') AS "name:uk", NULLIF(tags->'name:zh',
+               '') AS "name:zh", NULLIF(tags->'name_int', '') AS "name_int", NULLIF(tags->'name:latin',
+               '') AS "name:latin", NULLIF(tags->'name:nonlatin', '') AS "name:nonlatin", class,
+               intermittent FROM layer_water_name(!bbox!, !zoom!)"""
+
+[[tileset.layer]]
+name = "transportation_name"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "POINT"
+srid = 3857
+buffer_size = 8
+[[tileset.layer.query]]
+sql = """SELECT geometry, name, name_en, name_de, NULLIF(tags->'name:am', '') AS
+               "name:am", NULLIF(tags->'name:ar', '') AS "name:ar", NULLIF(tags->'name:az',
+               '') AS "name:az", NULLIF(tags->'name:be', '') AS "name:be", NULLIF(tags->'name:bg',
+               '') AS "name:bg", NULLIF(tags->'name:br', '') AS "name:br", NULLIF(tags->'name:bs',
+               '') AS "name:bs", NULLIF(tags->'name:ca', '') AS "name:ca", NULLIF(tags->'name:co',
+               '') AS "name:co", NULLIF(tags->'name:cs', '') AS "name:cs", NULLIF(tags->'name:cy',
+               '') AS "name:cy", NULLIF(tags->'name:da', '') AS "name:da", NULLIF(tags->'name:de',
+               '') AS "name:de", NULLIF(tags->'name:el', '') AS "name:el", NULLIF(tags->'name:en',
+               '') AS "name:en", NULLIF(tags->'name:eo', '') AS "name:eo", NULLIF(tags->'name:es',
+               '') AS "name:es", NULLIF(tags->'name:et', '') AS "name:et", NULLIF(tags->'name:eu',
+               '') AS "name:eu", NULLIF(tags->'name:fi', '') AS "name:fi", NULLIF(tags->'name:fr',
+               '') AS "name:fr", NULLIF(tags->'name:fy', '') AS "name:fy", NULLIF(tags->'name:ga',
+               '') AS "name:ga", NULLIF(tags->'name:gd', '') AS "name:gd", NULLIF(tags->'name:he',
+               '') AS "name:he", NULLIF(tags->'name:hr', '') AS "name:hr", NULLIF(tags->'name:hu',
+               '') AS "name:hu", NULLIF(tags->'name:hy', '') AS "name:hy", NULLIF(tags->'name:id',
+               '') AS "name:id", NULLIF(tags->'name:is', '') AS "name:is", NULLIF(tags->'name:it',
+               '') AS "name:it", NULLIF(tags->'name:ja', '') AS "name:ja", NULLIF(tags->'name:ja_kana',
+               '') AS "name:ja_kana", NULLIF(tags->'name:ja_rm', '') AS "name:ja_rm", NULLIF(tags->'name:ka',
+               '') AS "name:ka", NULLIF(tags->'name:kk', '') AS "name:kk", NULLIF(tags->'name:kn',
+               '') AS "name:kn", NULLIF(tags->'name:ko', '') AS "name:ko", NULLIF(tags->'name:ko_rm',
+               '') AS "name:ko_rm", NULLIF(tags->'name:ku', '') AS "name:ku", NULLIF(tags->'name:la',
+               '') AS "name:la", NULLIF(tags->'name:lb', '') AS "name:lb", NULLIF(tags->'name:lt',
+               '') AS "name:lt", NULLIF(tags->'name:lv', '') AS "name:lv", NULLIF(tags->'name:mk',
+               '') AS "name:mk", NULLIF(tags->'name:mt', '') AS "name:mt", NULLIF(tags->'name:ml',
+               '') AS "name:ml", NULLIF(tags->'name:nl', '') AS "name:nl", NULLIF(tags->'name:no',
+               '') AS "name:no", NULLIF(tags->'name:oc', '') AS "name:oc", NULLIF(tags->'name:pl',
+               '') AS "name:pl", NULLIF(tags->'name:pt', '') AS "name:pt", NULLIF(tags->'name:rm',
+               '') AS "name:rm", NULLIF(tags->'name:ro', '') AS "name:ro", NULLIF(tags->'name:ru',
+               '') AS "name:ru", NULLIF(tags->'name:sk', '') AS "name:sk", NULLIF(tags->'name:sl',
+               '') AS "name:sl", NULLIF(tags->'name:sq', '') AS "name:sq", NULLIF(tags->'name:sr',
+               '') AS "name:sr", NULLIF(tags->'name:sr-Latn', '') AS "name:sr-Latn", NULLIF(tags->'name:sv',
+               '') AS "name:sv", NULLIF(tags->'name:th', '') AS "name:th", NULLIF(tags->'name:tr',
+               '') AS "name:tr", NULLIF(tags->'name:uk', '') AS "name:uk", NULLIF(tags->'name:zh',
+               '') AS "name:zh", NULLIF(tags->'name_int', '') AS "name_int", NULLIF(tags->'name:latin',
+               '') AS "name:latin", NULLIF(tags->'name:nonlatin', '') AS "name:nonlatin", ref,
+               ref_length, network::text, class::text, subclass, layer, level, indoor FROM
+               layer_transportation_name(!bbox!, !zoom!)"""
+
+[[tileset.layer]]
+name = "place"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "POINT"
+srid = 3857
+buffer_size = 256
+[[tileset.layer.query]]
+sql = """SELECT osm_id, geometry, name, name_en, name_de, NULLIF(tags->'name:am',
+               '') AS "name:am", NULLIF(tags->'name:ar', '') AS "name:ar", NULLIF(tags->'name:az',
+               '') AS "name:az", NULLIF(tags->'name:be', '') AS "name:be", NULLIF(tags->'name:bg',
+               '') AS "name:bg", NULLIF(tags->'name:br', '') AS "name:br", NULLIF(tags->'name:bs',
+               '') AS "name:bs", NULLIF(tags->'name:ca', '') AS "name:ca", NULLIF(tags->'name:co',
+               '') AS "name:co", NULLIF(tags->'name:cs', '') AS "name:cs", NULLIF(tags->'name:cy',
+               '') AS "name:cy", NULLIF(tags->'name:da', '') AS "name:da", NULLIF(tags->'name:de',
+               '') AS "name:de", NULLIF(tags->'name:el', '') AS "name:el", NULLIF(tags->'name:en',
+               '') AS "name:en", NULLIF(tags->'name:eo', '') AS "name:eo", NULLIF(tags->'name:es',
+               '') AS "name:es", NULLIF(tags->'name:et', '') AS "name:et", NULLIF(tags->'name:eu',
+               '') AS "name:eu", NULLIF(tags->'name:fi', '') AS "name:fi", NULLIF(tags->'name:fr',
+               '') AS "name:fr", NULLIF(tags->'name:fy', '') AS "name:fy", NULLIF(tags->'name:ga',
+               '') AS "name:ga", NULLIF(tags->'name:gd', '') AS "name:gd", NULLIF(tags->'name:he',
+               '') AS "name:he", NULLIF(tags->'name:hr', '') AS "name:hr", NULLIF(tags->'name:hu',
+               '') AS "name:hu", NULLIF(tags->'name:hy', '') AS "name:hy", NULLIF(tags->'name:id',
+               '') AS "name:id", NULLIF(tags->'name:is', '') AS "name:is", NULLIF(tags->'name:it',
+               '') AS "name:it", NULLIF(tags->'name:ja', '') AS "name:ja", NULLIF(tags->'name:ja_kana',
+               '') AS "name:ja_kana", NULLIF(tags->'name:ja_rm', '') AS "name:ja_rm", NULLIF(tags->'name:ka',
+               '') AS "name:ka", NULLIF(tags->'name:kk', '') AS "name:kk", NULLIF(tags->'name:kn',
+               '') AS "name:kn", NULLIF(tags->'name:ko', '') AS "name:ko", NULLIF(tags->'name:ko_rm',
+               '') AS "name:ko_rm", NULLIF(tags->'name:ku', '') AS "name:ku", NULLIF(tags->'name:la',
+               '') AS "name:la", NULLIF(tags->'name:lb', '') AS "name:lb", NULLIF(tags->'name:lt',
+               '') AS "name:lt", NULLIF(tags->'name:lv', '') AS "name:lv", NULLIF(tags->'name:mk',
+               '') AS "name:mk", NULLIF(tags->'name:mt', '') AS "name:mt", NULLIF(tags->'name:ml',
+               '') AS "name:ml", NULLIF(tags->'name:nl', '') AS "name:nl", NULLIF(tags->'name:no',
+               '') AS "name:no", NULLIF(tags->'name:oc', '') AS "name:oc", NULLIF(tags->'name:pl',
+               '') AS "name:pl", NULLIF(tags->'name:pt', '') AS "name:pt", NULLIF(tags->'name:rm',
+               '') AS "name:rm", NULLIF(tags->'name:ro', '') AS "name:ro", NULLIF(tags->'name:ru',
+               '') AS "name:ru", NULLIF(tags->'name:sk', '') AS "name:sk", NULLIF(tags->'name:sl',
+               '') AS "name:sl", NULLIF(tags->'name:sq', '') AS "name:sq", NULLIF(tags->'name:sr',
+               '') AS "name:sr", NULLIF(tags->'name:sr-Latn', '') AS "name:sr-Latn", NULLIF(tags->'name:sv',
+               '') AS "name:sv", NULLIF(tags->'name:th', '') AS "name:th", NULLIF(tags->'name:tr',
+               '') AS "name:tr", NULLIF(tags->'name:uk', '') AS "name:uk", NULLIF(tags->'name:zh',
+               '') AS "name:zh", NULLIF(tags->'name_int', '') AS "name_int", NULLIF(tags->'name:latin',
+               '') AS "name:latin", NULLIF(tags->'name:nonlatin', '') AS "name:nonlatin", class,
+               rank, capital, iso_a2 FROM layer_place(!bbox!, !zoom!, cast(!pixel_width! as integer))"""
+
+[[tileset.layer]]
+name = "housenumber"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "POINT"
+srid = 3857
+buffer_size = 8
+[[tileset.layer.query]]
+sql = """SELECT geometry, housenumber FROM layer_housenumber(!bbox!, !zoom!)"""
+
+[[tileset.layer]]
+name = "poi"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "POINT"
+srid = 3857
+buffer_size = 64
+[[tileset.layer.query]]
+sql = """SELECT osm_id, geometry, name, name_en, name_de, NULLIF(tags->'name:am',
+               '') AS "name:am", NULLIF(tags->'name:ar', '') AS "name:ar", NULLIF(tags->'name:az',
+               '') AS "name:az", NULLIF(tags->'name:be', '') AS "name:be", NULLIF(tags->'name:bg',
+               '') AS "name:bg", NULLIF(tags->'name:br', '') AS "name:br", NULLIF(tags->'name:bs',
+               '') AS "name:bs", NULLIF(tags->'name:ca', '') AS "name:ca", NULLIF(tags->'name:co',
+               '') AS "name:co", NULLIF(tags->'name:cs', '') AS "name:cs", NULLIF(tags->'name:cy',
+               '') AS "name:cy", NULLIF(tags->'name:da', '') AS "name:da", NULLIF(tags->'name:de',
+               '') AS "name:de", NULLIF(tags->'name:el', '') AS "name:el", NULLIF(tags->'name:en',
+               '') AS "name:en", NULLIF(tags->'name:eo', '') AS "name:eo", NULLIF(tags->'name:es',
+               '') AS "name:es", NULLIF(tags->'name:et', '') AS "name:et", NULLIF(tags->'name:eu',
+               '') AS "name:eu", NULLIF(tags->'name:fi', '') AS "name:fi", NULLIF(tags->'name:fr',
+               '') AS "name:fr", NULLIF(tags->'name:fy', '') AS "name:fy", NULLIF(tags->'name:ga',
+               '') AS "name:ga", NULLIF(tags->'name:gd', '') AS "name:gd", NULLIF(tags->'name:he',
+               '') AS "name:he", NULLIF(tags->'name:hr', '') AS "name:hr", NULLIF(tags->'name:hu',
+               '') AS "name:hu", NULLIF(tags->'name:hy', '') AS "name:hy", NULLIF(tags->'name:id',
+               '') AS "name:id", NULLIF(tags->'name:is', '') AS "name:is", NULLIF(tags->'name:it',
+               '') AS "name:it", NULLIF(tags->'name:ja', '') AS "name:ja", NULLIF(tags->'name:ja_kana',
+               '') AS "name:ja_kana", NULLIF(tags->'name:ja_rm', '') AS "name:ja_rm", NULLIF(tags->'name:ka',
+               '') AS "name:ka", NULLIF(tags->'name:kk', '') AS "name:kk", NULLIF(tags->'name:kn',
+               '') AS "name:kn", NULLIF(tags->'name:ko', '') AS "name:ko", NULLIF(tags->'name:ko_rm',
+               '') AS "name:ko_rm", NULLIF(tags->'name:ku', '') AS "name:ku", NULLIF(tags->'name:la',
+               '') AS "name:la", NULLIF(tags->'name:lb', '') AS "name:lb", NULLIF(tags->'name:lt',
+               '') AS "name:lt", NULLIF(tags->'name:lv', '') AS "name:lv", NULLIF(tags->'name:mk',
+               '') AS "name:mk", NULLIF(tags->'name:mt', '') AS "name:mt", NULLIF(tags->'name:ml',
+               '') AS "name:ml", NULLIF(tags->'name:nl', '') AS "name:nl", NULLIF(tags->'name:no',
+               '') AS "name:no", NULLIF(tags->'name:oc', '') AS "name:oc", NULLIF(tags->'name:pl',
+               '') AS "name:pl", NULLIF(tags->'name:pt', '') AS "name:pt", NULLIF(tags->'name:rm',
+               '') AS "name:rm", NULLIF(tags->'name:ro', '') AS "name:ro", NULLIF(tags->'name:ru',
+               '') AS "name:ru", NULLIF(tags->'name:sk', '') AS "name:sk", NULLIF(tags->'name:sl',
+               '') AS "name:sl", NULLIF(tags->'name:sq', '') AS "name:sq", NULLIF(tags->'name:sr',
+               '') AS "name:sr", NULLIF(tags->'name:sr-Latn', '') AS "name:sr-Latn", NULLIF(tags->'name:sv',
+               '') AS "name:sv", NULLIF(tags->'name:th', '') AS "name:th", NULLIF(tags->'name:tr',
+               '') AS "name:tr", NULLIF(tags->'name:uk', '') AS "name:uk", NULLIF(tags->'name:zh',
+               '') AS "name:zh", NULLIF(tags->'name_int', '') AS "name_int", NULLIF(tags->'name:latin',
+               '') AS "name:latin", NULLIF(tags->'name:nonlatin', '') AS "name:nonlatin", class,
+               subclass, agg_stop, layer, level, indoor, rank FROM layer_poi(!bbox!, !zoom!,
+               cast(!pixel_width! as integer))"""
+
+[[tileset.layer]]
+name = "aerodrome_label"
+datasource = "osm"
+geometry_field = "geometry"
+geometry_type = "POINT"
+srid = 3857
+buffer_size = 64
+[[tileset.layer.query]]
+sql = """SELECT osm_id, geometry, name, name_en, name_de, NULLIF(tags->'name:am',
+               '') AS "name:am", NULLIF(tags->'name:ar', '') AS "name:ar", NULLIF(tags->'name:az',
+               '') AS "name:az", NULLIF(tags->'name:be', '') AS "name:be", NULLIF(tags->'name:bg',
+               '') AS "name:bg", NULLIF(tags->'name:br', '') AS "name:br", NULLIF(tags->'name:bs',
+               '') AS "name:bs", NULLIF(tags->'name:ca', '') AS "name:ca", NULLIF(tags->'name:co',
+               '') AS "name:co", NULLIF(tags->'name:cs', '') AS "name:cs", NULLIF(tags->'name:cy',
+               '') AS "name:cy", NULLIF(tags->'name:da', '') AS "name:da", NULLIF(tags->'name:de',
+               '') AS "name:de", NULLIF(tags->'name:el', '') AS "name:el", NULLIF(tags->'name:en',
+               '') AS "name:en", NULLIF(tags->'name:eo', '') AS "name:eo", NULLIF(tags->'name:es',
+               '') AS "name:es", NULLIF(tags->'name:et', '') AS "name:et", NULLIF(tags->'name:eu',
+               '') AS "name:eu", NULLIF(tags->'name:fi', '') AS "name:fi", NULLIF(tags->'name:fr',
+               '') AS "name:fr", NULLIF(tags->'name:fy', '') AS "name:fy", NULLIF(tags->'name:ga',
+               '') AS "name:ga", NULLIF(tags->'name:gd', '') AS "name:gd", NULLIF(tags->'name:he',
+               '') AS "name:he", NULLIF(tags->'name:hr', '') AS "name:hr", NULLIF(tags->'name:hu',
+               '') AS "name:hu", NULLIF(tags->'name:hy', '') AS "name:hy", NULLIF(tags->'name:id',
+               '') AS "name:id", NULLIF(tags->'name:is', '') AS "name:is", NULLIF(tags->'name:it',
+               '') AS "name:it", NULLIF(tags->'name:ja', '') AS "name:ja", NULLIF(tags->'name:ja_kana',
+               '') AS "name:ja_kana", NULLIF(tags->'name:ja_rm', '') AS "name:ja_rm", NULLIF(tags->'name:ka',
+               '') AS "name:ka", NULLIF(tags->'name:kk', '') AS "name:kk", NULLIF(tags->'name:kn',
+               '') AS "name:kn", NULLIF(tags->'name:ko', '') AS "name:ko", NULLIF(tags->'name:ko_rm',
+               '') AS "name:ko_rm", NULLIF(tags->'name:ku', '') AS "name:ku", NULLIF(tags->'name:la',
+               '') AS "name:la", NULLIF(tags->'name:lb', '') AS "name:lb", NULLIF(tags->'name:lt',
+               '') AS "name:lt", NULLIF(tags->'name:lv', '') AS "name:lv", NULLIF(tags->'name:mk',
+               '') AS "name:mk", NULLIF(tags->'name:mt', '') AS "name:mt", NULLIF(tags->'name:ml',
+               '') AS "name:ml", NULLIF(tags->'name:nl', '') AS "name:nl", NULLIF(tags->'name:no',
+               '') AS "name:no", NULLIF(tags->'name:oc', '') AS "name:oc", NULLIF(tags->'name:pl',
+               '') AS "name:pl", NULLIF(tags->'name:pt', '') AS "name:pt", NULLIF(tags->'name:rm',
+               '') AS "name:rm", NULLIF(tags->'name:ro', '') AS "name:ro", NULLIF(tags->'name:ru',
+               '') AS "name:ru", NULLIF(tags->'name:sk', '') AS "name:sk", NULLIF(tags->'name:sl',
+               '') AS "name:sl", NULLIF(tags->'name:sq', '') AS "name:sq", NULLIF(tags->'name:sr',
+               '') AS "name:sr", NULLIF(tags->'name:sr-Latn', '') AS "name:sr-Latn", NULLIF(tags->'name:sv',
+               '') AS "name:sv", NULLIF(tags->'name:th', '') AS "name:th", NULLIF(tags->'name:tr',
+               '') AS "name:tr", NULLIF(tags->'name:uk', '') AS "name:uk", NULLIF(tags->'name:zh',
+               '') AS "name:zh", NULLIF(tags->'name_int', '') AS "name_int", NULLIF(tags->'name:latin',
+               '') AS "name:latin", NULLIF(tags->'name:nonlatin', '') AS "name:nonlatin", class,
+               iata, icao, ele, ele_ft FROM layer_aerodrome_label (!bbox!, !zoom!,
+               cast(!pixel_width! as integer))"""
