@@ -286,7 +286,7 @@ sql = """SELECT osm_id, geometry, name, name_en, name_de, NULLIF(tags->'name:am'
 name = "transportation_name"
 datasource = "osm"
 geometry_field = "geometry"
-geometry_type = "POINT"
+geometry_type = "LINESTRING"
 srid = 3857
 buffer_size = 8
 [[tileset.layer.query]]
