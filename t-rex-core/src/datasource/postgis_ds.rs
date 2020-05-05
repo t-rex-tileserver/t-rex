@@ -163,6 +163,7 @@ impl PostgisDatasource {
                         let ty = col.type_();
                         let cast = match ty {
                             &types::VARCHAR
+                            | &types::VARCHAR_ARRAY
                             | &types::TEXT
                             | &types::CHAR_ARRAY
                             | &types::FLOAT4
