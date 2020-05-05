@@ -228,7 +228,7 @@ impl<'a> Tile<'a> {
         if let Some(fid) = feature.fid() {
             mvt_feature.set_id(fid);
         }
-        for attr in feature.attributes() {
+        'attr: for attr in feature.attributes() {
             let mut mvt_value = vector_tile::Tile_Value::new();
             match attr.value {
                 FeatureAttrValType::String(ref v) => {
@@ -251,6 +251,17 @@ impl<'a> Tile<'a> {
                 }
                 FeatureAttrValType::Bool(v) => {
                     mvt_value.set_bool_value(v);
+                }
+                FeatureAttrValType::VarcharArray(v) => {
+                    for array_val in v {
+                        Tile::add_feature_attribute(
+                            &mut mvt_layer,
+                            &mut mvt_feature,
+                            format!("{}.{}", attr.key.clone(), array_val),
+                            mvt_value.clone(),
+                        );
+                    }
+                    continue 'attr;
                 }
             }
             Tile::add_feature_attribute(

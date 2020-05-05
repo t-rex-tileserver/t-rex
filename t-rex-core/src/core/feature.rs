@@ -15,6 +15,7 @@ pub enum FeatureAttrValType {
     UInt(u64),
     SInt(i64),
     Bool(bool),
+    VarcharArray(Vec<String>),
 }
 
 pub trait Feature {

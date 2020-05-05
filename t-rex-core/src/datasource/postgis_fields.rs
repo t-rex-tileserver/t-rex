@@ -57,6 +57,7 @@ impl FromSql for FeatureAttrValType {
     fn accepts(ty: &Type) -> bool {
         match ty {
             &types::VARCHAR
+            | &types::VARCHAR_ARRAY
             | &types::TEXT
             | &types::CHAR_ARRAY
             | &types::FLOAT4
@@ -72,6 +73,9 @@ impl FromSql for FeatureAttrValType {
         match ty {
             &types::VARCHAR | &types::TEXT | &types::CHAR_ARRAY => {
                 <String>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::String(v)))
+            }
+            &types::VARCHAR_ARRAY => {
+                <Vec<String>>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::VarcharArray(v)))
             }
             &types::FLOAT4 => {
                 <f32>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Float(v)))
