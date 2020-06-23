@@ -7,8 +7,6 @@ use crate::datasources::{Datasource, Datasources};
 use elementtree::Element;
 use std::collections::HashMap;
 use std::env;
-#[cfg(test)]
-use std::error::Error;
 use std::fs::File;
 use std::io;
 use std::io::BufReader;
@@ -218,12 +216,12 @@ pub fn read_qgs(fname: &str) -> (Datasources, Tileset) {
 fn test_parse_xml() {
     assert!(read_xml("../examples/natural_earth.qgs").is_ok());
     assert_eq!(
-        read_xml("wrong_file_name").err().unwrap().description(),
-        "entity not found"
+        &read_xml("wrong_file_name").err().unwrap().to_string(),
+        "No such file or directory (os error 2)"
     );
     assert_eq!(
-        read_xml("Cargo.toml").err().unwrap().description(),
-        "Malformed XML"
+        &read_xml("Cargo.toml").err().unwrap().to_string(),
+        "Malformed XML: Unexpected characters outside the root element: [ (0:0)"
     );
 }
 

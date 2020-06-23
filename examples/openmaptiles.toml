@@ -12,7 +12,7 @@
 
 [[datasource]]
     name = "osm"
-    dbconn = "postgresql://openmaptiles:openmaptiles@127.0.0.1/openmaptiles"
+    dbconn = "postgresql://openmaptiles:openmaptiles@127.0.0.1:32769/openmaptiles"
 
 [grid]
     predefined = "web_mercator"

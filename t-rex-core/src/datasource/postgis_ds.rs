@@ -16,7 +16,6 @@ use r2d2;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use std;
 use std::collections::BTreeMap;
-use std::error::Error;
 use tile_grid::Extent;
 use tile_grid::Grid;
 
@@ -461,7 +460,7 @@ impl DatasourceType for PostgisDatasource {
         let pool = r2d2::Pool::builder()
             .max_size(pool_size as u32)
             .build(manager)
-            .or_else(|e| match e.description() {
+            .or_else(|e| match &e.to_string() as &str {
                 "unable to initialize connections" => {
                     info!("Couldn't connect with TlsMode::None - retrying with TlsMode::Require");
                     let negotiator = NativeTls::new().unwrap();
