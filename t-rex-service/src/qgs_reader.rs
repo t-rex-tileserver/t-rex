@@ -215,10 +215,12 @@ pub fn read_qgs(fname: &str) -> (Datasources, Tileset) {
 #[test]
 fn test_parse_xml() {
     assert!(read_xml("../examples/natural_earth.qgs").is_ok());
-    assert_eq!(
-        &read_xml("wrong_file_name").err().unwrap().to_string(),
-        "No such file or directory (os error 2)"
-    );
+    assert!(read_xml("wrong_file_name")
+        .err()
+        .unwrap()
+        .to_string()
+        .contains("(os error 2)"));
+    // Linux: "No such file or directory (os error 2)"
     assert_eq!(
         &read_xml("Cargo.toml").err().unwrap().to_string(),
         "Malformed XML: Unexpected characters outside the root element: [ (0:0)"
