@@ -27,7 +27,7 @@ use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
 /// of protobuf runtime.
 // const _PROTOBUF_VERSION_CHECK: () = ::protobuf::VERSION_2_15_0;
 
-#[derive(PartialEq,Clone,Default,Debug)]
+#[derive(PartialEq, Clone, Default, Debug)]
 pub struct Tile {
     // message fields
     layers: ::protobuf::RepeatedField<Tile_Layer>,
@@ -48,7 +48,6 @@ impl Tile {
     }
 
     // repeated .vector_tile.Tile.Layer layers = 3;
-
 
     pub fn get_layers(&self) -> &[Tile_Layer] {
         &self.layers
@@ -79,20 +78,28 @@ impl ::protobuf::Message for Tile {
             if !v.is_initialized() {
                 return false;
             }
-        };
+        }
         true
     }
 
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+    fn merge_from(
+        &mut self,
+        is: &mut ::protobuf::CodedInputStream<'_>,
+    ) -> ::protobuf::ProtobufResult<()> {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 3 => {
                     ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.layers)?;
-                },
+                }
                 _ => {
-                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                    ::protobuf::rt::read_unknown_or_skip_group(
+                        field_number,
+                        wire_type,
+                        is,
+                        self.mut_unknown_fields(),
+                    )?;
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -105,18 +112,21 @@ impl ::protobuf::Message for Tile {
         for value in &self.layers {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
-        };
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
     }
 
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+    fn write_to_with_cached_sizes(
+        &self,
+        os: &mut ::protobuf::CodedOutputStream<'_>,
+    ) -> ::protobuf::ProtobufResult<()> {
         for v in &self.layers {
             os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
-        };
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -153,9 +163,7 @@ impl ::protobuf::Message for Tile {
 
     fn default_instance() -> &'static Tile {
         static mut instance: ::protobuf::lazy::Lazy<Tile> = ::protobuf::lazy::Lazy::INIT;
-        unsafe {
-            instance.get(Tile::new)
-        }
+        unsafe { instance.get(Tile::new) }
     }
 }
 
@@ -172,7 +180,7 @@ impl ::protobuf::reflect::ProtobufValue for Tile {
     }
 }
 
-#[derive(PartialEq,Clone,Default,Debug)]
+#[derive(PartialEq, Clone, Default, Debug)]
 pub struct Tile_Value {
     // message fields
     string_value: ::protobuf::SingularField<::std::string::String>,
@@ -199,7 +207,6 @@ impl Tile_Value {
     }
 
     // optional string string_value = 1;
-
 
     pub fn get_string_value(&self) -> &str {
         match self.string_value.as_ref() {
@@ -231,11 +238,12 @@ impl Tile_Value {
 
     // Take field
     pub fn take_string_value(&mut self) -> ::std::string::String {
-        self.string_value.take().unwrap_or_else(|| ::std::string::String::new())
+        self.string_value
+            .take()
+            .unwrap_or_else(|| ::std::string::String::new())
     }
 
     // optional float float_value = 2;
-
 
     pub fn get_float_value(&self) -> f32 {
         self.float_value.unwrap_or(0.)
@@ -255,7 +263,6 @@ impl Tile_Value {
 
     // optional double double_value = 3;
 
-
     pub fn get_double_value(&self) -> f64 {
         self.double_value.unwrap_or(0.)
     }
@@ -273,7 +280,6 @@ impl Tile_Value {
     }
 
     // optional int64 int_value = 4;
-
 
     pub fn get_int_value(&self) -> i64 {
         self.int_value.unwrap_or(0)
@@ -293,7 +299,6 @@ impl Tile_Value {
 
     // optional uint64 uint_value = 5;
 
-
     pub fn get_uint_value(&self) -> u64 {
         self.uint_value.unwrap_or(0)
     }
@@ -312,7 +317,6 @@ impl Tile_Value {
 
     // optional sint64 sint_value = 6;
 
-
     pub fn get_sint_value(&self) -> i64 {
         self.sint_value.unwrap_or(0)
     }
@@ -330,7 +334,6 @@ impl Tile_Value {
     }
 
     // optional bool bool_value = 7;
-
 
     pub fn get_bool_value(&self) -> bool {
         self.bool_value.unwrap_or(false)
@@ -354,58 +357,82 @@ impl ::protobuf::Message for Tile_Value {
         true
     }
 
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+    fn merge_from(
+        &mut self,
+        is: &mut ::protobuf::CodedInputStream<'_>,
+    ) -> ::protobuf::ProtobufResult<()> {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
-                    ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.string_value)?;
-                },
+                    ::protobuf::rt::read_singular_string_into(
+                        wire_type,
+                        is,
+                        &mut self.string_value,
+                    )?;
+                }
                 2 => {
                     if wire_type != ::protobuf::wire_format::WireTypeFixed32 {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_float()?;
                     self.float_value = ::std::option::Option::Some(tmp);
-                },
+                }
                 3 => {
                     if wire_type != ::protobuf::wire_format::WireTypeFixed64 {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_double()?;
                     self.double_value = ::std::option::Option::Some(tmp);
-                },
+                }
                 4 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_int64()?;
                     self.int_value = ::std::option::Option::Some(tmp);
-                },
+                }
                 5 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_uint64()?;
                     self.uint_value = ::std::option::Option::Some(tmp);
-                },
+                }
                 6 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_sint64()?;
                     self.sint_value = ::std::option::Option::Some(tmp);
-                },
+                }
                 7 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_bool()?;
                     self.bool_value = ::std::option::Option::Some(tmp);
-                },
+                }
                 _ => {
-                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                    ::protobuf::rt::read_unknown_or_skip_group(
+                        field_number,
+                        wire_type,
+                        is,
+                        self.mut_unknown_fields(),
+                    )?;
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -441,7 +468,10 @@ impl ::protobuf::Message for Tile_Value {
         my_size
     }
 
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+    fn write_to_with_cached_sizes(
+        &self,
+        os: &mut ::protobuf::CodedOutputStream<'_>,
+    ) -> ::protobuf::ProtobufResult<()> {
         if let Some(ref v) = self.string_value.as_ref() {
             os.write_string(1, &v)?;
         }
@@ -499,9 +529,7 @@ impl ::protobuf::Message for Tile_Value {
 
     fn default_instance() -> &'static Tile_Value {
         static mut instance: ::protobuf::lazy::Lazy<Tile_Value> = ::protobuf::lazy::Lazy::INIT;
-        unsafe {
-            instance.get(Tile_Value::new)
-        }
+        unsafe { instance.get(Tile_Value::new) }
     }
 }
 
@@ -524,7 +552,7 @@ impl ::protobuf::reflect::ProtobufValue for Tile_Value {
     }
 }
 
-#[derive(PartialEq,Clone,Default,Debug)]
+#[derive(PartialEq, Clone, Default, Debug)]
 pub struct Tile_Feature {
     // message fields
     id: ::std::option::Option<u64>,
@@ -549,7 +577,6 @@ impl Tile_Feature {
 
     // optional uint64 id = 1;
 
-
     pub fn get_id(&self) -> u64 {
         self.id.unwrap_or(0u64)
     }
@@ -567,7 +594,6 @@ impl Tile_Feature {
     }
 
     // repeated uint32 tags = 2;
-
 
     pub fn get_tags(&self) -> &[u32] {
         &self.tags
@@ -593,7 +619,6 @@ impl Tile_Feature {
 
     // optional .vector_tile.Tile.GeomType type = 3;
 
-
     pub fn get_field_type(&self) -> Tile_GeomType {
         self.field_type.unwrap_or(Tile_GeomType::UNKNOWN)
     }
@@ -611,7 +636,6 @@ impl Tile_Feature {
     }
 
     // repeated uint32 geometry = 4;
-
 
     pub fn get_geometry(&self) -> &[u32] {
         &self.geometry
@@ -641,29 +665,43 @@ impl ::protobuf::Message for Tile_Feature {
         true
     }
 
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+    fn merge_from(
+        &mut self,
+        is: &mut ::protobuf::CodedInputStream<'_>,
+    ) -> ::protobuf::ProtobufResult<()> {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_uint64()?;
                     self.id = ::std::option::Option::Some(tmp);
-                },
+                }
                 2 => {
                     ::protobuf::rt::read_repeated_uint32_into(wire_type, is, &mut self.tags)?;
-                },
-                3 => {
-                    ::protobuf::rt::read_proto2_enum_with_unknown_fields_into(wire_type, is, &mut self.field_type, 3, &mut self.unknown_fields)?
-                },
+                }
+                3 => ::protobuf::rt::read_proto2_enum_with_unknown_fields_into(
+                    wire_type,
+                    is,
+                    &mut self.field_type,
+                    3,
+                    &mut self.unknown_fields,
+                )?,
                 4 => {
                     ::protobuf::rt::read_repeated_uint32_into(wire_type, is, &mut self.geometry)?;
-                },
+                }
                 _ => {
-                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                    ::protobuf::rt::read_unknown_or_skip_group(
+                        field_number,
+                        wire_type,
+                        is,
+                        self.mut_unknown_fields(),
+                    )?;
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -690,7 +728,10 @@ impl ::protobuf::Message for Tile_Feature {
         my_size
     }
 
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+    fn write_to_with_cached_sizes(
+        &self,
+        os: &mut ::protobuf::CodedOutputStream<'_>,
+    ) -> ::protobuf::ProtobufResult<()> {
         if let Some(v) = self.id {
             os.write_uint64(1, v)?;
         }
@@ -700,7 +741,7 @@ impl ::protobuf::Message for Tile_Feature {
             os.write_raw_varint32(::protobuf::rt::vec_packed_varint_data_size(&self.tags))?;
             for v in &self.tags {
                 os.write_uint32_no_tag(*v)?;
-            };
+            }
         }
         if let Some(v) = self.field_type {
             os.write_enum(3, v.value())?;
@@ -711,7 +752,7 @@ impl ::protobuf::Message for Tile_Feature {
             os.write_raw_varint32(::protobuf::rt::vec_packed_varint_data_size(&self.geometry))?;
             for v in &self.geometry {
                 os.write_uint32_no_tag(*v)?;
-            };
+            }
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -749,9 +790,7 @@ impl ::protobuf::Message for Tile_Feature {
 
     fn default_instance() -> &'static Tile_Feature {
         static mut instance: ::protobuf::lazy::Lazy<Tile_Feature> = ::protobuf::lazy::Lazy::INIT;
-        unsafe {
-            instance.get(Tile_Feature::new)
-        }
+        unsafe { instance.get(Tile_Feature::new) }
     }
 }
 
@@ -771,7 +810,7 @@ impl ::protobuf::reflect::ProtobufValue for Tile_Feature {
     }
 }
 
-#[derive(PartialEq,Clone,Default,Debug)]
+#[derive(PartialEq, Clone, Default, Debug)]
 pub struct Tile_Layer {
     // message fields
     version: ::std::option::Option<u32>,
@@ -798,7 +837,6 @@ impl Tile_Layer {
 
     // required uint32 version = 15;
 
-
     pub fn get_version(&self) -> u32 {
         self.version.unwrap_or(1u32)
     }
@@ -816,7 +854,6 @@ impl Tile_Layer {
     }
 
     // required string name = 1;
-
 
     pub fn get_name(&self) -> &str {
         match self.name.as_ref() {
@@ -848,11 +885,12 @@ impl Tile_Layer {
 
     // Take field
     pub fn take_name(&mut self) -> ::std::string::String {
-        self.name.take().unwrap_or_else(|| ::std::string::String::new())
+        self.name
+            .take()
+            .unwrap_or_else(|| ::std::string::String::new())
     }
 
     // repeated .vector_tile.Tile.Feature features = 2;
-
 
     pub fn get_features(&self) -> &[Tile_Feature] {
         &self.features
@@ -878,7 +916,6 @@ impl Tile_Layer {
 
     // repeated string keys = 3;
 
-
     pub fn get_keys(&self) -> &[::std::string::String] {
         &self.keys
     }
@@ -903,7 +940,6 @@ impl Tile_Layer {
 
     // repeated .vector_tile.Tile.Value values = 4;
 
-
     pub fn get_values(&self) -> &[Tile_Value] {
         &self.values
     }
@@ -927,7 +963,6 @@ impl Tile_Layer {
     }
 
     // optional uint32 extent = 5;
-
 
     pub fn get_extent(&self) -> u32 {
         self.extent.unwrap_or(4096u32)
@@ -958,48 +993,60 @@ impl ::protobuf::Message for Tile_Layer {
             if !v.is_initialized() {
                 return false;
             }
-        };
+        }
         for v in &self.values {
             if !v.is_initialized() {
                 return false;
             }
-        };
+        }
         true
     }
 
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+    fn merge_from(
+        &mut self,
+        is: &mut ::protobuf::CodedInputStream<'_>,
+    ) -> ::protobuf::ProtobufResult<()> {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 15 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_uint32()?;
                     self.version = ::std::option::Option::Some(tmp);
-                },
+                }
                 1 => {
                     ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.name)?;
-                },
+                }
                 2 => {
                     ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.features)?;
-                },
+                }
                 3 => {
                     ::protobuf::rt::read_repeated_string_into(wire_type, is, &mut self.keys)?;
-                },
+                }
                 4 => {
                     ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.values)?;
-                },
+                }
                 5 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_uint32()?;
                     self.extent = ::std::option::Option::Some(tmp);
-                },
+                }
                 _ => {
-                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                    ::protobuf::rt::read_unknown_or_skip_group(
+                        field_number,
+                        wire_type,
+                        is,
+                        self.mut_unknown_fields(),
+                    )?;
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -1018,14 +1065,14 @@ impl ::protobuf::Message for Tile_Layer {
         for value in &self.features {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
-        };
+        }
         for value in &self.keys {
             my_size += ::protobuf::rt::string_size(3, &value);
-        };
+        }
         for value in &self.values {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
-        };
+        }
         if let Some(v) = self.extent {
             my_size += ::protobuf::rt::value_size(5, v, ::protobuf::wire_format::WireTypeVarint);
         }
@@ -1034,7 +1081,10 @@ impl ::protobuf::Message for Tile_Layer {
         my_size
     }
 
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+    fn write_to_with_cached_sizes(
+        &self,
+        os: &mut ::protobuf::CodedOutputStream<'_>,
+    ) -> ::protobuf::ProtobufResult<()> {
         if let Some(v) = self.version {
             os.write_uint32(15, v)?;
         }
@@ -1045,15 +1095,15 @@ impl ::protobuf::Message for Tile_Layer {
             os.write_tag(2, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
-        };
+        }
         for v in &self.keys {
             os.write_string(3, &v)?;
-        };
+        }
         for v in &self.values {
             os.write_tag(4, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
-        };
+        }
         if let Some(v) = self.extent {
             os.write_uint32(5, v)?;
         }
@@ -1093,9 +1143,7 @@ impl ::protobuf::Message for Tile_Layer {
 
     fn default_instance() -> &'static Tile_Layer {
         static mut instance: ::protobuf::lazy::Lazy<Tile_Layer> = ::protobuf::lazy::Lazy::INIT;
-        unsafe {
-            instance.get(Tile_Layer::new)
-        }
+        unsafe { instance.get(Tile_Layer::new) }
     }
 }
 
@@ -1117,7 +1165,7 @@ impl ::protobuf::reflect::ProtobufValue for Tile_Layer {
     }
 }
 
-#[derive(Clone,PartialEq,Eq,Debug,Hash)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum Tile_GeomType {
     UNKNOWN = 0,
     POINT = 1,
@@ -1136,7 +1184,7 @@ impl ::protobuf::ProtobufEnum for Tile_GeomType {
             1 => ::std::option::Option::Some(Tile_GeomType::POINT),
             2 => ::std::option::Option::Some(Tile_GeomType::LINESTRING),
             3 => ::std::option::Option::Some(Tile_GeomType::POLYGON),
-            _ => ::std::option::Option::None
+            _ => ::std::option::Option::None,
         }
     }
 
@@ -1151,8 +1199,7 @@ impl ::protobuf::ProtobufEnum for Tile_GeomType {
     }
 }
 
-impl ::std::marker::Copy for Tile_GeomType {
-}
+impl ::std::marker::Copy for Tile_GeomType {}
 
 impl ::std::default::Default for Tile_GeomType {
     fn default() -> Self {

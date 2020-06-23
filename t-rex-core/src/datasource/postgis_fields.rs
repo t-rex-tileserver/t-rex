@@ -74,9 +74,8 @@ impl FromSql for FeatureAttrValType {
             &types::VARCHAR | &types::TEXT | &types::CHAR_ARRAY => {
                 <String>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::String(v)))
             }
-            &types::VARCHAR_ARRAY => {
-                <Vec<String>>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::VarcharArray(v)))
-            }
+            &types::VARCHAR_ARRAY => <Vec<String>>::from_sql(ty, raw)
+                .and_then(|v| Ok(FeatureAttrValType::VarcharArray(v))),
             &types::FLOAT4 => {
                 <f32>::from_sql(ty, raw).and_then(|v| Ok(FeatureAttrValType::Float(v)))
             }
