@@ -17,6 +17,7 @@ mk_deb() {
 mk_package() {
     if [ $TRAVIS_OS_NAME = linux ]; then
         if [ ! -z $MAKE_DEB ]; then
+            # Build trusty deb package
             sudo apt-get -qq update
             sudo apt-get install -y fakeroot
 
@@ -39,6 +40,11 @@ EOF
             mv $dtd/debian.deb $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.deb
             rm -r $dtd
 
+            # Build buster deb package
+            docker build -t build-t-rex-buster -f $src/ci/Dockerfile-buster $src
+            docker run --rm --user $(id -u):$(id -g) -v $src:/dest build-t-rex-buster cp target/debian/t-rex_${TRAVIS_TAG#v}_amd64.deb /dest/t-rex_${TRAVIS_TAG#v}_amd64_buster.deb
+
+            # Build Docker container
             cd $src/packaging/docker
             cp $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.deb .
             # travis uid/gid is 2000/2000, but we build with default uid 1000

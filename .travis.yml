@@ -74,7 +74,9 @@ deploy:
   api_key:
     secure: vX88w3SdgqUmWpFROgBRtR3OA89kkgExXzvD7x9Rt/8GhXgjF86q4DoiIPtk8qQneeqo3xmU0MhQlorWWCE+PhBno2M4lix0p3jCHrs3q10ez8YqGRwh88bCB6cVCBervBXi2dBkSHpJL5qc0VDtHxfJGe3dfJ75BcwNedD9nNwiuuPPy0eIZkOFpoV1QEKnwM5JdDibE24EEIaygGQbgxdG5KhSjSubL4yyFftxMbd0p12F6TVqpSDLXW34iEAjaaAdmAF3mQDUWhg/CVK/4HrLZq7dDP/m1YIcRzFlMKzxUxQSUAe27gsyN92ddbLqGE1vKgaTfY904OHbAyWTNvIVLlYp4DwSCVFMdsGsTEhfY1sok64vPEk6jzz43tds1OGvjWafzksYslyml3DSKLCG3myIGxFaobMraBhBl2m0wEv3uSt5wPfFm7iSRfQsXHQXBThJHvTIWfYLLsQmS5tnV1H3yp0HnJyUEb3gPgtiX7iTwTwBxkFS6UPPrAPbSstAq2YVdxvmxWPKiKvUw1tuy8rX/fQFR7GgEoPffQaa574gfT2Sz2f4qEnUqxVwU1S1tFHDAPNazBZoOOHPHhehxPcAMqdGWaVcdj2X5WhBceFslvpbRQahR9kTGgMBk69Qy9Xe0VveL+tdLeebTvsIh/7IAk3Iw2jB37ENwJk=
   file_glob: true
-  file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
+  file:
+    - $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
+    - "*.deb"
   on:
     # TODO Here you can pick which targets will generate binary releases
     # In this example, there are some targets that are tested using the stable
