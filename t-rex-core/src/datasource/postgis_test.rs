@@ -125,53 +125,53 @@ fn test_feature_query() {
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT ST_SetSRID(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
     // reprojection
     layer.srid = Some(2056);
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT ST_Transform(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_Transform(ST_MakeEnvelope($1,$2,$3,$4,3857),2056)");
     layer.no_transform = true;
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT ST_SetSRID(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,2056)");
     layer.no_transform = false;
     layer.srid = Some(4326);
     assert_eq!(
-        pg.build_query(&layer, 3857, None).unwrap().sql,
+        pg.build_query(&layer, 3857, 10, None).unwrap().sql,
         "SELECT ST_Transform(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_Transform(ST_MakeEnvelope($1,$2,$3,$4,3857),4326)"
     );
     layer.shift_longitude = true;
     assert_eq!(
-        pg.build_query(&layer, 3857, None).unwrap().sql,
+        pg.build_query(&layer, 3857, 10, None).unwrap().sql,
         "SELECT ST_Transform(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_Shift_Longitude(ST_Transform(ST_MakeEnvelope($1,$2,$3,$4,3857),4326))"
     );
     layer.shift_longitude = false;
     layer.srid = Some(-1);
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT ST_SetSRID(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,-1)");
     layer.srid = Some(3857);
     assert_eq!(
-        pg.build_query(&layer, 3857, None).unwrap().sql,
+        pg.build_query(&layer, 3857, 10, None).unwrap().sql,
         "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)"
     );
 
     // clipping
     layer.buffer_size = Some(10);
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT ST_Intersection(geometry,ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)) AS geometry FROM osm_place_point WHERE geometry && ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)");
     layer.make_valid = true;
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT ST_Intersection(ST_MakeValid(geometry),ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)) AS geometry FROM osm_place_point WHERE geometry && ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)");
     layer.geometry_type = Some("POLYGON".to_string());
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT ST_Multi(ST_Buffer(ST_Intersection(ST_MakeValid(geometry),ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)), 0.0)) AS geometry FROM osm_place_point WHERE geometry && ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)");
     layer.geometry_type = Some("POINT".to_string());
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT geometry FROM osm_place_point WHERE geometry && ST_Buffer(ST_MakeEnvelope($1,$2,$3,$4,3857),10*$5::FLOAT8)");
     layer.buffer_size = Some(0);
     assert_eq!(
-        pg.build_query(&layer, 3857, None).unwrap().sql,
+        pg.build_query(&layer, 3857, 10, None).unwrap().sql,
         "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)"
     );
 
@@ -181,24 +181,24 @@ fn test_feature_query() {
     // simplification
     layer.simplify = true;
     layer.tolerance = "!pixel_width!/2".to_string();
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT COALESCE(ST_SnapToGrid(ST_Multi(geometry), $5::FLOAT8/2),ST_GeomFromText('MULTIPOLYGON EMPTY',3857))::geometry(MULTIPOLYGON,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
     layer.geometry_type = Some("LINESTRING".to_string());
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT ST_Multi(ST_SimplifyPreserveTopology(ST_Multi(geometry),$5::FLOAT8/2)) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
     layer.tolerance = "0.5".to_string();
-    assert_eq!(pg.build_query(&layer, 3857, None).unwrap().sql,
+    assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT ST_Multi(ST_SimplifyPreserveTopology(ST_Multi(geometry),0.5)) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
     layer.geometry_type = Some("POINT".to_string());
     assert_eq!(
-        pg.build_query(&layer, 3857, None).unwrap().sql,
+        pg.build_query(&layer, 3857, 10, None).unwrap().sql,
         "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)"
     );
 
     layer.simplify = false;
     layer.query_limit = Some(1);
     assert_eq!(
-        pg.build_query(&layer, 3857, None).unwrap().sql,
+        pg.build_query(&layer, 3857, 10, None).unwrap().sql,
         // No LIMIT clause added - limited when retrieving records
         "SELECT geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)"
     );
@@ -207,10 +207,12 @@ fn test_feature_query() {
     layer.query = vec![LayerQuery {
         minzoom: 0,
         maxzoom: Some(22),
+        simplify: None,
+        tolerance: None,
         sql: Some(String::from("SELECT geometry AS geom FROM osm_place_point")),
     }];
     layer.query_limit = None;
-    assert_eq!(pg.build_query(&layer, 3857, layer.query[0].sql.as_ref())
+    assert_eq!(pg.build_query(&layer, 3857, 10, layer.query[0].sql.as_ref())
                    .unwrap()
                    .sql,
                "SELECT * FROM (SELECT geometry AS geom FROM osm_place_point) AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
@@ -218,11 +220,13 @@ fn test_feature_query() {
     layer.query = vec![LayerQuery {
         minzoom: 0,
         maxzoom: Some(22),
+        simplify: None,
+        tolerance: None,
         sql: Some(String::from(
             "SELECT * FROM osm_place_point WHERE name='Bern'",
         )),
     }];
-    assert_eq!(pg.build_query(&layer, 3857, layer.query[0].sql.as_ref())
+    assert_eq!(pg.build_query(&layer, 3857, 10, layer.query[0].sql.as_ref())
                    .unwrap()
                    .sql,
                "SELECT * FROM (SELECT * FROM osm_place_point WHERE name='Bern') AS _q WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
@@ -243,10 +247,12 @@ fn test_query_params() {
     layer.query = vec![LayerQuery {
                            minzoom: 0,
                            maxzoom: Some(22),
+                           simplify: None,
+                           tolerance: None,
                            sql: Some(String::from("SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way FROM osm_buildings_gen0 WHERE geometry && !bbox!")),
                        }];
     let query = pg
-        .build_query(&layer, 3857, layer.query[0].sql.as_ref())
+        .build_query(&layer, 3857, 10, layer.query[0].sql.as_ref())
         .unwrap();
     assert_eq!(query.sql,
                "SELECT * FROM (SELECT name, type, 0 as osm_id, ST_Union(geometry) AS way FROM osm_buildings_gen0 WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)) AS _q");
@@ -255,10 +261,12 @@ fn test_query_params() {
     layer.query = vec![LayerQuery {
                            minzoom: 0,
                            maxzoom: Some(22),
+                           simplify: None,
+                           tolerance: None,
                            sql: Some(String::from("SELECT osm_id, geometry, typen FROM landuse_z13toz14n WHERE !zoom! BETWEEN 13 AND 14) AS landuse_z9toz14n")),
                        }];
     let query = pg
-        .build_query(&layer, 3857, layer.query[0].sql.as_ref())
+        .build_query(&layer, 3857, 10, layer.query[0].sql.as_ref())
         .unwrap();
     assert_eq!(query.sql,
                "SELECT * FROM (SELECT osm_id, geometry, typen FROM landuse_z13toz14n WHERE $5 BETWEEN 13 AND 14) AS landuse_z9toz14n) AS _q WHERE way && ST_MakeEnvelope($1,$2,$3,$4,3857)");
@@ -267,10 +275,12 @@ fn test_query_params() {
     layer.query = vec![LayerQuery {
                            minzoom: 0,
                            maxzoom: Some(22),
+                           simplify: None,
+                           tolerance: None,
                            sql: Some(String::from("SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),!pixel_width!/2) AS way FROM osm_buildings")),
                        }];
     let query = pg
-        .build_query(&layer, 3857, layer.query[0].sql.as_ref())
+        .build_query(&layer, 3857, 10, layer.query[0].sql.as_ref())
         .unwrap();
     assert_eq!(query.sql,
                "SELECT * FROM (SELECT name, type, 0 as osm_id, ST_SimplifyPreserveTopology(ST_Union(geometry),$5::FLOAT8/2) AS way FROM osm_buildings) AS _q WHERE way && ST_MakeEnvelope($1,$2,$3,$4,3857)");
@@ -314,6 +324,8 @@ fn test_retrieve_features() {
     layer.query = vec![LayerQuery {
         minzoom: 0,
         maxzoom: Some(22),
+        simplify: None,
+        tolerance: None,
         sql: Some(String::from("SELECT * FROM ne.ne_10m_populated_places")),
     }];
     layer.fid_field = Some(String::from("fid"));

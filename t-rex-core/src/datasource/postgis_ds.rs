@@ -222,7 +222,7 @@ impl PostgisDatasource {
         }
     }
     /// Build geometry selection expression for feature query.
-    fn build_geom_expr(&self, layer: &Layer, grid_srid: i32) -> String {
+    fn build_geom_expr(&self, layer: &Layer, grid_srid: i32, zoom: u8) -> String {
         let layer_srid = layer.srid.unwrap_or(0);
         let ref geom_name = layer
             .geometry_field
@@ -280,7 +280,7 @@ impl PostgisDatasource {
         }
 
         // Simplify
-        if layer.simplify {
+        if layer.simplify(zoom) {
             geom_expr = match layer
                 .geometry_type
                 .as_ref()
@@ -288,14 +288,18 @@ impl PostgisDatasource {
             {
                 "LINESTRING" | "MULTILINESTRING" | "COMPOUNDCURVE" => format!(
                     "ST_Multi(ST_SimplifyPreserveTopology({},{}))",
-                    geom_expr, layer.tolerance
+                    geom_expr,
+                    layer.tolerance(zoom)
                 ),
                 "POLYGON" | "MULTIPOLYGON" | "CURVEPOLYGON" => {
                     let empty_geom =
                         format!("ST_GeomFromText('MULTIPOLYGON EMPTY',{})", layer_srid);
                     format!(
                         "COALESCE(ST_SnapToGrid({}, {}),{})::geometry(MULTIPOLYGON,{})",
-                        geom_expr, layer.tolerance, empty_geom, layer_srid
+                        geom_expr,
+                        layer.tolerance(zoom),
+                        empty_geom,
+                        layer_srid
                     )
                 }
                 _ => geom_expr, // No simplification for points or unknown types
@@ -377,6 +381,7 @@ impl PostgisDatasource {
         &self,
         layer: &Layer,
         grid_srid: i32,
+        zoom: u8,
         sql: Option<&String>,
         raw_geom: bool,
     ) -> Option<String> {
@@ -390,7 +395,7 @@ impl PostgisDatasource {
             // Skip geometry processing when generating user query template
             geom_name.to_string()
         } else {
-            self.build_geom_expr(layer, grid_srid)
+            self.build_geom_expr(layer, grid_srid, zoom)
         };
         let select_list = self.build_select_list(layer, geom_expr, sql);
         let intersect_clause = format!(" WHERE {} && !bbox!", geom_name);
@@ -425,9 +430,10 @@ impl PostgisDatasource {
         &self,
         layer: &Layer,
         grid_srid: i32,
+        zoom: u8,
         sql: Option<&String>,
     ) -> Option<SqlQuery> {
-        let sqlquery = self.build_query_sql(layer, grid_srid, sql, false);
+        let sqlquery = self.build_query_sql(layer, grid_srid, zoom, sql, false);
         if sqlquery.is_none() {
             return None;
         }
@@ -603,31 +609,11 @@ impl DatasourceType for PostgisDatasource {
             error!("Layer '{}': table_name undefined", layer.name);
         }
 
-        for layer_query in &layer.query {
-            if let Some(query) = self.build_query(layer, grid_srid, layer_query.sql.as_ref()) {
+        for zoom in layer.minzoom()..=layer.maxzoom(22) {
+            let layer_query = layer.query(zoom);
+            if let Some(query) = self.build_query(layer, grid_srid, zoom, layer_query) {
                 debug!("Query for layer '{}': {}", layer.name, query.sql);
-                for zoom in layer_query.minzoom..=layer_query.maxzoom.unwrap_or(22) {
-                    if &layer.query(zoom).unwrap_or(&"".to_string())
-                        == &layer_query.sql.as_ref().unwrap_or(&"".to_string())
-                    {
-                        queries.insert(zoom, query.clone());
-                    }
-                }
-            }
-        }
-
-        let has_gaps =
-            (layer.minzoom()..=layer.maxzoom(22)).any(|zoom| !queries.contains_key(&zoom));
-
-        // Generate queries for zoom levels without user sql
-        if has_gaps {
-            if let Some(query) = self.build_query(layer, grid_srid, None) {
-                debug!("Query for layer '{}': {}", layer.name, query.sql);
-                for zoom in layer.minzoom()..=layer.maxzoom(22) {
-                    if !queries.contains_key(&zoom) {
-                        queries.insert(zoom, query.clone());
-                    }
-                }
+                queries.insert(zoom, query.clone());
             }
         }
 

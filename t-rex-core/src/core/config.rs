@@ -114,6 +114,10 @@ pub struct LayerQueryCfg {
     #[serde(default)]
     pub minzoom: u8,
     pub maxzoom: Option<u8>,
+    /// Simplify geometry (override layer default setting)
+    pub simplify: Option<bool>,
+    /// Simplification tolerance (override layer default setting)
+    pub tolerance: Option<String>,
     pub sql: Option<String>,
 }
 

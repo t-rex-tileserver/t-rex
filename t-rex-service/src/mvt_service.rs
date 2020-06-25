@@ -457,7 +457,8 @@ impl MvtService {
         cfg.push_str(&layer.gen_runtime_config());
         if let &Datasource::Postgis(ref pg) = ds {
             if layer.query(0).is_none() {
-                let query = pg.build_query_sql(layer, 3857, None, true).unwrap();
+                let zoom = 0; // relevant?
+                let query = pg.build_query_sql(layer, 3857, zoom, None, true).unwrap();
                 // Remove quotes from column names for better readability
                 cfg.push_str(&format!("#sql = \"\"\"{}\"\"\"\n", query.replace('"', "")))
             }

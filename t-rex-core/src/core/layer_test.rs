@@ -15,7 +15,7 @@ fn layer_from_config(toml: &str) -> Result<Layer, String> {
 }
 
 #[test]
-fn test_toml_decode() {
+fn test_query_config() {
     // Layer config with zoom level dependent queries
     let toml = r#"
         #[[tileset.layer]]
@@ -74,7 +74,10 @@ fn test_toml_decode() {
         cfg.query(15),
         Some(&"SELECT name,wkb_geometry FROM places_z2".to_string())
     );
+}
 
+#[test]
+fn test_layer_defaults() {
     // Minimal config
     let toml = r#"
         #[[tileset.layer]]
@@ -87,7 +90,10 @@ fn test_toml_decode() {
     assert_eq!(cfg.query.len(), 0);
     assert_eq!(cfg.minzoom(), 0);
     assert_eq!(cfg.maxzoom(30), 30);
+}
 
+#[test]
+fn test_zoom_config() {
     // min/maxzoom in layer
     let toml = r#"
         #[[tileset.layer]]
@@ -194,7 +200,66 @@ fn test_toml_decode() {
         cfg.query(15),
         Some(&"SELECT name,wkb_geometry FROM places_z2".to_string())
     );
+}
 
+#[test]
+fn test_simplify_config() {
+    // simplify in layer
+    let toml = r#"
+        #[[tileset.layer]]
+        name = "points"
+        table_name = "ne_10m_populated_places"
+        geometry_field = "wkb_geometry"
+        simplify = true
+        minzoom = 1
+        maxzoom = 12
+        "#;
+    let cfg = layer_from_config(toml).unwrap();
+    assert_eq!(cfg.simplify, true);
+    assert_eq!(cfg.tolerance, "!pixel_width!/2"); // config::DEFAULT_TOLERANCE
+
+    // simplify override ub query
+    let toml = r#"
+        #[[tileset.layer]]
+        name = "points"
+        geometry_field = "wkb_geometry"
+        minzoom = 1
+        maxzoom = 4
+        simplify = true
+        tolerance = "!pixel_width!/6"
+        #[[tileset.layer.query]]
+        [[query]]
+        minzoom = 6
+        simplify = true
+        tolerance = "!pixel_width!/5"
+        sql = "SELECT name,wkb_geometry FROM places_z2"
+        #[[tileset.layer.query]]
+        [[query]]
+        minzoom = 13
+        maxzoom = 13
+        sql = "SELECT name,wkb_geometry FROM places_z10"
+        [[query]]
+        minzoom = 14
+        maxzoom = 14
+        simplify = false
+        sql = "SELECT name,wkb_geometry FROM places_z10"
+        "#;
+    let cfg = layer_from_config(toml).unwrap();
+    assert_eq!(cfg.simplify, true);
+    assert_eq!(cfg.tolerance, "!pixel_width!/6");
+    assert_eq!(cfg.simplify(1), true);
+    assert_eq!(cfg.simplify(13), true);
+    assert_eq!(cfg.simplify(14), false);
+    assert_eq!(cfg.tolerance(1), "!pixel_width!/6");
+    assert_eq!(cfg.tolerance(3), "!pixel_width!/6");
+    assert_eq!(cfg.tolerance(6), "!pixel_width!/5");
+    assert_eq!(cfg.tolerance(9), "!pixel_width!/5");
+    assert_eq!(cfg.tolerance(13), "!pixel_width!/5");
+    assert_eq!(cfg.tolerance(14), "!pixel_width!/5"); // should it be "!pixel_width!/6" ?
+}
+
+#[test]
+fn test_invalid_configs() {
     // Invalid config: missing required field
     let toml = r#"
         #[[tileset.layer]]

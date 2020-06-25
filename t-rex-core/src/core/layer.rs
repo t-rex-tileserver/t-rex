@@ -12,6 +12,8 @@ use std::collections::HashMap;
 pub struct LayerQuery {
     pub minzoom: u8,
     pub maxzoom: Option<u8>,
+    pub simplify: Option<bool>,
+    pub tolerance: Option<String>,
     pub sql: Option<String>,
 }
 
@@ -70,25 +72,40 @@ impl Layer {
                 .unwrap_or(default),
         )
     }
-    // SQL query for zoom level
-    pub fn query(&self, level: u8) -> Option<&String> {
+    /// Query config for zoom level
+    fn query_cfg<F>(&self, level: u8, check: F) -> Option<&LayerQuery>
+    where
+        F: Fn(&LayerQuery) -> bool,
+    {
         let mut queries = self
             .query
             .iter()
-            .map(|ref q| {
-                (
-                    q.minzoom,
-                    q.maxzoom.unwrap_or(22),
-                    q.sql.as_ref().and_then(|sql| Some(sql)),
-                )
-            })
+            .map(|q| (q.minzoom, q.maxzoom.unwrap_or(22), q))
             .collect::<Vec<_>>();
         queries.sort_by_key(|ref t| t.0);
+        // Start at highest zoom level and find first match
         let query = queries
             .iter()
             .rev()
-            .find(|ref q| level >= q.0 && level <= q.1);
-        query.and_then(|ref q| q.2)
+            .find(|ref q| level >= q.0 && level <= q.1 && check(q.2));
+        query.map(|q| q.2)
+    }
+    /// SQL query for zoom level
+    pub fn query(&self, level: u8) -> Option<&String> {
+        let query_cfg = self.query_cfg(level, |q| q.sql.is_some());
+        query_cfg.and_then(|q| q.sql.as_ref().and_then(|sql| Some(sql)))
+    }
+    /// simplify config for zoom level
+    pub fn simplify(&self, level: u8) -> bool {
+        let query_cfg = self.query_cfg(level, |q| q.simplify.is_some());
+        query_cfg.and_then(|q| q.simplify).unwrap_or(self.simplify)
+    }
+    /// tolerance config for zoom level
+    pub fn tolerance(&self, level: u8) -> &String {
+        let query_cfg = self.query_cfg(level, |q| q.tolerance.is_some());
+        query_cfg
+            .and_then(|q| q.tolerance.as_ref())
+            .unwrap_or(&self.tolerance)
     }
     /// Layer properties needed e.g. for metadata.json
     pub fn metadata(&self) -> HashMap<&str, String> {
@@ -113,6 +130,8 @@ impl<'a> Config<'a, LayerCfg> for Layer {
             .map(|lq| LayerQuery {
                 minzoom: lq.minzoom,
                 maxzoom: lq.maxzoom,
+                simplify: lq.simplify,
+                tolerance: lq.tolerance.clone(),
                 sql: lq.sql.clone(),
             })
             .collect();
