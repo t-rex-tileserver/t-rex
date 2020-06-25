@@ -2021,7 +2021,7 @@ dependencies = [
 
 [[package]]
 name = "t-rex"
-version = "0.10.2-dev"
+version = "0.11.0"
 dependencies = [
  "clap 2.33.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",

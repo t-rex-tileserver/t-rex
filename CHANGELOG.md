@@ -1,3 +1,12 @@
+<a name="0.11.0"></a>
+## 0.11.0 (2020-06-25)
+
+#### Features
+
+* Zoom level dependent simplify configuration
+* Support postgres varchar[] data type (Thanks @Blesss!)
+* Update to async/await with Actix-Web 2.0
+
 <a name="0.10.1"></a>
 ## 0.10.1 (2020-02-20)
 
