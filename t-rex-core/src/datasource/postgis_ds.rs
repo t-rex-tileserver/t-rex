@@ -295,7 +295,7 @@ impl PostgisDatasource {
                     let empty_geom =
                         format!("ST_GeomFromText('MULTIPOLYGON EMPTY',{})", layer_srid);
                     format!(
-                        "COALESCE(ST_SnapToGrid({}, {}),{})::geometry(MULTIPOLYGON,{})",
+                        "COALESCE(ST_MakeValid(ST_SnapToGrid({}, {})),{})::geometry(MULTIPOLYGON,{})",
                         geom_expr,
                         layer.tolerance(zoom),
                         empty_geom,

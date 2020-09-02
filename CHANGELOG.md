@@ -1,3 +1,10 @@
+<a name="0.11.1"></a>
+## 0.11.1 (UNRELEASED)
+
+#### Features
+
+* Guarantee valid geometries when simplifying polygons
+
 <a name="0.11.0"></a>
 ## 0.11.0 (2020-06-25)
 
