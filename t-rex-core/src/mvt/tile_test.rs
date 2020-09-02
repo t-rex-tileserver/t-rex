@@ -33,22 +33,23 @@ fn test_point_to_screen_coords() {
     assert_eq!(screen_pt, screen::Point { x: 245, y: 3131 });
     assert_eq!(screen_pt.encode().vec(), &[9, 490, 6262]);
 
-    //overflow
+    // saturating cast to i32 (Rust 1.45+)
     let point = geom::Point::new(960000.0, f64::MAX, Some(3857));
     let screen_pt = screen::Point::from_geom(&tile_extent, false, 4096, &point);
     assert_eq!(
         screen_pt,
         screen::Point {
             x: 245,
-            y: i32::MIN,
+            y: i32::MAX,
         }
     );
+    // with reverse_y
     let screen_pt = screen::Point::from_geom(&tile_extent, true, 4096, &point);
     assert_eq!(
         screen_pt,
         screen::Point {
             x: 245,
-            y: i32::MAX,
+            y: i32::MIN + 4097_i32,
         }
     );
 }
