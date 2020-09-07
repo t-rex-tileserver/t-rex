@@ -459,15 +459,24 @@ impl PostgisDatasource {
 impl DatasourceType for PostgisDatasource {
     /// New instance with connected pool
     fn connected(&self) -> PostgisDatasource {
+        let mut tls_mode = TlsMode::None;
+
+        if self.connection_url.to_lowercase().contains("sslmode=require") {
+            info!("Connection string contains required SSL mode for Postgres connection");
+            let negotiator = NativeTls::new().unwrap();
+            tls_mode = TlsMode::Require(Box::new(negotiator));
+        }
+
         // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
         let manager =
-            PostgresConnectionManager::new(self.connection_url.as_ref(), TlsMode::None).unwrap();
+            PostgresConnectionManager::new(self.connection_url.as_ref(), tls_mode).unwrap();
         let pool_size = self.pool_size.unwrap_or(8); // TODO: use number of workers as default pool size
         let pool = r2d2::Pool::builder()
             .max_size(pool_size as u32)
             .build(manager)
             .or_else(|e| match &e.to_string() as &str {
-                "unable to initialize connections" => {
+                c if c.contains("SSL connection is required") ||
+                    c.contains("unable to initialize connections") => {
                     info!("Couldn't connect with TlsMode::None - retrying with TlsMode::Require");
                     let negotiator = NativeTls::new().unwrap();
                     let manager = PostgresConnectionManager::new(
