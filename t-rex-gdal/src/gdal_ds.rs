@@ -92,7 +92,7 @@ impl DatasourceType for GdalDatasource {
             }),
         };
 
-        let grid_sref = match SpatialRef::from_epsg(grid_srid as u32) {
+        let grid_sref = match sref(grid_srid as u32) {
             Err(e) => {
                 error!("Unable to get grid spatial reference: {}", e);
                 return None;
@@ -106,7 +106,7 @@ impl DatasourceType for GdalDatasource {
             _ => &grid_sref,
         };
 
-        let wgs84_sref = match SpatialRef::from_epsg(4326) {
+        let wgs84_sref = match sref(4326) {
             Err(e) => {
                 warn!("Unable to get EPSG:4326 spatial reference: {}", e);
                 return None;
@@ -145,7 +145,7 @@ impl DatasourceType for GdalDatasource {
         }
         let ogr_layer = ogr_layer.unwrap();
 
-        let grid_sref = match SpatialRef::from_epsg(grid_srid as u32) {
+        let grid_sref = match sref(grid_srid as u32) {
             Err(e) => {
                 error!("Unable to get grid spatial reference: {}", e);
                 return;
@@ -225,7 +225,7 @@ impl DatasourceType for GdalDatasource {
         // CoordTransform for features
         let mut transformation = None;
         if let Some(ref wkt) = self.geom_transform.get(&layer.name) {
-            let grid_sref = SpatialRef::from_epsg(grid.srid as u32).unwrap();
+            let grid_sref = sref(grid.srid as u32).unwrap();
             let layer_sref = SpatialRef::from_wkt(wkt).unwrap();
             // Spatial filter must be in layer SRS
             let bbox_tr = CoordTransform::new(&grid_sref, &layer_sref).unwrap();
@@ -278,9 +278,21 @@ fn transform_extent(
     src_srid: i32,
     dest_srid: i32,
 ) -> Result<Extent, gdal::errors::Error> {
-    let sref_in = SpatialRef::from_epsg(src_srid as u32)?;
-    let sref_out = SpatialRef::from_epsg(dest_srid as u32)?;
+    let sref_in = sref(src_srid as u32)?;
+    let sref_out = sref(dest_srid as u32)?;
     transform_extent_sref(extent, &sref_in, &sref_out)
+}
+
+const WKT_WSG84_LON_LAT: &str = r#"GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AXIS["Lon",EAST],AXIS["Lat",NORTH],AUTHORITY["EPSG","4326"]]"#;
+
+fn sref(srid: u32) -> Result<SpatialRef, gdal::errors::Error> {
+    if srid == 4326 {
+        // Return WGS84 in traditional GIS axis order
+        // See https://github.com/OSGeo/gdal/blob/master/gdal/doc/source/development/rfc/rfc73_proj6_wkt2_srsbarn.rst
+        SpatialRef::from_wkt(WKT_WSG84_LON_LAT)
+    } else {
+        SpatialRef::from_epsg(srid)
+    }
 }
 
 /// Projected extent
