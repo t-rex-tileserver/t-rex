@@ -3,6 +3,7 @@
 
 #### Features
 
+* Support for HTTP HEAD requests (Thanks @sebastian-r-schmidt!)
 * Guarantee valid geometries when simplifying polygons
 
 #### Bug Fixes
