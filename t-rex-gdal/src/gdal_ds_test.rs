@@ -124,11 +124,20 @@ fn test_coord_transformation() {
         maxx: 7.7343,
         maxy: 47.0401,
     };
-    let extent_3857 = Extent {
-        minx: 821849.5366285803,
-        miny: 5909489.863677091,
-        maxx: 860978.3376424159,
-        maxy: 5948621.871058013,
+    let extent_3857 = if gdal_version() < 3000000 {
+        Extent {
+            minx: 821849.5366285803,
+            miny: 5909489.863677091,
+            maxx: 860978.3376424159,
+            maxy: 5948621.871058013,
+        }
+    } else {
+        Extent {
+            minx: 821849.5366285802,
+            miny: 5909489.863677087,
+            maxx: 860978.3376424158,
+            maxy: 5948621.871058013,
+        }
     };
     assert_eq!(
         ds.extent_from_wgs84(&extent_wgs84, 3857),
@@ -140,12 +149,14 @@ fn test_coord_transformation() {
     assert!(result.is_none());
 
     let mut reccnt = 0;
+    let point_bern = if gdal_version() < 3000000 {
+        "Ok(Point(Point { x: 7.466975462482421, y: 46.916682758667704, srid: Some(4326) }))"
+    } else {
+        "Ok(Point(Point { x: 7.466975462482424, y: 46.91668275866772, srid: Some(4326) }))"
+    };
     ds.retrieve_features("ts", &layer, &extent_wgs84, 10, &grid, |feat| {
         if reccnt == 0 {
-            assert_eq!("Ok(Point(Point { x: 7.466975462482421, y: 46.916682758667704, srid: Some(4326) }))",
-                       &*format!("{:?}", feat.geometry()));
-        }
-        if reccnt == 0 {
+            assert_eq!(point_bern, &*format!("{:?}", feat.geometry()));
             assert_eq!(
                 feat.attributes()[1].value,
                 FeatureAttrValType::String("Bern".to_string())
@@ -268,16 +279,17 @@ fn test_no_transform() {
     layer.table_name = Some(String::from("g1k18"));
     let ds = GdalDatasource::new("../data/g1k18.shp");
     let ext = ds.layer_extent(&layer, 3857);
-    #[cfg(not(target_os = "macos"))]
-    assert_eq!(
-        format!("{:.5?}", ext),
-        "Some(Extent { minx: 5.96526, miny: 45.82056, maxx: 10.56030, maxy: 47.77352 })"
-    );
-    #[cfg(target_os = "macos")] // GDAL 2.3.0
-    assert_eq!(
-        format!("{:.5?}", ext),
-        "Some(Extent { minx: 5.96455, miny: 45.81936, maxx: 10.55885, maxy: 47.77213 })"
-    );
+    if gdal_version() < 2030000 {
+        assert_eq!(
+            format!("{:.5?}", ext),
+            "Some(Extent { minx: 5.96526, miny: 45.82056, maxx: 10.56030, maxy: 47.77352 })"
+        );
+    } else {
+        assert_eq!(
+            format!("{:.5?}", ext),
+            "Some(Extent { minx: 5.96455, miny: 45.81936, maxx: 10.55885, maxy: 47.77213 })"
+        );
+    }
 
     layer.no_transform = true;
     let ext = ds.layer_extent(&layer, 3857);
