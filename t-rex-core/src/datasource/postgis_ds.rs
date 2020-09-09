@@ -18,6 +18,7 @@ use std;
 use std::collections::BTreeMap;
 use tile_grid::Extent;
 use tile_grid::Grid;
+use regex::Regex;
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum QueryParam {
@@ -461,15 +462,21 @@ impl DatasourceType for PostgisDatasource {
     fn connected(&self) -> PostgisDatasource {
         let mut tls_mode = TlsMode::None;
 
-        if self.connection_url.to_lowercase().contains("sslmode=require") {
+        // Match the sslmode parameter, currently only sslmode=require is supported
+        let sslmode_required_re = Regex::new(r"\??(?i)sslmode=require?(&|$)").unwrap();
+
+        if sslmode_required_re.is_match(self.connection_url.as_ref()) {
             info!("Connection string contains required SSL mode for Postgres connection");
             let negotiator = NativeTls::new().unwrap();
             tls_mode = TlsMode::Require(Box::new(negotiator));
         }
+        // Remove the sslmode parameter before it goes to the connection manager
+        let replaced = sslmode_required_re.replace_all(self.connection_url.as_ref(), "");
+        let conn_url = replaced.as_ref();
 
         // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
         let manager =
-            PostgresConnectionManager::new(self.connection_url.as_ref(), tls_mode).unwrap();
+            PostgresConnectionManager::new(conn_url, tls_mode).unwrap();
         let pool_size = self.pool_size.unwrap_or(8); // TODO: use number of workers as default pool size
         let pool = r2d2::Pool::builder()
             .max_size(pool_size as u32)
@@ -480,7 +487,7 @@ impl DatasourceType for PostgisDatasource {
                     info!("Couldn't connect with TlsMode::None - retrying with TlsMode::Require");
                     let negotiator = NativeTls::new().unwrap();
                     let manager = PostgresConnectionManager::new(
-                        self.connection_url.as_ref(),
+                        conn_url,
                         TlsMode::Require(Box::new(negotiator)),
                     )
                     .unwrap();
