@@ -27,7 +27,7 @@ fn test_load_config() {
 fn test_parse_error() {
     let config: Result<ApplicationCfg, _> = read_config("src/core/mod.rs");
     assert_eq!(
-        "src/core/mod.rs - unexpected character found: `/` at line 1",
+        "src/core/mod.rs - unexpected character found: `/` at line 1 column 1",
         config.err().unwrap()
     );
 

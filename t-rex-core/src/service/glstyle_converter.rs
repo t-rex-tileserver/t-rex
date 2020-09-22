@@ -6,8 +6,7 @@
 use serde_json;
 use std;
 use std::collections::BTreeMap;
-use toml;
-
+use toml::map::Map;
 use toml::Value::{self, Array, Boolean, Datetime, Float, Integer, String, Table};
 
 /// Convert Mapbox GL Styles from [TOML format](https://pka.github.io/mapbox-gl-style-spec/) to JSON
@@ -44,7 +43,7 @@ impl TomlConverter {
         json.unwrap()
     }
 
-    pub fn convert_table(&self, table: &BTreeMap<std::string::String, Value>) -> serde_json::Value {
+    pub fn convert_table(&self, table: &Map<std::string::String, Value>) -> serde_json::Value {
         let mut json: BTreeMap<std::string::String, serde_json::Value> = BTreeMap::new();
         for (key, value) in table.iter() {
             if key == "stops" {
