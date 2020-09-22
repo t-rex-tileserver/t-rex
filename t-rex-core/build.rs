@@ -1,13 +1,10 @@
-use protoc_rust::Customize;
+use protoc_rust::Codegen;
 
 fn main() {
-    protoc_rust::run(protoc_rust::Args {
-        out_dir: "src/mvt",
-        input: &["src/mvt/vector_tile.proto"],
-        includes: &["src/mvt"],
-        customize: Customize {
-            ..Default::default()
-        },
-    })
-    .expect("protoc");
+    Codegen::new()
+        .out_dir("src/mvt")
+        .inputs(&["src/mvt/vector_tile.proto"])
+        .include("src/mvt")
+        .run()
+        .expect("Running protoc failed.");
 }
