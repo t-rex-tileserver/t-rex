@@ -14,11 +14,10 @@ workspace = ".."
 doctest = false
 
 [dependencies]
-actix-web = "2.0.0"
-actix-cors = "0.2.0"
-actix-files = "0.2.1"
-actix-rt = "1.0.0"
-futures = "0.3.4"
+actix-web = "3.0"
+actix-cors = "0.3"
+actix-files = "0.3"
+futures = "0.3"
 clap = "2.31"
 log = "0.4"
 num_cpus = "1.11"
