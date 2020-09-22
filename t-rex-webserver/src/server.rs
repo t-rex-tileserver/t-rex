@@ -9,7 +9,6 @@ use crate::runtime_config::{config_from_args, service_from_args};
 use crate::static_files::StaticFiles;
 use actix_cors::Cors;
 use actix_files as fs;
-use actix_rt;
 use actix_web::dev::BodyEncoding;
 use actix_web::http::{header, ContentEncoding};
 use actix_web::middleware::Compress;
@@ -64,8 +63,8 @@ include!(concat!(env!("OUT_DIR"), "/fonts.rs"));
 /// Example: /fonts/Open%20Sans%20Regular,Arial%20Unicode%20MS%20Regular/0-255.pbf
 async fn fonts_pbf(params: web::Path<(String, String)>) -> Result<HttpResponse> {
     let fontpbfs = fonts();
-    let fontlist = &params.0;
-    let range = &params.1;
+    let fontlist = &params.as_ref().0;
+    let range = &params.as_ref().1;
     let mut fonts = fontlist.split(",").collect::<Vec<_>>();
     fonts.push("Roboto Regular"); // Fallback
     let mut resp = HttpResponse::NotFound().finish();
@@ -122,7 +121,7 @@ async fn tile_pbf(
     params: web::Path<(String, u8, u32, u32)>,
     req: HttpRequest,
 ) -> Result<HttpResponse> {
-    let tileset = &params.0;
+    let tileset = &params.as_ref().0;
     let z = params.1;
     let x = params.2;
     let y = params.3;
@@ -199,7 +198,7 @@ async fn drilldown_handler(
     Ok(HttpResponse::Ok().json(json))
 }
 
-#[actix_rt::main]
+#[actix_web::main]
 pub async fn webserver(args: ArgMatches<'static>) -> std::io::Result<()> {
     let config = config_from_args(&args);
     let host = config
