@@ -19,10 +19,10 @@ t-rex-core = { path = "t-rex-core" }
 t-rex-gdal = { path = "t-rex-gdal", optional = true }
 t-rex-service = { path = "t-rex-service" }
 t-rex-webserver = { path = "t-rex-webserver" }
-clap = "2.31"
-dotenv = "0.14.1"
+clap = "2.33"
+dotenv = "0.15"
 log = "0.4"
-env_logger = "0.6"
+env_logger = "0.7"
 time = "0.1"
 
 [features]
