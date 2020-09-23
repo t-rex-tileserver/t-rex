@@ -13,7 +13,6 @@ use actix_web::dev::BodyEncoding;
 use actix_web::http::{header, ContentEncoding};
 use actix_web::middleware::Compress;
 use actix_web::{guard, middleware, web, App, HttpRequest, HttpResponse, HttpServer, Result};
-use actix_web::web;
 use clap::ArgMatches;
 use log::Level;
 use num_cpus;
