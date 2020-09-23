@@ -8,8 +8,7 @@ use crate::core::geom::*;
 use crate::core::layer::{Layer, LayerQuery};
 use crate::datasource::postgis_ds::{PostgisDatasource, QueryParam};
 use crate::datasource::DatasourceType;
-use postgres;
-use postgres::Connection;
+use postgres::{Client, NoTls};
 use std::env;
 use tile_grid::Extent;
 use tile_grid::Grid;
@@ -17,8 +16,8 @@ use tile_grid::Grid;
 #[test]
 #[ignore]
 fn test_from_geom_fields() {
-    let conn: Connection = match env::var("DBCONN") {
-        Result::Ok(val) => Connection::connect(&val as &str, postgres::TlsMode::None),
+    let mut conn = match env::var("DBCONN") {
+        Result::Ok(val) => Client::connect(&val as &str, NoTls),
         Result::Err(_) => panic!("DBCONN undefined"),
     }
     .unwrap();
@@ -51,10 +50,10 @@ fn test_from_geom_fields() {
     let sql =
         "SELECT wkb_geometry, ST_AsBinary(wkb_geometry) FROM ne.rivers_lake_centerlines LIMIT 1";
     let rows = &conn.query(sql, &[]).unwrap();
-    assert_eq!(rows.columns()[0].name(), "wkb_geometry");
-    assert_eq!(format!("{}", rows.columns()[0].type_()), "geometry");
-    assert_eq!(rows.columns()[1].name(), "st_asbinary");
-    assert_eq!(format!("{}", rows.columns()[1].type_()), "bytea");
+    assert_eq!(rows[0].columns()[0].name(), "wkb_geometry");
+    assert_eq!(format!("{}", rows[0].columns()[0].type_()), "geometry");
+    assert_eq!(rows[0].columns()[1].name(), "st_asbinary");
+    assert_eq!(format!("{}", rows[0].columns()[1].type_()), "bytea");
 }
 
 #[test]
@@ -367,11 +366,13 @@ fn test_no_geom_field() {
 #[test]
 #[ignore]
 fn test_tls() {
-    use postgres::TlsMode;
-    use postgres_native_tls::NativeTls;
-    let negotiator = NativeTls::new().unwrap();
+    use native_tls::TlsConnector;
+    use postgres_native_tls::MakeTlsConnector;
+
+    let tls_connector = TlsConnector::builder().build().unwrap();
+    let tls_connector = MakeTlsConnector::new(tls_connector);
     let _conn = match env::var("DBCONN") {
-        Result::Ok(val) => Connection::connect(&val as &str, TlsMode::Prefer(&negotiator)),
+        Result::Ok(val) => Client::connect(&val, tls_connector),
         Result::Err(_) => panic!("DBCONN undefined"),
     };
     // Connection fails on Travis with
