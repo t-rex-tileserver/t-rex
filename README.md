@@ -1,8 +1,10 @@
 t-rex
 =====
 
-[![Travis build Status](https://travis-ci.org/t-rex-tileserver/t-rex.svg?branch=master)](https://travis-ci.org/t-rex-tileserver/t-rex) [![Appveyor build status](https://ci.appveyor.com/api/projects/status/o60e9bu97i49lxyf?svg=true)](https://ci.appveyor.com/project/pka/t-rex) [![Language (Rust)](https://img.shields.io/badge/powered_by-Rust-blue.svg)](http://www.rust-lang.org/)
-
+[![Travis build Status](https://travis-ci.org/t-rex-tileserver/t-rex.svg?branch=master)](https://travis-ci.org/t-rex-tileserver/t-rex)
+[![Appveyor build status](https://ci.appveyor.com/api/projects/status/o60e9bu97i49lxyf?svg=true)](https://ci.appveyor.com/project/pka/t-rex)
+[![Language (Rust)](https://img.shields.io/badge/powered_by-Rust-blue.svg)](http://www.rust-lang.org/)
+[![Discord Chat](https://img.shields.io/discord/598002550221963289.svg)](https://discord.gg/)
 
 t-rex is a vector tile server specialized on publishing [MVT tiles](https://github.com/mapbox/vector-tile-spec/tree/master/2.1)
 from your own data.
