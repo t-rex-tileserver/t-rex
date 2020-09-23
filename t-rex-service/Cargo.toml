@@ -19,7 +19,7 @@ serde_json = "1.0"
 percent-encoding = "2.1"
 elementtree = "0.5"
 log = "0.4"
-clap = "2.31"
+clap = "2.33"
 pbr = "1.0"
 
 [dependencies.tile-grid]
