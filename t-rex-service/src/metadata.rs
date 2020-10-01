@@ -153,6 +153,9 @@ impl MvtService {
                     "maxzoom": cmp::min(ts.maxzoom(), layer.maxzoom(22)),
                     "fields": {}
                 });
+                if let Some(srid) = layer.srid {
+                    layer_json["projection"] = json!(format!("EPSG:{}", srid));
+                }
                 //insert fields
                 let fields = self.ds(&layer).unwrap().detect_data_columns(&layer, query);
                 for (ref field, _) in fields {
@@ -384,7 +387,8 @@ fn test_tilejson() {
       "fields": {},
       "id": "admin_0_countries",
       "maxzoom": 22,
-      "minzoom": 0
+      "minzoom": 0,
+      "projection": "EPSG:3857"
     }
   ],
   "version": "2.0.0"
@@ -459,7 +463,7 @@ fn test_mbtiles_metadata() {
   "description": "osm",
   "format": "pbf",
   "id": "osm",
-  "json": "{\"Layer\":[{\"description\":\"\",\"fields\":{},\"id\":\"points\",\"name\":\"points\",\"properties\":{\"buffer-size\":0,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"name\":\"buildings\",\"properties\":{\"buffer-size\":10,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"admin_0_countries\",\"name\":\"admin_0_countries\",\"properties\":{\"buffer-size\":1,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"}],\"vector_layers\":[{\"description\":\"\",\"fields\":{},\"id\":\"points\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"admin_0_countries\",\"maxzoom\":22,\"minzoom\":0}]}",
+  "json": "{\"Layer\":[{\"description\":\"\",\"fields\":{},\"id\":\"points\",\"name\":\"points\",\"properties\":{\"buffer-size\":0,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"name\":\"buildings\",\"properties\":{\"buffer-size\":10,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"admin_0_countries\",\"name\":\"admin_0_countries\",\"properties\":{\"buffer-size\":1,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"}],\"vector_layers\":[{\"description\":\"\",\"fields\":{},\"id\":\"points\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"admin_0_countries\",\"maxzoom\":22,\"minzoom\":0,\"projection\":\"EPSG:3857\"}]}",
   "maxzoom": 22,
   "minzoom": 0,
   "name": "osm",
