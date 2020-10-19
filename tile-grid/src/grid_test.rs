@@ -93,9 +93,9 @@ fn test_bbox() {
 #[test]
 fn test_resolutions() {
     // Formula: http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Resolution_and_Scale
-    // Calculated pixel width results in non-symmetrically grid.tile_extent(0, 0, 0)
     // const PIXEL_WIDTH_Z0: f64 = 2.0 * 6378137.0 * consts::PI / 256.0; //  = 40075016.68557849 / 256
-    const PIXEL_WIDTH_Z0: f64 = 156543.0339280410; // from mapcache
+    // Calculated pixel width without rounding results in non-symmetrical grid.tile_extent(0, 0, 0)
+    const PIXEL_WIDTH_Z0: f64 = 156543.0339280410; // rounded to 10 digits
     let resolutions: Vec<f64> = (0..23)
         .map(|z| PIXEL_WIDTH_Z0 / (z as f64).exp2())
         .collect();

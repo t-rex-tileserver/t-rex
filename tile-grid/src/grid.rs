@@ -191,10 +191,9 @@ impl Grid {
         }
     }
     pub fn scale_denominator(&self, zoom: u8) -> f64 {
+        // Standardized rendering pixel size according to OGC Symbology Encoding
+        // standard (https://www.ogc.org/standards/se)
         const PIXEL_SCREEN_WIDTH: f64 = 0.00028;
-        // https://github.com/mapnik/mapnik/wiki/ScaleAndPpi#scale-denominator
-        // Mapnik calculates it's default at about 90.7 PPI, which originates from an assumed standard pixel size
-        // of 0.28 millimeters as defined by the OGC (Open Geospatial Consortium) SLD (Styled Layer Descriptor) Specification.
         self.pixel_width(zoom) / PIXEL_SCREEN_WIDTH
     }
     /// Extent of a given tile in the grid given its x, y, and z in TMS adressing scheme
