@@ -293,13 +293,10 @@ impl PostgisDatasource {
                     layer.tolerance(zoom)
                 ),
                 "POLYGON" | "MULTIPOLYGON" | "CURVEPOLYGON" => {
-                    let empty_geom =
-                        format!("ST_GeomFromText('MULTIPOLYGON EMPTY',{})", layer_srid);
                     format!(
-                        "COALESCE(ST_MakeValid(ST_SnapToGrid({}, {})),{})::geometry(MULTIPOLYGON,{})",
+                        "ST_CollectionExtract(ST_MakeValid(ST_SnapToGrid({}, {})),3)::geometry(MULTIPOLYGON,{})",
                         geom_expr,
                         layer.tolerance(zoom),
-                        empty_geom,
                         layer_srid
                     )
                 }
