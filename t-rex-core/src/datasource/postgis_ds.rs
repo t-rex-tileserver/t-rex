@@ -294,7 +294,7 @@ impl PostgisDatasource {
                 ),
                 "POLYGON" | "MULTIPOLYGON" | "CURVEPOLYGON" => {
                     format!(
-                        "ST_CollectionExtract(ST_MakeValid(ST_SnapToGrid({}, {})),3)::geometry(MULTIPOLYGON,{})",
+                        "ST_CollectionExtract(ST_MakeValid(ST_Buffer(ST_SnapToGrid({}, {})),3), 0.0)::geometry(MULTIPOLYGON,{})",
                         geom_expr,
                         layer.tolerance(zoom),
                         layer_srid
