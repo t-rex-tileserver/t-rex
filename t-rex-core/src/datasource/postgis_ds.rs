@@ -496,17 +496,30 @@ impl PostgisDatasource {
 impl DatasourceType for PostgisDatasource {
     /// New instance with connected pool
     fn connected(&self) -> PostgisDatasource {
-        // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
-        let manager = PostgresConnectionManager::new(
-            self.connection_url.parse().unwrap(),
-            Box::new(move |config| config.connect(NoTls)),
-        );
+        let manager;
+        if self.connection_url.to_lowercase().contains("sslmode=require") {
+            info!("Setting up Postgres connection with TLS");
+            let tls_connector = TlsConnector::builder().build().unwrap();
+            let tls_connector = MakeTlsConnector::new(tls_connector);
+            manager = PostgresConnectionManager::new(
+                self.connection_url.parse().unwrap(),
+                Box::new(move |config| config.connect(tls_connector.clone())),
+            );
+        }else{
+            // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
+            manager = PostgresConnectionManager::new(
+                self.connection_url.parse().unwrap(),
+                Box::new(move |config| config.connect(NoTls)),
+            );
+        }
+        
         let pool_size = self.pool_size.unwrap_or(8); // TODO: use number of workers as default pool size
         let pool = r2d2::Pool::builder()
             .max_size(pool_size as u32)
             .build(manager)
             .or_else(|e| match &e.to_string() as &str {
-                "unable to initialize connections" => {
+                c if c.contains("SSL connection is required") ||
+                    c.contains("unable to initialize connections") => {
                     info!("Couldn't connect without TLS - retrying with TLS");
                     let tls_connector = TlsConnector::builder().build().unwrap();
                     let tls_connector = MakeTlsConnector::new(tls_connector);
