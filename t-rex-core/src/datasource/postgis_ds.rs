@@ -711,7 +711,7 @@ impl DatasourceType for PostgisDatasource {
         let mut trans = conn.transaction().expect("transaction already active");
         let rows = trans
             .bind(&stmt, params.as_slice())
-            .and_then(|portal| trans.query_portal(&portal, 50));
+            .and_then(|portal| trans.query_portal(&portal, -1));
         if let Err(err) = rows {
             error!("Layer '{}': {}", layer.name, err);
             error!("Query: {}", query.sql);
