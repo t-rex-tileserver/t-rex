@@ -151,16 +151,16 @@ async fn tile_pbf(
 
     let resp = match tile {
         Ok(Some(tile)) => {
+            let mut r = HttpResponse::Ok();
+            r.content_type("application/x-protobuf");
+            if gzip {
+                // data is already gzip compressed
+                r.encoding(ContentEncoding::Identity)
+                    .header(header::CONTENT_ENCODING, "gzip");
+            }
             let cache_max_age = config.webserver.cache_control_max_age.unwrap_or(300);
-            HttpResponse::Ok()
-                .content_type("application/x-protobuf")
-                .if_true(gzip, |r| {
-                    // data is already gzip compressed
-                    r.encoding(ContentEncoding::Identity)
-                        .header(header::CONTENT_ENCODING, "gzip");
-                })
-                .header(header::CACHE_CONTROL, format!("max-age={}", cache_max_age))
-                .body(tile) // TODO: chunked response
+            r.header(header::CACHE_CONTROL, format!("max-age={}", cache_max_age));
+            r.body(tile) // TODO: chunked response
         }
         Ok(None) => HttpResponse::NoContent().finish(),
         Err(e) => {
