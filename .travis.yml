@@ -21,7 +21,9 @@ matrix:
     # Linux
     #- env: TARGET=i686-unknown-linux-gnu
     #- env: TARGET=i686-unknown-linux-musl
-    - env: TARGET=x86_64-unknown-linux-gnu
+    # Build on Ubuntu trusty fails with "SIGSEGV: invalid memory reference"
+    # since https://travis-ci.org/github/t-rex-tileserver/t-rex/jobs/737074992
+    #- env: TARGET=x86_64-unknown-linux-gnu
     #- env: TARGET=x86_64-unknown-linux-musl
 
     # OSX
