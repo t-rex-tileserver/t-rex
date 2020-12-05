@@ -346,7 +346,7 @@ fn test_retrieve_features() {
     });
 
     let cnt = pg.retrieve_features("ts", &layer, &grid.extent, 10, &grid, |_| {});
-    assert_eq!(cnt, 50);
+    assert_eq!(cnt, 7321);
 }
 
 #[test]
