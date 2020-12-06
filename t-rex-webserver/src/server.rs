@@ -231,8 +231,9 @@ pub async fn webserver(args: ArgMatches<'static>) -> std::io::Result<()> {
         bool::from_str(args.value_of("openbrowser").unwrap_or("true")).unwrap_or(false);
     let static_dirs = config.webserver.static_.clone();
 
-    let mut service = service_from_args(&config, &args);
-    let service = web::block::<_, _, Infallible>(|| {
+    let svc_config = config.clone();
+    let service = web::block::<_, _, Infallible>(move || {
+        let mut service = service_from_args(&svc_config, &args);
         service.prepare_feature_queries();
         service.init_cache();
         Ok(service)
