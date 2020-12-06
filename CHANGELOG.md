@@ -11,6 +11,7 @@
 
 #### Bug Fixes
 
+* Avoid line artefacts in polygon simplification (Thanks @arbakker!)
 * Force compatible WGS84 axis order with GDAL 3
 
 <a name="0.11.0"></a>
