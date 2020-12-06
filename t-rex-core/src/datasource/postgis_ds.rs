@@ -130,7 +130,6 @@ impl PostgisDatasource {
     }
     fn conn(&self) -> r2d2::PooledConnection<PostgresConnectionManager> {
         let pool = self.conn_pool.as_ref().unwrap();
-        //debug!("{:?}", pool);
         // Waits for at most Config::connection_timeout (default: 30s) before returning an error.
         pool.get().unwrap()
     }
@@ -496,8 +495,8 @@ impl PostgisDatasource {
 impl DatasourceType for PostgisDatasource {
     /// New instance with connected pool
     fn connected(&self) -> PostgisDatasource {
-        let manager;
-        if self
+        debug!("Connecting to {}", &self.connection_url);
+        let manager = if self
             .connection_url
             .to_lowercase()
             .contains("sslmode=require")
@@ -505,17 +504,17 @@ impl DatasourceType for PostgisDatasource {
             info!("Setting up Postgres connection with TLS");
             let tls_connector = TlsConnector::builder().build().unwrap();
             let tls_connector = MakeTlsConnector::new(tls_connector);
-            manager = PostgresConnectionManager::new(
+            PostgresConnectionManager::new(
                 self.connection_url.parse().unwrap(),
                 Box::new(move |config| config.connect(tls_connector.clone())),
-            );
+            )
         } else {
             // Emulate TlsMode::Allow (https://github.com/sfackler/rust-postgres/issues/278)
-            manager = PostgresConnectionManager::new(
+            PostgresConnectionManager::new(
                 self.connection_url.parse().unwrap(),
                 Box::new(move |config| config.connect(NoTls)),
-            );
-        }
+            )
+        };
 
         let pool_size = self.pool_size.unwrap_or(8); // TODO: use number of workers as default pool size
         let pool = r2d2::Pool::builder()
