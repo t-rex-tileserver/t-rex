@@ -4,18 +4,13 @@
 # docker run t-rex --version
 # docker run -p 6767:6767 -v $PWD:/var/data/in:ro -v /tmp:/var/data/out t-rex serve --bind=0.0.0.0 --openbrowser=false --datasource=data/natural_earth.gpkg
 
-FROM ubuntu:xenial
+FROM ubuntu:focal
 
-# GDAL 2 from ubuntugis
-RUN echo "deb http://ppa.launchpad.net/ubuntugis/ppa/ubuntu xenial main" >> /etc/apt/sources.list
-RUN gpg --keyserver keyserver.ubuntu.com --recv 314DF160
-RUN gpg --export --armor 314DF160 | apt-key add -
+RUN apt-get update && apt-get install -y libssl1.1 gdal-bin
 
-RUN apt-get update && apt-get install -y --allow-unauthenticated openssl libgdal20 gdal-bin
-
-ADD t-rex-*.deb /
-RUN dpkg -i /t-rex-*.deb
-RUN rm /t-rex-*.deb
+ADD t-rex_*.deb /
+RUN dpkg -i /t-rex_*.deb
+RUN rm /t-rex_*.deb
 
 USER www-data
 
