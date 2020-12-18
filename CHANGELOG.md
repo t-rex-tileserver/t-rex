@@ -1,5 +1,5 @@
-<a name="0.11.1"></a>
-## 0.11.1 (UNRELEASED)
+<a name="0.12.0"></a>
+## 0.12.0 (UNRELEASED)
 
 #### Features
 
@@ -37,7 +37,7 @@
 
 #### Features
 
-* [Template](https://tera.netlify.com/docs/#templates) support in configuration files
+* [Template](https://tera.netlify.app/docs/#templates) support in configuration files
 * Load environment variables from a file named `.env` in the current directory
   or any of its parents
 * Initialize service only once before starting HttpServer threads

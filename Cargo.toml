@@ -38,7 +38,7 @@ license-file = ["LICENSE", "4"]
 extended-description = """\
 t-rex is a vector tile server specialized \
 on publishing MVT tiles from your own data."""
-depends = "$auto"
+depends = "libssl1.1, libgdal26"
 section = "utility"
 priority = "optional"
 assets = [

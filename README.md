@@ -1,7 +1,7 @@
 t-rex
 =====
 
-[![Travis build Status](https://travis-ci.org/t-rex-tileserver/t-rex.svg?branch=master)](https://travis-ci.org/t-rex-tileserver/t-rex)
+[![CI build status](https://github.com/t-rex-tileserver/t-rex/workflows/CI/badge.svg)](https://github.com/t-rex-tileserver/t-rex/actions)
 [![Appveyor build status](https://ci.appveyor.com/api/projects/status/o60e9bu97i49lxyf?svg=true)](https://ci.appveyor.com/project/pka/t-rex)
 [![Language (Rust)](https://img.shields.io/badge/powered_by-Rust-blue.svg)](http://www.rust-lang.org/)
 [![Discord Chat](https://img.shields.io/discord/598002550221963289.svg)](https://discord.gg/Fp2aape)
