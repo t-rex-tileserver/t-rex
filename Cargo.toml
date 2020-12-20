@@ -27,7 +27,7 @@ time = "0.1"
 
 [features]
 default = ["with-gdal"]
-with-gdal = ["t-rex-gdal"]
+with-gdal = ["t-rex-gdal", "t-rex-service/t-rex-gdal"]
 
 [workspace]
 
