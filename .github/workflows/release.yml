@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 on: [push]
 
@@ -8,13 +8,6 @@ on: [push]
 #     types: 
 #       - completed
 
-# tagcheck:
-#   release:
-#     name: check tag
-#       if:
-#         - ${{ github.event.workflow_run.conclusion == 'success' }}
-#         - startsWith(github.ref, 'refs/tags/')
-
 jobs:
   release:
     name: build release
@@ -23,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ['ubuntu-20.04']
+        os: ['ubuntu-20.04', 'macOS-latest']
     steps:
       - uses: actions/checkout@v2
       - name: Install toolchain
@@ -39,12 +32,10 @@ jobs:
       - name: Package
         shell: bash
         run: |
-          # TODO:
-          # strip target/release/t-rex
+          target=$(gcc -dumpmachine)
           cd target/release          
-          tar czvf ../../t-rex-${{ matrix.os }}.tar.gz t_rex
-          cd -
-          tar tzf t-rex-${{ matrix.os }}.tar.gz
+          strip t_rex
+          tar czf ../../t-rex-$target.tar.gz t_rex
           
       # - name: Publish
       #   uses: softprops/action-gh-release@v1
@@ -78,15 +69,19 @@ jobs:
       - run: dpkg -I target/debian/t-rex_*.deb
       - run: dpkg -c target/debian/t-rex_*.deb
 
-  # See also https://github.com/FedericoPonzi/rust-ci/blob/master/.github/workflows/CI.yml
 
-  #   # Build Docker container
-  #   cd $src/packaging/docker
-  #   cp $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.deb .
-  #   docker build -t sourcepole/t-rex -f Dockerfile .
-  #   docker run sourcepole/t-rex --version
-
-  #   docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
-  #   docker push sourcepole/t-rex
-  #   docker tag sourcepole/t-rex sourcepole/t-rex:${TRAVIS_TAG#v}
-  #   docker push sourcepole/t-rex:${TRAVIS_TAG#v}
+  docker-release:
+    name: Docker release
+    needs: [deb]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      # - run: cp target/debian/t-rex_*.deb packaging/docker/
+      - name: Publish to Registry
+        uses: elgohr/Publish-Docker-Github-Action@master
+        with:
+          name: sourcepole/t-rex
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          tag_names: true
