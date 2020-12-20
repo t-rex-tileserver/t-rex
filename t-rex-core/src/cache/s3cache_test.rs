@@ -20,15 +20,20 @@ fn test_s3cache() {
         baseurl: Some("http://localhost:6767".to_string()),
     };
     let path = "tileset/0/1/2.pbf";
-    let fullpath = format!("{}/{}", cache.bucket_name, path);
+    // let fullpath = format!("{}/{}", cache.bucket_name, path);
     let obj = "0123456789";
 
     // Cache miss
     assert_eq!(cache.read(path, |_| {}), false);
 
     // Write into cache
-    let _ = cache.write(path, obj.as_bytes());
-    assert!(Path::new(&fullpath).exists());
+    let e = cache.write(path, obj.as_bytes());
+
+    match e {
+        Err(e)=> { println!("Error writing file {:?}", e.to_string());},
+        Ok(_) => {println!("Writing file successful");},
+    }
+    // assert!(Path::new(&fullpath).exists());
 
     // Cache hit
     assert_eq!(cache.read(path, |_| {}), true);

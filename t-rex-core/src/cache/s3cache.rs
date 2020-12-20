@@ -4,20 +4,18 @@
 //
 
 use crate::cache::cache::Cache;
-use rusoto_core::{Region, HttpClient,Client };
-use rusoto_sts::{StsClient, StsAssumeRoleSessionCredentialsProvider};
+use rusoto_core::{Client, HttpClient, Region};
 use rusoto_credential::StaticProvider;
-use rusoto_s3::{GetObjectRequest, HeadObjectOutput, HeadObjectRequest, PutObjectError, PutObjectRequest, S3, S3Client};
+use rusoto_s3::{
+    GetObjectRequest, HeadObjectOutput, HeadObjectRequest, PutObjectError, PutObjectRequest,
+    S3Client, S3,
+};
+use std::io::{self, Read};
 use tokio::runtime::Runtime;
-use hyper::body;
-use hyper::{Body, Response};
-use std::io::{self, Read, Write};
-// use std::io::{Error, ErrorKind};
-
 
 #[derive(Clone)]
 pub struct S3Cache {
-    pub endpoint: String,       
+    pub endpoint: String,
     pub bucket_name: String,
     pub access_key: String,
     pub secret_key: String,
@@ -29,7 +27,6 @@ impl Cache for S3Cache {
     fn info(&self) -> String {
         format!("Tile cache s3: {}/{}", self.endpoint, self.bucket_name)
     }
-   
 
     fn baseurl(&self) -> String {
         self.baseurl
@@ -40,9 +37,11 @@ impl Cache for S3Cache {
     fn read<F>(&self, path: &str, mut read: F) -> bool
     where
         F: FnMut(&mut dyn Read),
-    {   
-
-        let region = Region::Custom { name: self.region.to_string(), endpoint: self.endpoint.to_string() };
+    {
+        let region = Region::Custom {
+            name: self.region.to_string(),
+            endpoint: self.endpoint.to_string(),
+        };
 
         let client = S3Client::new_with_client(
             Client::new_with(
@@ -56,8 +55,8 @@ impl Cache for S3Cache {
             ),
             region.clone(),
         );
-        
-        let request= GetObjectRequest {
+
+        let request = GetObjectRequest {
             bucket: self.bucket_name.to_string(),
             key: path.to_string(),
             ..Default::default()
@@ -65,33 +64,31 @@ impl Cache for S3Cache {
         let object = client.get_object(request);
         let mut rt = Runtime::new().unwrap();
         let get_object_result = rt.block_on(object);
-     
-        // match get_object_result.unwrap().body {
-        //     Some(bs) => {
-        //         read(&mut bs.into_blocking_read());
-        //         true
-        //     }
-        //     None => {
-        //         false
-        //     }
-        // }
-         match get_object_result {
-            Ok( result) =>{
+        match get_object_result {
+            Ok(result) => {
                 read(&mut result.body.unwrap().into_blocking_read());
                 true
-            },
-            Err(_) => {
-                false
             }
-         }
-        
-
+            Err(_) => false,
+        }
     }
-
-
-    fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error>{
-        let region = Region::Custom { name: self.region.to_string(), endpoint: self.endpoint.to_string() };
-        let client = S3Client::new(region);
+    fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error> {
+        let region = Region::Custom {
+            name: self.region.to_string(),
+            endpoint: self.endpoint.to_string(),
+        };
+        let client = S3Client::new_with_client(
+            Client::new_with(
+                StaticProvider::new(
+                    self.access_key.to_string(),
+                    self.secret_key.to_string(),
+                    None,
+                    None,
+                ),
+                HttpClient::new().expect("Could not instantiate a new http client??"),
+            ),
+            region.clone(),
+        );
         let request = PutObjectRequest {
             bucket: self.bucket_name.to_owned(),
             key: path.to_owned(),
@@ -101,10 +98,9 @@ impl Cache for S3Cache {
         let mut rt = Runtime::new().unwrap();
         let object = client.put_object(request);
         let put_object_result = rt.block_on(object);
-        
         match put_object_result {
             Ok(result) => Ok(()),
-            Err(err) => return Err(io::Error::new(io::ErrorKind::Other, "oh no!"))
+            Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err.to_string())),
         }
     }
     fn exists(&self, path: &str) -> bool {
