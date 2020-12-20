@@ -9,10 +9,32 @@ on: [push]
 #       - completed
 
 jobs:
-  release:
-    name: build release
+  ghrelease:
+    name: Create Release
     # if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    # if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/')
+    outputs:
+      release_upload_url: ${{ steps.create_release.outputs.upload_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: |
+            See [CHANGELOG](https://github.com/t-rex-tileserver/t-rex/blob/master/CHANGELOG.md)
+          draft: true
+          prerelease: true
+
+  tgz:
+    name: build release tgz
+    needs: [ghrelease]
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -29,25 +51,34 @@ jobs:
       - name: Cargo build
         run: cargo build --release --no-default-features
 
-      - name: Package
+      - name: Tar
+        id: tar
         shell: bash
         run: |
+          VERSION=$(basename ${{ github.ref }})
           target=$(gcc -dumpmachine)
           cd target/release          
           strip t_rex
-          tar czf ../../t-rex-$target.tar.gz t_rex
-          
-      # - name: Publish
-      #   uses: softprops/action-gh-release@v1
-      #   # TODO: if any of the build step fails, the release should be deleted.
-      #   with:
-      #       files: 't-rex*'
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
- 
+          tar czf ../../t-rex-$VERSION-$target.tar.gz t_rex
+          echo "##[set-output name=tgz;]t-rex-$VERSION-$target.tar.gz"
+
+      - name: Upload Release Asset
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.ghrelease.outputs.release_upload_url }}
+          asset_path: ${{ steps.tar.outputs.tgz }}
+          asset_name: ${{ steps.tar.outputs.tgz }}
+          asset_content_type: application/gzip
+
   deb:
     name: Build deb package
+    needs: [ghrelease]
     if: startsWith(github.ref, 'refs/tags/')
+    outputs:
+      asset_download_url: ${{ steps.upload_asset.outputs.browser_download_url }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -66,22 +97,40 @@ jobs:
 
       - run: cargo install cargo-deb
       - run: cargo deb
-      - run: dpkg -I target/debian/t-rex_*.deb
-      - run: dpkg -c target/debian/t-rex_*.deb
 
+      - name: Deb file
+        id: deb
+        shell: bash
+        run: |
+          dpkg -I target/debian/t-rex_*.deb
+          dpkg -c target/debian/t-rex_*.deb
+          echo "##[set-output name=debpath;]$(ls target/debian/*deb)"
+          echo "##[set-output name=debname;]$(ls target/debian)"
 
-  docker-release:
-    name: Docker release
-    needs: [deb]
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      # - run: cp target/debian/t-rex_*.deb packaging/docker/
-      - name: Publish to Registry
-        uses: elgohr/Publish-Docker-Github-Action@master
+      - name: Upload Release Asset
+        id: upload_asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: sourcepole/t-rex
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          tag_names: true
+          upload_url: ${{ needs.ghrelease.outputs.release_upload_url }}
+          asset_path: ${{ steps.deb.outputs.debpath }}
+          asset_name: ${{ steps.deb.outputs.debname }}
+          asset_content_type: application/vnd.debian.binary-package
+
+  # docker-release:
+  #   name: Docker release
+  #   needs: [deb]
+  #   if: startsWith(github.ref, 'refs/tags/')
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - run: cd packaging/docker && wget ${{ needs.deb.outputs.asset_download_url }}
+  #     - name: Publish to Registry
+  #       uses: elgohr/Publish-Docker-Github-Action@master
+  #       with:
+  #         name: sourcepole/t-rex
+  #         username: ${{ secrets.DOCKER_USERNAME }}
+  #         password: ${{ secrets.DOCKER_PASSWORD }}
+  #         workdir: packaging/docker
+  #         tag_names: true

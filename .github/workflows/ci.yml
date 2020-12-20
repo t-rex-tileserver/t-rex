@@ -15,67 +15,67 @@ jobs:
           components: rustfmt
       - run: cargo fmt --all -- --check
 
-  # ubuntu:
-  #   needs: [rustfmt]
-  #   name: Test ${{ matrix.os }}
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       os: ['ubuntu-20.04']
-  #   services:
-  #     trextestdb:
-  #       image: sourcepole/trextestdb
-  #       ports:
-  #         - 5439:5432
+  ubuntu:
+    needs: [rustfmt]
+    name: Test ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ['ubuntu-20.04']
+    services:
+      trextestdb:
+        image: sourcepole/trextestdb
+        ports:
+          - 5439:5432
 
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Install toolchain
-  #       uses: actions-rs/toolchain@v1
-  #       with:
-  #         profile: minimal
-  #         toolchain: stable
-  #         override: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
 
-  #     - name: Install libgdal-dev
-  #       run: sudo apt install -y libgdal-dev
+      - name: Install libgdal-dev
+        run: sudo apt install -y libgdal-dev
 
-  #     - name: Cargo build
-  #       run: cargo build --all-features
-  #     - run: ldd target/debug/t_rex
+      - name: Cargo build
+        run: cargo build --all-features
+      - run: ldd target/debug/t_rex
 
-  #     - name: Execute tests
-  #       run: cargo test --all-features --all --no-fail-fast
+      - name: Execute tests
+        run: cargo test --all-features --all --no-fail-fast
 
-  #     - name: Execute DB tests
-  #       run: cargo test --all-features --all --no-fail-fast -- --ignored
-  #       env:
-  #         DBCONN: "postgresql://t_rex:t_rex@127.0.0.1:5439/t_rex_tests"
+      - name: Execute DB tests
+        run: cargo test --all-features --all --no-fail-fast -- --ignored
+        env:
+          DBCONN: "postgresql://t_rex:t_rex@127.0.0.1:5439/t_rex_tests"
 
-  # macos:
-  #   needs: [rustfmt]
-  #   name: Test ${{ matrix.os }}
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       os: ['macOS-latest']
+  macos:
+    needs: [rustfmt]
+    name: Test ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ['macOS-latest']
 
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Install toolchain
-  #       uses: actions-rs/toolchain@v1
-  #       with:
-  #         profile: minimal
-  #         toolchain: stable
-  #         override: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
 
-  #     # - name: Execute tests
-  #     #   run: cargo test ${{ matrix.features }} --all --no-fail-fast
-  #     # Builds also t-rex-gdal, so we test each workspace
-  #     - run: cargo test --no-default-features --no-fail-fast
-  #     - run: cd tile-grid && cargo test --no-default-features --no-fail-fast
-  #     - run: cd t-rex-core && cargo test --no-default-features --no-fail-fast
-  #     # - run: cd t-rex-service && cargo test --no-default-features --no-fail-fast
-  #     # - run: cd t-rex-webserver && cargo test --no-default-features --no-fail-fast
+      # - name: Execute tests
+      #   run: cargo test ${{ matrix.features }} --all --no-fail-fast
+      # Builds also t-rex-gdal, so we test each workspace
+      - run: cargo test --no-default-features --no-fail-fast
+      - run: cd tile-grid && cargo test --no-default-features --no-fail-fast
+      - run: cd t-rex-core && cargo test --no-default-features --no-fail-fast
+      # - run: cd t-rex-service && cargo test --no-default-features --no-fail-fast
+      # - run: cd t-rex-webserver && cargo test --no-default-features --no-fail-fast
 
-  #     # - run: otool -L target/debug/t_rex
+      # - run: otool -L target/debug/t_rex
