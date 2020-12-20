@@ -32,6 +32,12 @@ streaming-stats = "0.2.0"
 log = "0.4"
 flate2 = "1.0"
 tera = "1.5"
+rusoto_core = "0.45.0"
+rusoto_s3 = "0.45.0"
+rusoto_credential = "0.45.0"
+rusoto_sts = "0.45.0"
+tokio = "0.2.23"
+hyper = "0.13.2"
 
 [dependencies.tile-grid]
 path = "../tile-grid"

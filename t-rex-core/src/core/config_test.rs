@@ -64,6 +64,16 @@ fn test_template() {
         [webserver]
         bind = "127.0.0.1"
         port = {{env["MYPORT"]}}
+
+        [cache]
+        [cache.file]
+        base = "/tmp/mvtcache"
+        [cache.s3]
+        host = "s3.delivery.pdok.nl"
+        region = "westeurope"
+        bucket = "bucket"
+        access_key = "access-key"
+        secret_key = "secret-key"
         "#;
     let config: Result<ApplicationCfg, _> = parse_config(toml.to_string(), "inline.toml.tera");
     assert_eq!(config.as_ref().err(), None);
@@ -72,10 +82,13 @@ fn test_template() {
         config.datasource[0].dbconn,
         Some("postgresql://pi@localhost/geostat".to_string())
     );
+    let cache =config.cache.unwrap();
     assert_eq!(&config.tilesets[0].name, "Default-Tileset");
     assert_eq!(config.tilesets[0].layers.len(), 3);
     assert_eq!(&config.tilesets[0].layers[0].name, "layer 1");
     assert_eq!(config.webserver.port, Some(9999));
+    assert_eq!(cache.file.unwrap().base, "/tmp/mvtcache");
+    assert_eq!(cache.s3.unwrap().region, "westeurope");
 }
 
 #[test]

@@ -5,13 +5,17 @@
 
 pub mod cache;
 pub mod filecache;
+pub mod s3cache;
+
 
 #[cfg(test)]
 mod filecache_test;
+mod s3cache_test;
 
 pub use self::cache::Cache;
 pub use self::cache::Nocache;
 pub use self::filecache::Filecache;
+pub use self::s3cache::S3Cache;
 use crate::core::ApplicationCfg;
 use crate::core::Config;
 use std::io;
@@ -21,6 +25,7 @@ use std::io::Read;
 pub enum Tilecache {
     Nocache(Nocache),
     Filecache(Filecache),
+    S3Cache(S3Cache)
 }
 
 impl Cache for Tilecache {
@@ -28,12 +33,14 @@ impl Cache for Tilecache {
         match self {
             &Tilecache::Nocache(ref cache) => cache.info(),
             &Tilecache::Filecache(ref cache) => cache.info(),
+            &Tilecache::S3Cache(ref cache) => cache.info(),
         }
     }
     fn baseurl(&self) -> String {
         match self {
             &Tilecache::Nocache(ref cache) => cache.baseurl(),
             &Tilecache::Filecache(ref cache) => cache.baseurl(),
+            &Tilecache::S3Cache(ref cache) => cache.baseurl(),
         }
     }
     fn read<F>(&self, path: &str, read: F) -> bool
@@ -43,18 +50,22 @@ impl Cache for Tilecache {
         match self {
             &Tilecache::Nocache(ref cache) => cache.read(path, read),
             &Tilecache::Filecache(ref cache) => cache.read(path, read),
+            &Tilecache::S3Cache(ref cache) => cache.read(path, read),
+
         }
     }
     fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error> {
         match self {
             &Tilecache::Nocache(ref cache) => cache.write(path, obj),
             &Tilecache::Filecache(ref cache) => cache.write(path, obj),
+            &Tilecache::S3Cache(ref cache) => cache.write(path, obj),
         }
     }
     fn exists(&self, path: &str) -> bool {
         match self {
             &Tilecache::Nocache(ref cache) => cache.exists(path),
             &Tilecache::Filecache(ref cache) => cache.exists(path),
+            &Tilecache::S3Cache(ref cache) => cache.exists(path),
         }
     }
 }
@@ -66,8 +77,8 @@ impl<'a> Config<'a, ApplicationCfg> for Tilecache {
             .as_ref()
             .map(|cache| {
                 let fc = Filecache {
-                    basepath: cache.file.base.clone(),
-                    baseurl: cache.file.baseurl.clone(),
+                    basepath: cache.file.as_ref().unwrap().base.clone(),
+                    baseurl: cache.file.as_ref().unwrap().baseurl.clone(),
                 };
                 Tilecache::Filecache(fc)
             })
