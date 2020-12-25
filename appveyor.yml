@@ -52,7 +52,7 @@ test_script:
   # - cargo run --no-default-features --release
 
 before_deploy:
-  - cargo rustc --target %TARGET% --release --bin t_rex -- -C lto
+  - cargo build --release
   - cd packaging\windows
   - candle -nologo gdal.wxs
   - candle -nologo projlib.wxs
