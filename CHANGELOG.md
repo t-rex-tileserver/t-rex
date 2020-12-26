@@ -5,6 +5,7 @@
 
 * Support for PG connection with sslmode=require (Thanks @arbakker and @Daan-!)
 * Support for HTTP HEAD requests (Thanks @sebastian-r-schmidt!)
+* Return detailed config template error message (Thanks @arbakker!)
 * Return projection in TileJSON (Thanks @lnicola!)
 * Update to Actix-Web 3.0 (Thanks @lnicola!)
 * Update to rust-postgres 0.17 (Thanks @lnicola and @WouterVisscher!)
