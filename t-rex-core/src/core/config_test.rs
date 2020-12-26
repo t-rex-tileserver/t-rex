@@ -93,11 +93,11 @@ fn test_tera_error() {
         Some("Template error: Failed to parse \'inline.toml.tera\'".to_string())
     );
 
-    let toml = "# {{ env['UNDEFINED'] }}";
+    let toml = "# {{ env.UNDEFINED }}";
     let config: Result<ApplicationCfg, _> = parse_config(toml.to_string(), "inline.toml.tera");
     assert_eq!(
         config.err(),
-        Some("Template error: Failed to render \'inline.toml.tera\'".to_string())
+        Some("Template error: Variable `env.UNDEFINED` not found in context while rendering \'inline.toml.tera\'".to_string())
     );
 }
 
