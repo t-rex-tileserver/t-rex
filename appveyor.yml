@@ -52,12 +52,12 @@ test_script:
   # - cargo run --no-default-features --release
 
 before_deploy:
-  - cargo build --release --bins
+  - cargo build --release
   - cd packaging\windows
   - candle -nologo gdal.wxs
   - candle -nologo projlib.wxs
   - candle -nologo t-rex.wxs
-  - light -nologo -dBuildDir="C:\projects\t-rex\target\%TARGET%\release" -dGdalSrcDir="%GDAL_HOME%\bin" -dProjlibSrcDir="%GDAL_HOME%\bin\proj\SHARE" -sice:ICE80 -o t-rex-%APPVEYOR_REPO_TAG_NAME%.msi t-rex.wixobj gdal.wixobj projlib.wixobj
+  - light -nologo -dBuildDir="C:\projects\t-rex\target\release" -dGdalSrcDir="%GDAL_HOME%\bin" -dProjlibSrcDir="%GDAL_HOME%\bin\proj\SHARE" -sice:ICE80 -o t-rex-%APPVEYOR_REPO_TAG_NAME%.msi t-rex.wixobj gdal.wixobj projlib.wixobj
   - appveyor PushArtifact t-rex-%APPVEYOR_REPO_TAG_NAME%.msi
 
 deploy:
