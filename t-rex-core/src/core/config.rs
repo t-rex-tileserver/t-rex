@@ -9,6 +9,7 @@ use serde::Deserialize;
 use std;
 use std::collections::HashMap;
 use std::env;
+use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use tera::{Context, Tera};
@@ -286,7 +287,7 @@ pub fn parse_config<'a, T: Deserialize<'a>>(config_toml: String, path: &str) -> 
     context.insert("env", &env);
     let toml = tera
         .render(path, &context)
-        .map_err(|e| format!("Template error: {}", e))?;
+        .map_err(|e| format!("Template error: {}", e.source().unwrap()))?;
 
     toml.parse::<Value>()
         .and_then(|cfg| cfg.try_into::<T>())
