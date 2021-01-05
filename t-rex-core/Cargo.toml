@@ -35,7 +35,6 @@ tera = "1.5"
 rusoto_core = "0.42"
 rusoto_s3 = "0.42"
 rusoto_credential = "0.42"
-async-trait = "0.1.42"
 
 [dependencies.tile-grid]
 path = "../tile-grid"
