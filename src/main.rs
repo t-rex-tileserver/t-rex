@@ -16,7 +16,6 @@ use t_rex_webserver as webserver;
 use tile_grid::Extent;
 use time;
 
-
 fn init_logger(args: &ArgMatches<'_>) {
     let mut builder = Builder::new();
     builder.format(|buf, record: &Record<'_>| {
@@ -46,8 +45,6 @@ fn init_logger(args: &ArgMatches<'_>) {
 }
 
 fn generate(args: &ArgMatches<'_>) {
-    
-
     let config = webserver::config_from_args(&args);
     let mut service = webserver::service_from_args(&config, &args);
     config
