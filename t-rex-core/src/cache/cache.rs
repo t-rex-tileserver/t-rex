@@ -5,7 +5,9 @@
 
 use std::io;
 use std::io::Read;
+use async_trait::async_trait;
 
+#[async_trait]
 pub trait Cache {
     fn info(&self) -> String;
     /// Base URL of tile cache server published in metadata
@@ -27,7 +29,6 @@ impl Cache for Nocache {
     fn baseurl(&self) -> String {
         "http://localhost:6767".to_string()
     }
-    #[allow(unused_variables)]
     fn read<F>(&self, path: &str, read: F) -> bool
     where
         F: FnMut(&mut dyn Read),

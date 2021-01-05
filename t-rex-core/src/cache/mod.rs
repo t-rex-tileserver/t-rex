@@ -51,7 +51,6 @@ impl Cache for Tilecache {
             &Tilecache::Nocache(ref cache) => cache.read(path, read),
             &Tilecache::Filecache(ref cache) => cache.read(path, read),
             &Tilecache::S3Cache(ref cache) => cache.read(path, read),
-
         }
     }
     fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error> {
@@ -72,17 +71,31 @@ impl Cache for Tilecache {
 
 impl<'a> Config<'a, ApplicationCfg> for Tilecache {
     fn from_config(config: &ApplicationCfg) -> Result<Self, String> {
+       
         config
             .cache
             .as_ref()
             .map(|cache| {
-                let fc = Filecache {
-                    basepath: cache.file.as_ref().unwrap().base.clone(),
-                    baseurl: cache.file.as_ref().unwrap().baseurl.clone(),
-                };
-                Tilecache::Filecache(fc)
-            })
-            .or(Some(Tilecache::Nocache(Nocache)))
+                if let Some(file_cache_cfg) = cache.file.as_ref()    {
+                    let fc = Filecache {
+                        basepath: file_cache_cfg.base.clone(),
+                        baseurl: file_cache_cfg.baseurl.clone(),
+                    };
+                    Tilecache::Filecache(fc)
+                }else if let Some(s3_cache_cfg) = cache.s3.as_ref(){                    
+                    let s3c =S3Cache::new(
+                        &s3_cache_cfg.host.clone(),
+                        &s3_cache_cfg.bucket.clone(),
+                        &s3_cache_cfg.access_key.clone(),
+                        &s3_cache_cfg.secret_key.clone(),
+                        &s3_cache_cfg.region.clone(),
+                        s3_cache_cfg.baseurl.clone(),
+                    );
+                    Tilecache::S3Cache(s3c)
+                } else{
+                    Tilecache::Nocache(Nocache)
+                }
+            })           
             .ok_or("".to_string())
     }
     fn gen_config() -> String {

@@ -1,0 +1,38 @@
+[service.mvt]
+viewer = true
+
+[[datasource]]
+dbconn = "postgresql://postgres:postgres@localhost:5432/postgres"
+name = "dbconn"
+default = true
+
+[grid]
+predefined = "web_mercator"
+
+[[tileset]]
+name = "gemeenten"
+extent = [3.209690,50.652859,7.250941,53.697339]
+minzoom = 0
+maxzoom = 19
+
+[[tileset.layer]]
+name = "gemeenten"
+fid_field = "fid"
+geometry_field = "geom"
+geometry_type = "MULTIPOLYGON"
+srid = 3857
+buffer_size = 80
+simplify = false
+make_valid = true
+table_name = "gemeenten"
+
+[cache.s3]
+host = "http://localhost:9000"
+bucket = "trex"
+access_key = "miniostorage"
+secret_key = "miniostorage"
+region = "my-region"
+
+[webserver]
+bind = "127.0.0.1"
+port = 6767

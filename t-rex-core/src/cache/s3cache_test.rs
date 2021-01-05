@@ -5,23 +5,22 @@
 
 use crate::cache::cache::Cache;
 use crate::cache::s3cache::S3Cache;
-use std::fs;
-use std::path::Path;
 
 #[test]
 fn test_s3cache() {
-    
-    let cache = S3Cache {
-        endpoint: "http://localhost:9000".to_string(),
-        bucket_name: "trex".to_string(),
-        access_key: "miniostorage".to_string(),
-        secret_key: "miniostorage".to_string(),
-        region: "my-region".to_string(),
-        baseurl: Some("http://localhost:6767".to_string()),
-    };
+    println!("test_s3cache");
+  
+    let cache = S3Cache::new(
+        "http://localhost:9000",
+        "trex",
+        "miniostorage",
+        "miniostorage",
+        "my-region",
+        Some("http://localhost:6767".to_string()
+    )
+    );
     let path = "tileset/0/1/2.pbf";
-    // let fullpath = format!("{}/{}", cache.bucket_name, path);
-    let obj = "0123456789";
+    let obj = "01234567910";
 
     // Cache miss
     assert_eq!(cache.read(path, |_| {}), false);
@@ -33,7 +32,7 @@ fn test_s3cache() {
         Err(e)=> { println!("Error writing file {:?}", e.to_string());},
         Ok(_) => {println!("Writing file successful");},
     }
-    // assert!(Path::new(&fullpath).exists());
+    assert!(cache.exists(&path));
 
     // Cache hit
     assert_eq!(cache.read(path, |_| {}), true);
@@ -43,5 +42,5 @@ fn test_s3cache() {
     cache.read(path, |f| {
         let _ = f.read_to_string(&mut s);
     });
-    assert_eq!(&s, "0123456789");
+    assert_eq!(&s, obj);
 }

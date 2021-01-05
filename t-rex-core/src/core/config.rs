@@ -201,7 +201,8 @@ pub struct S3CacheFileCfg {
     pub bucket: String,
     pub access_key: String,
     pub secret_key: String,
-    pub region: String
+    pub region: String,    
+    pub baseurl: Option<String>,
 }
  
 
