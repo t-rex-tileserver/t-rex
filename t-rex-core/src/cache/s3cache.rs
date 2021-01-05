@@ -2,6 +2,7 @@
 // Copyright (c) Pirmin Kalberer. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
+
 use crate::cache::cache::Cache;
 use rusoto_core::{Client, HttpClient, Region};
 use rusoto_credential::StaticProvider;
