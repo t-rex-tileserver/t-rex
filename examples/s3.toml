@@ -10,13 +10,15 @@ default = true
 predefined = "web_mercator"
 
 [[tileset]]
-name = "gemeenten"
-extent = [3.209690,50.652859,7.250941,53.697339]
+name = "ne_110m_admin_0_countries"
+extent = [-180,-90,180,90]
 minzoom = 0
 maxzoom = 19
 
 [[tileset.layer]]
-name = "gemeenten"
+# load data in db with:
+# export PGPASSWORD=postgres;export PGCONN="PG:dbname='postgres' host='localhost' port='5433' user='postgres'";ogr2ogr -f PostgreSQL "$PGCONN" data/natural_earth.gpkg ne_110m_admin_0_countries
+name = "ne_110m_admin_0_countries"
 fid_field = "fid"
 geometry_field = "geom"
 geometry_type = "MULTIPOLYGON"
@@ -24,9 +26,11 @@ srid = 3857
 buffer_size = 80
 simplify = false
 make_valid = true
-table_name = "gemeenten"
+table_name = "ne_110m_admin_0_countries"
 
 [cache.s3]
+# run s3 locally and create bucket with:
+# docker run -d --rm -p 9000:9000 -e MINIO_REGION_NAME=my-region -e MINIO_ACCESS_KEY=miniostorage -e MINIO_SECRET_KEY=miniostorage minio/minio server /data && sleep 5 && mc config host add local-docker http://localhost:9000 miniostorage miniostorage && mc mb local-docker/trex
 host = "http://localhost:9000"
 bucket = "trex"
 access_key = "miniostorage"
