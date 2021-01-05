@@ -2,6 +2,7 @@
 // Copyright (c) Pirmin Kalberer. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
+
 use std::io;
 use std::io::Read;
 
@@ -26,6 +27,7 @@ impl Cache for Nocache {
     fn baseurl(&self) -> String {
         "http://localhost:6767".to_string()
     }
+    #[allow(unused_variables)]
     fn read<F>(&self, path: &str, read: F) -> bool
     where
         F: FnMut(&mut dyn Read),
