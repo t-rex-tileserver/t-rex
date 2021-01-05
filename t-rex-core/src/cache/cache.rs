@@ -2,12 +2,9 @@
 // Copyright (c) Pirmin Kalberer. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
-
 use std::io;
 use std::io::Read;
-use async_trait::async_trait;
 
-#[async_trait]
 pub trait Cache {
     fn info(&self) -> String;
     /// Base URL of tile cache server published in metadata
