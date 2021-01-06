@@ -30,15 +30,10 @@ impl S3Cache {
             name: region.to_string(),
             endpoint: endpoint.to_string(),
         };
-      
+
         let client = S3Client::new_with_client(
             Client::new_with(
-                StaticProvider::new(
-                    access_key.to_string(),
-                    secret_key.to_string(),
-                    None,
-                    None,
-                ),
+                StaticProvider::new(access_key.to_string(), secret_key.to_string(), None, None),
                 HttpClient::new().expect("Could not instantiate a new http client??"),
             ),
             region_object.clone(),
@@ -73,7 +68,7 @@ impl Cache for S3Cache {
             ..Default::default()
         };
         let client = self.client.clone();
-        let response = client.get_object(request).sync();        
+        let response = client.get_object(request).sync();
         match response {
             Ok(mut result) => {
                 let body = result.body.take().expect("The object has no body");
@@ -89,8 +84,8 @@ impl Cache for S3Cache {
             key: path.to_owned(),
             body: Some(obj.to_vec().into()),
             ..Default::default()
-        };       
-        let response = self.client.put_object(request).sync();       
+        };
+        let response = self.client.put_object(request).sync();
         match response {
             Ok(_) => Ok(()),
             Err(err) => Err(io::Error::new(io::ErrorKind::Other, err.to_string())),
@@ -102,7 +97,7 @@ impl Cache for S3Cache {
             key: path.to_string(),
             ..Default::default()
         };
-        let response = self.client.head_object(request).sync();       
+        let response = self.client.head_object(request).sync();
         match response {
             Ok(_) => true,
             Err(_) => false,

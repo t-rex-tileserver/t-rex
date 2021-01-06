@@ -82,7 +82,7 @@ fn test_template() {
         config.datasource[0].dbconn,
         Some("postgresql://pi@localhost/geostat".to_string())
     );
-    let cache =config.cache.unwrap();
+    let cache = config.cache.unwrap();
     assert_eq!(&config.tilesets[0].name, "Default-Tileset");
     assert_eq!(config.tilesets[0].layers.len(), 3);
     assert_eq!(&config.tilesets[0].layers[0].name, "layer 1");

@@ -9,15 +9,14 @@ use crate::cache::s3cache::S3Cache;
 #[test]
 fn test_s3cache() {
     println!("test_s3cache");
-  
+
     let cache = S3Cache::new(
         "http://localhost:9000",
         "trex",
         "miniostorage",
         "miniostorage",
         "my-region",
-        Some("http://localhost:6767".to_string()
-    )
+        Some("http://localhost:6767".to_string()),
     );
     let path = "tileset/0/1/2.pbf";
     let obj = "01234567910";
@@ -29,8 +28,12 @@ fn test_s3cache() {
     let e = cache.write(path, obj.as_bytes());
 
     match e {
-        Err(e)=> { println!("Error writing file {:?}", e.to_string());},
-        Ok(_) => {println!("Writing file successful");},
+        Err(e) => {
+            println!("Error writing file {:?}", e.to_string());
+        }
+        Ok(_) => {
+            println!("Writing file successful");
+        }
     }
     assert!(cache.exists(&path));
 

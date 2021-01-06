@@ -2804,7 +2804,6 @@ dependencies = [
 name = "t-rex-core"
 version = "0.9.9"
 dependencies = [
- "async-trait",
  "flate2",
  "log",
  "native-tls",

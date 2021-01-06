@@ -7,7 +7,6 @@ pub mod cache;
 pub mod filecache;
 pub mod s3cache;
 
-
 #[cfg(test)]
 mod filecache_test;
 mod s3cache_test;
@@ -25,7 +24,7 @@ use std::io::Read;
 pub enum Tilecache {
     Nocache(Nocache),
     Filecache(Filecache),
-    S3Cache(S3Cache)
+    S3Cache(S3Cache),
 }
 
 impl Cache for Tilecache {
@@ -71,19 +70,18 @@ impl Cache for Tilecache {
 
 impl<'a> Config<'a, ApplicationCfg> for Tilecache {
     fn from_config(config: &ApplicationCfg) -> Result<Self, String> {
-       
         config
             .cache
             .as_ref()
             .map(|cache| {
-                if let Some(file_cache_cfg) = cache.file.as_ref()    {
+                if let Some(file_cache_cfg) = cache.file.as_ref() {
                     let fc = Filecache {
                         basepath: file_cache_cfg.base.clone(),
                         baseurl: file_cache_cfg.baseurl.clone(),
                     };
                     Tilecache::Filecache(fc)
-                }else if let Some(s3_cache_cfg) = cache.s3.as_ref(){                    
-                    let s3c =S3Cache::new(
+                } else if let Some(s3_cache_cfg) = cache.s3.as_ref() {
+                    let s3c = S3Cache::new(
                         &s3_cache_cfg.host.clone(),
                         &s3_cache_cfg.bucket.clone(),
                         &s3_cache_cfg.access_key.clone(),
@@ -92,10 +90,10 @@ impl<'a> Config<'a, ApplicationCfg> for Tilecache {
                         s3_cache_cfg.baseurl.clone(),
                     );
                     Tilecache::S3Cache(s3c)
-                } else{
+                } else {
                     Tilecache::Nocache(Nocache)
                 }
-            })           
+            })
             .ok_or("".to_string())
     }
     fn gen_config() -> String {
