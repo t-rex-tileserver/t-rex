@@ -184,12 +184,23 @@ pub struct TilesetCacheCfg {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct CacheCfg {
-    pub file: CacheFileCfg,
+    pub file: Option<CacheFileCfg>,
+    pub s3: Option<S3CacheFileCfg>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct CacheFileCfg {
     pub base: String,
+    pub baseurl: Option<String>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct S3CacheFileCfg {
+    pub host: String,
+    pub bucket: String,
+    pub access_key: String,
+    pub secret_key: String,
+    pub region: String,
     pub baseurl: Option<String>,
 }
 
