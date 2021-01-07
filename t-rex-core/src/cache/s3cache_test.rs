@@ -7,6 +7,7 @@ use crate::cache::cache::Cache;
 use crate::cache::s3cache::S3Cache;
 
 #[test]
+#[ignore]
 fn test_s3cache() {
     println!("test_s3cache");
 
