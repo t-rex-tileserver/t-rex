@@ -27,6 +27,14 @@ jobs:
         image: sourcepole/trextestdb
         ports:
           - 5439:5432
+      minio:
+        image: minio/minio
+        env:
+          MINIO_REGION_NAME: my-region
+          MINIO_ACCESS_KEY: miniostorage
+          MINIO_SECRET_KEY: miniostorage
+        ports:
+          - 9000:9000
 
     steps:
       - uses: actions/checkout@v2
@@ -36,6 +44,17 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - name: Start MinIO
+        # Does it die because of missing start args?
+        run: docker run -d --rm -p 9000:9000 -e MINIO_REGION_NAME=my-region -e MINIO_ACCESS_KEY=miniostorage -e MINIO_SECRET_KEY=miniostorage minio/minio server /data
+      - name: Install MinIO Client
+        run: |
+          curl -o mc -L https://dl.min.io/client/mc/release/linux-amd64/mc
+          chmod +x mc
+      - name: Create S3 Bucket
+        run: |
+          ./mc config host add local-docker http://127.0.0.1:9000 miniostorage miniostorage
+          ./mc mb local-docker/trex
 
       - name: Install libgdal-dev
         run: sudo apt install -y libgdal-dev
@@ -46,6 +65,8 @@ jobs:
 
       - name: Execute tests
         run: cargo test --all-features --all --no-fail-fast
+        env:
+          S3TEST: "true"
 
       - name: Execute DB tests
         run: cargo test --all-features --all --no-fail-fast -- --ignored
