@@ -70,7 +70,11 @@ impl Cache for Tilecache {
 
 impl<'a> Config<'a, ApplicationCfg> for Tilecache {
     fn from_config(config: &ApplicationCfg) -> Result<Self, String> {
-        config
+
+        if config.cache.as_ref().is_none() {            
+            return Ok(Tilecache::Nocache(Nocache))
+        } else {
+            config
             .cache
             .as_ref()
             .map(|cache| {
@@ -94,7 +98,8 @@ impl<'a> Config<'a, ApplicationCfg> for Tilecache {
                     Tilecache::Nocache(Nocache)
                 }
             })
-            .ok_or("".to_string())
+            .ok_or("No Application Config found".to_string())            
+        }
     }
     fn gen_config() -> String {
         let toml = r#"
