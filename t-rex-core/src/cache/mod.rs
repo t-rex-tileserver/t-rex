@@ -9,6 +9,7 @@ pub mod s3cache;
 
 #[cfg(test)]
 mod filecache_test;
+#[cfg(test)]
 mod s3cache_test;
 
 pub use self::cache::Cache;

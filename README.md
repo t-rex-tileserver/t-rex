@@ -116,7 +116,9 @@ Creating test database locally:
 
 ### S3 tests
 
-Unit tests which need a S3 connection are ignored by default.
+Unit tests which need a S3 connection are skipped by default.
+
+Install [MinIO Client](https://github.com/minio/mc).
 
 Start Test S3
 
@@ -128,7 +130,7 @@ To run the S3 tests, declare that there is a S3 available in an environment vaia
 
 Run the tests with
 
-    cargo test --all -- --ignored
+    cargo test --all
 
 License
 -------
