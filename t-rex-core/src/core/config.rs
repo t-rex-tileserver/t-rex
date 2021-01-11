@@ -202,6 +202,7 @@ pub struct S3CacheFileCfg {
     pub secret_key: String,
     pub region: String,
     pub baseurl: Option<String>,
+    pub key_prefix: Option<String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
