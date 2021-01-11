@@ -8,6 +8,7 @@ use rusoto_core::{Client, HttpClient, Region};
 use rusoto_credential::StaticProvider;
 use rusoto_s3::{GetObjectRequest, HeadObjectRequest, PutObjectRequest, S3Client, S3};
 use std::io::{self, Read};
+use std::path::Path;
 
 #[derive(Clone)]
 pub struct S3Cache {
@@ -15,6 +16,7 @@ pub struct S3Cache {
     client: S3Client,
     endpoint: String,
     bucket_name: String,
+    key_prefix: Option<String>,
 }
 
 impl S3Cache {
@@ -25,12 +27,12 @@ impl S3Cache {
         secret_key: &str,
         region: &str,
         baseurl: Option<String>,
+        key_prefix: Option<String>,
     ) -> S3Cache {
         let region_object = Region::Custom {
             name: region.to_string(),
             endpoint: endpoint.to_string(),
         };
-
         let client = S3Client::new_with_client(
             Client::new_with(
                 StaticProvider::new(access_key.to_string(), secret_key.to_string(), None, None),
@@ -43,6 +45,19 @@ impl S3Cache {
             baseurl: baseurl,
             endpoint: endpoint.to_string(),
             bucket_name: bucket_name.to_string(),
+            key_prefix: key_prefix,
+        }
+    }
+
+    fn key_prefix(&self) -> String {
+        self.key_prefix.clone().unwrap_or("".to_string())
+    }
+
+    fn full_path(&self, path: &str) -> String {
+        let key_prefix = &self.key_prefix();
+        match Path::new(key_prefix).join(path).to_str() {
+            None => String::new(),
+            Some(result) => result.to_string(),
         }
     }
 }
@@ -62,9 +77,13 @@ impl Cache for S3Cache {
     where
         F: FnMut(&mut dyn Read),
     {
+        let key = self.full_path(path);
+        if key.is_empty() {
+            return false;
+        }
         let request = GetObjectRequest {
-            bucket: self.bucket_name.to_string(),
-            key: path.to_string(),
+            bucket: self.bucket_name.to_owned(),
+            key: key.to_owned(),
             ..Default::default()
         };
         let client = self.client.clone();
@@ -78,10 +97,18 @@ impl Cache for S3Cache {
             Err(_) => false,
         }
     }
+
     fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error> {
+        let key = self.full_path(path);
+        if key.is_empty() {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "failed to join key_prefix with path",
+            ));
+        }
         let request = PutObjectRequest {
             bucket: self.bucket_name.to_owned(),
-            key: path.to_owned(),
+            key: key.to_owned(),
             body: Some(obj.to_vec().into()),
             ..Default::default()
         };
@@ -91,10 +118,15 @@ impl Cache for S3Cache {
             Err(err) => Err(io::Error::new(io::ErrorKind::Other, err.to_string())),
         }
     }
+
     fn exists(&self, path: &str) -> bool {
+        let key = self.full_path(path);
+        if key.is_empty() {
+            return false;
+        }
         let request = HeadObjectRequest {
-            bucket: self.bucket_name.to_string(),
-            key: path.to_string(),
+            bucket: self.bucket_name.to_owned(),
+            key: key.to_owned(),
             ..Default::default()
         };
         let response = self.client.head_object(request).sync();

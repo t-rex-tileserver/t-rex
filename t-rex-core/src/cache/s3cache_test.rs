@@ -20,6 +20,7 @@ fn test_s3cache() {
         "miniostorage",
         "my-region",
         Some("http://localhost:6767".to_string()),
+        None,
     );
     let path = "tileset/0/1/2.pbf";
     let obj = "01234567910";
@@ -48,5 +49,42 @@ fn test_s3cache() {
     cache.read(path, |f| {
         let _ = f.read_to_string(&mut s);
     });
-    assert_eq!(&s, obj)
+    assert_eq!(&s, obj);
+
+    // test key_prefix
+    let cache_prefix = S3Cache::new(
+        "http://localhost:9000",
+        "trex",
+        "miniostorage",
+        "miniostorage",
+        "my-region",
+        Some("http://localhost:6767".to_string()),
+        Some("my-prefix".to_string()),
+    );
+
+    // Cache miss
+    assert_eq!(cache_prefix.read(path, |_| {}), false);
+
+    // Write into cache
+    let e = cache_prefix.write(path, obj.as_bytes());
+
+    match e {
+        Err(e) => {
+            println!("Error writing file {:?}", e.to_string());
+        }
+        Ok(_) => {
+            println!("Writing file successful");
+        }
+    }
+    assert!(cache_prefix.exists(&path));
+
+    // Cache hit
+    assert_eq!(cache_prefix.read(path, |_| {}), true);
+
+    // Read from cache
+    let mut s = String::new();
+    cache_prefix.read(path, |f| {
+        let _ = f.read_to_string(&mut s);
+    });
+    assert_eq!(&s, obj);
 }
