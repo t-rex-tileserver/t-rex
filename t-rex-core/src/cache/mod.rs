@@ -86,7 +86,7 @@ impl<'a> Config<'a, ApplicationCfg> for Tilecache {
                         Tilecache::Filecache(fc)
                     } else if let Some(s3_cache_cfg) = cache.s3.as_ref() {
                         let s3c = S3Cache::new(
-                            &s3_cache_cfg.host.clone(),
+                            &s3_cache_cfg.endpoint.clone(),
                             &s3_cache_cfg.bucket.clone(),
                             &s3_cache_cfg.access_key.clone(),
                             &s3_cache_cfg.secret_key.clone(),

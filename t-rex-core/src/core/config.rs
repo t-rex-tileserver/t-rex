@@ -196,7 +196,7 @@ pub struct CacheFileCfg {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct S3CacheFileCfg {
-    pub host: String,
+    pub endpoint: String,
     pub bucket: String,
     pub access_key: String,
     pub secret_key: String,

@@ -69,7 +69,7 @@ fn test_template() {
         [cache.file]
         base = "/tmp/mvtcache"
         [cache.s3]
-        host = "s3.delivery.pdok.nl"
+        endpoint = "https://s3.example.com"
         region = "westeurope"
         bucket = "bucket"
         access_key = "access-key"
