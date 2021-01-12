@@ -106,9 +106,17 @@ impl Cache for S3Cache {
                 "failed to join key_prefix with path",
             ));
         }
+        let extension = Path::new(path).extension().unwrap().to_str().unwrap();
+        let content_type = match extension {
+            "mvt" => Some("application/vnd.mapbox-vector-tile".to_string()),
+            "pbf" => Some("application/vnd.mapbox-vector-tile".to_string()),
+            "json" => Some("application/json".to_string()),
+            _ => Some("application/octet-stream".to_string()),
+        };
         let request = PutObjectRequest {
             bucket: self.bucket_name.to_owned(),
             key: key.to_owned(),
+            content_type: content_type,
             body: Some(obj.to_vec().into()),
             ..Default::default()
         };
