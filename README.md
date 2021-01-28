@@ -30,6 +30,12 @@ Features
 * Workshop "Vector Tiles" (GEOSummit Bern 7.6.16): [slides](https://t-rex.tileserver.ch/t-rex_vector_tile_server.pdf)
 
 
+### Examples
+
+* [AdV Smart Mapping](https://adv-smart.de/applications_en.html)
+* Swiss Ornithological Institute, [Birds of Switzerland](https://www.vogelwarte.ch/en/birds/birds-of-switzerland/)
+
+
 Usage
 -----
 
