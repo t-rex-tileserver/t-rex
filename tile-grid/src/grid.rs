@@ -307,7 +307,7 @@ impl Grid {
 }
 
 /// Returns the Spherical Mercator (x, y) in meters
-fn lonlat_to_merc(lon: f64, lat: f64) -> (f64, f64) {
+pub fn lonlat_to_merc(lon: f64, lat: f64) -> (f64, f64) {
     // from mod web_mercator in grid_test
     //lng, lat = truncate_lnglat(lng, lat)
     let x = 6378137.0 * lon.to_radians();
