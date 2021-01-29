@@ -1,3 +1,6 @@
+#### Features
+* New function `lonlat_to_merc` to project WGS84 coordinates into Mercator.
+
 <a name="0.12.0"></a>
 ## 0.12.0 (2020-12-26)
 
