@@ -238,6 +238,25 @@ fn test_feature_query() {
 }
 
 #[test]
+fn test_config_teamplate() {
+    let pg = PostgisDatasource::new("postgresql://pi@localhost/osm2vectortiles", Some(1));
+    let mut layer = Layer::new("points");
+    layer.table_name = Some(String::from("osm_place_point"));
+    layer.geometry_field = Some(String::from("geometry"));
+    assert_eq!(
+        pg.build_query_sql_template(&layer),
+        "SELECT geometry FROM osm_place_point"
+    );
+
+    // reprojection
+    layer.srid = Some(2056);
+    assert_eq!(
+        pg.build_query_sql_template(&layer),
+        "SELECT geometry FROM osm_place_point"
+    );
+}
+
+#[test]
 fn test_query_params() {
     let pg = PostgisDatasource::new("postgresql://pi@localhost/osm2vectortiles", Some(1));
     let mut layer = Layer::new("buildings");
