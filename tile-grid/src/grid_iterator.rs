@@ -27,7 +27,7 @@ impl GridIterator {
                 x: limit.minx,
                 y: limit.miny,
                 maxz,
-                limits: limits,
+                limits,
                 finished: false,
             }
         } else {

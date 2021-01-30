@@ -1,12 +1,5 @@
 //! A library for map tile grid calculations
 //!
-//! ## Installation
-//!
-//! ```ini
-//! [dependencies]
-//! tile_grid = "0"
-//! ```
-//!
 //! ## Predefined grids
 //!
 //! ```rust

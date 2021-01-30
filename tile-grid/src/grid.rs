@@ -190,6 +190,7 @@ impl Grid {
             Unit::Feet => self.resolutions[zoom as usize] * 0.3048,
         }
     }
+    /// Scale denominator based on standardized pixel size (https://www.ogc.org/standards/se)
     pub fn scale_denominator(&self, zoom: u8) -> f64 {
         // Standardized rendering pixel size according to OGC Symbology Encoding
         // standard (https://www.ogc.org/standards/se)
