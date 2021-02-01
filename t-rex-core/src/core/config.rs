@@ -203,6 +203,7 @@ pub struct S3CacheFileCfg {
     pub region: String,
     pub baseurl: Option<String>,
     pub key_prefix: Option<String>,
+    pub gzip_header_enabled: Option<bool>,
 }
 
 #[derive(Deserialize, Clone, Debug)]

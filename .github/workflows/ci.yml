@@ -55,6 +55,7 @@ jobs:
         run: |
           ./mc config host add local-docker http://127.0.0.1:9000 miniostorage miniostorage
           ./mc mb local-docker/trex
+          ./mc policy set download local-docker/trex
 
       - name: Install libgdal-dev
         run: sudo apt install -y libgdal-dev

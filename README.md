@@ -128,7 +128,7 @@ Install [MinIO Client](https://github.com/minio/mc).
 
 Start Test S3
 
-    docker run -d --rm -p 9000:9000 -e MINIO_REGION_NAME=my-region -e MINIO_ACCESS_KEY=miniostorage -e MINIO_SECRET_KEY=miniostorage minio/minio server /data && sleep 5 && mc config host add local-docker http://localhost:9000 miniostorage miniostorage && mc mb local-docker/trex
+    docker run -d --rm -p 9000:9000 -e MINIO_REGION_NAME=my-region -e MINIO_ACCESS_KEY=miniostorage -e MINIO_SECRET_KEY=miniostorage minio/minio server /data && sleep 5 && mc config host add local-docker http://localhost:9000 miniostorage miniostorage && mc mb local-docker/trex && mc policy set download local-docker/trex 
 
 To run the S3 tests, declare that there is a S3 available in an environment vaiable `S3TEST`:
 
