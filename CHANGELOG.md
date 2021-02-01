@@ -1,10 +1,17 @@
+## 0.12.1 (UNRELEASED)
+
+#### Features
+
+* Add support for S3 tile storage (Thanks @arbakker!)
+
 <a name="0.12.0"></a>
-## 0.12.0 (UNRELEASED)
+## 0.12.0 (2020-12-26)
 
 #### Features
 
 * Support for PG connection with sslmode=require (Thanks @arbakker and @Daan-!)
 * Support for HTTP HEAD requests (Thanks @sebastian-r-schmidt!)
+* Return detailed config template error message (Thanks @arbakker!)
 * Return projection in TileJSON (Thanks @lnicola!)
 * Update to Actix-Web 3.0 (Thanks @lnicola!)
 * Update to rust-postgres 0.17 (Thanks @lnicola and @WouterVisscher!)

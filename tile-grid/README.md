@@ -11,13 +11,6 @@ Included standard grids are Web Mercator and WGS 84.
 Usage
 -----
 
-### Installation
-
-```ini
-[dependencies]
-tile_grid = "0"
-```
-
 ### Predefined grids
 
 ```rust

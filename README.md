@@ -5,6 +5,7 @@ t-rex
 [![Appveyor build status](https://ci.appveyor.com/api/projects/status/o60e9bu97i49lxyf?svg=true)](https://ci.appveyor.com/project/pka/t-rex)
 [![Language (Rust)](https://img.shields.io/badge/powered_by-Rust-blue.svg)](http://www.rust-lang.org/)
 [![Discord Chat](https://img.shields.io/discord/598002550221963289.svg)](https://discord.gg/Fp2aape)
+[![Docker Pulls](https://img.shields.io/docker/pulls/sourcepole/t-rex.svg)](https://hub.docker.com/r/sourcepole/t-rex)
 
 t-rex is a vector tile server specialized on publishing [MVT tiles](https://github.com/mapbox/vector-tile-spec/tree/master/2.1)
 from your own data.
@@ -27,6 +28,12 @@ Features
 * Vector Tiles - Introduction & Usage with QGIS (User meeting Bern 21.6.17): [slides](https://t-rex.tileserver.ch/Vector-tiles-and-QGIS.pdf)
 * Von WMS zu WMTS zu Vektor-Tiles ([FOSSGIS 2017](https://www.fossgis-konferenz.de/2017/programm/event.php?id=5233)): [Video](https://av.tib.eu/media/30549)
 * Workshop "Vector Tiles" (GEOSummit Bern 7.6.16): [slides](https://t-rex.tileserver.ch/t-rex_vector_tile_server.pdf)
+
+
+### Examples
+
+* [AdV Smart Mapping](https://adv-smart.de/applications_en.html)
+* Swiss Ornithological Institute, [Birds of Switzerland](https://www.vogelwarte.ch/en/birds/birds-of-switzerland/)
 
 
 Usage
@@ -113,6 +120,23 @@ Creating test database locally:
     cd data
     make createdb loaddata
 
+### S3 tests
+
+Unit tests which need a S3 connection are skipped by default.
+
+Install [MinIO Client](https://github.com/minio/mc).
+
+Start Test S3
+
+    docker run -d --rm -p 9000:9000 -e MINIO_REGION_NAME=my-region -e MINIO_ACCESS_KEY=miniostorage -e MINIO_SECRET_KEY=miniostorage minio/minio server /data && sleep 5 && mc config host add local-docker http://localhost:9000 miniostorage miniostorage && mc mb local-docker/trex
+
+To run the S3 tests, declare that there is a S3 available in an environment vaiable `S3TEST`:
+
+    export S3TEST=true
+
+Run the tests with
+
+    cargo test --all
 
 License
 -------

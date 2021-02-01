@@ -27,6 +27,14 @@ jobs:
         image: sourcepole/trextestdb
         ports:
           - 5439:5432
+      minio:
+        image: minio/minio
+        env:
+          MINIO_REGION_NAME: my-region
+          MINIO_ACCESS_KEY: miniostorage
+          MINIO_SECRET_KEY: miniostorage
+        ports:
+          - 9000:9000
 
     steps:
       - uses: actions/checkout@v2
@@ -36,6 +44,17 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - name: Start MinIO
+        # Does it die because of missing start args?
+        run: docker run -d --rm -p 9000:9000 -e MINIO_REGION_NAME=my-region -e MINIO_ACCESS_KEY=miniostorage -e MINIO_SECRET_KEY=miniostorage minio/minio server /data
+      - name: Install MinIO Client
+        run: |
+          curl -o mc -L https://dl.min.io/client/mc/release/linux-amd64/mc
+          chmod +x mc
+      - name: Create S3 Bucket
+        run: |
+          ./mc config host add local-docker http://127.0.0.1:9000 miniostorage miniostorage
+          ./mc mb local-docker/trex
 
       - name: Install libgdal-dev
         run: sudo apt install -y libgdal-dev
@@ -46,6 +65,8 @@ jobs:
 
       - name: Execute tests
         run: cargo test --all-features --all --no-fail-fast
+        env:
+          S3TEST: "true"
 
       - name: Execute DB tests
         run: cargo test --all-features --all --no-fail-fast -- --ignored
@@ -79,61 +100,3 @@ jobs:
       # - run: cd t-rex-webserver && cargo test --no-default-features --no-fail-fast
 
       # - run: otool -L target/debug/t_rex
-
-  deb:
-    needs: [ubuntu]
-    name: Build deb package
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: ['ubuntu-20.04']
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Install libgdal-dev
-        run: sudo apt install -y libgdal-dev
-
-      - run: cargo install cargo-deb
-      - run: cargo deb
-      - run: dpkg -I target/debian/t-rex_*.deb
-      - run: dpkg -c target/debian/t-rex_*.deb
-
-  # See also https://github.com/FedericoPonzi/rust-ci/blob/master/.github/workflows/CI.yml
-
-  # package:
-  #   case $TRAVIS_OS_NAME in
-  #       linux)
-  #           stage=$(mktemp -d)
-  #           ;;
-  #       osx)
-  #           stage=$(mktemp -d -t tmp)
-  #           ;;
-  #   esac
-
-  #   test -f Cargo.lock || cargo generate-lockfile
-
-  #   cargo rustc --bin t_rex --target $TARGET --release -- -C lto
-
-  #   cp target/$TARGET/release/t_rex $stage/
-
-  #   cd $stage
-  #   tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz *
-
-
-  #   # Build Docker container
-  #   cd $src/packaging/docker
-  #   cp $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.deb .
-  #   docker build -t sourcepole/t-rex -f Dockerfile .
-  #   docker run sourcepole/t-rex --version
-
-  #   docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
-  #   docker push sourcepole/t-rex
-  #   docker tag sourcepole/t-rex sourcepole/t-rex:${TRAVIS_TAG#v}
-  #   docker push sourcepole/t-rex:${TRAVIS_TAG#v}

@@ -190,6 +190,7 @@ impl Grid {
             Unit::Feet => self.resolutions[zoom as usize] * 0.3048,
         }
     }
+    /// Scale denominator based on standardized pixel size (https://www.ogc.org/standards/se)
     pub fn scale_denominator(&self, zoom: u8) -> f64 {
         // Standardized rendering pixel size according to OGC Symbology Encoding
         // standard (https://www.ogc.org/standards/se)
@@ -307,7 +308,7 @@ impl Grid {
 }
 
 /// Returns the Spherical Mercator (x, y) in meters
-fn lonlat_to_merc(lon: f64, lat: f64) -> (f64, f64) {
+pub fn lonlat_to_merc(lon: f64, lat: f64) -> (f64, f64) {
     // from mod web_mercator in grid_test
     //lng, lat = truncate_lnglat(lng, lat)
     let x = 6378137.0 * lon.to_radians();

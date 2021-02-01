@@ -409,27 +409,37 @@ impl PostgisDatasource {
         }
         expr
     }
-    /// Build feature query SQL (also used for generated config).
-    pub fn build_query_sql(
+    /// Build feature query SQL for generated config.
+    pub fn build_query_sql_template(&self, layer: &Layer) -> String {
+        let ref geom_name = layer
+            .geometry_field
+            .as_ref()
+            .expect("geometry_field undefined");
+        let geom_expr = geom_name.to_string();
+        let select_list = self.build_select_list(layer, geom_expr, None);
+        let query = format!(
+            "SELECT {} FROM {}",
+            select_list,
+            layer.table_name.as_ref().expect("table_name undefined")
+        )
+        // Remove quotes from column names for better readability
+        .replace('"', "");
+        query
+    }
+    pub fn build_query(
         &self,
         layer: &Layer,
         grid_srid: i32,
         zoom: u8,
         sql: Option<&String>,
-        raw_geom: bool,
-    ) -> Option<String> {
-        let mut query;
+    ) -> Option<SqlQuery> {
+        let mut sqlquery;
         let offline = self.conn_pool.is_none();
         let ref geom_name = layer
             .geometry_field
             .as_ref()
             .expect("geometry_field undefined");
-        let geom_expr = if raw_geom {
-            // Skip geometry processing when generating user query template
-            geom_name.to_string()
-        } else {
-            self.build_geom_expr(layer, grid_srid, zoom)
-        };
+        let geom_expr = self.build_geom_expr(layer, grid_srid, zoom);
         let select_list = self.build_select_list(layer, geom_expr, sql);
         let intersect_clause = format!(" WHERE {} && !bbox!", geom_name);
 
@@ -440,39 +450,26 @@ impl PostgisDatasource {
             } else {
                 select_list
             };
-            query = format!("SELECT {} FROM ({}) AS _q", select, userquery);
+            sqlquery = format!("SELECT {} FROM ({}) AS _q", select, userquery);
             if !userquery.contains("!bbox!") {
-                query.push_str(&intersect_clause);
+                sqlquery.push_str(&intersect_clause);
             }
         } else {
             // automatic query
             if layer.table_name.is_none() {
                 return None;
             }
-            query = format!(
+            sqlquery = format!(
                 "SELECT {} FROM {}",
                 select_list,
                 layer.table_name.as_ref().expect("table_name undefined")
             );
-            query.push_str(&intersect_clause);
+            sqlquery.push_str(&intersect_clause);
         };
 
-        Some(query)
-    }
-    pub fn build_query(
-        &self,
-        layer: &Layer,
-        grid_srid: i32,
-        zoom: u8,
-        sql: Option<&String>,
-    ) -> Option<SqlQuery> {
-        let sqlquery = self.build_query_sql(layer, grid_srid, zoom, sql, false);
-        if sqlquery.is_none() {
-            return None;
-        }
         let bbox_expr = self.build_bbox_expr(layer, grid_srid);
         let mut query = SqlQuery {
-            sql: sqlquery.expect("sqlquery expected"),
+            sql: sqlquery,
             params: Vec::new(),
         };
         query.replace_params(bbox_expr);

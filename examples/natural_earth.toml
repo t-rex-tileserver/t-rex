@@ -1,0 +1,93 @@
+# t-rex configuration
+
+[service.mvt]
+viewer = true
+
+[[datasource]]
+dbconn = "postgresql://t_rex:t_rex@127.0.0.1:5439/t_rex_tests"
+name = "dbconn"
+default = true
+
+[grid]
+predefined = "web_mercator"
+
+[[tileset]]
+name = "ne_countries"
+attribution = "Natural Earth v4"
+extent = [-179.97277, -83.05457, 179.99366, 83.23559]
+minzoom = 0
+maxzoom = 6
+
+[[tileset.layer]]
+name = "admin_0_countries"
+table_name = "ne.admin_0_countries"
+geometry_field = "wkb_geometry"
+geometry_type = "POLYGON"
+srid = 3857
+buffer_size = 1
+make_valid = true
+simplify = true
+#[[tileset.layer.query]]
+#sql = """SELECT wkb_geometry, adm0_a3, mapcolor7 FROM ne_10m_admin_0_countries WHERE min_zoom::integer <= !zoom! AND wkb_geometry && !bbox!"""
+#sql = """SELECT wkb_geometry,fid,name,iso_a3 FROM ne.admin_0_countries"""
+
+[[tileset]]
+name = "ne_10m_populated_places"
+extent = [-179.58998, -90.00000, 179.38330, 82.48332]
+[[tileset.layer]]
+name = "ne_10m_populated_places"
+table_name = "ne.ne_10m_populated_places"
+geometry_field = "wkb_geometry"
+geometry_type = "POINT"
+srid = 3857
+buffer_size = 0
+#make_valid = true
+query_limit = 1000
+#[[tileset.layer.query]]
+#sql = """SELECT wkb_geometry,fid,scalerank,name,pop_max FROM ne.ne_10m_populated_places"""
+
+[[tileset]]
+name = "ne_10m_rivers_lake_centerlines"
+extent = [-164.90347, -52.15773, 177.21119, 75.79348]
+[[tileset.layer]]
+name = "ne_10m_rivers_lake_centerlines"
+table_name = "ne.ne_10m_rivers_lake_centerlines"
+geometry_field = "wkb_geometry"
+geometry_type = "MULTILINESTRING"
+srid = 3857
+buffer_size = 0
+#make_valid = true
+simplify = true
+query_limit = 1000
+#[[tileset.layer.query]]
+#sql = """SELECT wkb_geometry,fid,scalerank,name FROM ne.ne_10m_rivers_lake_centerlines"""
+
+[[tileset]]
+name = "rivers_lake_centerlines"
+extent = [-164.90347, -52.15773, 177.21119, 75.79348]
+[[tileset.layer]]
+name = "rivers_lake_centerlines"
+table_name = "ne.rivers_lake_centerlines"
+geometry_field = "wkb_geometry"
+geometry_type = "LINESTRING"
+srid = 3857
+buffer_size = 0
+#make_valid = true
+simplify = true
+query_limit = 1000
+#[[tileset.layer.query]]
+#sql = """SELECT wkb_geometry,fid,scalerank,name FROM ne.rivers_lake_centerlines"""
+
+[cache.file]
+base = "/tmp/mvtcache"
+baseurl = "http://example.com/tiles"
+
+[webserver]
+# Bind address. Use 0.0.0.0 to listen on all adresses.
+bind = "127.0.0.1"
+port = 6767
+
+#[[webserver.static]]
+#path = "/static"
+#dir = "./public/"
+

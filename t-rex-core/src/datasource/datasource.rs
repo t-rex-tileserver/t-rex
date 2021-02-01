@@ -34,6 +34,7 @@ pub trait DatasourceType {
         F: FnMut(&dyn Feature);
 }
 
+#[derive(Clone)]
 pub struct DummyDatasource;
 
 impl DatasourceType for DummyDatasource {

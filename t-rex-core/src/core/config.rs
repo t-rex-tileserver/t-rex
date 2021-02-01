@@ -9,6 +9,7 @@ use serde::Deserialize;
 use std;
 use std::collections::HashMap;
 use std::env;
+use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use tera::{Context, Tera};
@@ -183,13 +184,25 @@ pub struct TilesetCacheCfg {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct CacheCfg {
-    pub file: CacheFileCfg,
+    pub file: Option<CacheFileCfg>,
+    pub s3: Option<S3CacheFileCfg>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct CacheFileCfg {
     pub base: String,
     pub baseurl: Option<String>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct S3CacheFileCfg {
+    pub endpoint: String,
+    pub bucket: String,
+    pub access_key: String,
+    pub secret_key: String,
+    pub region: String,
+    pub baseurl: Option<String>,
+    pub key_prefix: Option<String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -271,7 +284,7 @@ pub fn parse_config<'a, T: Deserialize<'a>>(config_toml: String, path: &str) -> 
     context.insert("env", &env);
     let toml = tera
         .render(path, &context)
-        .map_err(|e| format!("Template error: {}", e))?;
+        .map_err(|e| format!("Template error: {}", e.source().unwrap()))?;
 
     toml.parse::<Value>()
         .and_then(|cfg| cfg.try_into::<T>())

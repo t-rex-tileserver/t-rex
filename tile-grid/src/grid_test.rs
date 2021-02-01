@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use crate::grid::{extent_to_merc, Extent, ExtentInt, Grid};
+use crate::grid::{extent_to_merc, lonlat_to_merc, Extent, ExtentInt, Grid};
 
 #[test]
 fn test_bbox() {
@@ -217,7 +217,12 @@ fn test_projected_extent() {
         maxx: 556597.4539663679,
         maxy: 6982997.920389788,
     };
-    assert_eq!(extent_to_merc(&extent_wgs84), extent_3857);
+    let projected = extent_to_merc(&extent_wgs84);
+    assert_eq!(projected, extent_3857);
+    assert_eq!(
+        lonlat_to_merc(extent_wgs84.minx, extent_wgs84.miny),
+        (projected.minx, projected.miny)
+    );
 }
 
 mod web_mercator {
