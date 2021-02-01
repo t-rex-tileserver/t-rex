@@ -2,10 +2,11 @@
 // Copyright (c) Pirmin Kalberer. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
-
 use crate::cache::cache::Cache;
 use crate::cache::s3cache::S3Cache;
+use curl::easy::Easy;
 use std::env;
+use std::str;
 
 #[test]
 fn test_s3cache() {
@@ -20,6 +21,7 @@ fn test_s3cache() {
         "miniostorage",
         "my-region",
         Some("http://localhost:6767".to_string()),
+        None,
         None,
     );
     let path = "tileset/0/1/2.pbf";
@@ -51,6 +53,24 @@ fn test_s3cache() {
     });
     assert_eq!(&s, obj);
 
+    // check if Content-Encoding header set by default
+    let mut handle = Easy::new();
+    let mut headers = Vec::new();
+    handle
+        .url("http://localhost:9000/trex/tileset/0/1/2.pbf")
+        .unwrap();
+    {
+        let mut transfer = handle.transfer();
+        transfer
+            .header_function(|header| {
+                headers.push(str::from_utf8(header).unwrap().to_string());
+                true
+            })
+            .unwrap();
+        transfer.perform().unwrap();
+    }
+    assert!(headers.contains(&"Content-Encoding: gzip\r\n".to_string()));
+
     // test key_prefix
     let cache_prefix = S3Cache::new(
         "http://localhost:9000",
@@ -60,6 +80,7 @@ fn test_s3cache() {
         "my-region",
         Some("http://localhost:6767".to_string()),
         Some("my-prefix".to_string()),
+        Some(false),
     );
 
     // Cache miss
@@ -87,4 +108,22 @@ fn test_s3cache() {
         let _ = f.read_to_string(&mut s);
     });
     assert_eq!(&s, obj);
+
+    // check if Content-Encoding header not set
+    let mut handle = Easy::new();
+    let mut headers = Vec::new();
+    handle
+        .url("http://localhost:9000/trex/my-prefix/tileset/0/1/2.pbf")
+        .unwrap();
+    {
+        let mut transfer = handle.transfer();
+        transfer
+            .header_function(|header| {
+                headers.push(str::from_utf8(header).unwrap().to_string());
+                true
+            })
+            .unwrap();
+        transfer.perform().unwrap();
+    }
+    assert!(!headers.contains(&"Content-Encoding: gzip\r\n".to_string()));
 }
