@@ -93,6 +93,8 @@ impl<'a> Config<'a, ApplicationCfg> for Tilecache {
                             &s3_cache_cfg.region.clone(),
                             s3_cache_cfg.baseurl.clone(),
                             s3_cache_cfg.key_prefix.clone(),
+                            s3_cache_cfg.gzip_header_enabled.clone(),
+                            s3_cache_cfg.public_read_enabled.clone(),
                         );
                         Tilecache::S3Cache(s3c)
                     } else {

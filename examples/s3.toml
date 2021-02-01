@@ -29,14 +29,14 @@ make_valid = true
 table_name = "ne_110m_admin_0_countries"
 
 [cache.s3]
-# run s3 locally and create bucket with (requires MinIO Client (mc) for bucket creation):
-# docker run -d --rm -p 9000:9000 -e MINIO_REGION_NAME=my-region -e MINIO_ACCESS_KEY=miniostorage -e MINIO_SECRET_KEY=miniostorage minio/minio server /data && sleep 5 && mc config host add local-docker http://localhost:9000 miniostorage miniostorage && mc mb local-docker/trex
+# see README.md for instructions to setup local S3 service ("S3 tests")
 endpoint = "http://localhost:9000"
 bucket = "trex"
 access_key = "miniostorage"
 secret_key = "miniostorage"
 region = "my-region"
 key_prefix = "my-prefix"
+baseurl = "https://localhost:9000/trex/my-prefix"
 
 [webserver]
 bind = "127.0.0.1"

@@ -17,6 +17,8 @@ pub struct S3Cache {
     endpoint: String,
     bucket_name: String,
     key_prefix: Option<String>,
+    gzip_header_enabled: Option<bool>,
+    public_read_enabled: Option<bool>,
 }
 
 impl S3Cache {
@@ -28,6 +30,8 @@ impl S3Cache {
         region: &str,
         baseurl: Option<String>,
         key_prefix: Option<String>,
+        gzip_header_enabled: Option<bool>,
+        public_read_enabled: Option<bool>,
     ) -> S3Cache {
         let region_object = Region::Custom {
             name: region.to_string(),
@@ -46,11 +50,21 @@ impl S3Cache {
             endpoint: endpoint.to_string(),
             bucket_name: bucket_name.to_string(),
             key_prefix: key_prefix,
+            gzip_header_enabled: gzip_header_enabled,
+            public_read_enabled: public_read_enabled,
         }
     }
 
     fn key_prefix(&self) -> String {
         self.key_prefix.clone().unwrap_or("".to_string())
+    }
+
+    fn gzip_header_enabled(&self) -> bool {
+        self.gzip_header_enabled.clone().unwrap_or(true)
+    }
+
+    fn public_read_enabled(&self) -> bool {
+        self.public_read_enabled.clone().unwrap_or(false)
     }
 
     fn full_path(&self, path: &str) -> String {
@@ -113,10 +127,22 @@ impl Cache for S3Cache {
             "json" => Some("application/json".to_string()),
             _ => Some("application/octet-stream".to_string()),
         };
+        let mut content_encoding: Option<String> = None;
+        if self.gzip_header_enabled()
+            && content_type == Some("application/vnd.mapbox-vector-tile".to_string())
+        {
+            content_encoding = Some(String::from("gzip"));
+        }
+        let mut acl: Option<String> = None;
+        if self.public_read_enabled() {
+            acl = Some(String::from("public-read"));
+        }
         let request = PutObjectRequest {
+            acl: acl,
             bucket: self.bucket_name.to_owned(),
             key: key.to_owned(),
             content_type: content_type,
+            content_encoding: content_encoding,
             body: Some(obj.to_vec().into()),
             ..Default::default()
         };
