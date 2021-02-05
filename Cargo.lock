@@ -2844,6 +2844,7 @@ version = "0.9.9"
 dependencies = [
  "clap",
  "elementtree",
+ "futures-util",
  "log",
  "pbr",
  "percent-encoding",
@@ -2853,6 +2854,7 @@ dependencies = [
  "t-rex-core",
  "t-rex-gdal",
  "tile-grid",
+ "tokio 0.2.23",
 ]
 
 [[package]]

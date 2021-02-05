@@ -19,6 +19,7 @@ use t_rex_core::mvt::tile::Tile;
 use t_rex_core::mvt::vector_tile;
 use t_rex_core::service::tileset::{Tileset, WORLD_EXTENT};
 use tile_grid::{extent_to_merc, Extent, ExtentInt, Grid, GridIterator};
+use tokio::task;
 
 /// Mapbox Vector Tile Service
 #[derive(Clone)]
@@ -227,11 +228,38 @@ impl MvtService {
         progress: bool,
         overwrite: bool,
     ) -> Statistics {
+        let mut rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(self.generate_async(
+            tileset_name,
+            minzoom,
+            maxzoom,
+            extent,
+            nodes,
+            nodeno,
+            progress,
+            overwrite,
+        ))
+    }
+    /// Populate tile cache
+    async fn generate_async(
+        &self,
+        tileset_name: Option<&str>,
+        minzoom: Option<u8>,
+        maxzoom: Option<u8>,
+        extent: Option<Extent>,
+        nodes: Option<u8>,
+        nodeno: Option<u8>,
+        progress: bool,
+        overwrite: bool,
+    ) -> Statistics {
         self.init_cache();
         let mut stats = Statistics::new();
         let nodes = nodes.unwrap_or(1) as u64;
         let nodeno = nodeno.unwrap_or(0) as u64;
         let mut tileno: u64 = 0;
+        let task_queue_size = 16;
+        let mut tasks = Vec::with_capacity(task_queue_size);
+
         for tileset in &self.tilesets {
             if tileset_name.is_some() && tileset_name.unwrap() != &tileset.name {
                 continue;
@@ -299,18 +327,24 @@ impl MvtService {
 
                 if overwrite || !self.cache.exists(&path) {
                     // Entry doesn't exist, or we're ignoring it, so generate it
-                    let mvt_tile = self.tile(
-                        &tileset.name,
-                        xtile as u32,
-                        ytile as u32,
-                        zoom,
-                        Some(&mut stats),
-                    );
-                    if mvt_tile.get_layers().len() > 0 {
-                        let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
-                        if let Err(ioerr) = self.cache.write(&path, &tilegz) {
-                            error!("Error writing {}: {}", path, ioerr);
+                    let svc = self.clone();
+                    tasks.push(task::spawn(async move {
+                        let mvt_tile = svc.tile(
+                            &tileset.name,
+                            xtile as u32,
+                            ytile as u32,
+                            zoom,
+                            Some(&mut stats),
+                        );
+                        if mvt_tile.get_layers().len() > 0 {
+                            let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
+                            if let Err(ioerr) = svc.cache.write(&path, &tilegz) {
+                                error!("Error writing {}: {}", path, ioerr);
+                            }
                         }
+                    }));
+                    if tasks.len() >= task_queue_size {
+                        tasks = await_one_task(tasks).await;
                     }
                 }
 
@@ -319,6 +353,8 @@ impl MvtService {
                 }
             }
         }
+        // Finish remaining tasks
+        futures_util::future::join_all(tasks).await;
         if progress {
             println!("");
         }
@@ -462,6 +498,13 @@ impl MvtService {
             }
         }
         cfg
+    }
+}
+
+async fn await_one_task(tasks: Vec<task::JoinHandle<()>>) -> Vec<task::JoinHandle<()>> {
+    match futures_util::future::select_all(tasks).await {
+        // Ignoring all errors
+        (_result, _index, remaining) => remaining,
     }
 }
 
