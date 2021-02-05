@@ -229,36 +229,10 @@ impl MvtService {
         overwrite: bool,
     ) -> Statistics {
         let mut rt = tokio::runtime::Runtime::new().unwrap();
-        rt.block_on(self.generate_async(
-            tileset_name,
-            minzoom,
-            maxzoom,
-            extent,
-            nodes,
-            nodeno,
-            progress,
-            overwrite,
-        ))
-    }
-    /// Populate tile cache
-    async fn generate_async(
-        &self,
-        tileset_name: Option<&str>,
-        minzoom: Option<u8>,
-        maxzoom: Option<u8>,
-        extent: Option<Extent>,
-        nodes: Option<u8>,
-        nodeno: Option<u8>,
-        progress: bool,
-        overwrite: bool,
-    ) -> Statistics {
         self.init_cache();
         let mut stats = Statistics::new();
         let nodes = nodes.unwrap_or(1) as u64;
         let nodeno = nodeno.unwrap_or(0) as u64;
-        let mut tileno: u64 = 0;
-        let task_queue_size = 16;
-        let mut tasks = Vec::with_capacity(task_queue_size);
 
         for tileset in &self.tilesets {
             if tileset_name.is_some() && tileset_name.unwrap() != &tileset.name {
@@ -299,62 +273,21 @@ impl MvtService {
             if maxzoom.is_some() && maxzoom.unwrap() > ts_maxzoom {
                 warn!("Skipping zoom levels >{}", ts_maxzoom);
             }
-            let griditer = GridIterator::new(ts_minzoom, ts_maxzoom, limits.clone());
-            let mut pb = ProgressBar::new(0);
-            let mut pb_z = !ts_minzoom;
-            for (zoom, xtile, ytile) in griditer {
-                if progress && zoom != pb_z {
-                    pb_z = zoom;
-                    let ref limit = limits[zoom as usize];
-                    debug!("level {}: {:?}", zoom, limit);
-                    pb = self.progress_bar(&format!("Level {}: ", zoom), &limit);
-                    pb.tick();
-                }
-
-                let skip = tileno % nodes != nodeno;
-                tileno += 1;
-                if skip {
-                    continue;
-                }
-
-                // Store Mercator tiles in xyz scheme, others in TMS scheme.
-                let y = if self.grid.srid == 3857 {
-                    self.grid.ytile_from_xyz(ytile, zoom)
-                } else {
-                    ytile
-                };
-                let path = format!("{}/{}/{}/{}.pbf", &tileset.name, zoom, xtile, y);
-
-                if overwrite || !self.cache.exists(&path) {
-                    // Entry doesn't exist, or we're ignoring it, so generate it
-                    let svc = self.clone();
-                    tasks.push(task::spawn(async move {
-                        let mvt_tile = svc.tile(
-                            &tileset.name,
-                            xtile as u32,
-                            ytile as u32,
-                            zoom,
-                            Some(&mut stats),
-                        );
-                        if mvt_tile.get_layers().len() > 0 {
-                            let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
-                            if let Err(ioerr) = svc.cache.write(&path, &tilegz) {
-                                error!("Error writing {}: {}", path, ioerr);
-                            }
-                        }
-                    }));
-                    if tasks.len() >= task_queue_size {
-                        tasks = await_one_task(tasks).await;
-                    }
-                }
-
-                if progress {
-                    pb.inc();
-                }
-            }
+            rt.block_on(generate_tileset(
+                self,
+                self.grid.clone(),
+                &self.cache,
+                limits,
+                &tileset.name,
+                ts_minzoom,
+                ts_maxzoom,
+                // &mut stats,
+                nodes,
+                nodeno,
+                progress,
+                overwrite,
+            ));
         }
-        // Finish remaining tasks
-        futures_util::future::join_all(tasks).await;
         if progress {
             println!("");
         }
@@ -499,6 +432,84 @@ impl MvtService {
         }
         cfg
     }
+}
+
+/// Populate tile cache
+async fn generate_tileset(
+    mvt_svc: &MvtService,
+    grid: Grid,
+    cache: &Tilecache,
+    limits: Vec<ExtentInt>,
+    tileset_name: &String,
+    ts_minzoom: u8,
+    ts_maxzoom: u8,
+    // stats: &'a mut Statistics,
+    nodes: u64,
+    nodeno: u64,
+    progress: bool,
+    overwrite: bool,
+) {
+    let mut tileno: u64 = 0;
+    let task_queue_size = 16;
+    let mut tasks = Vec::with_capacity(task_queue_size);
+    let griditer = GridIterator::new(ts_minzoom, ts_maxzoom, limits.clone());
+    let mut pb = ProgressBar::new(0);
+    let mut pb_z = !ts_minzoom;
+    for (zoom, xtile, ytile) in griditer {
+        if progress && zoom != pb_z {
+            pb_z = zoom;
+            let ref limit = limits[zoom as usize];
+            debug!("level {}: {:?}", zoom, limit);
+            // pb = self.progress_bar(&format!("Level {}: ", zoom), &limit);
+            pb.tick();
+        }
+
+        let skip = tileno % nodes != nodeno;
+        tileno += 1;
+        if skip {
+            continue;
+        }
+
+        // Store Mercator tiles in xyz scheme, others in TMS scheme.
+        let y = if grid.srid == 3857 {
+            grid.ytile_from_xyz(ytile, zoom)
+        } else {
+            ytile
+        };
+        let path = format!("{}/{}/{}/{}.pbf", tileset_name, zoom, xtile, y);
+
+        if overwrite || !cache.exists(&path) {
+            // Entry doesn't exist, or we're ignoring it, so generate it
+            let mut svc = mvt_svc.clone();
+            let mut cache = cache.clone();
+            let tileset_name = tileset_name.clone();
+            tasks.push(task::spawn(async move {
+                let mut stats = Statistics::new(); //FIXME
+                let mvt_tile = svc.tile(
+                    &tileset_name,
+                    xtile as u32,
+                    ytile as u32,
+                    zoom,
+                    Some(&mut stats),
+                );
+                if mvt_tile.get_layers().len() > 0 {
+                    let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
+                    if let Err(ioerr) = cache.write(&path, &tilegz) {
+                        error!("Error writing {}: {}", path, ioerr);
+                    }
+                }
+            }));
+            if tasks.len() >= task_queue_size {
+                tasks = await_one_task(tasks).await;
+            }
+        }
+
+        if progress {
+            pb.inc();
+        }
+    }
+    // Finish remaining tasks
+    futures_util::future::join_all(tasks).await;
 }
 
 async fn await_one_task(tasks: Vec<task::JoinHandle<()>>) -> Vec<task::JoinHandle<()>> {
