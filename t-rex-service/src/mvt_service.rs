@@ -19,6 +19,7 @@ use t_rex_core::mvt::tile::Tile;
 use t_rex_core::mvt::vector_tile;
 use t_rex_core::service::tileset::{Tileset, WORLD_EXTENT};
 use tile_grid::{extent_to_merc, Extent, ExtentInt, Grid, GridIterator};
+use tokio::task;
 
 /// Mapbox Vector Tile Service
 #[derive(Clone)]
@@ -215,7 +216,7 @@ impl MvtService {
                 ))
         }
     }
-    /// Populate tile cache
+    /// Seed tile cache
     pub fn generate(
         &self,
         tileset_name: Option<&str>,
@@ -226,12 +227,12 @@ impl MvtService {
         nodeno: Option<u8>,
         progress: bool,
         overwrite: bool,
-    ) -> Statistics {
+    ) {
+        let mut rt = tokio::runtime::Runtime::new().expect("Couldn't initialize tokio runtime");
         self.init_cache();
-        let mut stats = Statistics::new();
         let nodes = nodes.unwrap_or(1) as u64;
         let nodeno = nodeno.unwrap_or(0) as u64;
-        let mut tileno: u64 = 0;
+
         for tileset in &self.tilesets {
             if tileset_name.is_some() && tileset_name.unwrap() != &tileset.name {
                 continue;
@@ -271,58 +272,93 @@ impl MvtService {
             if maxzoom.is_some() && maxzoom.unwrap() > ts_maxzoom {
                 warn!("Skipping zoom levels >{}", ts_maxzoom);
             }
-            let griditer = GridIterator::new(ts_minzoom, ts_maxzoom, limits.clone());
-            let mut pb = ProgressBar::new(0);
-            let mut pb_z = !ts_minzoom;
-            for (zoom, xtile, ytile) in griditer {
-                if progress && zoom != pb_z {
-                    pb_z = zoom;
-                    let ref limit = limits[zoom as usize];
-                    debug!("level {}: {:?}", zoom, limit);
-                    pb = self.progress_bar(&format!("Level {}: ", zoom), &limit);
-                    pb.tick();
-                }
-
-                let skip = tileno % nodes != nodeno;
-                tileno += 1;
-                if skip {
-                    continue;
-                }
-
-                // Store Mercator tiles in xyz scheme, others in TMS scheme.
-                let y = if self.grid.srid == 3857 {
-                    self.grid.ytile_from_xyz(ytile, zoom)
-                } else {
-                    ytile
-                };
-                let path = format!("{}/{}/{}/{}.pbf", &tileset.name, zoom, xtile, y);
-
-                if overwrite || !self.cache.exists(&path) {
-                    // Entry doesn't exist, or we're ignoring it, so generate it
-                    let mvt_tile = self.tile(
-                        &tileset.name,
-                        xtile as u32,
-                        ytile as u32,
-                        zoom,
-                        Some(&mut stats),
-                    );
-                    if mvt_tile.get_layers().len() > 0 {
-                        let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
-                        if let Err(ioerr) = self.cache.write(&path, &tilegz) {
-                            error!("Error writing {}: {}", path, ioerr);
-                        }
-                    }
-                }
-
-                if progress {
-                    pb.inc();
-                }
-            }
+            rt.block_on(self.generate_tileset(
+                limits,
+                &tileset.name,
+                ts_minzoom,
+                ts_maxzoom,
+                nodes,
+                nodeno,
+                progress,
+                overwrite,
+            ));
         }
         if progress {
             println!("");
         }
-        stats
+    }
+    /// Seed tile cache for tileset
+    async fn generate_tileset(
+        &self,
+        limits: Vec<ExtentInt>,
+        tileset_name: &String,
+        ts_minzoom: u8,
+        ts_maxzoom: u8,
+        nodes: u64,
+        nodeno: u64,
+        progress: bool,
+        overwrite: bool,
+    ) {
+        let task_queue_size = 128;
+        let mut tasks = Vec::with_capacity(task_queue_size);
+        let griditer = GridIterator::new(ts_minzoom, ts_maxzoom, limits.clone());
+        let mut tileno: u64 = 0;
+        let mut pb = ProgressBar::new(0);
+        let mut pb_z = !ts_minzoom;
+        for (zoom, xtile, ytile) in griditer {
+            if progress && zoom != pb_z {
+                pb_z = zoom;
+                let ref limit = limits[zoom as usize];
+                debug!("level {}: {:?}", zoom, limit);
+                pb = self.progress_bar(&format!("Level {}: ", zoom), &limit);
+                pb.tick();
+            }
+
+            let skip = tileno % nodes != nodeno;
+            tileno += 1;
+            if skip {
+                continue;
+            }
+
+            // Store Mercator tiles in xyz scheme, others in TMS scheme.
+            let y = if self.grid.srid == 3857 {
+                self.grid.ytile_from_xyz(ytile, zoom)
+            } else {
+                ytile
+            };
+            let path = format!("{}/{}/{}/{}.pbf", tileset_name, zoom, xtile, y);
+
+            if overwrite || !self.cache.exists(&path) {
+                // Entry doesn't exist, or overwrite is forced, so generate it
+                let svc = self.clone();
+                let cache = self.cache.clone();
+                let tileset_name = tileset_name.clone();
+                tasks.push(task::spawn(async move {
+                    // rust-postgres starts its own Tokio runtime
+                    // without spawn_blocking we get 'Cannot start a runtime from within a runtime'
+                    let mvt_tile = task::spawn_blocking(move || {
+                        svc.tile(&tileset_name, xtile as u32, ytile as u32, zoom, None)
+                    })
+                    .await
+                    .unwrap();
+                    if mvt_tile.get_layers().len() > 0 {
+                        let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
+                        if let Err(ioerr) = cache.write(&path, &tilegz) {
+                            error!("Error writing {}: {}", path, ioerr);
+                        }
+                    }
+                }));
+                if tasks.len() >= task_queue_size {
+                    tasks = await_one_task(tasks).await;
+                }
+            }
+
+            if progress {
+                pb.inc();
+            }
+        }
+        // Finish remaining tasks
+        futures_util::future::join_all(tasks).await;
     }
     pub fn init_cache(&self) {
         info!("{}", &self.cache.info());
@@ -462,6 +498,13 @@ impl MvtService {
             }
         }
         cfg
+    }
+}
+
+async fn await_one_task<T>(tasks: Vec<task::JoinHandle<T>>) -> Vec<task::JoinHandle<T>> {
+    match futures_util::future::select_all(tasks).await {
+        // Ignoring all errors
+        (_result, _index, remaining) => remaining,
     }
 }
 
