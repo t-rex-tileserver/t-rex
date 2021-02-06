@@ -91,10 +91,9 @@ fn generate(args: &ArgMatches<'_>) {
             .expect("Error parsing 'overwrite' as boolean value")
     });
     service.prepare_feature_queries();
-    let stats = service.generate(
+    service.generate(
         tileset, minzoom, maxzoom, extent, nodes, nodeno, progress, overwrite,
     );
-    println!("Statistics:\n{:?}", stats);
 }
 
 fn drilldown(args: &ArgMatches<'_>) {
