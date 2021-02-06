@@ -21,7 +21,7 @@ elementtree = "0.5"
 log = "0.4"
 clap = "2.33"
 pbr = "1.0"
-tokio = "0.2.23"
+tokio = { version = "0.2.23", features = ["full"] }
 futures-util = "0.3.8"
 
 [dependencies.tile-grid]

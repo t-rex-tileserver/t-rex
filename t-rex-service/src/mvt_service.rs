@@ -460,7 +460,7 @@ async fn generate_tileset(
             pb_z = zoom;
             let ref limit = limits[zoom as usize];
             debug!("level {}: {:?}", zoom, limit);
-            // pb = self.progress_bar(&format!("Level {}: ", zoom), &limit);
+            pb = mvt_svc.progress_bar(&format!("Level {}: ", zoom), &limit);
             pb.tick();
         }
 
@@ -479,19 +479,23 @@ async fn generate_tileset(
         let path = format!("{}/{}/{}/{}.pbf", tileset_name, zoom, xtile, y);
 
         if overwrite || !cache.exists(&path) {
-            // Entry doesn't exist, or we're ignoring it, so generate it
-            let mut svc = mvt_svc.clone();
-            let mut cache = cache.clone();
+            // Entry doesn't exist, or overwrite is forced, so generate it
+            let svc = mvt_svc.clone();
+            let cache = cache.clone();
             let tileset_name = tileset_name.clone();
             tasks.push(task::spawn(async move {
-                let mut stats = Statistics::new(); //FIXME
-                let mvt_tile = svc.tile(
-                    &tileset_name,
-                    xtile as u32,
-                    ytile as u32,
-                    zoom,
-                    Some(&mut stats),
-                );
+                let mvt_tile = task::spawn_blocking(move || {
+                    // rust-postgres starts its own Tokio runtime
+                    svc.tile(
+                        &tileset_name,
+                        xtile as u32,
+                        ytile as u32,
+                        zoom,
+                        None, // TODO
+                    )
+                })
+                .await
+                .unwrap();
                 if mvt_tile.get_layers().len() > 0 {
                     let tilegz = Tile::tile_bytevec_gz(&mvt_tile);
                     if let Err(ioerr) = cache.write(&path, &tilegz) {
