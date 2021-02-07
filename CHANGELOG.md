@@ -2,7 +2,9 @@
 
 #### Features
 
+* Automatic parallelization of tile seeding (`t_rex generate`)
 * Add support for S3 tile storage (Thanks @arbakker!)
+* Update to rust-postgres 0.19
 
 <a name="0.12.0"></a>
 ## 0.12.0 (2020-12-26)
