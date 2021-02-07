@@ -46,11 +46,6 @@ impl StaticFiles {
             "application/javascript",
         );
         static_files.add(
-            "maputnik-vendor.js",
-            include_bytes!("static/maputnik-vendor.js"),
-            "application/javascript",
-        );
-        static_files.add(
             "img/logo-color.svg",
             include_bytes!("static/img/logo-color.svg"),
             "image/svg+xml",
