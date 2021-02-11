@@ -299,7 +299,22 @@ impl MvtService {
         progress: bool,
         overwrite: bool,
     ) {
-        let task_queue_size = 128;
+        let mut task_queue_size = 128;
+        // Extensions of file formats based on Spatialite (.db and .sqlite based on convention).
+        // libspatialite has a max connection limit of 64 for now. libspatialite (4.4.0) when
+        // compiled on top of GEOS 3.5.0 is able to support an arbitrary number of threads
+        let suffixes = vec![
+            ".gpkg".to_string(),
+            ".db".to_string(),
+            ".sqlite".to_string(),
+        ];
+        let has_gpkg_ds = self.datasources.datasources.values().any(|val| match val {
+            Datasource::Gdal(val) => suffixes.iter().any(|suffix| val.path.ends_with(suffix)),
+            _ => false,
+        });
+        if has_gpkg_ds {
+            task_queue_size = 64;
+        }
         let mut tasks = Vec::with_capacity(task_queue_size);
         let griditer = GridIterator::new(ts_minzoom, ts_maxzoom, limits.clone());
         let mut tileno: u64 = 0;
