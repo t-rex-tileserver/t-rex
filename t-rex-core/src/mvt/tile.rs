@@ -4,18 +4,13 @@
 //
 
 use crate::core::feature::{Feature, FeatureAttrValType};
-use crate::core::geom;
-use crate::core::geom::GeometryType;
 use crate::core::layer::Layer;
 use crate::core::screen;
+use crate::core::{geom, geom::GeometryType};
 use crate::mvt::geom_encoder::{CommandSequence, EncodableGeom};
 use crate::mvt::vector_tile;
-use flate2::read::GzDecoder;
-use flate2::write::GzEncoder;
-use flate2::Compression;
-use protobuf::error::ProtobufError;
-use protobuf::stream::CodedOutputStream;
-use protobuf::{parse_from_reader, Message};
+use flate2::{read::GzDecoder, write::GzEncoder, Compression};
+use protobuf::{error::ProtobufError, stream::CodedOutputStream, Message};
 use std::fs::File;
 use std::io::{BufReader, Read, Write};
 use tile_grid::Extent;
@@ -304,13 +299,13 @@ impl<'a> Tile<'a> {
 
     pub fn read_from(fin: &mut dyn Read) -> Result<vector_tile::Tile, ProtobufError> {
         let mut reader = BufReader::new(fin);
-        parse_from_reader::<vector_tile::Tile>(&mut reader)
+        vector_tile::Tile::parse_from_reader(&mut reader)
     }
 
     pub fn read_gz_from(fin: &mut dyn Read) -> Result<vector_tile::Tile, ProtobufError> {
         let gz = GzDecoder::new(fin);
         let mut reader = BufReader::new(gz);
-        parse_from_reader::<vector_tile::Tile>(&mut reader)
+        vector_tile::Tile::parse_from_reader(&mut reader)
     }
 
     pub fn tile_bytevec(mvt_tile: &vector_tile::Tile) -> Vec<u8> {
