@@ -74,6 +74,20 @@ fn generate(args: &ArgMatches<'_>) {
             maxy: arr[3],
         })
     });
+
+    let extent_srid = args.value_of("extent").and_then(|numlist| {
+        let arr: Vec<&str> = numlist.split(",").collect();
+        match arr.len() {
+            5 => {
+                let srid = arr[4];
+                let srid_int: i32 = srid
+                    .parse()
+                    .expect("Error parsing 'srid' in 'extent' as integer");
+                Some(srid_int)
+            }
+            _ => None,
+        }
+    });
     let nodes = args.value_of("nodes").map(|s| {
         s.parse::<u8>()
             .expect("Error parsing 'nodes' as integer value")
@@ -92,7 +106,15 @@ fn generate(args: &ArgMatches<'_>) {
     });
     service.prepare_feature_queries();
     service.generate(
-        tileset, minzoom, maxzoom, extent, nodes, nodeno, progress, overwrite,
+        tileset,
+        minzoom,
+        maxzoom,
+        extent,
+        nodes,
+        nodeno,
+        progress,
+        overwrite,
+        extent_srid,
     );
 }
 
@@ -184,7 +206,7 @@ fn main() {
                                               --tileset=[NAME] 'Tileset name'
                                               --minzoom=[LEVEL] 'Minimum zoom level'
                                               --maxzoom=[LEVEL] 'Maximum zoom level'
-                                              --extent=[minx,miny,maxx,maxy] 'Extent of tiles'
+                                              --extent=[minx,miny,maxx,maxy[,srid]] 'Extent of tiles'
                                               --nodes=[NUM] 'Number of generator nodes'
                                               --nodeno=[NUM] 'Number of this nodes (0 <= n < nodes)'
                                               --progress=[true|false] 'Show progress bar'

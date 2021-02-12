@@ -18,7 +18,7 @@ use t_rex_core::datasource::DatasourceType;
 use t_rex_core::mvt::tile::Tile;
 use t_rex_core::mvt::vector_tile;
 use t_rex_core::service::tileset::{Tileset, WORLD_EXTENT};
-use tile_grid::{extent_to_merc, Extent, ExtentInt, Grid, GridIterator};
+use tile_grid::{extent_wgs84_to_merc, Extent, ExtentInt, Grid, GridIterator};
 use tokio::task;
 
 /// Mapbox Vector Tile Service
@@ -202,18 +202,24 @@ impl MvtService {
         pb
     }
     /// Projected extent in grid SRS from WGS84
-    pub fn extent_from_wgs84(&self, extent: &Extent) -> Extent {
+    pub fn extent_from_input_extent(&self, extent: &Extent, extent_srid: Option<i32>) -> Extent {
         // TODO: use proj4 (directly)
-        if self.grid.srid == 3857 {
+        let extent_srid_unwrapped = extent_srid.unwrap_or(4326);
+
+        if self.grid.srid == 3857 && extent_srid_unwrapped == 4326 {
             // shortcut for Web Mercator
-            extent_to_merc(extent)
+            extent_wgs84_to_merc(extent)
         } else {
             let ds = self.datasources.default().unwrap();
-            ds.extent_from_wgs84(extent, self.grid.srid)
-                .expect(&format!(
-                    "Error transforming {:?} to SRID {}",
-                    extent, self.grid.srid
-                ))
+            if self.grid.srid == extent_srid_unwrapped {
+                extent.clone()
+            } else {
+                ds.reproject_extent(extent, self.grid.srid, extent_srid)
+                    .expect(&format!(
+                        "Error transforming {:?} to SRID {}",
+                        extent, self.grid.srid
+                    ))
+            }
         }
     }
     /// Seed tile cache
@@ -227,6 +233,7 @@ impl MvtService {
         nodeno: Option<u8>,
         progress: bool,
         overwrite: bool,
+        extent_srid: Option<i32>,
     ) {
         let rt = tokio::runtime::Runtime::new().expect("Couldn't initialize tokio runtime");
         self.init_cache();
@@ -242,11 +249,13 @@ impl MvtService {
             }
 
             // Convert extent to grid SRS
-            let extent = extent.as_ref().or(tileset.extent.as_ref());
-            debug!("wgs84 extent: {:?}", extent);
-            let ext_proj = match extent {
+            let input_extent = extent.as_ref().or(tileset.extent.as_ref());
+            debug!("input extent: {:?}", input_extent);
+            let ext_proj = match input_extent {
                 // (-180 -90) throws error when projecting
-                Some(ext_wgs84) if *ext_wgs84 != WORLD_EXTENT => self.extent_from_wgs84(ext_wgs84),
+                Some(ext_wgs84) if *ext_wgs84 != WORLD_EXTENT => {
+                    self.extent_from_input_extent(ext_wgs84, extent_srid)
+                }
                 _ => {
                     warn!("Building cache for the full globe, please fill in the tileset extent");
                     self.grid.tile_extent(0, 0, 0)
@@ -437,7 +446,7 @@ impl MvtService {
                     maxx: point[0],
                     maxy: point[1],
                 };
-                let ext_proj = self.extent_from_wgs84(&ext_wgs84);
+                let ext_proj = self.extent_from_input_extent(&ext_wgs84, None);
                 debug!("point in grid SRS: {:?}", ext_proj);
 
                 let tolerance = 0;

@@ -19,7 +19,12 @@ pub trait DatasourceType {
     fn layer_extent(&self, layer: &Layer, grid_srid: i32) -> Option<Extent>;
     fn prepare_queries(&mut self, tileset: &str, layer: &Layer, grid_srid: i32);
     /// Projected extent
-    fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent>;
+    fn reproject_extent(
+        &self,
+        extent: &Extent,
+        dest_srid: i32,
+        src_srid: Option<i32>,
+    ) -> Option<Extent>;
     /// Retrieve features of one layer. Return feature count.
     fn retrieve_features<F>(
         &self,
@@ -47,7 +52,12 @@ impl DatasourceType for DummyDatasource {
     fn detect_data_columns(&self, _layer: &Layer, _sql: Option<&String>) -> Vec<(String, String)> {
         unimplemented!();
     }
-    fn extent_from_wgs84(&self, _extent: &Extent, _dest_srid: i32) -> Option<Extent> {
+    fn reproject_extent(
+        &self,
+        _extent: &Extent,
+        _dest_srid: i32,
+        _src_srid: Option<i32>,
+    ) -> Option<Extent> {
         unimplemented!();
     }
     fn layer_extent(&self, _layer: &Layer, _grid_srid: i32) -> Option<Extent> {

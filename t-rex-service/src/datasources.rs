@@ -41,10 +41,15 @@ impl DatasourceType for Datasource {
             &Datasource::Gdal(ref ds) => ds.detect_data_columns(layer, sql),
         }
     }
-    fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent> {
+    fn reproject_extent(
+        &self,
+        extent: &Extent,
+        dest_srid: i32,
+        src_srid: Option<i32>,
+    ) -> Option<Extent> {
         match self {
-            &Datasource::Postgis(ref ds) => ds.extent_from_wgs84(extent, dest_srid),
-            &Datasource::Gdal(ref ds) => ds.extent_from_wgs84(extent, dest_srid),
+            &Datasource::Postgis(ref ds) => ds.reproject_extent(extent, dest_srid, src_srid),
+            &Datasource::Gdal(ref ds) => ds.reproject_extent(extent, dest_srid, src_srid),
         }
     }
     fn layer_extent(&self, layer: &Layer, grid_srid: i32) -> Option<Extent> {
