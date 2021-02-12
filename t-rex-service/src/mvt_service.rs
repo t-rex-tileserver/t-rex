@@ -228,7 +228,7 @@ impl MvtService {
         progress: bool,
         overwrite: bool,
     ) {
-        let mut rt = tokio::runtime::Runtime::new().expect("Couldn't initialize tokio runtime");
+        let rt = tokio::runtime::Runtime::new().expect("Couldn't initialize tokio runtime");
         self.init_cache();
         let nodes = nodes.unwrap_or(1) as u64;
         let nodeno = nodeno.unwrap_or(0) as u64;
@@ -299,7 +299,10 @@ impl MvtService {
         progress: bool,
         overwrite: bool,
     ) {
-        let task_queue_size = 128;
+        // Keep a queue of tasks waiting for parallel async execution (size >= #cores).
+        // libspatialite has a max connection limit of 64 for now. libspatialite (4.4.0) when
+        // compiled on top of GEOS 3.5.0 is able to support an arbitrary number of threads
+        let task_queue_size = cmp::min(num_cpus::get() * 2, 64);
         let mut tasks = Vec::with_capacity(task_queue_size);
         let griditer = GridIterator::new(ts_minzoom, ts_maxzoom, limits.clone());
         let mut tileno: u64 = 0;
@@ -335,7 +338,7 @@ impl MvtService {
                 let tileset_name = tileset_name.clone();
                 tasks.push(task::spawn(async move {
                     // rust-postgres starts its own Tokio runtime
-                    // without spawn_blocking we get 'Cannot start a runtime from within a runtime'
+                    // without spawn_blocking or block_in_place we get 'Cannot start a runtime from within a runtime'
                     let mvt_tile = task::spawn_blocking(move || {
                         svc.tile(&tileset_name, xtile as u32, ytile as u32, zoom, None)
                     })

@@ -2969,6 +2969,7 @@ dependencies = [
  "elementtree",
  "futures-util",
  "log",
+ "num_cpus",
  "pbr",
  "percent-encoding",
  "serde",

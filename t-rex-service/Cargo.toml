@@ -19,6 +19,7 @@ serde_json = "1.0"
 percent-encoding = "2.1"
 elementtree = "0.5"
 log = "0.4"
+num_cpus = "1.13"
 clap = "2.33"
 pbr = "1.0"
 tokio = { version = "1.2.0", features = ["full"] }
