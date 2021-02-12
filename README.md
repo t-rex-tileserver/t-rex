@@ -136,7 +136,7 @@ To run the S3 tests, declare that there is a S3 available in an environment vaia
 
 Run the tests with
 
-    cargo test --all
+    cargo test --all -- --ignored
 
 License
 -------

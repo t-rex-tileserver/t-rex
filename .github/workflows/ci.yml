@@ -66,13 +66,12 @@ jobs:
 
       - name: Execute tests
         run: cargo test --all-features --all --no-fail-fast
-        env:
-          S3TEST: "true"
 
       - name: Execute DB tests
         run: cargo test --all-features --all --no-fail-fast -- --ignored
         env:
           DBCONN: "postgresql://t_rex:t_rex@127.0.0.1:5439/t_rex_tests"
+          S3TEST: "true"
 
   macos:
     needs: [rustfmt]

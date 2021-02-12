@@ -9,6 +9,7 @@ use std::env;
 use std::str;
 
 #[test]
+#[ignore]
 fn test_s3cache() {
     if env::var("S3TEST").is_err() {
         return;
