@@ -611,10 +611,16 @@ impl DatasourceType for PostgisDatasource {
             .collect()
     }
     /// Projected extent
-    fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent> {
+    fn reproject_extent(
+        &self,
+        extent: &Extent,
+        dest_srid: i32,
+        src_srid: Option<i32>,
+    ) -> Option<Extent> {
+        let ext_srid = src_srid.unwrap_or(4326);
         let sql = format!(
-            "SELECT ST_Transform(ST_MakeEnvelope({}, {}, {}, {}, 4326), {}) AS extent",
-            extent.minx, extent.miny, extent.maxx, extent.maxy, dest_srid
+            "SELECT ST_Transform(ST_MakeEnvelope({}, {}, {}, {}, {}), {}) AS extent",
+            extent.minx, extent.miny, extent.maxx, extent.maxy, ext_srid, dest_srid
         );
         self.extent_query(sql)
     }

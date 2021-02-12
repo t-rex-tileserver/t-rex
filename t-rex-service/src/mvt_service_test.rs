@@ -294,7 +294,10 @@ fn test_projected_extent() {
         maxy: 6982997.920389788,
     };
 
-    assert_eq!(service.extent_from_wgs84(&extent_wgs84), extent_3857);
+    assert_eq!(
+        service.extent_from_input_extent(&extent_wgs84, None),
+        extent_3857
+    );
 }
 
 #[test]
@@ -320,6 +323,7 @@ fn test_generate() {
         None,
         false,
         false,
+        None,
     );
 }
 

@@ -70,5 +70,5 @@ mod grid_iterator;
 #[cfg(test)]
 mod grid_test;
 
-pub use grid::{extent_to_merc, Extent, ExtentInt, Grid, Origin, Unit};
+pub use grid::{extent_wgs84_to_merc, Extent, ExtentInt, Grid, Origin, Unit};
 pub use grid_iterator::GridIterator;

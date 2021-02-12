@@ -317,7 +317,7 @@ pub fn lonlat_to_merc(lon: f64, lat: f64) -> (f64, f64) {
 }
 
 /// Projected extent
-pub fn extent_to_merc(extent: &Extent) -> Extent {
+pub fn extent_wgs84_to_merc(extent: &Extent) -> Extent {
     let (minx, miny) = lonlat_to_merc(extent.minx, extent.miny);
     let (maxx, maxy) = lonlat_to_merc(extent.maxx, extent.maxy);
     Extent {

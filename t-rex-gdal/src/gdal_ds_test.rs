@@ -140,12 +140,12 @@ fn test_coord_transformation() {
         }
     };
     assert_eq!(
-        ds.extent_from_wgs84(&extent_wgs84, 3857),
+        ds.reproject_extent(&extent_wgs84, 3857, None),
         Some(extent_3857.clone())
     );
 
     // Invalid input extent doesn't panic
-    let result = ds.extent_from_wgs84(&extent_3857, 3857);
+    let result = ds.reproject_extent(&extent_3857, 3857, None);
     assert!(result.is_none());
 
     let mut reccnt = 0;

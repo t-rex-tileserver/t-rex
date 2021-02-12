@@ -72,8 +72,14 @@ impl DatasourceType for GdalDatasource {
         Vec::new() //TODO
     }
     /// Projected extent
-    fn extent_from_wgs84(&self, extent: &Extent, dest_srid: i32) -> Option<Extent> {
-        transform_extent(extent, 4326, dest_srid).ok()
+    fn reproject_extent(
+        &self,
+        extent: &Extent,
+        dest_srid: i32,
+        src_srid: Option<i32>,
+    ) -> Option<Extent> {
+        let ext_srid = src_srid.unwrap_or(4326);
+        transform_extent(extent, ext_srid, dest_srid).ok()
     }
     fn layer_extent(&self, layer: &Layer, grid_srid: i32) -> Option<Extent> {
         let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
