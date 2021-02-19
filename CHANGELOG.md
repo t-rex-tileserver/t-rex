@@ -1,10 +1,10 @@
-## 0.13.0 (UNRELEASED)
+## 0.13.0 (2021-02-19)
 
 #### Features
 
 * Automatic parallelization of tile seeding (`t_rex generate`)
 * Add support for S3 tile storage (Thanks @arbakker!)
-* Add optional extent SRID parameter in generate command
+* Add optional extent SRID parameter in generate command (Thanks @arbakker!)
 * Update to Maputnik 1.7.0
 * Update to rust-postgres 0.19
 
