@@ -4,6 +4,7 @@
 
 * Automatic parallelization of tile seeding (`t_rex generate`)
 * Add support for S3 tile storage (Thanks @arbakker!)
+* Add optional extent SRID parameter in generate command
 * Update to Maputnik 1.7.0
 * Update to rust-postgres 0.19
 

@@ -201,7 +201,7 @@ impl MvtService {
         pb.show_time_left = false;
         pb
     }
-    /// Projected extent in grid SRS from WGS84
+    /// Projected extent in grid SRS
     pub fn extent_from_input_extent(&self, extent: &Extent, extent_srid: Option<i32>) -> Extent {
         // TODO: use proj4 (directly)
         let extent_srid_unwrapped = extent_srid.unwrap_or(4326);

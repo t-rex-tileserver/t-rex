@@ -2908,7 +2908,7 @@ dependencies = [
 
 [[package]]
 name = "t-rex"
-version = "0.13.0-pre"
+version = "0.13.0"
 dependencies = [
  "clap",
  "dotenv",
@@ -3095,7 +3095,7 @@ dependencies = [
 
 [[package]]
 name = "tile-grid"
-version = "0.2.2"
+version = "0.3.0"
 
 [[package]]
 name = "time"
