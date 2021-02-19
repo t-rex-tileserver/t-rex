@@ -1,3 +1,7 @@
+## 0.3.0
+
+* Rename `extent_to_merc` to `extent_wgs84_to_merc`
+
 ## 0.2.2
 
 * Export function `lonlat_to_merc` to project WGS84 coordinates into Mercator
