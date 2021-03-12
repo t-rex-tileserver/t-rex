@@ -726,6 +726,8 @@ impl DatasourceType for PostgisDatasource {
 
         let stmt = stmt.unwrap();
         let mut trans = conn.transaction().expect("transaction already active");
+        trace!("Query: {}", &query.sql);
+        trace!("Param values: {:?}", &params);
         let rows = trans
             .bind(&stmt, params.as_slice())
             .and_then(|portal| trans.query_portal(&portal, -1));
