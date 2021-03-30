@@ -39,6 +39,7 @@ futures-executor = "0.3"
 
 [dev-dependencies]
 curl = "0.4.6"
+tokio = "1.4"
 
 [dependencies.tile-grid]
 path = "../tile-grid"
