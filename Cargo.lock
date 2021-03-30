@@ -1234,7 +1234,7 @@ dependencies = [
  "itoa",
  "pin-project 1.0.5",
  "socket2 0.4.0",
- "tokio 1.2.0",
+ "tokio 1.4.0",
  "tower-service",
  "tracing",
  "want",
@@ -1249,7 +1249,7 @@ dependencies = [
  "bytes 1.0.1",
  "hyper",
  "native-tls",
- "tokio 1.2.0",
+ "tokio 1.4.0",
  "tokio-native-tls",
 ]
 
@@ -1869,7 +1869,7 @@ dependencies = [
  "fallible-iterator",
  "futures",
  "log",
- "tokio 1.2.0",
+ "tokio 1.4.0",
  "tokio-postgres",
 ]
 
@@ -1881,7 +1881,7 @@ checksum = "2d442770e2b1e244bb5eb03b31c79b65bb2568f413b899eaba850fa945a65954"
 dependencies = [
  "futures",
  "native-tls",
- "tokio 1.2.0",
+ "tokio 1.4.0",
  "tokio-native-tls",
  "tokio-postgres",
 ]
@@ -2185,7 +2185,7 @@ dependencies = [
  "rustc_version",
  "serde",
  "serde_json",
- "tokio 1.2.0",
+ "tokio 1.4.0",
  "xml-rs",
 ]
 
@@ -2203,7 +2203,7 @@ dependencies = [
  "serde",
  "serde_json",
  "shlex",
- "tokio 1.2.0",
+ "tokio 1.4.0",
  "zeroize",
 ]
 
@@ -2242,7 +2242,7 @@ dependencies = [
  "serde",
  "sha2",
  "time 0.2.25",
- "tokio 1.2.0",
+ "tokio 1.4.0",
 ]
 
 [[package]]
@@ -2692,7 +2692,7 @@ dependencies = [
  "t-rex-core",
  "t-rex-gdal",
  "tile-grid",
- "tokio 1.2.0",
+ "tokio 1.4.0",
 ]
 
 [[package]]
@@ -2896,9 +2896,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.2.0"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8190d04c665ea9e6b6a0dc45523ade572c088d2e6566244c1122671dbf4ae3a"
+checksum = "134af885d758d645f0f0505c9a8b3f9bf8a348fd822e112ab5248138348f1722"
 dependencies = [
  "autocfg",
  "bytes 1.0.1",
@@ -2932,7 +2932,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7d995660bd2b7f8c1568414c1126076c13fbb725c40112dc0120b78eb9b717b"
 dependencies = [
  "native-tls",
- "tokio 1.2.0",
+ "tokio 1.4.0",
 ]
 
 [[package]]
@@ -2954,7 +2954,7 @@ dependencies = [
  "postgres-protocol",
  "postgres-types",
  "socket2 0.3.19",
- "tokio 1.2.0",
+ "tokio 1.4.0",
  "tokio-util 0.6.3",
 ]
 
@@ -2983,7 +2983,7 @@ dependencies = [
  "futures-sink",
  "log",
  "pin-project-lite 0.2.4",
- "tokio 1.2.0",
+ "tokio 1.4.0",
 ]
 
 [[package]]
