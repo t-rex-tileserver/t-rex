@@ -4,9 +4,9 @@
 //
 
 use crate::gdal_fields::*;
-use gdal;
 use gdal::spatial_ref::{CoordTransform, SpatialRef};
-use gdal::vector::{Dataset, Geometry};
+use gdal::vector::Geometry;
+use gdal::Dataset;
 use std::collections::BTreeMap;
 use std::path::Path;
 use t_rex_core::core::config::DatasourceCfg;
@@ -44,9 +44,8 @@ impl DatasourceType for GdalDatasource {
     }
     fn detect_layers(&self, _detect_geometry_types: bool) -> Vec<Layer> {
         let mut layers: Vec<Layer> = Vec::new();
-        let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
-        for idx in 0..dataset.count() {
-            let gdal_layer = dataset.layer(idx).unwrap();
+        let dataset = Dataset::open(Path::new(&self.path)).unwrap();
+        for gdal_layer in dataset.layers() {
             let name = gdal_layer.name();
             // Create a layer for each geometry field
             for (n, field) in gdal_layer.defn().geom_fields().enumerate() {
@@ -85,7 +84,7 @@ impl DatasourceType for GdalDatasource {
         let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
         let layer_name = layer.table_name.as_ref().unwrap();
         let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
-        let extent = match ogr_layer.get_extent(true) {
+        let extent = match ogr_layer.get_extent() {
             Err(e) => {
                 warn!("Layer '{}': Unable to get extent: {}", layer.name, e);
                 None
@@ -106,7 +105,7 @@ impl DatasourceType for GdalDatasource {
             Ok(sref) => sref,
         };
 
-        let layer_sref = geom_spatialref(ogr_layer, layer.geometry_field.as_ref());
+        let layer_sref = geom_spatialref(&ogr_layer, layer.geometry_field.as_ref());
         let src_sref = match layer_sref {
             Some(ref sref) if !layer.no_transform => sref,
             _ => &grid_sref,
@@ -159,7 +158,7 @@ impl DatasourceType for GdalDatasource {
             Ok(sref) => sref,
         };
         if !layer.no_transform {
-            let layer_sref = geom_spatialref(ogr_layer, layer.geometry_field.as_ref());
+            let layer_sref = geom_spatialref(&ogr_layer, layer.geometry_field.as_ref());
             if let Some(ref sref) = layer_sref {
                 info!(
                     "Layer '{}': Reprojecting geometry to SRID {}",
@@ -283,7 +282,7 @@ fn transform_extent(
     extent: &Extent,
     src_srid: i32,
     dest_srid: i32,
-) -> Result<Extent, gdal::errors::Error> {
+) -> Result<Extent, gdal::errors::GdalError> {
     let sref_in = sref(src_srid as u32)?;
     let sref_out = sref(dest_srid as u32)?;
     transform_extent_sref(extent, &sref_in, &sref_out)
@@ -291,7 +290,7 @@ fn transform_extent(
 
 const WKT_WSG84_LON_LAT: &str = r#"GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AXIS["Lon",EAST],AXIS["Lat",NORTH],AUTHORITY["EPSG","4326"]]"#;
 
-fn sref(srid: u32) -> Result<SpatialRef, gdal::errors::Error> {
+fn sref(srid: u32) -> Result<SpatialRef, gdal::errors::GdalError> {
     if srid == 4326 {
         // Return WGS84 in traditional GIS axis order
         // See https://github.com/OSGeo/gdal/blob/master/gdal/doc/source/development/rfc/rfc73_proj6_wkt2_srsbarn.rst
@@ -306,7 +305,7 @@ fn transform_extent_sref(
     extent: &Extent,
     src_sref: &SpatialRef,
     dest_sref: &SpatialRef,
-) -> Result<Extent, gdal::errors::Error> {
+) -> Result<Extent, gdal::errors::GdalError> {
     let transform = CoordTransform::new(src_sref, dest_sref)?;
     transform_extent_tr(extent, &transform)
 }
@@ -315,7 +314,7 @@ fn transform_extent_sref(
 fn transform_extent_tr(
     extent: &Extent,
     transformation: &CoordTransform,
-) -> Result<Extent, gdal::errors::Error> {
+) -> Result<Extent, gdal::errors::GdalError> {
     let xs = &mut [extent.minx, extent.maxx];
     let ys = &mut [extent.miny, extent.maxy];
     transformation.transform_coords(xs, ys, &mut [0.0, 0.0])?;
