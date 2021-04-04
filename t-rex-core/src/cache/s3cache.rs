@@ -94,9 +94,7 @@ impl Cache for S3Cache {
             ..Default::default()
         };
         let client = self.client.clone();
-
-        // TODO: make this async
-        let response = futures_executor::block_on(client.get_object(request));
+        let response = client.get_object(request).sync();
         match response {
             Ok(mut result) => {
                 let body = result.body.take().expect("The object has no body");
@@ -136,9 +134,7 @@ impl Cache for S3Cache {
             body: Some(obj.to_vec().into()),
             ..Default::default()
         };
-
-        // TODO: make this async
-        let response = futures_executor::block_on(self.client.put_object(request));
+        let response = self.client.put_object(request).sync();
         match response {
             Ok(_) => Ok(()),
             Err(err) => Err(io::Error::new(io::ErrorKind::Other, err.to_string())),
@@ -155,9 +151,7 @@ impl Cache for S3Cache {
             key: key.to_owned(),
             ..Default::default()
         };
-
-        // TODO: make this async
-        let response = futures_executor::block_on(self.client.head_object(request));
+        let response = self.client.head_object(request).sync();
         match response {
             Ok(_) => true,
             Err(_) => false,
