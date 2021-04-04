@@ -8,9 +8,9 @@ use curl::easy::Easy;
 use std::env;
 use std::str;
 
-#[tokio::test]
+#[test]
 #[ignore]
-async fn test_s3cache() {
+fn test_s3cache() {
     if env::var("S3TEST").is_err() {
         return;
     }
