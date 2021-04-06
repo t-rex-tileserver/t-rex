@@ -10,7 +10,7 @@ use crate::core::{geom, geom::GeometryType};
 use crate::mvt::geom_encoder::{CommandSequence, EncodableGeom};
 use crate::mvt::vector_tile;
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
-use protobuf::{error::ProtobufError, stream::CodedOutputStream, Message};
+use protobuf::{error::ProtobufError, CodedOutputStream, Message};
 use std::fs::File;
 use std::io::{BufReader, Read, Write};
 use tile_grid::Extent;

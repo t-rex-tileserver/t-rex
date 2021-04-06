@@ -247,12 +247,7 @@ pub async fn webserver(args: ArgMatches<'static>) -> std::io::Result<()> {
             .data(service.clone())
             .wrap(middleware::Logger::new("%r %s %b %Dms %a"))
             .wrap(Compress::default())
-            .wrap(
-                Cors::new()
-                    .send_wildcard()
-                    .allowed_methods(vec!["GET"])
-                    .finish(),
-            )
+            .wrap(Cors::default().send_wildcard().allowed_methods(vec!["GET"]))
             .service(
                 web::resource("/index.json").route(
                     web::route()

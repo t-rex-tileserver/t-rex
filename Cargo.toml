@@ -22,7 +22,7 @@ t-rex-webserver = { path = "t-rex-webserver" }
 clap = "2.33"
 dotenv = "0.15"
 log = "0.4"
-env_logger = "0.7"
+env_logger = "0.8"
 time = "0.1"
 
 [features]

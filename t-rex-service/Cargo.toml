@@ -22,7 +22,7 @@ log = "0.4"
 num_cpus = "1.13"
 clap = "2.33"
 pbr = "1.0"
-tokio = { version = "1.2.0", features = ["full"] }
+tokio = { version = "1.4.0", features = ["full"] }
 futures-util = "0.3.8"
 
 [dependencies.tile-grid]

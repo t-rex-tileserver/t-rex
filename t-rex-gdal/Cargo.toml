@@ -13,8 +13,8 @@ workspace = ".."
 doctest = false
 
 [dependencies]
-gdal = "0.6"
-gdal-sys = "0.2"
+gdal = "0.7"
+gdal-sys = "0.3"
 log = "0.4"
 
 [dependencies.tile-grid]

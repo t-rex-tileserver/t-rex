@@ -3,9 +3,9 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use gdal;
 use gdal::spatial_ref::{CoordTransform, SpatialRef};
-use gdal::vector::{Dataset, FieldValue, Geometry};
+use gdal::vector::{FieldValue, Geometry};
+use gdal::Dataset;
 use gdal_sys;
 use std::path::Path;
 use t_rex_core::core::feature::{Feature, FeatureAttr, FeatureAttrValType};
@@ -205,7 +205,7 @@ impl ToGeo for Geometry {
         let geometry_type = self.geometry_type();
 
         let ring = |n: usize| {
-            let ring = unsafe { self._get_geometry(n) };
+            let ring = unsafe { self.get_unowned_geometry(n) };
             return match ring.to_geo(srid) {
                 GeometryType::LineString(r) => r,
                 _ => panic!("Expected to get a LineString"),
@@ -230,10 +230,12 @@ impl ToGeo for Geometry {
             | OGRwkbGeometryType::wkbMultiPointZM => {
                 let point_count = self.geometry_count();
                 let coords = (0..point_count)
-                    .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
-                        GeometryType::Point(p) => p,
-                        _ => panic!("Expected to get a Point"),
-                    })
+                    .map(
+                        |n| match unsafe { self.get_unowned_geometry(n) }.to_geo(srid) {
+                            GeometryType::Point(p) => p,
+                            _ => panic!("Expected to get a Point"),
+                        },
+                    )
                     .collect();
                 GeometryType::MultiPoint(geom::MultiPoint {
                     points: coords,
@@ -264,10 +266,12 @@ impl ToGeo for Geometry {
             | OGRwkbGeometryType::wkbMultiLineStringZM => {
                 let string_count = self.geometry_count();
                 let strings = (0..string_count)
-                    .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
-                        GeometryType::LineString(s) => s,
-                        _ => panic!("Expected to get a LineString"),
-                    })
+                    .map(
+                        |n| match unsafe { self.get_unowned_geometry(n) }.to_geo(srid) {
+                            GeometryType::LineString(s) => s,
+                            _ => panic!("Expected to get a LineString"),
+                        },
+                    )
                     .collect();
                 GeometryType::MultiLineString(geom::MultiLineString {
                     lines: strings,
@@ -291,10 +295,12 @@ impl ToGeo for Geometry {
             | OGRwkbGeometryType::wkbMultiPolygonZM => {
                 let string_count = self.geometry_count();
                 let strings = (0..string_count)
-                    .map(|n| match unsafe { self._get_geometry(n) }.to_geo(srid) {
-                        GeometryType::Polygon(s) => s,
-                        _ => panic!("Expected to get a Polygon"),
-                    })
+                    .map(
+                        |n| match unsafe { self.get_unowned_geometry(n) }.to_geo(srid) {
+                            GeometryType::Polygon(s) => s,
+                            _ => panic!("Expected to get a Polygon"),
+                        },
+                    )
                     .collect();
                 GeometryType::MultiPolygon(geom::MultiPolygon {
                     polygons: strings,
@@ -305,7 +311,7 @@ impl ToGeo for Geometry {
             OGRwkbGeometryType::wkbGeometryCollection => {
                 let item_count = self.geometry_count();
                 let geometry_list = (0..item_count)
-                    .map(|n| unsafe { self._get_geometry(n) }.to_geo(srid))
+                    .map(|n| unsafe { self.get_unowned_geometry(n) }.to_geo(srid))
                     .collect();
                 GeometryType::GeometryCollection(geom::GeometryCollection {
                                                      geometries: geometry_list,
@@ -321,14 +327,14 @@ impl ToGeo for Geometry {
     }
 }
 
-pub fn ogr_layer_name(path: &str, id: isize) -> Result<String, gdal::errors::Error> {
+pub fn ogr_layer_name(path: &str, id: isize) -> Result<String, gdal::errors::GdalError> {
     let mut dataset = Dataset::open(Path::new(path))?;
     let layer = dataset.layer(id)?;
     Ok(layer.name())
 }
 
-pub(crate) fn geom_spatialref(
-    ogr_layer: &gdal::vector::Layer,
+pub(crate) fn geom_spatialref<'d>(
+    ogr_layer: &gdal::vector::Layer<'d>,
     field_name: Option<&String>,
 ) -> Option<SpatialRef> {
     if let Some(geom_field) = field_name {
@@ -342,7 +348,7 @@ pub(crate) fn geom_spatialref(
             None
         }
     } else {
-        ogr_layer.spatial_reference().ok()
+        ogr_layer.spatial_ref().ok()
     }
 }
 
@@ -371,7 +377,20 @@ impl<'a> Feature for VectorFeature<'a> {
             let val = match field_value {
                 Ok(FieldValue::StringValue(v)) => Some(FeatureAttrValType::String(v)),
                 Ok(FieldValue::IntegerValue(v)) => Some(FeatureAttrValType::Int(v as i64)),
+                Ok(FieldValue::Integer64Value(v)) => Some(FeatureAttrValType::Int(v)),
                 Ok(FieldValue::RealValue(v)) => Some(FeatureAttrValType::Double(v)),
+                Ok(FieldValue::IntegerListValue(_))
+                | Ok(FieldValue::Integer64ListValue(_))
+                | Ok(FieldValue::RealListValue(_))
+                | Ok(FieldValue::StringListValue(_)) => {
+                    // TODO: add support for list fields
+                    warn!(
+                        "Layer '{}' - skipping unsupported list field '{}'",
+                        self.layer.name,
+                        field.name()
+                    );
+                    None
+                }
                 Err(err) => {
                     warn!(
                         "Layer '{}' - skipping field '{}': {}",
@@ -400,6 +419,7 @@ impl<'a> Feature for VectorFeature<'a> {
         } else {
             self.feature.geometry()
         };
+        let mut ogrgeom = ogrgeom.clone();
         if let Some(ref transform) = self.transform {
             ogrgeom.transform_inplace(transform).unwrap();
         };
