@@ -58,7 +58,7 @@ jobs:
           ./mc policy set download local-docker/trex
 
       - name: Install libgdal-dev
-        run: sudo apt install -y libgdal-dev
+        run: sudo apt-get update && sudo apt install -y libgdal-dev
 
       - name: Cargo build
         run: cargo build --all-features
