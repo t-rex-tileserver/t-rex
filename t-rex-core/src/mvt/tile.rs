@@ -43,11 +43,11 @@ pub trait ScreenGeom<T> {
 
 impl ScreenGeom<geom::Point> for screen::Point {
     fn from_geom(extent: &Extent, reverse_y: bool, tile_size: u32, point: &geom::Point) -> Self {
-        let x_span = extent.maxx - extent.minx;
-        let y_span = extent.maxy - extent.miny;
+        let pixel_size_x = (extent.maxx - extent.minx) / tile_size as f64;
+        let pixel_size_y = (extent.maxy - extent.miny) / tile_size as f64;
         let mut screen_geom = screen::Point {
-            x: ((point.x - extent.minx) * tile_size as f64 / x_span) as i32,
-            y: ((point.y - extent.miny) * tile_size as f64 / y_span) as i32,
+            x: ((point.x - extent.minx) / pixel_size_x) as i32,
+            y: ((point.y - extent.miny) / pixel_size_y) as i32,
         };
         if reverse_y {
             screen_geom.y = (tile_size as i32).saturating_sub(screen_geom.y)

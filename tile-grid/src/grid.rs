@@ -182,6 +182,7 @@ impl Grid {
     pub fn maxzoom(&self) -> u8 {
         self.nlevels() - 1
     }
+    /// Pixel width for 256x256 tile
     pub fn pixel_width(&self, zoom: u8) -> f64 {
         const METERS_PER_DEGREE: f64 = 6378137.0 * 2.0 * consts::PI / 360.0;
         match self.units {
@@ -192,8 +193,7 @@ impl Grid {
     }
     /// Scale denominator based on standardized pixel size (https://www.ogc.org/standards/se)
     pub fn scale_denominator(&self, zoom: u8) -> f64 {
-        // Standardized rendering pixel size according to OGC Symbology Encoding
-        // standard (https://www.ogc.org/standards/se)
+        // Standardized rendering pixel size according to OGC Symbology Encoding standard
         const PIXEL_SCREEN_WIDTH: f64 = 0.00028;
         self.pixel_width(zoom) / PIXEL_SCREEN_WIDTH
     }

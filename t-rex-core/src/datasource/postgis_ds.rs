@@ -409,8 +409,9 @@ impl PostgisDatasource {
         let mut expr = format!("ST_MakeEnvelope($1,$2,$3,$4,{})", env_srid);
         if let Some(pixels) = layer.buffer_size {
             if pixels != 0 {
+                let pfact = pixels as f64 * 256.0 / layer.tile_size as f64;
                 expr = format!("ST_MakeEnvelope($1-{p}*!pixel_width!,$2-{p}*!pixel_width!,$3+{p}*!pixel_width!,$4+{p}*!pixel_width!,{srid})",
-                    srid=env_srid, p=pixels);
+                    srid=env_srid, p=pfact);
             }
         }
         if layer_srid > 0 && layer_srid != env_srid && !layer.no_transform {
@@ -719,7 +720,7 @@ impl DatasourceType for PostgisDatasource {
 
         // Add query params
         let zoom_param = zoom as i32;
-        let pixel_width = grid.pixel_width(zoom); //TODO: calculate only if needed
+        let pixel_width = grid.pixel_width(zoom); // correct: * 256.0 / layer.tile_size as f64;
         let scale_denominator = grid.scale_denominator(zoom);
         let mut params = Vec::new();
         for param in &query.params {

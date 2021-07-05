@@ -124,6 +124,7 @@ fn test_feature_query() {
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("osm_place_point"));
     layer.geometry_field = Some(String::from("geometry"));
+    layer.tile_size = 256;
     assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT ST_SetSRID(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
 
