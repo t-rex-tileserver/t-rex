@@ -180,6 +180,10 @@ fn test_feature_query() {
     // simplification
     layer.simplify = true;
     layer.tolerance = "!pixel_width!/2".to_string();
+    layer.make_valid = false;
+    assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
+               "SELECT COALESCE(ST_SnapToGrid(ST_Multi(geometry), $5::FLOAT8/2),ST_GeomFromText('MULTIPOLYGON EMPTY',3857))::geometry(MULTIPOLYGON,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
+    layer.make_valid = true;
     assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT ST_CollectionExtract(ST_MakeValid(ST_Multi(ST_Buffer(ST_SnapToGrid(ST_Multi(geometry), $5::FLOAT8/2), 0.0))),3)::geometry(MULTIPOLYGON,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,3857)");
     layer.geometry_type = Some("LINESTRING".to_string());

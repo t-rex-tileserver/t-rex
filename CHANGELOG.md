@@ -1,3 +1,14 @@
+## 0.14.0 (UNRELEASED)
+
+#### Features
+
+* Make `ST_MakeValid` in simplification optional (`make_valid`)
+
+#### Breaking changes
+
+* Same simplifcation as in 0.11 is applied, when `make_valid` is not set.
+
+<a name="0.13.0"></a>
 ## 0.13.0 (2021-02-19)
 
 #### Features

@@ -328,12 +328,24 @@ impl PostgisDatasource {
                     layer.tolerance(zoom)
                 ),
                 "POLYGON" | "MULTIPOLYGON" | "CURVEPOLYGON" => {
-                    format!(
+                    if layer.make_valid {
+                        format!(
                         "ST_CollectionExtract(ST_MakeValid(ST_Multi(ST_Buffer(ST_SnapToGrid({}, {}), 0.0))),3)::geometry(MULTIPOLYGON,{})",
                         geom_expr,
                         layer.tolerance(zoom),
                         layer_srid
                     )
+                    } else {
+                        let empty_geom =
+                            format!("ST_GeomFromText('MULTIPOLYGON EMPTY',{})", layer_srid);
+                        format!(
+                            "COALESCE(ST_SnapToGrid({}, {}),{})::geometry(MULTIPOLYGON,{})",
+                            geom_expr,
+                            layer.tolerance(zoom),
+                            empty_geom,
+                            layer_srid
+                        )
+                    }
                 }
                 _ => geom_expr, // No simplification for points or unknown types
             };
