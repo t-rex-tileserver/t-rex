@@ -409,7 +409,8 @@ impl PostgisDatasource {
         let mut expr = format!("ST_MakeEnvelope($1,$2,$3,$4,{})", env_srid);
         if let Some(pixels) = layer.buffer_size {
             if pixels != 0 {
-                expr = format!("ST_Buffer({},{}*!pixel_width!)", expr, pixels);
+                expr = format!("ST_MakeEnvelope($1-{p}*!pixel_width!,$2-{p}*!pixel_width!,$3+{p}*!pixel_width!,$4+{p}*!pixel_width!,{srid})",
+                    srid=env_srid, p=pixels);
             }
         }
         if layer_srid > 0 && layer_srid != env_srid && !layer.no_transform {
