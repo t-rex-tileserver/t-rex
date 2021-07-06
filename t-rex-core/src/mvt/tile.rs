@@ -32,6 +32,7 @@ impl GeometryType {
             &GeometryType::MultiLineString(_) => vector_tile::Tile_GeomType::LINESTRING,
             &GeometryType::MultiPolygon(_) => vector_tile::Tile_GeomType::POLYGON,
             &GeometryType::GeometryCollection(_) => vector_tile::Tile_GeomType::UNKNOWN,
+            &GeometryType::Geometry(_) => vector_tile::Tile_GeomType::UNKNOWN,
         }
     }
 }
@@ -186,6 +187,7 @@ impl<'a> Tile<'a> {
                 screen::MultiPolygon::from_geom(&self.extent, self.reverse_y, tile_size, g).encode()
             }
             GeometryType::GeometryCollection(_) => panic!("GeometryCollection not supported"),
+            GeometryType::Geometry(_) => panic!("Geometry not supported"),
         }
     }
 

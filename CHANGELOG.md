@@ -2,7 +2,12 @@
 
 #### Features
 
+* Support for multiple geometry types in one layer
 * Make `ST_MakeValid` in simplification optional (`make_valid`)
+
+#### Bug Fixes
+
+* Fix clipping rectangle for non 256 pixel tiles
 
 #### Breaking changes
 

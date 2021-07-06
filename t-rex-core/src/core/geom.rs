@@ -13,6 +13,7 @@ pub type MultiPoint = ewkb::MultiPoint;
 pub type MultiLineString = ewkb::MultiLineString;
 pub type MultiPolygon = ewkb::MultiPolygon;
 pub type GeometryCollection = ewkb::GeometryCollection;
+pub type Geometry = ewkb::Geometry;
 
 /// Generic Geometry Data Type
 #[derive(Debug)]
@@ -24,6 +25,7 @@ pub enum GeometryType {
     MultiLineString(MultiLineString),
     MultiPolygon(MultiPolygon),
     GeometryCollection(GeometryCollection),
+    Geometry(Geometry),
 }
 
 impl Clone for GeometryType {

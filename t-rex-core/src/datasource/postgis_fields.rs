@@ -31,6 +31,15 @@ impl GeometryType {
             "GEOMETRYCOLLECTION" => row
                 .try_get::<_, GeometryCollection>(idx)
                 .map(|f| GeometryType::GeometryCollection(f)),
+            "GEOMETRY" => row.try_get::<_, Geometry>(idx).map(|geom| match geom {
+                Geometry::Point(f) => GeometryType::Point(f),
+                Geometry::LineString(f) => GeometryType::LineString(f),
+                Geometry::Polygon(f) => GeometryType::Polygon(f),
+                Geometry::MultiPoint(f) => GeometryType::MultiPoint(f),
+                Geometry::MultiLineString(f) => GeometryType::MultiLineString(f),
+                Geometry::MultiPolygon(f) => GeometryType::MultiPolygon(f),
+                Geometry::GeometryCollection(f) => GeometryType::GeometryCollection(f),
+            }),
             _ => {
                 // PG geometry types:
                 // CIRCULARSTRING, CIRCULARSTRINGM, COMPOUNDCURVE, COMPOUNDCURVEM, CURVEPOLYGON, CURVEPOLYGONM,
