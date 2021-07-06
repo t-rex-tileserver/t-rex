@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 //
 
-use crate::core::geom::GeometryType;
+use crate::core::geom::{GeometryType, Point};
 
 /// Supported feature attribute value types
 #[derive(Clone, PartialEq, Debug)]
@@ -31,6 +31,7 @@ pub struct FeatureAttr {
 }
 
 /// Basic Feature implementation
+// Only used for encoding tests
 pub struct FeatureStruct {
     pub fid: Option<u64>,
     pub attributes: Vec<FeatureAttr>,
@@ -45,6 +46,7 @@ impl Feature for FeatureStruct {
         self.attributes.clone()
     }
     fn geometry(&self) -> Result<GeometryType, String> {
-        Ok(self.geometry.clone())
+        // Return dummy geometry because of missing Clone impl
+        Ok(GeometryType::Point(Point::new(0.0, 0.0, None)))
     }
 }

@@ -28,15 +28,6 @@ pub enum GeometryType {
     Geometry(Geometry),
 }
 
-impl Clone for GeometryType {
-    fn clone(&self) -> Self {
-        match self {
-            &GeometryType::Point(ref p) => GeometryType::Point(Point::new(p.x, p.y, None)),
-            _ => panic!("Not implemented yet"), // TODO: either implement other types or don't clone (FeatureStruct)...
-        }
-    }
-}
-
 impl GeometryType {
     pub fn is_empty(&self) -> bool {
         match self {

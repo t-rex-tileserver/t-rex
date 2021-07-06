@@ -207,8 +207,8 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
                     ),
                     geometry: [
                         9,
-                        490,
-                        6262,
+                        401405,
+                        2506749,
                     ],
                     unknown_fields: UnknownFields {
                         fields: None,
@@ -232,8 +232,8 @@ const TILE_EXAMPLE: &'static str = r#"Tile {
                     ),
                     geometry: [
                         9,
-                        490,
-                        6262,
+                        401405,
+                        2506749,
                     ],
                     unknown_fields: UnknownFields {
                         fields: None,
@@ -346,7 +346,7 @@ fn test_build_mvt() {
     let mut mvt_feature = vector_tile::Tile_Feature::new();
     mvt_feature.set_id(1);
     mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT);
-    mvt_feature.set_geometry([9, 490, 6262].to_vec());
+    mvt_feature.set_geometry([9, 401405, 2506749].to_vec());
 
     let mut mvt_value = vector_tile::Tile_Value::new();
     mvt_value.set_string_value(String::from("world"));
@@ -378,7 +378,7 @@ fn test_build_mvt() {
     mvt_feature = vector_tile::Tile_Feature::new();
     mvt_feature.set_id(2);
     mvt_feature.set_field_type(vector_tile::Tile_GeomType::POINT);
-    mvt_feature.set_geometry([9, 490, 6262].to_vec());
+    mvt_feature.set_geometry([9, 401405, 2506749].to_vec());
 
     let mut mvt_value = vector_tile::Tile_Value::new();
     mvt_value.set_string_value(String::from("again"));
