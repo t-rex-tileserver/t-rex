@@ -3,6 +3,7 @@
 #### Features
 
 * Support for multiple geometry types in one layer
+* Update to gdal 0.8.0 (Thanks @gerdos82!)
 * Make `ST_MakeValid` in simplification optional (`make_valid`)
 
 #### Bug Fixes

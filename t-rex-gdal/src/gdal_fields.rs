@@ -391,20 +391,20 @@ impl<'a> Feature for VectorFeature<'a> {
                     );
                     None
                 }
+                Ok(None) => {
+                    warn!(
+                        "Layer '{}' - skipping field '{}'",
+                        self.layer.name,
+                        field.name()
+                    );
+                    None
+                }
                 Err(err) => {
                     warn!(
                         "Layer '{}' - skipping field '{}': {:?}",
                         self.layer.name,
                         field.name(),
                         err
-                    );
-                    None
-                }
-                _ => {
-                    warn!(
-                        "Layer '{}' - skipping field '{}'",
-                        self.layer.name,
-                        field.name()
                     );
                     None
                 }

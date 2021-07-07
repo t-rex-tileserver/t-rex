@@ -1116,22 +1116,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f05358ac96cd0a0420ef0fdb84e4d9039f6deb6c923a1643ecc8e19e34f7ca45"
 dependencies = [
  "bitflags",
- "gdal-sys 0.4.0",
+ "gdal-sys",
  "geo-types",
  "libc",
  "semver 0.11.0",
  "thiserror",
-]
-
-[[package]]
-name = "gdal-sys"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b22f37a6352d986f4da60d44684a34c73179314854ad163334e223adffc6ca9"
-dependencies = [
- "libc",
- "pkg-config",
- "semver 0.11.0",
 ]
 
 [[package]]
@@ -2938,7 +2927,7 @@ name = "t-rex-gdal"
 version = "0.9.9"
 dependencies = [
  "gdal",
- "gdal-sys 0.3.1",
+ "gdal-sys",
  "log",
  "t-rex-core",
  "tile-grid",

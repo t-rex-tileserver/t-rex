@@ -14,7 +14,7 @@ doctest = false
 
 [dependencies]
 gdal = "0.8"
-gdal-sys = "0.3"
+gdal-sys = "0.4"
 log = "0.4"
 
 [dependencies.tile-grid]
