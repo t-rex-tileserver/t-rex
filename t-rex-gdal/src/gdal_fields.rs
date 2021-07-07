@@ -328,7 +328,7 @@ impl ToGeo for Geometry {
 }
 
 pub fn ogr_layer_name(path: &str, id: isize) -> Result<String, gdal::errors::GdalError> {
-    let mut dataset = Dataset::open(Path::new(path))?;
+    let dataset = Dataset::open(Path::new(path))?;
     let layer = dataset.layer(id)?;
     Ok(layer.name())
 }
@@ -365,7 +365,7 @@ impl<'a> Feature for VectorFeature<'a> {
         self.layer.fid_field.as_ref().and_then(|fid| {
             let field_value = self.feature.field(&fid);
             match field_value {
-                Ok(FieldValue::IntegerValue(v)) => Some(v as u64),
+                Ok(Some(FieldValue::IntegerValue(v))) => Some(v as u64),
                 _ => None,
             }
         })
@@ -375,14 +375,14 @@ impl<'a> Feature for VectorFeature<'a> {
         for (_i, field) in self.fields_defn.into_iter().enumerate() {
             let field_value = self.feature.field(&field.name()); //TODO: get by index
             let val = match field_value {
-                Ok(FieldValue::StringValue(v)) => Some(FeatureAttrValType::String(v)),
-                Ok(FieldValue::IntegerValue(v)) => Some(FeatureAttrValType::Int(v as i64)),
-                Ok(FieldValue::Integer64Value(v)) => Some(FeatureAttrValType::Int(v)),
-                Ok(FieldValue::RealValue(v)) => Some(FeatureAttrValType::Double(v)),
-                Ok(FieldValue::IntegerListValue(_))
-                | Ok(FieldValue::Integer64ListValue(_))
-                | Ok(FieldValue::RealListValue(_))
-                | Ok(FieldValue::StringListValue(_)) => {
+                Ok(Some(FieldValue::StringValue(v))) => Some(FeatureAttrValType::String(v)),
+                Ok(Some(FieldValue::IntegerValue(v))) => Some(FeatureAttrValType::Int(v as i64)),
+                Ok(Some(FieldValue::Integer64Value(v))) => Some(FeatureAttrValType::Int(v)),
+                Ok(Some(FieldValue::RealValue(v))) => Some(FeatureAttrValType::Double(v)),
+                Ok(Some(FieldValue::IntegerListValue(_)))
+                | Ok(Some(FieldValue::Integer64ListValue(_)))
+                | Ok(Some(FieldValue::RealListValue(_)))
+                | Ok(Some(FieldValue::StringListValue(_))) => {
                     // TODO: add support for list fields
                     warn!(
                         "Layer '{}' - skipping unsupported list field '{}'",
@@ -393,10 +393,18 @@ impl<'a> Feature for VectorFeature<'a> {
                 }
                 Err(err) => {
                     warn!(
-                        "Layer '{}' - skipping field '{}': {}",
+                        "Layer '{}' - skipping field '{}': {:?}",
                         self.layer.name,
                         field.name(),
                         err
+                    );
+                    None
+                },
+                _ => {
+                    warn!(
+                        "Layer '{}' - skipping field '{}'",
+                        self.layer.name,
+                        field.name()
                     );
                     None
                 }

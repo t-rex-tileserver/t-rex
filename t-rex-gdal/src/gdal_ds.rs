@@ -81,12 +81,12 @@ impl DatasourceType for GdalDatasource {
         transform_extent(extent, ext_srid, dest_srid).ok()
     }
     fn layer_extent(&self, layer: &Layer, grid_srid: i32) -> Option<Extent> {
-        let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
+        let dataset = Dataset::open(Path::new(&self.path)).unwrap();
         let layer_name = layer.table_name.as_ref().unwrap();
         let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
         let extent = match ogr_layer.get_extent() {
             Err(e) => {
-                warn!("Layer '{}': Unable to get extent: {}", layer.name, e);
+                warn!("Layer '{}': Unable to get extent: {:?}", layer.name, e);
                 None
             }
             Ok(extent) => Some(Extent {
@@ -99,7 +99,7 @@ impl DatasourceType for GdalDatasource {
 
         let grid_sref = match sref(grid_srid as u32) {
             Err(e) => {
-                error!("Unable to get grid spatial reference: {}", e);
+                error!("Unable to get grid spatial reference: {:?}", e);
                 return None;
             }
             Ok(sref) => sref,
@@ -113,7 +113,7 @@ impl DatasourceType for GdalDatasource {
 
         let wgs84_sref = match sref(4326) {
             Err(e) => {
-                warn!("Unable to get EPSG:4326 spatial reference: {}", e);
+                warn!("Unable to get EPSG:4326 spatial reference: {:?}", e);
                 return None;
             }
             Ok(sref) => sref,
@@ -123,7 +123,7 @@ impl DatasourceType for GdalDatasource {
             Some(extent) => match transform_extent_sref(&extent, src_sref, &wgs84_sref) {
                 Ok(extent) => Some(extent),
                 Err(e) => {
-                    error!("Unable to transform {:?}: {}", extent, e);
+                    error!("Unable to transform {:?}: {:?}", extent, e);
                     None
                 }
             },
@@ -138,7 +138,7 @@ impl DatasourceType for GdalDatasource {
             );
             // We continue, because GDAL also supports HTTP adresses
         }
-        let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
+        let dataset = Dataset::open(Path::new(&self.path)).unwrap();
         let layer_name = layer.table_name.as_ref().unwrap();
         let ogr_layer = dataset.layer_by_name(layer_name);
         if ogr_layer.is_err() {
@@ -152,7 +152,7 @@ impl DatasourceType for GdalDatasource {
 
         let grid_sref = match sref(grid_srid as u32) {
             Err(e) => {
-                error!("Unable to get grid spatial reference: {}", e);
+                error!("Unable to get grid spatial reference: {:?}", e);
                 return;
             }
             Ok(sref) => sref,
@@ -209,10 +209,10 @@ impl DatasourceType for GdalDatasource {
     where
         F: FnMut(&dyn Feature),
     {
-        let mut dataset = Dataset::open(Path::new(&self.path)).unwrap();
+        let dataset = Dataset::open(Path::new(&self.path)).unwrap();
         let layer_name = layer.table_name.as_ref().unwrap();
         debug!("retrieve_features layer: {}", layer_name);
-        let ogr_layer = dataset.layer_by_name(layer_name).unwrap();
+        let mut ogr_layer = dataset.layer_by_name(layer_name).unwrap();
 
         let mut bbox_extent = if let Some(pixels) = layer.buffer_size {
             let pixel_width = grid.pixel_width(zoom);
@@ -237,7 +237,7 @@ impl DatasourceType for GdalDatasource {
             match transform_extent_tr(&bbox_extent, &bbox_tr) {
                 Ok(extent) => bbox_extent = extent,
                 Err(e) => {
-                    error!("Unable to transform {:?}: {}", bbox_extent, e);
+                    error!("Unable to transform {:?}: {:?}", bbox_extent, e);
                     return 0;
                 }
             }
@@ -252,7 +252,8 @@ impl DatasourceType for GdalDatasource {
         .unwrap();
         ogr_layer.set_spatial_filter(&bbox);
 
-        let fields_defn = ogr_layer.defn().fields().collect::<Vec<_>>();
+        let ogr_layer_for_defn = dataset.layer_by_name(layer_name).unwrap();
+        let fields_defn = ogr_layer_for_defn.defn().fields().collect::<Vec<_>>();
         let mut cnt = 0;
         let query_limit = layer.query_limit.unwrap_or(0);
         for feature in ogr_layer.features() {
