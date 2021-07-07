@@ -13,7 +13,7 @@ workspace = ".."
 doctest = false
 
 [dependencies]
-gdal = "0.7"
+gdal = "0.8"
 gdal-sys = "0.3"
 log = "0.4"
 

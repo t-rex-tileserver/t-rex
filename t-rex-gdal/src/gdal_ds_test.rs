@@ -20,10 +20,10 @@ fn gdal_version() -> i32 {
 
 #[test]
 fn test_gdal_api() {
-    let mut dataset = Dataset::open(Path::new("../data/natural_earth.gpkg")).unwrap();
-    let layer = dataset.layer_by_name("ne_10m_populated_places").unwrap();
+    let dataset = Dataset::open(Path::new("../data/natural_earth.gpkg")).unwrap();
+    let mut layer = dataset.layer_by_name("ne_10m_populated_places").unwrap();
     let feature = layer.features().next().unwrap();
-    let name_field = feature.field("NAME").unwrap();
+    let name_field = feature.field("NAME").unwrap().unwrap();
     let geometry = feature.geometry();
     assert_eq!(
         name_field.into_string(),
@@ -181,8 +181,8 @@ fn test_gdal_retrieve_multilines() {
         maxy: 5948635.3,
     };
 
-    let mut gdal_ds = Dataset::open(Path::new("../data/natural_earth.gpkg")).unwrap();
-    let gdal_layer = gdal_ds
+    let gdal_ds = Dataset::open(Path::new("../data/natural_earth.gpkg")).unwrap();
+    let mut gdal_layer = gdal_ds
         .layer_by_name(layer.table_name.as_ref().unwrap())
         .unwrap();
     assert_eq!(gdal_layer.features().count(), 1404);
