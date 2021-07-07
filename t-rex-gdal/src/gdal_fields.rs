@@ -399,7 +399,7 @@ impl<'a> Feature for VectorFeature<'a> {
                         err
                     );
                     None
-                },
+                }
                 _ => {
                     warn!(
                         "Layer '{}' - skipping field '{}'",
