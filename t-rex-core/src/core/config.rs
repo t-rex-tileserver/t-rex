@@ -57,6 +57,7 @@ pub struct DatasourceCfg {
     // Postgis
     pub dbconn: Option<String>,
     pub pool: Option<u16>,
+    pub connection_timeout: Option<u64>,
     // GDAL
     pub path: Option<String>,
 }

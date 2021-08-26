@@ -3,12 +3,14 @@
 #### Features
 
 * Support for multiple geometry types in one layer
+* Add `connection_timeout` configuration for PG connection pool
 * Update to gdal 0.8.0 (Thanks @gerdos82!)
 * Make `ST_MakeValid` in simplification optional (`make_valid`)
 
 #### Bug Fixes
 
 * Fix clipping rectangle for non 256 pixel tiles
+* Fix infinite seeding after connection timeout
 
 #### Breaking changes
 

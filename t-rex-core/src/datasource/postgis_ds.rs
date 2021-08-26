@@ -76,6 +76,8 @@ impl r2d2::ManageConnection for PostgresConnectionManager {
 pub struct PostgisDatasource {
     pub connection_url: String,
     pub pool_size: Option<u16>,
+    /// Timeout in milliseconds (default: 30s)
+    pub connection_timeout: u64,
     conn_pool: Option<r2d2::Pool<PostgresConnectionManager>>,
     // Queries for all tileset/layers and zoom levels
     queries: BTreeMap<String, BTreeMap<String, BTreeMap<u8, SqlQuery>>>,
@@ -121,10 +123,15 @@ impl SqlQuery {
 }
 
 impl PostgisDatasource {
-    pub fn new(connection_url: &str, pool_size: Option<u16>) -> PostgisDatasource {
+    pub fn new(
+        connection_url: &str,
+        pool_size: Option<u16>,
+        connection_timeout: Option<u64>,
+    ) -> PostgisDatasource {
         PostgisDatasource {
             connection_url: connection_url.to_string(),
             pool_size,
+            connection_timeout: connection_timeout.unwrap_or(30000),
             conn_pool: None,
             queries: BTreeMap::new(),
         }
@@ -528,7 +535,7 @@ impl DatasourceType for PostgisDatasource {
         let pool_size = self.pool_size.unwrap_or(8); // TODO: use number of workers as default pool size
         let pool = r2d2::Pool::builder()
             .max_size(pool_size as u32)
-            .connection_timeout(Duration::from_millis(30000)) // default: 30s
+            .connection_timeout(Duration::from_millis(self.connection_timeout))
             .build(manager)
             .or_else(|e| match &e.to_string() as &str {
                 c if c.contains("SSL connection is required")
@@ -543,14 +550,19 @@ impl DatasourceType for PostgisDatasource {
                     );
                     r2d2::Pool::builder()
                         .max_size(pool_size as u32)
+                        .connection_timeout(Duration::from_millis(self.connection_timeout))
                         .build(manager)
                 }
-                _ => Err(e),
+                _ => {
+                    error!("Connection pool manager creation error: {}", e);
+                    Err(e)
+                }
             })
             .unwrap();
         PostgisDatasource {
             connection_url: self.connection_url.clone(),
             pool_size: Some(pool_size),
+            connection_timeout: self.connection_timeout,
             conn_pool: Some(pool),
             queries: BTreeMap::new(),
         }
@@ -783,6 +795,7 @@ impl<'a> Config<'a, DatasourceCfg> for PostgisDatasource {
         Ok(PostgisDatasource::new(
             ds_cfg.dbconn.as_ref().unwrap(),
             ds_cfg.pool,
+            ds_cfg.connection_timeout,
         ))
     }
 

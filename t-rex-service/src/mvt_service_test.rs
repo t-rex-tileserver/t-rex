@@ -88,7 +88,7 @@ fn mvt_service() -> MvtService {
     use std::env;
 
     let pg: PostgisDatasource = match env::var("DBCONN") {
-        Result::Ok(val) => Some(PostgisDatasource::new(&val, Some(1)).connected()),
+        Result::Ok(val) => Some(PostgisDatasource::new(&val, Some(1), None).connected()),
         Result::Err(_) => panic!("DBCONN undefined"),
     }
     .unwrap();

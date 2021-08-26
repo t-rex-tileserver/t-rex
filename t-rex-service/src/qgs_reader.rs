@@ -201,7 +201,7 @@ pub fn read_qgs(fname: &str) -> (Datasources, Tileset) {
                 layer.geometry_field = Some(info.geometry_field);
                 layer.geometry_type = Some(info.geometry_type);
                 layer.srid = Some(info.srid);
-                Datasource::Postgis(PostgisDatasource::new(&info.dbconn, None))
+                Datasource::Postgis(PostgisDatasource::new(&info.dbconn, None, None))
             }
             _ => continue,
         };
