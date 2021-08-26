@@ -16,6 +16,7 @@ use postgres_native_tls::MakeTlsConnector;
 use r2d2;
 use std;
 use std::collections::BTreeMap;
+use std::time::Duration;
 use tile_grid::Extent;
 use tile_grid::Grid;
 
@@ -128,10 +129,10 @@ impl PostgisDatasource {
             queries: BTreeMap::new(),
         }
     }
-    fn conn(&self) -> r2d2::PooledConnection<PostgresConnectionManager> {
+    fn conn(&self) -> Result<r2d2::PooledConnection<PostgresConnectionManager>, r2d2::Error> {
         let pool = self.conn_pool.as_ref().unwrap();
-        // Waits for at most Config::connection_timeout (default: 30s) before returning an error.
-        pool.get().unwrap()
+        // Waits for at most Config::connection_timeout before returning an error.
+        pool.get()
     }
     pub fn detect_geometry_types(&self, layer: &Layer) -> Vec<String> {
         let field = layer
@@ -144,7 +145,7 @@ impl PostgisDatasource {
             field, table
         );
 
-        let mut conn = self.conn();
+        let mut conn = self.conn().unwrap();
         let sql = format!(
             "SELECT DISTINCT GeometryType({}) AS geomtype FROM {}",
             field, table
@@ -183,7 +184,7 @@ impl PostgisDatasource {
             ),
         };
         query = SqlQuery::valid_sql_for_params(&query);
-        let mut conn = self.conn();
+        let mut conn = self.conn().unwrap();
         let stmt = conn.prepare(&query);
         match stmt {
             Err(e) => {
@@ -235,7 +236,7 @@ impl PostgisDatasource {
         use postgis::ewkb;
         use postgis::{LineString, Point, Polygon}; // conflicts with core::geom::Point etc.
 
-        let mut conn = self.conn();
+        let mut conn = self.conn().unwrap();
         let rows = conn.query(sql.as_str(), &[]).unwrap();
         let extpoly = rows
             .into_iter()
@@ -527,6 +528,7 @@ impl DatasourceType for PostgisDatasource {
         let pool_size = self.pool_size.unwrap_or(8); // TODO: use number of workers as default pool size
         let pool = r2d2::Pool::builder()
             .max_size(pool_size as u32)
+            .connection_timeout(Duration::from_millis(30000)) // default: 30s
             .build(manager)
             .or_else(|e| match &e.to_string() as &str {
                 c if c.contains("SSL connection is required")
@@ -556,7 +558,7 @@ impl DatasourceType for PostgisDatasource {
     fn detect_layers(&self, detect_geometry_types: bool) -> Vec<Layer> {
         info!("Detecting layers from geometry_columns");
         let mut layers: Vec<Layer> = Vec::new();
-        let mut conn = self.conn();
+        let mut conn = self.conn().unwrap();
         let sql = "SELECT * FROM geometry_columns ORDER BY f_table_schema,f_table_name DESC";
         for row in &conn.query(sql, &[]).unwrap() {
             let schema: String = row.get("f_table_schema");
@@ -705,7 +707,12 @@ impl DatasourceType for PostgisDatasource {
     where
         F: FnMut(&dyn Feature),
     {
-        let mut conn = self.conn();
+        let conn = self.conn();
+        if let Err(err) = conn {
+            error!("Connection pool error while retrieving features: {}", err);
+            return 0;
+        }
+        let mut conn = conn.unwrap();
         let query = self.query(&tileset.to_string(), &layer.name, zoom);
         if query.is_none() {
             return 0;
@@ -716,7 +723,7 @@ impl DatasourceType for PostgisDatasource {
             error!("Layer '{}': {}", layer.name, err);
             error!("Query: {}", query.sql);
             return 0;
-        };
+        }
 
         // Add query params
         let zoom_param = zoom as i32;
