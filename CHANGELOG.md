@@ -1,4 +1,4 @@
-## 0.14.0 (UNRELEASED)
+## 0.14.0 (2021-08-27)
 
 #### Features
 
@@ -6,6 +6,7 @@
 * Add `connection_timeout` configuration for PG connection pool
 * Update to gdal 0.9.0 (Thanks @lnicola and @gerdos82!)
 * Make `ST_MakeValid` in simplification optional (`make_valid`)
+* Improved error messages for GDAL datasources
 
 #### Bug Fixes
 
