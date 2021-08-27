@@ -62,11 +62,13 @@ impl MvtService {
     pub fn prepare_feature_queries(&mut self) {
         for tileset in &self.tilesets {
             for layer in &tileset.layers {
-                let ds = self
-                    .datasources
-                    .datasource_mut(&layer.datasource)
-                    .expect(&format!("Datasource of layer `{}` not found", layer.name));
-                ds.prepare_queries(&tileset.name, &layer, self.grid.srid);
+                let ds = self.datasources.datasource_mut(&layer.datasource);
+                if ds.is_none() {
+                    error!("Datasource of layer `{}` not found", layer.name);
+                    continue;
+                }
+                ds.unwrap()
+                    .prepare_queries(&tileset.name, &layer, self.grid.srid);
             }
         }
     }

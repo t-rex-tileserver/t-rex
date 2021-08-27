@@ -138,7 +138,16 @@ impl DatasourceType for GdalDatasource {
             );
             // We continue, because GDAL also supports HTTP adresses
         }
-        let dataset = Dataset::open(Path::new(&self.path)).unwrap();
+        let dataset = Dataset::open(Path::new(&self.path));
+        if let Err(ref err) = dataset {
+            error!("Layer '{}': Error opening dataset: '{}'", layer.name, err);
+            return;
+        }
+        let dataset = dataset.unwrap();
+        if layer.table_name.is_none() {
+            error!("Layer '{}': table_name missing", layer.name);
+            return;
+        }
         let layer_name = layer.table_name.as_ref().unwrap();
         let ogr_layer = dataset.layer_by_name(layer_name);
         if ogr_layer.is_err() {
