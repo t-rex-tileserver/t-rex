@@ -4,7 +4,7 @@
 
 * Support for multiple geometry types in one layer
 * Add `connection_timeout` configuration for PG connection pool
-* Update to gdal 0.8.0 (Thanks @gerdos82!)
+* Update to gdal 0.9.0 (Thanks @lnicola and @gerdos82!)
 * Make `ST_MakeValid` in simplification optional (`make_valid`)
 
 #### Bug Fixes

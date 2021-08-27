@@ -1112,27 +1112,27 @@ dependencies = [
 
 [[package]]
 name = "gdal"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f05358ac96cd0a0420ef0fdb84e4d9039f6deb6c923a1643ecc8e19e34f7ca45"
+checksum = "e386ec84951cd81fc3bb73084fcf438d8325935565e0c485278468f09f27b70b"
 dependencies = [
  "bitflags",
  "gdal-sys",
  "geo-types",
  "libc",
- "semver 0.11.0",
+ "semver 1.0.4",
  "thiserror",
 ]
 
 [[package]]
 name = "gdal-sys"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30a320e53209a395011eb98d413bd31a44c8f3b3f561eb3d49065775bd24491f"
+checksum = "1a3cbe455a1956d8bb388ff7cd7f57c23215dbee46198a0f35688fd1fd604ca1"
 dependencies = [
  "libc",
  "pkg-config",
- "semver 0.11.0",
+ "semver 1.0.4",
 ]
 
 [[package]]
@@ -2573,6 +2573,12 @@ checksum = "f301af10236f6df4160f7c3f04eec6dbc70ace82d23326abad5edee88801c6b6"
 dependencies = [
  "semver-parser 0.10.2",
 ]
+
+[[package]]
+name = "semver"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "568a8e6258aa33c13358f81fd834adb854c6f7c9468520910a9b1e8fac068012"
 
 [[package]]
 name = "semver-parser"
