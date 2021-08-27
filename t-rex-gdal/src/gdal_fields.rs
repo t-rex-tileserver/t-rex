@@ -392,12 +392,7 @@ impl<'a> Feature for VectorFeature<'a> {
                     None
                 }
                 Ok(None) => {
-                    warn!(
-                        "Layer '{}' - skipping field '{}'",
-                        self.layer.name,
-                        field.name()
-                    );
-                    None
+                    None // Skip NULL values
                 }
                 Err(err) => {
                     warn!(
