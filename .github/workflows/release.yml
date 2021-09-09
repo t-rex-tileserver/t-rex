@@ -1,31 +1,18 @@
 name: Release
 
-on: [push]
-
-# on:
-#   workflow_run:
-#     workflows: ["CI"]
-#     types: 
-#       - completed
+on:
+  push:
+    tags:
+      - "v*.*.*"
 
 jobs:
   ghrelease:
     name: Create Release
-    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    if: startsWith(github.ref, 'refs/tags/')
-    outputs:
-      release_upload_url: ${{ steps.create_release.outputs.upload_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
           body: |
             See [CHANGELOG](https://github.com/t-rex-tileserver/t-rex/blob/master/CHANGELOG.md)
           draft: true
@@ -34,13 +21,13 @@ jobs:
   tgz:
     name: build release tgz
     needs: [ghrelease]
-    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: ['ubuntu-20.04', 'macOS-latest']
     steps:
       - uses: actions/checkout@v2
+
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -64,19 +51,13 @@ jobs:
 
       - name: Upload Release Asset
         id: upload-release-asset 
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
-          upload_url: ${{ needs.ghrelease.outputs.release_upload_url }}
-          asset_path: ${{ steps.tar.outputs.tgz }}
-          asset_name: ${{ steps.tar.outputs.tgz }}
-          asset_content_type: application/gzip
+          files: ${{ steps.tar.outputs.tgz }}
 
   deb:
     name: Build deb package
     needs: [ghrelease]
-    if: startsWith(github.ref, 'refs/tags/')
     outputs:
       asset_download_url: ${{ steps.upload_asset.outputs.browser_download_url }}
     runs-on: ${{ matrix.os }}
@@ -86,16 +67,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
+
       - name: Install libgdal-dev
         run: sudo apt install -y libgdal-dev
 
       - run: cargo install cargo-deb
+
       - run: cargo deb
 
       - name: Deb file
@@ -108,29 +92,70 @@ jobs:
           echo "##[set-output name=debname;]$(ls target/debian)"
 
       - name: Upload Release Asset
-        id: upload_asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
-          upload_url: ${{ needs.ghrelease.outputs.release_upload_url }}
-          asset_path: ${{ steps.deb.outputs.debpath }}
-          asset_name: ${{ steps.deb.outputs.debname }}
-          asset_content_type: application/vnd.debian.binary-package
+          files: ${{ steps.deb.outputs.debpath }}
+
+  msi:
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install GDAL
+        shell: bash
+        run: |
+          curl -S -O https://download.gisinternals.com/sdk/downloads/release-1928-x64-dev.zip
+          7z x release-1928-x64-dev.zip
+          find release-1928-x64 -ls >release-1928-x64.txt
+          rm -rf release-1928-x64/bin/ms release-1928-x64/bin/proj release-1928-x64/bin/gdal/{csharp,java,python}
+          mv release-1928-x64/bin/gdal/apps/* release-1928-x64/bin/
+  
+      - name: Build
+        shell: bash
+        run: |
+          rustc -Vv
+          cargo -V
+          vswhere
+          export GDAL_HOME=$PWD/release-1928-x64
+          export GDAL_DATA=$GDAL_HOME/bin/gdal-data
+          export PATH=$GDAL_HOME/bin:$PATH
+          ogr2ogr --version
+          export GDAL_VERSION=3.3.2
+          echo $PATH
+          cargo build --release
+          target/release/t_rex --version
+
+      - name: Create msi
+        shell: bash
+        run: |
+          export VERSION=$(basename ${{ github.ref }})
+          export RELEASE_DIR=$PWD/target/release
+          export GDAL_HOME=$PWD/release-1928-x64
+          cd packaging/windows
+          "$WIX/bin/heat" dir $GDAL_HOME/bin -var wix.GdalSrcDir -dr BINDIR -nologo -srd -ag -sw5150 -cg gdal -o gdal.wxs
+          "$WIX/bin/candle" -nologo gdal.wxs
+          "$WIX/bin/candle" -nologo t-rex.wxs
+          "$WIX/bin/light" -nologo -dBuildDir=$RELEASE_DIR -dGdalSrcDir=$GDAL_HOME/bin -sice:ICE80 -o t-rex-$VERSION.msi t-rex.wixobj gdal.wixobj
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: packaging/windows/t-rex-*.msi
 
   # docker-release:
   #   name: Docker release
   #   needs: [deb]
-  #   if: startsWith(github.ref, 'refs/tags/')
   #   runs-on: ubuntu-latest
   #   steps:
   #     - uses: actions/checkout@v2
-  #     - run: cd packaging/docker && wget ${{ needs.deb.outputs.asset_download_url }}
-  #     - name: Publish to Registry
+  #     - name: Build and publish
   #       uses: elgohr/Publish-Docker-Github-Action@master
+  #       env:
+  #         VERSION_TAG: $(basename ${{ github.ref }})
   #       with:
   #         name: sourcepole/t-rex
   #         username: ${{ secrets.DOCKER_USERNAME }}
   #         password: ${{ secrets.DOCKER_PASSWORD }}
   #         workdir: packaging/docker
+  #         buildargs: VERSION_TAG
   #         tag_names: true

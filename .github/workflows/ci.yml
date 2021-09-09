@@ -100,3 +100,38 @@ jobs:
       # - run: cd t-rex-webserver && cargo test --no-default-features --no-fail-fast
 
       # - run: otool -L target/debug/t_rex
+
+  windows:
+    needs: [rustfmt]
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache cargo registry
+      uses: actions/cache@v2
+      continue-on-error: false
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-   
+    - name: Install GDAL
+      shell: bash
+      run: |
+        curl -S -O https://download.gisinternals.com/sdk/downloads/release-1928-x64-dev.zip
+        7z x release-1928-x64-dev.zip
+        mv release-1928-x64/bin/gdal/apps/* release-1928-x64/bin/
+    - name: Build
+      shell: bash
+      run: |
+        rustc -Vv
+        cargo -V
+        vswhere
+        export GDAL_HOME=$PWD/release-1928-x64
+        export GDAL_DATA=$GDAL_HOME/bin/gdal-data
+        export PATH=$GDAL_HOME/bin:$PATH
+        ogr2ogr --version
+        export GDAL_VERSION=3.3.2
+        echo $PATH
+        cargo build --all-features
