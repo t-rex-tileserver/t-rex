@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y curl libssl1.1 gdal-bin
 ARG VERSION_TAG
 
 RUN curl -o t-rex.deb -L \
-    https://github.com/t-rex-tileserver/t-rex/releases/download/v${VERSION_TAG}/t-rex_${VERSION_TAG}_amd64.deb && \
+    https://github.com/t-rex-tileserver/t-rex/releases/download/v${VERSION_TAG}/t-rex-focal_${VERSION_TAG}-1~focal_amd64.deb && \
     dpkg -i t-rex.deb && \
     rm t-rex.deb
 

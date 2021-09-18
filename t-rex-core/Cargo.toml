@@ -35,12 +35,10 @@ tera = "1.7"
 rusoto_core = "0.42"
 rusoto_s3 = "0.42"
 rusoto_credential = "0.42"
+tile-grid = { path = "../tile-grid" }
 
 [dev-dependencies]
 curl = "0.4.6"
-
-[dependencies.tile-grid]
-path = "../tile-grid"
 
 [build-dependencies]
 protoc-rust = "2.17"
