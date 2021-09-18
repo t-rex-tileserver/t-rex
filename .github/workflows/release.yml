@@ -74,14 +74,13 @@ jobs:
         id: deb
         run: |
           cargo deb --variant focal
-          dpkg -I target/debian/t-rex_*.deb
-          dpkg -c target/debian/t-rex_*.deb
+          dpkg -I target/debian/t-rex*.deb
+          dpkg -c target/debian/t-rex*.deb
 
           cargo deb --variant buster
           cargo deb --variant bullseye
 
           echo "##[set-output name=debpath;]$(ls target/debian/*deb)"
-          echo "##[set-output name=debname;]$(ls target/debian)"
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
