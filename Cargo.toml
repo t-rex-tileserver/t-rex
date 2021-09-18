@@ -33,15 +33,27 @@ with-gdal = ["t-rex-gdal", "t-rex-service/with-gdal"]
 
 [package.metadata.deb]
 maintainer = "Pirmin Kalberer <pi_deb@sourcepole.ch>"
-copyright = "2020, Pirmin Kalberer <pi_deb@sourcepole.ch>"
+copyright = "2021, Pirmin Kalberer <pi_deb@sourcepole.ch>"
 license-file = ["LICENSE", "4"]
 extended-description = """\
 t-rex is a vector tile server specialized \
 on publishing MVT tiles from your own data."""
-depends = "libssl1.1, libgdal26"
 section = "utility"
 priority = "optional"
 assets = [
     ["target/release/t_rex", "usr/bin/", "755"],
     ["README.md", "usr/share/doc/t-rex/README", "644"],
 ]
+depends = "libssl1.1, libgdal26"
+revision = "1~focal"
+
+[package.metadata.deb.variants.focal]
+# default: is Ubuntu Focal Fossa 20.04 (LTS) 
+
+[package.metadata.deb.variants.buster]
+depends = "libssl1.1, libgdal20"
+revision = "1~buster"
+
+[package.metadata.deb.variants.bullseye]
+depends = "libssl1.1, libgdal28"
+revision = "1~bullseye"
