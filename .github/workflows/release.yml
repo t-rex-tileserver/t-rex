@@ -7,7 +7,7 @@ on:
 
 jobs:
   tgz:
-    name: build release tgz
+    name: Build release tgz
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -49,7 +49,7 @@ jobs:
   deb:
     name: Build deb package
     outputs:
-      asset_download_url: ${{ steps.upload_asset.outputs.browser_download_url }}
+      asset_download_url: ${{ steps.upload_asset.outputs.upload_url }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -71,7 +71,6 @@ jobs:
       - run: cargo install cargo-deb
 
       - name: cargo deb
-        id: deb
         run: |
           cargo deb --variant focal
           dpkg -I target/debian/t-rex*.deb
@@ -80,16 +79,16 @@ jobs:
           cargo deb --variant buster
           cargo deb --variant bullseye
 
-          echo "##[set-output name=debpath;]$(ls -1 target/debian/*deb)"
-
       - name: Upload Release Asset
+        id: upload_asset
         uses: softprops/action-gh-release@v1
         with:
-          files: ${{ steps.deb.outputs.debpath }}
+          files: target/debian/*deb
           draft: true
           prerelease: true
 
   msi:
+    name: Build MSI
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
@@ -144,10 +143,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Get version
+        id: version
+        run: echo "##[set-output name=version;]$(basename ${{ github.ref }})"
       - name: Build and publish
         uses: elgohr/Publish-Docker-Github-Action@master
         env:
-          VERSION_TAG: $(basename ${{ github.ref }})
+          VERSION_TAG: ${{ steps.version.outputs.version }}
         with:
           name: sourcepole/t-rex
           username: ${{ secrets.DOCKER_USERNAME }}
