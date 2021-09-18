@@ -80,14 +80,16 @@ jobs:
 
       - run: cargo install cargo-deb
 
-      - run: cargo deb # --variant bullseye
-
-      - name: Deb file
+      - name: cargo deb
         id: deb
-        shell: bash
         run: |
+          cargo deb --variant focal
           dpkg -I target/debian/t-rex_*.deb
           dpkg -c target/debian/t-rex_*.deb
+
+          cargo deb --variant buster
+          cargo deb --variant bullseye
+
           echo "##[set-output name=debpath;]$(ls target/debian/*deb)"
           echo "##[set-output name=debname;]$(ls target/debian)"
 
@@ -119,8 +121,9 @@ jobs:
           export GDAL_HOME=$PWD/release-1928-x64
           export GDAL_DATA=$GDAL_HOME/bin/gdal-data
           export PATH=$GDAL_HOME/bin:$PATH
-          ogr2ogr --version
-          export GDAL_VERSION=3.3.2
+          ogrinfo --version
+          ogrinfo --formats
+          export GDAL_VERSION=$(ogrinfo --version | sed 's/GDAL \(.*\), .*/\1/')
           echo $PATH
           cargo build --release
           target/release/t_rex --version

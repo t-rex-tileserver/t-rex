@@ -131,7 +131,9 @@ jobs:
         export GDAL_HOME=$PWD/release-1928-x64
         export GDAL_DATA=$GDAL_HOME/bin/gdal-data
         export PATH=$GDAL_HOME/bin:$PATH
-        ogr2ogr --version
-        export GDAL_VERSION=3.3.2
+        ogrinfo --version
+        export GDAL_VERSION=$(ogrinfo --version | sed 's/GDAL \(.*\), .*/\1/')
         echo $PATH
         cargo build --all-features
+        # cargo run -- --version
+        # cargo test --all --no-fail-fast
