@@ -6,21 +6,8 @@ on:
       - "v*.*.*"
 
 jobs:
-  ghrelease:
-    name: Create Release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          body: |
-            See [CHANGELOG](https://github.com/t-rex-tileserver/t-rex/blob/master/CHANGELOG.md)
-          draft: true
-          prerelease: true
-
   tgz:
     name: build release tgz
-    needs: [ghrelease]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -54,10 +41,13 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: ${{ steps.tar.outputs.tgz }}
+          body: |
+            See [CHANGELOG](https://github.com/t-rex-tileserver/t-rex/blob/master/CHANGELOG.md)
+          draft: true
+          prerelease: true
 
   deb:
     name: Build deb package
-    needs: [ghrelease]
     outputs:
       asset_download_url: ${{ steps.upload_asset.outputs.browser_download_url }}
     runs-on: ${{ matrix.os }}
@@ -76,7 +66,7 @@ jobs:
           override: true
 
       - name: Install libgdal-dev
-        run: sudo apt install -y libgdal-dev
+        run: sudo apt update && sudo apt install -y libgdal-dev
 
       - run: cargo install cargo-deb
 
@@ -97,6 +87,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: ${{ steps.deb.outputs.debpath }}
+          draft: true
+          prerelease: true
 
   msi:
     runs-on: windows-2019
@@ -144,6 +136,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: packaging/windows/t-rex-*.msi
+          draft: true
+          prerelease: true
 
   # docker-release:
   #   name: Docker release
