@@ -1,7 +1,8 @@
-VERSION_TAG = 0.14.0
+VERSION_TAG = 0.14.1-pre5
+DEB_URL = https://github.com/t-rex-tileserver/t-rex/releases/download/v0.14.1-pre5/t-rex-focal_0.14.1.pre5-1.focal_amd64.deb
 
 build:
-	docker build --build-arg VERSION_TAG=$(VERSION_TAG) -t sourcepole/t-rex -f Dockerfile .
+	docker build --build-arg DEB_URL=$(DEB_URL) -t sourcepole/t-rex -f Dockerfile .
 	docker run sourcepole/t-rex --version
 
 push:

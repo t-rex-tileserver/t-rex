@@ -137,23 +137,21 @@ jobs:
           draft: true
           prerelease: true
 
-  docker-release:
-    name: Docker release
-    needs: [deb]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Get version
-        id: version
-        run: echo "##[set-output name=version;]$(basename ${{ github.ref }})"
-      - name: Build and publish
-        uses: elgohr/Publish-Docker-Github-Action@master
-        env:
-          VERSION_TAG: ${{ steps.version.outputs.version }}
-        with:
-          name: sourcepole/t-rex
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          workdir: packaging/docker
-          buildargs: VERSION_TAG
-          tag_names: true
+  # docker-release:
+  #   name: Docker release
+  #   needs: [deb]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Build and publish
+  #       uses: elgohr/Publish-Docker-Github-Action@master
+  #       env:
+  #         # Cannot download asset from draft release?
+  #         DEB_URL: ${{ needs.deb.outputs.asset_download_url }}/t-rex-focal_0.14.1.pre5-1.focal_amd64.deb
+  #       with:
+  #         name: sourcepole/t-rex
+  #         username: ${{ secrets.DOCKER_USERNAME }}
+  #         password: ${{ secrets.DOCKER_PASSWORD }}
+  #         workdir: packaging/docker
+  #         buildargs: DEB_URL
+  #         tag_names: true
