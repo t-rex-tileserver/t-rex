@@ -32,6 +32,7 @@ with-gdal = ["t-rex-gdal", "t-rex-service/with-gdal"]
 [workspace]
 
 [package.metadata.deb]
+name = "t-rex"
 maintainer = "Pirmin Kalberer <pi_deb@sourcepole.ch>"
 copyright = "2021, Pirmin Kalberer <pi_deb@sourcepole.ch>"
 license-file = ["LICENSE", "4"]
