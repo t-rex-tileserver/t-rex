@@ -1,0 +1,106 @@
+name: release-deb
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build-focal:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Install cargo-deb subcommand
+        run: cargo install cargo-deb
+      
+      - name: Install build-dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y libgdal-dev
+      
+      - name: Build & package
+        run: cargo deb --variant=focal
+      
+      - name: Install package
+        run: sudo dpkg -i target/debian/*.deb
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.run_id }}
+          path: target/debian/*.deb
+          retention-days: 1
+
+  build-buster:
+    runs-on: ubuntu-latest
+    container: rust:buster
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Install cargo-deb subcommand
+        run: cargo install cargo-deb
+      
+      - name: Install build-dependencies
+        run: |
+          apt update
+          apt install -y libgdal-dev
+      
+      - name: Build & package
+        run: cargo deb --variant=buster
+      
+      - name: Install package
+        run: dpkg -i target/debian/*.deb
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.run_id }}
+          path: target/debian/*.deb
+          retention-days: 1
+
+  build-bullseye:
+    runs-on: ubuntu-latest
+    container: rust:bullseye
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Install cargo-deb subcommand
+        run: cargo install cargo-deb
+      
+      - name: Install build-dependencies
+        run: |
+          apt update
+          apt install -y libgdal-dev
+      
+      - name: Build & package
+        run: cargo deb --variant=bullseye
+      
+      - name: Install package
+        run: dpkg -i target/debian/*.deb
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.run_id }}
+          path: target/debian/*.deb
+          retention-days: 1
+      
+  release:
+    needs: [build-focal, build-buster, build-bullseye]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Retrieve saved artefacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ github.run_id }}
+      
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: ./*.deb
+          draft: no
