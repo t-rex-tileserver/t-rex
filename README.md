@@ -81,6 +81,16 @@ For developers
 
 t-rex is written in [Rust](https://www.rust-lang.org/). Minimal required rustc version is 1.45.
 
+
+### Software Requirements
+
+#### Ubuntu 20.04 (Focal Fossa)
+
+sudo apt install cargo libssl-dev libgdal-dev
+
+
+### Building T-Rex
+
 Build:
 
     cargo build
