@@ -26,37 +26,72 @@ jobs:
         run: cargo build --release --no-default-features
 
       - name: Tar
-        id: tar
-        shell: bash
         run: |
           VERSION=$(basename ${{ github.ref }})
           target=$(gcc -dumpmachine)
           cd target/release          
           strip t_rex
           tar czf ../../t-rex-$VERSION-$target.tar.gz t_rex
-          echo "##[set-output name=tgz;]t-rex-$VERSION-$target.tar.gz"
 
-      - name: Upload Release Asset
-        id: upload-release-asset 
-        uses: softprops/action-gh-release@v1
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
         with:
-          files: ${{ steps.tar.outputs.tgz }}
-          body: |
-            See [CHANGELOG](https://github.com/t-rex-tileserver/t-rex/blob/master/CHANGELOG.md)
-          draft: true
-          prerelease: true
+          name: ${{ github.run_id }}
+          path: t-rex-*.tar.gz
+          retention-days: 1
 
   deb:
-    name: Build deb package
-    outputs:
-      asset_download_url: ${{ steps.upload_asset.outputs.upload_url }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
+    container: ${{ matrix.container }}
     strategy:
       matrix:
-        os: ['ubuntu-20.04']
-
+       include:
+         - variant: focal
+           container: null
+           sudo: sudo
+         - variant: bullseye
+           container: rust:bullseye
+           sudo: null
+         - variant: buster
+           container: rust:buster
+           sudo: null
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install cargo-deb
+        run: cargo install cargo-deb
+
+      - name: Install build-dependencies
+        run: |
+          ${{ matrix.sudo }} apt update
+          ${{ matrix.sudo }} apt install -y libgdal-dev
+      
+      - name: Build & package
+        run: |
+          cargo deb --variant=${{ matrix.variant }}
+          dpkg -I target/debian/t-rex*.deb
+          dpkg -c target/debian/t-rex*.deb
+
+      - name: Install package
+        run: ${{ matrix.sudo }} dpkg -i target/debian/*.deb
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.run_id }}
+          path: target/debian/*.deb
+          retention-days: 1
+
+  rpm:
+    runs-on: ubuntu-latest
+    container: ${{ matrix.container }}
+    strategy:
+      matrix:
+        container: ['centos:8']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
@@ -65,27 +100,28 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Install libgdal-dev
-        run: sudo apt update && sudo apt install -y libgdal-dev
-
-      - run: cargo install cargo-deb
-
-      - name: cargo deb
+      - name: Install cargo-rpm
         run: |
-          cargo deb --variant focal
-          dpkg -I target/debian/t-rex*.deb
-          dpkg -c target/debian/t-rex*.deb
+          yum install gcc rpm-build -y
+          cargo install cargo-rpm
 
-          cargo deb --variant buster
-          cargo deb --variant bullseye
+      - name: Install build-dependencies
+        run: |
+          # yum install epel-release -y
+          yum install openssl-devel -y
+          # yum install gdal-devel -y
 
-      - name: Upload Release Asset
-        id: upload_asset
-        uses: softprops/action-gh-release@v1
+      - name: Build & package
+        run: |
+          ln -s packaging/rpm .rpm
+          cargo rpm build --output target/rpm/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
         with:
-          files: target/debian/*deb
-          draft: true
-          prerelease: true
+          name: ${{ github.run_id }}
+          path: target/rpm/*.rpm
+          retention-days: 1
 
   msi:
     name: Build MSI
@@ -130,10 +166,29 @@ jobs:
           "$WIX/bin/candle" -nologo t-rex.wxs
           "$WIX/bin/light" -nologo -dBuildDir=$RELEASE_DIR -dGdalSrcDir=$GDAL_HOME/bin -sice:ICE80 -o t-rex-$VERSION.msi t-rex.wixobj gdal.wixobj
 
-      - name: Upload Release Asset
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.run_id }}
+          path: packaging/windows/t-rex-*.msi
+          retention-days: 1
+
+  release:
+    needs: [tgz, deb, rpm, msi]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Retrieve saved artefacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ github.run_id }}
+          path: packages
+
+      - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: packaging/windows/t-rex-*.msi
+          body: |
+            See [CHANGELOG](https://github.com/t-rex-tileserver/t-rex/blob/master/CHANGELOG.md)
+          files: packages/*
           draft: true
           prerelease: true
 

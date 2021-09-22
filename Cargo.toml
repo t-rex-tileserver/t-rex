@@ -1,6 +1,6 @@
 [package]
 name = "t-rex"
-version = "0.14.1-pre5"
+version = "0.14.1-pre6"
 description = "t-rex vector tile server"
 repository = "https://github.com/t-rex-tileserver/t-rex"
 readme = "README.md"
@@ -58,3 +58,13 @@ revision = "1~buster"
 [package.metadata.deb.variants.bullseye]
 depends = "libssl1.1, libgdal28"
 revision = "1~bullseye"
+
+[package.metadata.rpm]
+package = "t-rex"
+config = "packaging/rpm/t-rex.spec"
+
+[package.metadata.rpm.cargo]
+buildflags = ["--release", "--no-default-features"]
+
+[package.metadata.rpm.targets]
+t_rex = { path = "/usr/bin/t_rex" }
