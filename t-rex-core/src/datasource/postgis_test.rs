@@ -243,7 +243,7 @@ fn test_feature_query() {
 }
 
 #[test]
-fn test_config_teamplate() {
+fn test_config_template() {
     let pg = PostgisDatasource::new("postgresql://pi@localhost/osm2vectortiles", Some(1), None);
     let mut layer = Layer::new("points");
     layer.table_name = Some(String::from("osm_place_point"));
