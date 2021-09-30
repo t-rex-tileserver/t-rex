@@ -64,7 +64,7 @@ package = "t-rex"
 config = "packaging/rpm/t-rex.spec"
 
 [package.metadata.rpm.cargo]
-buildflags = ["--release", "--no-default-features"]
+buildflags = ["--release"]
 
 [package.metadata.rpm.targets]
 t_rex = { path = "/usr/bin/t_rex" }
