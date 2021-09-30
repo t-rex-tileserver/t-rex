@@ -189,7 +189,7 @@ jobs:
           body: |
             See [CHANGELOG](https://github.com/t-rex-tileserver/t-rex/blob/master/CHANGELOG.md)
           files: packages/*
-          draft: true
+          draft: false
           prerelease: true
 
   # docker-release:
