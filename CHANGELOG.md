@@ -9,6 +9,7 @@
 
 * Fix reading 2D types from PostGIS geometries with Z or ZM dimensions
 * Fix CORS headers (thanks @tobwen)
+* Fix invalid geometries for some polygon simplifications
 
 ## 0.14.0 (2021-08-27)
 

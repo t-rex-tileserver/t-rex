@@ -84,12 +84,11 @@ t-rex is written in [Rust](https://www.rust-lang.org/). Minimal required rustc v
 
 ### Software Requirements
 
-#### Ubuntu 20.04 (Focal Fossa)
+Ubuntu 20.04 (Focal Fossa):
 
-sudo apt install cargo libssl-dev libgdal-dev
+    sudo apt install cargo libssl-dev libgdal-dev
 
-
-### Building T-Rex
+### Build and raun
 
 Build:
 
