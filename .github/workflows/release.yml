@@ -108,8 +108,8 @@ jobs:
       - name: Install build-dependencies
         run: |
           yum install openssl-devel -y
-          yum install epel-release -y
-          yum install --enablerepo=powertools gdal-devel -y
+          # yum install epel-release -y
+          # yum install --enablerepo=powertools gdal-devel -y
           # RH UBI image registry.access.redhat.com/ubi8/ubi
           # rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
           # yum install --enablerepo=ubi-8-codeready-builder gdal-devel
