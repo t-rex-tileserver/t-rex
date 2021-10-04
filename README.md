@@ -88,7 +88,7 @@ Ubuntu 20.04 (Focal Fossa):
 
     sudo apt install cargo libssl-dev libgdal-dev
 
-### Build and raun
+### Build and run
 
 Build:
 
