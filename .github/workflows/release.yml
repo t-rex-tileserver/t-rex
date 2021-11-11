@@ -192,20 +192,17 @@ jobs:
           body: |
             See [CHANGELOG](https://github.com/t-rex-tileserver/t-rex/blob/master/CHANGELOG.md)
           files: packages/*
-          draft: false
-          prerelease: true
 
   # docker-release:
   #   name: Docker release
-  #   needs: [deb]
+  #   needs: [release]
   #   runs-on: ubuntu-latest
   #   steps:
   #     - uses: actions/checkout@v2
   #     - name: Build and publish
   #       uses: elgohr/Publish-Docker-Github-Action@master
   #       env:
-  #         # Cannot download asset from draft release?
-  #         DEB_URL: ${{ needs.deb.outputs.asset_download_url }}/t-rex-focal_0.14.1.pre5-1.focal_amd64.deb
+  #         DEB_URL: https://github.com/t-rex-tileserver/t-rex/releases/download/v$(basename ${{ github.ref }})/t-rex_$(basename ${{ github.ref }})-1.focal_amd64.deb
   #       with:
   #         name: sourcepole/t-rex
   #         username: ${{ secrets.DOCKER_USERNAME }}
