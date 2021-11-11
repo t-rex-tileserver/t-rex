@@ -301,7 +301,7 @@ impl PostgisDatasource {
                 "POLYGON" | "MULTIPOLYGON" | "CURVEPOLYGON" => {
                     geom_expr = format!("ST_Buffer(ST_Intersection({},!bbox!), 0.0)", valid_geom);
                 }
-                "POINT" => {
+                "POINT" if layer_srid == grid_srid => {
                     // ST_Intersection not necessary - bbox query in WHERE clause is sufficient
                 }
                 _ => {
@@ -423,7 +423,10 @@ impl PostgisDatasource {
             }
         }
         if layer_srid > 0 && layer_srid != env_srid && !layer.no_transform {
-            expr = format!("ST_Transform({},{})", expr, layer_srid);
+            expr = format!(
+                "ST_Transform(ST_Segmentize({}, ($3-$1)/512), {})",
+                expr, layer_srid
+            );
         }
         // Clip bbox to maximal extent of SRID
         if layer.shift_longitude {

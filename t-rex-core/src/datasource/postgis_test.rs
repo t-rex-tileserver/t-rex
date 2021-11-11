@@ -131,7 +131,7 @@ fn test_feature_query() {
     // reprojection
     layer.srid = Some(2056);
     assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
-               "SELECT ST_Transform(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_Transform(ST_MakeEnvelope($1,$2,$3,$4,3857),2056)");
+               "SELECT ST_Transform(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_Transform(ST_Segmentize(ST_MakeEnvelope($1,$2,$3,$4,3857), ($3-$1)/512), 2056)");
     layer.no_transform = true;
     assert_eq!(pg.build_query(&layer, 3857, 10, None).unwrap().sql,
                "SELECT ST_SetSRID(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_MakeEnvelope($1,$2,$3,$4,2056)");
@@ -139,12 +139,12 @@ fn test_feature_query() {
     layer.srid = Some(4326);
     assert_eq!(
         pg.build_query(&layer, 3857, 10, None).unwrap().sql,
-        "SELECT ST_Transform(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_Transform(ST_MakeEnvelope($1,$2,$3,$4,3857),4326)"
+        "SELECT ST_Transform(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_Transform(ST_Segmentize(ST_MakeEnvelope($1,$2,$3,$4,3857), ($3-$1)/512), 4326)"
     );
     layer.shift_longitude = true;
     assert_eq!(
         pg.build_query(&layer, 3857, 10, None).unwrap().sql,
-        "SELECT ST_Transform(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_Shift_Longitude(ST_Transform(ST_MakeEnvelope($1,$2,$3,$4,3857),4326))"
+        "SELECT ST_Transform(geometry,3857) AS geometry FROM osm_place_point WHERE geometry && ST_Shift_Longitude(ST_Transform(ST_Segmentize(ST_MakeEnvelope($1,$2,$3,$4,3857), ($3-$1)/512), 4326))"
     );
     layer.shift_longitude = false;
     layer.srid = Some(-1);
