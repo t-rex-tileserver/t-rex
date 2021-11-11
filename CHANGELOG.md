@@ -1,3 +1,10 @@
+## 0.14.2 (2021-11-11)
+
+#### Bug Fixes
+
+* Fix point duplications at tile borders when reprojecting
+* Fix gaps at tile borders when reprojecting
+
 ## 0.14.1 (2021-10-04)
 
 #### Features

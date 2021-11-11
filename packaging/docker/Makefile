@@ -1,4 +1,4 @@
-VERSION_TAG = 0.14.1
+VERSION_TAG = 0.14.2
 DEB_URL = https://github.com/t-rex-tileserver/t-rex/releases/download/v$(VERSION_TAG)/t-rex_$(VERSION_TAG)-1.focal_amd64.deb
 
 build:
