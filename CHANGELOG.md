@@ -38,7 +38,6 @@
 
 * Same simplifcation as in 0.11 is applied, when `make_valid` is not set.
 
-<a name="0.13.0"></a>
 ## 0.13.0 (2021-02-19)
 
 #### Features
@@ -49,7 +48,6 @@
 * Update to Maputnik 1.7.0
 * Update to rust-postgres 0.19
 
-<a name="0.12.0"></a>
 ## 0.12.0 (2020-12-26)
 
 #### Features
@@ -66,7 +64,6 @@
 * Avoid line artefacts in polygon simplification (Thanks @arbakker!)
 * Force compatible WGS84 axis order with GDAL 3
 
-<a name="0.11.0"></a>
 ## 0.11.0 (2020-06-25)
 
 #### Features
@@ -75,7 +72,6 @@
 * Support postgres varchar[] data type (Thanks @Blesss!)
 * Update to async/await with Actix-Web 2.0
 
-<a name="0.10.1"></a>
 ## 0.10.1 (2020-02-20)
 
 #### Bug Fixes
@@ -84,7 +80,6 @@
 * Fix interference of some static URLs with tile URLs
 * Add fonts.json endpoint as requested by Maputnik
 
-<a name="0.10.0"></a>
 ## 0.10.0 (2019-08-04)
 
 #### Features
@@ -109,7 +104,6 @@
 * `TREX_DATASOURCE_URL` is not automatically applied anymore.
   Use `dbconn = "{{ env.TREX_DATASOURCE_URL }}"` instead.
 
-<a name="0.9.3"></a>
 ## 0.9.3 (2019-06-09)
 
 #### Features
@@ -120,7 +114,6 @@
 
 * `ST_Shift_Longitude` not applied by default for WGS 84 geometries
 
-<a name="0.9.2"></a>
 ## 0.9.2 (2019-04-27)
 
 #### Features
@@ -135,7 +128,6 @@
   and check for minimum number of points (Thanks @nimix!)
 * Adjust Mercator grid resolutions to avoid negative coordinates instead of 0.0
 
-<a name="0.9.1"></a>
 ## 0.9.1 (2018-11-14)
 
 #### Features
@@ -155,7 +147,6 @@
 * Better panic messages for PostGIS driver errors
 * Fix build with OpenSSL v1.1.1
 
-<a name="0.9.0"></a>
 ## 0.9.0 (2018-07-24)
 
 #### Features
@@ -185,7 +176,6 @@
 * Empty tiles are not stored to cache anymore
 * `ST_MakeValid` is not applied by default anymore. Set `make_valid true` to reactivate.
 
-<a name="0.8.2"></a>
 ## 0.8.2 (2018-04-18)
 
 #### Features
@@ -199,7 +189,6 @@
 
 * Fix scrolling issues in t-rex-viewer (Thanks @OSHistory!)
 
-<a name="0.8.1"></a>
 ## 0.8.1 (2017-10-05)
 
 #### Features
@@ -210,7 +199,6 @@
 
 * Fix extent calculation for reprojected OGR geometries
 
-<a name="0.8.0"></a>
 ## 0.8.0 (2017-09-26)
 
 #### Features
@@ -230,7 +218,6 @@
 * User defined grid now in [grid.user] block
 * Changed user defined grid units to lower case (m, dd, ft)
 
-<a name="0.7.8"></a>
 ## 0.7.8 (2017-08-05)
 
 #### Features
@@ -238,7 +225,6 @@
 * Support for PostgreSQL SSL connections
 * Serve fonts in pbf format
 
-<a name="0.7.7"></a>
 ## 0.7.7 (2017-07-14)
 
 #### Bug Fixes
@@ -250,7 +236,6 @@
 
 * Use OGC SLD pixel size for `scale_denominator` calculation (like Mapnik)
 
-<a name="0.7.6"></a>
 ## 0.7.6 (2017-07-10)
 
 #### Features
@@ -266,14 +251,12 @@
 
 * Extent parameter of generate command is now in WGS84 instead of grid SRS
 
-<a name="0.7.5"></a>
 ## 0.7.5 (2017-06-26)
 
 #### Bug Fixes
 
 * Fix tileset extent detection of empty tables
 
-<a name="0.7.4"></a>
 ## 0.7.4 (2017-06-25)
 
 #### Features
@@ -283,7 +266,6 @@
 * cache_control_max_age setting (with new default 0)
 * Write :tileset.json and and :tileset.style.json when generating cache
 
-<a name="0.7.3"></a>
 ## 0.7.3 (2017-06-15)
 
 #### Features
@@ -304,7 +286,6 @@
 
 * Use `buffer_size` instead of `buffer-size` in config
 
-<a name="0.7.2"></a>
 ## 0.7.2 (2017-06-08)
 
 #### Features
@@ -318,7 +299,6 @@
 * Fix TileJSON compatibility
 * Fix generation of zoom levels greater than maximal grid zoom level
 
-<a name="0.7.1"></a>
 ## 0.7.1 (2017-04-01)
 
 #### Features
@@ -330,7 +310,6 @@
 
 * Fix `generate` command with `extent` option
 
-<a name="0.7.0"></a>
 ## 0.7.0 (2017-03-12)
 
 #### Features
@@ -341,7 +320,6 @@
 
 * Extent and zoom calculation fixes (Thanks @rory and @joostvenema!)
 
-<a name="0.6.1"></a>
 ## 0.6.1 (2016-11-22)
 
 #### Features
@@ -353,7 +331,6 @@
 
 * Fix integer overflows in grid calculations and MVT encoding
 
-<a name="0.6.0"></a>
 ## 0.6.0 (2016-11-07)
 
 #### Features
@@ -367,7 +344,6 @@
 
 * Fix clipping and simplification with reprojected geometries
 
-<a name="0.5.0"></a>
 ## 0.5.0 (2016-10-25)
 
 #### Features
@@ -378,7 +354,6 @@
 
 * Support for Multi-Geometries (Multipoint, Multiline, Multipolygon)
 
-<a name="v0.4.0"></a>
 ## v0.4.0 (2016-09-11)
 
 #### Features
@@ -388,7 +363,6 @@
 
 ![t_rex_generate](doc/t_rex_generate.gif)
 
-<a name="v0.3.1"></a>
 ## v0.3.1 (2016-09-06)
 
 #### Bug Fixes
@@ -397,7 +371,6 @@
 * TileJSON center value format fixed
 
 
-<a name="v0.3.0"></a>
 ## v0.3.0 (2016-09-05)
 
 #### Features
@@ -406,7 +379,6 @@
 * Experimental clipping support
 
 
-<a name="0.2.0"></a>
 ## 0.2.0 (2016-08-30)
 
 #### Features
@@ -416,7 +388,6 @@
 * Pre-build SQL queries
 
 
-<a name="0.1.0"></a>
 ## 0.1.0 (2016-08-17)
 
 First Release
