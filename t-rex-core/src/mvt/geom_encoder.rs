@@ -66,7 +66,7 @@ fn test_paremeters() {
 pub struct CommandSequence(pub Vec<u32>);
 
 impl CommandSequence {
-    fn new() -> CommandSequence {
+    pub fn new() -> CommandSequence {
         CommandSequence(Vec::new())
     }
     pub fn vec(&self) -> Vec<u32> {
