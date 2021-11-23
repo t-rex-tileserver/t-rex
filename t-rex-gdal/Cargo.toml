@@ -13,7 +13,7 @@ workspace = ".."
 doctest = false
 
 [dependencies]
-gdal = "0.9"
+gdal = "0.11"
 gdal-sys = "0.5"
 log = "0.4"
 tile-grid = { path = "../tile-grid" }
