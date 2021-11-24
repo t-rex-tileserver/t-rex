@@ -379,9 +379,13 @@ impl<'a> Feature for VectorFeature<'a> {
                 Ok(Some(FieldValue::IntegerValue(v))) => Some(FeatureAttrValType::Int(v as i64)),
                 Ok(Some(FieldValue::Integer64Value(v))) => Some(FeatureAttrValType::Int(v)),
                 Ok(Some(FieldValue::RealValue(v))) => Some(FeatureAttrValType::Double(v)),
+                Ok(Some(FieldValue::DateValue(v))) => {
+                    Some(FeatureAttrValType::String(v.to_string()))
+                }
+                Ok(Some(FieldValue::DateTimeValue(v))) => {
+                    Some(FeatureAttrValType::String(v.to_string()))
+                }
                 Ok(Some(FieldValue::IntegerListValue(_)))
-                | Ok(Some(FieldValue::DateValue(_)))
-                | Ok(Some(FieldValue::DateTimeValue(_)))
                 | Ok(Some(FieldValue::Integer64ListValue(_)))
                 | Ok(Some(FieldValue::RealListValue(_)))
                 | Ok(Some(FieldValue::StringListValue(_))) => {
