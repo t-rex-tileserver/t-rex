@@ -201,10 +201,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Get version tag
+        id: get_tag
+        run: echo ::set-output name=tag::$(basename ${{ github.ref }})
       - name: Build and publish
         uses: elgohr/Publish-Docker-Github-Action@master
         env:
-          DEB_URL: https://github.com/t-rex-tileserver/t-rex/releases/download/v$(basename ${{ github.ref }})/t-rex_$(basename ${{ github.ref }})-1.focal_amd64.deb
+          DEB_URL: https://github.com/t-rex-tileserver/t-rex/releases/download/v${{ steps.get_tag.outputs.tag }}/t-rex_${{ steps.get_tag.outputs.tag }}-1.focal_amd64.deb
         with:
           name: sourcepole/t-rex
           username: ${{ secrets.DOCKER_USERNAME }}
