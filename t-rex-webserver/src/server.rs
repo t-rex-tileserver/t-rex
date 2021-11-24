@@ -96,10 +96,11 @@ async fn tileset_tilejson(
     req: HttpRequest,
 ) -> Result<HttpResponse> {
     let url = req_baseurl(&req);
-    let json =
-        web::block::<_, _, Infallible>(move || Ok(service.get_tilejson(&url, &tileset).unwrap()))
-            .await
-            .unwrap();
+    let json = web::block::<_, _, Infallible>(move || {
+        Ok(service.get_tilejson(&url, &tileset, &service.grid).unwrap())
+    })
+    .await
+    .unwrap();
     Ok(HttpResponse::Ok().json(json))
 }
 
@@ -116,10 +117,13 @@ async fn tileset_metadata_json(
     service: web::Data<MvtService>,
     tileset: web::Path<String>,
 ) -> Result<HttpResponse> {
-    let json =
-        web::block::<_, _, Infallible>(move || Ok(service.get_mbtiles_metadata(&tileset).unwrap()))
-            .await
-            .unwrap();
+    let json = web::block::<_, _, Infallible>(move || {
+        Ok(service
+            .get_mbtiles_metadata(&tileset, &service.grid)
+            .unwrap())
+    })
+    .await
+    .unwrap();
     Ok(HttpResponse::Ok().json(json))
 }
 

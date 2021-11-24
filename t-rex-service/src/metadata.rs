@@ -7,6 +7,7 @@ use crate::mvt_service::MvtService;
 use serde_json;
 use std::cmp;
 use t_rex_core::datasource::DatasourceType;
+use tile_grid::Grid;
 
 type JsonResult = Result<serde_json::Value, serde_json::error::Error>;
 
@@ -65,14 +66,14 @@ impl MvtService {
         };
         serde_json::to_value(mvt_info)
     }
-    fn get_tilejson_metadata(&self, tileset: &str) -> JsonResult {
+    fn get_tilejson_metadata(&self, tileset: &str, grid: &Grid) -> JsonResult {
         let ts = self
             .get_tileset(tileset)
             .expect(&format!("Tileset '{}' not found", tileset));
         let ext = ts.get_extent();
         let center = ts.get_center();
         let zoom = ts.get_start_zoom();
-        Ok(json!({
+        let mut meta = json!({
             "id": tileset,
             "name": tileset,
             "description": tileset,
@@ -93,7 +94,13 @@ impl MvtService {
             "maxzoom": ts.maxzoom(),
             "center": [center.0, center.1, zoom],
             "basename": tileset
-        }))
+        });
+        if grid.srid != 3857 {
+            // TODO: add full grid information according to GDAL extension
+            // https://github.com/OSGeo/gdal/blob/release/3.4/gdal/ogr/ogrsf_frmts/mvt/ogrmvtdataset.cpp#L5497
+            meta["srs"] = json!(format!("EPSG:{}", grid.srid));
+        }
+        Ok(meta)
     }
     fn get_tilejson_layers(&self, tileset: &str) -> JsonResult {
         let ts = self
@@ -109,7 +116,7 @@ impl MvtService {
                     "id": meta.get("id").unwrap(),
                     "name": meta.get("name").unwrap(),
                     "description": meta.get("description").unwrap(),
-                    "srs": meta.get("srs").unwrap(),
+                    // "srs": meta.get("srs").unwrap(),
                     "properties": {
                         "minzoom": cmp::max(ts.minzoom(), layer.minzoom()),
                         "maxzoom": cmp::min(ts.maxzoom(), layer.maxzoom(22)),
@@ -131,7 +138,7 @@ impl MvtService {
         Ok(json!(layers_metadata))
     }
     // MVT layers in TileJSON manifest
-    // https://github.com/mapbox/tilejson-spec/tree/3.0-vector_layers/3.0#315-vector_layers
+    // https://github.com/mapbox/tilejson-spec/tree/master/3.0.0#33-vector_layers
     fn get_tilejson_vector_layers(&self, tileset: &str) -> JsonResult {
         let ts = self
             .get_tileset(tileset)
@@ -153,9 +160,9 @@ impl MvtService {
                     "maxzoom": cmp::min(ts.maxzoom(), layer.maxzoom(22)),
                     "fields": {}
                 });
-                if let Some(srid) = layer.srid {
-                    layer_json["projection"] = json!(format!("EPSG:{}", srid));
-                }
+                // if let Some(srid) = layer.srid {
+                //     layer_json["projection"] = json!(format!("EPSG:{}", srid));
+                // }
                 //insert fields
                 let fields = self.ds(&layer).unwrap().detect_data_columns(&layer, query);
                 for (ref field, _) in fields {
@@ -170,8 +177,9 @@ impl MvtService {
         Ok(json!(vector_layers))
     }
     /// TileJSON metadata (https://github.com/mapbox/tilejson-spec)
-    pub fn get_tilejson(&self, baseurl: &str, tileset: &str) -> JsonResult {
-        let mut metadata = self.get_tilejson_metadata(tileset)?;
+    // -> {tileset}.json
+    pub fn get_tilejson(&self, baseurl: &str, tileset: &str, grid: &Grid) -> JsonResult {
+        let mut metadata = self.get_tilejson_metadata(tileset, grid)?;
         let vector_layers = self.get_tilejson_vector_layers(tileset)?;
         let url = json!([format!("{}/{}/{{z}}/{{x}}/{{y}}.pbf", baseurl, tileset)]);
         let obj = metadata.as_object_mut().unwrap();
@@ -263,8 +271,9 @@ impl MvtService {
     }
 
     /// MBTiles metadata.json (https://github.com/mapbox/mbtiles-spec/blob/master/1.3/spec.md)
-    pub fn get_mbtiles_metadata(&self, tileset: &str) -> JsonResult {
-        let mut metadata = self.get_tilejson_metadata(tileset)?;
+    // -> {tileset}/metadata.json
+    pub fn get_mbtiles_metadata(&self, tileset: &str, grid: &Grid) -> JsonResult {
+        let mut metadata = self.get_tilejson_metadata(tileset, grid)?;
         metadata["bounds"] = json!(metadata["bounds"].to_string());
         metadata["center"] = json!(metadata["center"].to_string());
         let layers = self.get_tilejson_layers(tileset)?;
@@ -340,7 +349,9 @@ fn test_tilejson() {
     service.prepare_feature_queries();
     let metadata = format!(
         "{:#}",
-        service.get_tilejson("http://127.0.0.1", "osm").unwrap()
+        service
+            .get_tilejson("http://127.0.0.1", "osm", &service.grid)
+            .unwrap()
     );
     println!("{}", metadata);
     let expected = r#"{
@@ -387,8 +398,7 @@ fn test_tilejson() {
       "fields": {},
       "id": "admin_0_countries",
       "maxzoom": 22,
-      "minzoom": 0,
-      "projection": "EPSG:3857"
+      "minzoom": 0
     }
   ],
   "version": "2.0.0"
@@ -453,7 +463,10 @@ fn test_mbtiles_metadata() {
     let config = read_config("src/test/example.toml").unwrap();
     let mut service = MvtService::from_config(&config).unwrap();
     service.connect();
-    let metadata = format!("{:#}", service.get_mbtiles_metadata("osm").unwrap());
+    let metadata = format!(
+        "{:#}",
+        service.get_mbtiles_metadata("osm", &service.grid).unwrap()
+    );
     println!("{}", metadata);
     let expected = r#"{
   "attribution": "",
@@ -463,11 +476,32 @@ fn test_mbtiles_metadata() {
   "description": "osm",
   "format": "pbf",
   "id": "osm",
-  "json": "{\"Layer\":[{\"description\":\"\",\"fields\":{},\"id\":\"points\",\"name\":\"points\",\"properties\":{\"buffer-size\":0,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"name\":\"buildings\",\"properties\":{\"buffer-size\":10,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"},{\"description\":\"\",\"fields\":{},\"id\":\"admin_0_countries\",\"name\":\"admin_0_countries\",\"properties\":{\"buffer-size\":1,\"maxzoom\":22,\"minzoom\":0},\"srs\":\"+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over\"}],\"vector_layers\":[{\"description\":\"\",\"fields\":{},\"id\":\"points\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"admin_0_countries\",\"maxzoom\":22,\"minzoom\":0,\"projection\":\"EPSG:3857\"}]}",
+  "json": "{\"Layer\":[{\"description\":\"\",\"fields\":{},\"id\":\"points\",\"name\":\"points\",\"properties\":{\"buffer-size\":0,\"maxzoom\":22,\"minzoom\":0}},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"name\":\"buildings\",\"properties\":{\"buffer-size\":10,\"maxzoom\":22,\"minzoom\":0}},{\"description\":\"\",\"fields\":{},\"id\":\"admin_0_countries\",\"name\":\"admin_0_countries\",\"properties\":{\"buffer-size\":1,\"maxzoom\":22,\"minzoom\":0}}],\"vector_layers\":[{\"description\":\"\",\"fields\":{},\"id\":\"points\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"admin_0_countries\",\"maxzoom\":22,\"minzoom\":0}]}",
   "maxzoom": 22,
   "minzoom": 0,
   "name": "osm",
   "scheme": "xyz",
+  "version": "2.0.0"
+}"#;
+    assert_eq!(metadata, expected);
+
+    let grid = Grid::wgs84();
+    let metadata = format!("{:#}", service.get_mbtiles_metadata("osm", &grid).unwrap());
+    println!("{}", metadata);
+    let expected = r#"{
+  "attribution": "",
+  "basename": "osm",
+  "bounds": "[-180.0,-90.0,180.0,90.0]",
+  "center": "[0.0,0.0,2]",
+  "description": "osm",
+  "format": "pbf",
+  "id": "osm",
+  "json": "{\"Layer\":[{\"description\":\"\",\"fields\":{},\"id\":\"points\",\"name\":\"points\",\"properties\":{\"buffer-size\":0,\"maxzoom\":22,\"minzoom\":0}},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"name\":\"buildings\",\"properties\":{\"buffer-size\":10,\"maxzoom\":22,\"minzoom\":0}},{\"description\":\"\",\"fields\":{},\"id\":\"admin_0_countries\",\"name\":\"admin_0_countries\",\"properties\":{\"buffer-size\":1,\"maxzoom\":22,\"minzoom\":0}}],\"vector_layers\":[{\"description\":\"\",\"fields\":{},\"id\":\"points\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"buildings\",\"maxzoom\":22,\"minzoom\":0},{\"description\":\"\",\"fields\":{},\"id\":\"admin_0_countries\",\"maxzoom\":22,\"minzoom\":0}]}",
+  "maxzoom": 22,
+  "minzoom": 0,
+  "name": "osm",
+  "scheme": "xyz",
+  "srs": "EPSG:4326",
   "version": "2.0.0"
 }"#;
     assert_eq!(metadata, expected);

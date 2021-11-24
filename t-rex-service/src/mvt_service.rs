@@ -379,7 +379,7 @@ impl MvtService {
         for tileset in &self.tilesets {
             // :tileset.json
             let json = self
-                .get_tilejson(&self.cache.baseurl(), &tileset.name)
+                .get_tilejson(&self.cache.baseurl(), &tileset.name, &self.grid)
                 .unwrap();
             let _ = self.cache.write(
                 &format!("{}.json", &tileset.name),
@@ -396,7 +396,9 @@ impl MvtService {
             );
 
             // :tileset/metadata.json
-            let json = self.get_mbtiles_metadata(&tileset.name).unwrap();
+            let json = self
+                .get_mbtiles_metadata(&tileset.name, &self.grid)
+                .unwrap();
             let _ = self.cache.write(
                 &format!("{}/metadata.json", &tileset.name),
                 &serde_json::to_vec(&json).unwrap(),
