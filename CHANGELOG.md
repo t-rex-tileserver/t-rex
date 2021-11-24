@@ -1,3 +1,10 @@
+## 0.14.3 (UNRELEASED)
+
+#### Features
+
+* Clip points outside tile borders
+* Write tile CRS in metadata.json
+
 ## 0.14.2 (2021-11-11)
 
 #### Bug Fixes
