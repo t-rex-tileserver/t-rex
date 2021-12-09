@@ -177,8 +177,7 @@ jobs:
           retention-days: 1
 
   release:
-    # needs: [tgz, deb, rpm, msi]
-    needs: [tgz, deb, rpm]
+    needs: [tgz, deb, rpm, msi]
     runs-on: ubuntu-latest
     steps:
       - name: Retrieve saved artefacts
@@ -202,12 +201,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Get version tag
-        id: get_tag
-        run: echo ::set-output name=tag::${GITHUB_REF:10}
+        id: version
+        run: |
+          VERSION=${GITHUB_REF:11}
+          echo ::set-output name=tag::$VERSION
+          # refs/tags/v0.14.3-beta1 -> 0.14.3.beta1
+          echo ::set-output name=deb::${VERSION/-/.}
       - name: Build and publish
         uses: elgohr/Publish-Docker-Github-Action@master
         env:
-          DEB_URL: https://github.com/t-rex-tileserver/t-rex/releases/download/v${{ steps.get_tag.outputs.tag }}/t-rex_${{ steps.get_tag.outputs.tag }}-1.focal_amd64.deb
+          DEB_URL: https://github.com/t-rex-tileserver/t-rex/releases/download/v${{ steps.version.outputs.tag }}/t-rex_${{ steps.version.outputs.deb }}-1.focal_amd64.deb
         with:
           name: sourcepole/t-rex
           username: ${{ secrets.DOCKER_USERNAME }}
