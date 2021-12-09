@@ -13,8 +13,11 @@ workspace = ".."
 doctest = false
 
 [dependencies]
-gdal = "0.11"
-gdal-sys = "0.5"
+#gdal = "0.11"
+gdal = { git = "https://github.com/geohardtke/gdal", branch = "prebuilt_34" }
+#gdal-sys = "0.5"
+# We need GDAL 3.4 bindings for Win CI (https://github.com/georust/gdal/pull/231)
+gdal-sys = { git = "https://github.com/geohardtke/gdal", branch = "prebuilt_34" }
 log = "0.4"
 tile-grid = { path = "../tile-grid" }
 t-rex-core = { path = "../t-rex-core" }
