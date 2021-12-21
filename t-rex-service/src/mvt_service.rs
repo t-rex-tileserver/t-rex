@@ -341,8 +341,8 @@ impl MvtService {
                 ytile
             };
             let path = format!("{}/{}/{}/{}.pbf", tileset_name, zoom, xtile, y);
-
-            if overwrite || !self.cache.exists(&path) {
+            let cache_exists = self.cache.exists(&path);
+            if overwrite || !cache_exists {
                 // Entry doesn't exist, or overwrite is forced, so generate it
                 let svc = self.clone();
                 let cache = self.cache.clone();
@@ -360,6 +360,8 @@ impl MvtService {
                         if let Err(ioerr) = cache.write(&path, &tilegz) {
                             error!("Error writing {}: {}", path, ioerr);
                         }
+                    } else if overwrite && cache_exists {
+                        cache.remove(&path);
                     }
                 }));
                 if tasks.len() >= task_queue_size {

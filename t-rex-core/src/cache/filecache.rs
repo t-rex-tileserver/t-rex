@@ -50,4 +50,12 @@ impl Cache for Filecache {
         let fullpath = format!("{}/{}", self.basepath, path);
         Path::new(&fullpath).exists()
     }
+
+    fn remove(&self, path: &str) -> bool {
+        let fullpath = format!("{}/{}", self.basepath, path);
+        match fs::remove_file(fullpath) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
 }
