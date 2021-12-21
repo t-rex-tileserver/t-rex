@@ -6,7 +6,9 @@
 use crate::cache::cache::Cache;
 use rusoto_core::{Client, HttpClient, Region};
 use rusoto_credential::StaticProvider;
-use rusoto_s3::{GetObjectRequest, HeadObjectRequest, PutObjectRequest, S3Client, S3};
+use rusoto_s3::{
+    DeleteObjectRequest, GetObjectRequest, HeadObjectRequest, PutObjectRequest, S3Client, S3,
+};
 use std::io::{self, Read};
 use std::path::Path;
 
@@ -152,6 +154,23 @@ impl Cache for S3Cache {
             ..Default::default()
         };
         let response = self.client.head_object(request).sync();
+        match response {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    fn remove(&self, path: &str) -> bool {
+        let key = self.full_path(path);
+        if key.is_empty() {
+            return false;
+        }
+        let request = DeleteObjectRequest {
+            bucket: self.bucket_name.to_owned(),
+            key: key.to_owned(),
+            ..Default::default()
+        };
+        let response = self.client.delete_object(request).sync();
         match response {
             Ok(_) => true,
             Err(_) => false,

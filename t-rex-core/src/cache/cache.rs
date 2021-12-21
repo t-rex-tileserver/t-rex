@@ -15,6 +15,7 @@ pub trait Cache {
         F: FnMut(&mut dyn Read);
     fn write(&self, path: &str, obj: &[u8]) -> Result<(), io::Error>;
     fn exists(&self, path: &str) -> bool;
+    fn remove(&self, path: &str) -> bool;
 }
 
 #[derive(Clone)]
@@ -40,6 +41,9 @@ impl Cache for Nocache {
     }
 
     fn exists(&self, _path: &str) -> bool {
+        false
+    }
+    fn remove(&self, _path: &str) -> bool {
         false
     }
 }

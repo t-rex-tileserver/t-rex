@@ -67,6 +67,14 @@ impl Cache for Tilecache {
             &Tilecache::S3Cache(ref cache) => cache.exists(path),
         }
     }
+
+    fn remove(&self, path: &str) -> bool {
+        match self {
+            &Tilecache::Nocache(ref cache) => cache.remove(path),
+            &Tilecache::Filecache(ref cache) => cache.remove(path),
+            &Tilecache::S3Cache(ref cache) => cache.remove(path),
+        }
+    }
 }
 
 impl<'a> Config<'a, ApplicationCfg> for Tilecache {
