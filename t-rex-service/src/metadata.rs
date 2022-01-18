@@ -79,7 +79,8 @@ impl MvtService {
             "description": tileset,
             "attribution": ts.attribution(),
             "format": "pbf",
-            "version": "2.0.0",
+            "version": "2.0.0", //edition of the software, keep 2.0 for backwards compat
+            "tilejson": "2.2.0", //edition of the tilejson standard adopted
             "scheme": "xyz",
             "bounds": [ext.minx,
                        ext.miny,
@@ -502,6 +503,7 @@ fn test_mbtiles_metadata() {
   "name": "osm",
   "scheme": "xyz",
   "srs": "EPSG:4326",
+  "tilejson": "2.2.0",
   "version": "2.0.0"
 }"#;
     assert_eq!(metadata, expected);
