@@ -1,9 +1,10 @@
-## 0.14.3 (UNRELEASED)
+## 0.14.3 (2022-01-29)
 
 #### Features
 
+* Delete outdated tiles in overwrite mode (thanks @Blesss) 
 * Clip points outside tile borders
-* Write tile CRS in metadata.json
+* Write tile CRS and tilejson property in metadata.json (thanks @pvgenuchten)
 
 ## 0.14.2 (2021-11-11)
 
