@@ -376,6 +376,7 @@ fn test_tilejson() {
   "minzoom": 0,
   "name": "osm",
   "scheme": "xyz",
+  "tilejson": "2.2.0",
   "tiles": [
     "http://127.0.0.1/osm/{z}/{x}/{y}.pbf"
   ],
@@ -482,6 +483,7 @@ fn test_mbtiles_metadata() {
   "minzoom": 0,
   "name": "osm",
   "scheme": "xyz",
+  "tilejson": "2.2.0",
   "version": "2.0.0"
 }"#;
     assert_eq!(metadata, expected);
