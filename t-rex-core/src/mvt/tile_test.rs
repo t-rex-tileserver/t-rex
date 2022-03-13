@@ -542,6 +542,7 @@ fn clip_points() {
 
     assert_eq!(mvt_layer.get_features().len(), 1);
 
+    // Outside extent
     let point = geom::Point::new(990000.0, 6002729.0, Some(3857));
     assert_eq!(tile.point(&point), screen::Point { x: 407, y: 61 });
     let feature = FeatureStruct {
