@@ -130,12 +130,20 @@ fn test_coord_transformation() {
             maxx: 860978.3376424159,
             maxy: 5948621.871058013,
         }
-    } else {
+    } else if gdal_version() < 3040000 {
+        // Exact version unconfirmed
         Extent {
             minx: 821849.5366285802,
             miny: 5909489.863677087,
             maxx: 860978.3376424158,
             maxy: 5948621.871058013,
+        }
+    } else {
+        Extent {
+            minx: 821849.5366285802,
+            miny: 5909489.863677088,
+            maxx: 860978.3376424158,
+            maxy: 5948621.871058011,
         }
     };
     assert_eq!(
