@@ -51,6 +51,10 @@ revision = "1~focal"
 [package.metadata.deb.variants.focal]
 # default: is Ubuntu Focal Fossa 20.04 (LTS) 
 
+[package.metadata.deb.variants.jammy]
+depends = "libssl3, libgdal30"
+revision = "1~jammy"
+
 [package.metadata.deb.variants.buster]
 depends = "libssl1.1, libgdal20"
 revision = "1~buster"
