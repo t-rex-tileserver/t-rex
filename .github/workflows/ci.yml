@@ -4,9 +4,9 @@ on: [push, pull_request]
 
 jobs:
   rustfmt:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -21,7 +21,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ['ubuntu-20.04']
+        os: ['ubuntu-22.04']
     services:
       trextestdb:
         image: sourcepole/trextestdb
@@ -37,7 +37,7 @@ jobs:
           - 9000:9000
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -82,7 +82,7 @@ jobs:
         os: ['macOS-latest']
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -105,7 +105,7 @@ jobs:
     needs: [rustfmt]
     runs-on: windows-2019
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Cache cargo registry
       uses: actions/cache@v2
       continue-on-error: false

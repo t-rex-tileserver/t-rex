@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
 
 jobs:
   tgz:
@@ -11,9 +12,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: ['ubuntu-20.04', 'macOS-latest']
+        os: ['ubuntu-22.04', 'macOS-latest']
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
@@ -41,14 +42,17 @@ jobs:
           retention-days: 1
 
   deb:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container: ${{ matrix.container }}
     strategy:
       matrix:
        include:
-         - variant: focal
+         - variant: jammy
            container: null
            sudo: sudo
+         # - variant: focal
+         #   container: null
+         #   sudo: sudo
          - variant: bullseye
            container: rust:bullseye
            sudo: null
@@ -57,7 +61,7 @@ jobs:
            sudo: null
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install cargo-deb
         run: cargo install cargo-deb
@@ -91,7 +95,7 @@ jobs:
         container: ['centos:8']
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
@@ -130,7 +134,7 @@ jobs:
     name: Build MSI
     runs-on: windows-2019
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install GDAL
         shell: bash
@@ -198,7 +202,7 @@ jobs:
     needs: [release]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Get version tag
         id: version
         run: |
