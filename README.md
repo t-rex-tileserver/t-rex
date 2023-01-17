@@ -32,7 +32,7 @@ Features
 
 ### Examples
 
-* [AdV Smart Mapping](https://adv-smart.de/applications_en.html)
+* [basemap.de](https://basemap.de/web-vektor/)
 * Swiss Ornithological Institute, [Birds of Switzerland](https://www.vogelwarte.ch/en/birds/birds-of-switzerland/)
 
 
