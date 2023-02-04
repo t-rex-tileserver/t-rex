@@ -15,7 +15,7 @@ dependencies = [
  "log",
  "memchr",
  "pin-project-lite",
- "tokio 1.17.0",
+ "tokio 1.18.5",
  "tokio-util 0.7.0",
 ]
 
@@ -125,7 +125,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ea16c295198e958ef31930a6ef37d0fb64e9ca3b6116e6b93a8bdae96ee1000"
 dependencies = [
  "futures-core",
- "tokio 1.17.0",
+ "tokio 1.18.5",
 ]
 
 [[package]]
@@ -142,7 +142,7 @@ dependencies = [
  "mio 0.8.1",
  "num_cpus",
  "socket2",
- "tokio 1.17.0",
+ "tokio 1.18.5",
  "tracing",
 ]
 
@@ -1135,7 +1135,7 @@ dependencies = [
  "http 0.2.6",
  "indexmap",
  "slab",
- "tokio 1.17.0",
+ "tokio 1.18.5",
  "tokio-util 0.6.9",
  "tracing",
 ]
@@ -1972,7 +1972,7 @@ dependencies = [
  "fallible-iterator",
  "futures 0.3.21",
  "log",
- "tokio 1.17.0",
+ "tokio 1.18.5",
  "tokio-postgres",
 ]
 
@@ -1984,7 +1984,7 @@ checksum = "2d442770e2b1e244bb5eb03b31c79b65bb2568f413b899eaba850fa945a65954"
 dependencies = [
  "futures 0.3.21",
  "native-tls",
- "tokio 1.17.0",
+ "tokio 1.18.5",
  "tokio-native-tls",
  "tokio-postgres",
 ]
@@ -2674,7 +2674,7 @@ dependencies = [
  "t-rex-core",
  "t-rex-gdal",
  "tile-grid",
- "tokio 1.17.0",
+ "tokio 1.18.5",
 ]
 
 [[package]]
@@ -2853,16 +2853,15 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.17.0"
+version = "1.18.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2af73ac49756f3f7c01172e34a23e5d0216f6c32333757c2c61feb2bbff5a5ee"
+checksum = "0e050c618355082ae5a89ec63bbf897225d5ffe84c7c4e036874e4d185a5044e"
 dependencies = [
  "bytes 1.1.0",
  "libc",
  "memchr",
  "mio 0.8.1",
  "num_cpus",
- "once_cell",
  "parking_lot 0.12.0",
  "pin-project-lite",
  "signal-hook-registry",
@@ -2953,7 +2952,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7d995660bd2b7f8c1568414c1126076c13fbb725c40112dc0120b78eb9b717b"
 dependencies = [
  "native-tls",
- "tokio 1.17.0",
+ "tokio 1.18.5",
 ]
 
 [[package]]
@@ -2975,7 +2974,7 @@ dependencies = [
  "postgres-protocol",
  "postgres-types",
  "socket2",
- "tokio 1.17.0",
+ "tokio 1.18.5",
  "tokio-util 0.6.9",
 ]
 
@@ -3131,7 +3130,7 @@ dependencies = [
  "futures-sink",
  "log",
  "pin-project-lite",
- "tokio 1.17.0",
+ "tokio 1.18.5",
 ]
 
 [[package]]
@@ -3145,7 +3144,7 @@ dependencies = [
  "futures-sink",
  "log",
  "pin-project-lite",
- "tokio 1.17.0",
+ "tokio 1.18.5",
 ]
 
 [[package]]
