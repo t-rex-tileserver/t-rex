@@ -1,10 +1,18 @@
 # t-rex configuration
 
+# To run this example (self-contained datasource)
+# cd t_rex
+# t_rex serve --loglevel debug  --config examples/usergrid.toml
+# and navigate to http://127.0.0.1:6767/static/usergrid.html
+
 [service.mvt]
 viewer = true
 
+
 [[datasource]]
-dbconn = "postgresql://t_rex:t_rex@127.0.0.1:5439/t_rex_tests"
+path = "./data/g1k18.shp"
+name = "datasource"
+default = true
 
 [grid.user]
 width = 256
@@ -18,21 +26,24 @@ origin = "TopLeft"
 
 [[tileset]]
 name = "g1k18"
-extent = [5.96438, 45.81937, 10.55886, 47.77210]
+extent = [5.96455, 45.81936, 10.55885, 47.77213]
 
 [[tileset.layer]]
 name = "g1k18"
-geometry_field = "wkb_geometry"
-geometry_type = "MULTIPOLYGON"
-fid_field = "ktnr"
+table_name = "g1k18"
+geometry_field = ""
+geometry_type = "POLYGON"
 srid = 2056
-buffer_size = 2
+buffer_size = 1
+#make_valid = true
 simplify = true
-[[tileset.layer.query]]
-sql = """SELECT wkb_geometry,ktnr::FLOAT8,ktname FROM geostat.g1k18 WHERE wkb_geometry && !bbox!"""
+query_limit = 1000
+
+#[[tileset.layer.query]]
 
 #[cache.file]
 #base = "/tmp/mvtcache"
+#baseurl = "http://example.com/tiles"
 
 [webserver]
 # Bind address. Use 0.0.0.0 to listen on all adresses.
