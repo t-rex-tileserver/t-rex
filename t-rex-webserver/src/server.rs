@@ -9,8 +9,7 @@ use crate::runtime_config::{config_from_args, service_from_args};
 use crate::static_files::StaticFiles;
 use actix_cors::Cors;
 use actix_files as fs;
-use actix_web::dev::BodyEncoding;
-use actix_web::http::{header, ContentEncoding};
+use actix_web::http::header;
 use actix_web::middleware::Compress;
 use actix_web::{guard, middleware, web, App, HttpRequest, HttpResponse, HttpServer, Result};
 use clap::ArgMatches;
@@ -75,8 +74,7 @@ async fn fonts_pbf(params: web::Path<(String, String)>) -> Result<HttpResponse> 
             resp = HttpResponse::Ok()
                 .content_type("application/x-protobuf")
                 // data is already gzip compressed
-                .encoding(ContentEncoding::Identity)
-                .append_header((header::CONTENT_ENCODING, "gzip"))
+                .insert_header(header::ContentEncoding::Gzip)
                 .body(*pbf); // TODO: chunked response
             break;
         }
@@ -95,7 +93,7 @@ async fn tileset_tilejson(
     req: HttpRequest,
 ) -> Result<HttpResponse> {
     let url = req_baseurl(&req);
-    let json = web::block(move || service.get_tilejson(&url, &tileset).ok()).await?;
+    let json = web::block(move || service.get_tilejson(&url, &tileset, &service.grid).ok()).await?;
     Ok(HttpResponse::Ok().json(&json))
 }
 
@@ -112,7 +110,8 @@ async fn tileset_metadata_json(
     service: web::Data<MvtService>,
     tileset: web::Path<String>,
 ) -> Result<HttpResponse> {
-    let json = web::block(move || service.get_mbtiles_metadata(&tileset).ok()).await?;
+    let json =
+        web::block(move || service.get_mbtiles_metadata(&tileset, &service.grid).ok()).await?;
     Ok(HttpResponse::Ok().json(&json))
 }
 
@@ -146,8 +145,7 @@ async fn tile_pbf(
             r.content_type("application/x-protobuf");
             if gzip {
                 // data is already gzip compressed
-                r.encoding(ContentEncoding::Identity)
-                    .append_header((header::CONTENT_ENCODING, "gzip"));
+                r.insert_header(header::ContentEncoding::Gzip);
             }
             let cache_max_age = config.webserver.cache_control_max_age.unwrap_or(300);
             r.append_header((header::CACHE_CONTROL, format!("max-age={}", cache_max_age)));
