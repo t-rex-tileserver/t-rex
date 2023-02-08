@@ -148,7 +148,7 @@ async fn tile_pbf(
                 r.insert_header(header::ContentEncoding::Gzip);
             }
             let cache_max_age = config.webserver.cache_control_max_age.unwrap_or(300);
-            r.append_header((header::CACHE_CONTROL, format!("max-age={}", cache_max_age)));
+            r.insert_header((header::CACHE_CONTROL, format!("max-age={}", cache_max_age)));
             r.body(tile) // TODO: chunked response
         }
         None => HttpResponse::NoContent().finish(),
@@ -164,7 +164,7 @@ async fn static_file_handler(req: HttpRequest) -> Result<HttpResponse> {
     let key = req.path()[1..].to_string();
     let resp = if let Some(ref content) = STATIC_FILES.content(None, key) {
         HttpResponse::Ok()
-            .append_header((header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")) // TOOD: use Actix middleware
+            .insert_header((header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")) // TOOD: use Actix middleware
             .content_type(content.1)
             .body(content.0) // TODO: chunked response
     } else {
