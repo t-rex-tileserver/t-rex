@@ -70,6 +70,7 @@ fn test_s3cache() {
             .unwrap();
         transfer.perform().unwrap();
     }
+    dbg!(&headers);
     assert!(headers.contains(&"Content-Encoding: gzip\r\n".to_string()));
 
     // test key_prefix
