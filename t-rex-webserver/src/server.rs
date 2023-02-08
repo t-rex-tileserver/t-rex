@@ -11,7 +11,9 @@ use actix_cors::Cors;
 use actix_files as fs;
 use actix_web::http::header;
 use actix_web::middleware::Compress;
-use actix_web::{guard, middleware, web, App, HttpRequest, HttpResponse, HttpServer, Result};
+use actix_web::{
+    guard, middleware, web, web::Data, App, HttpRequest, HttpResponse, HttpServer, Result,
+};
 use clap::ArgMatches;
 use log::Level;
 use num_cpus;
@@ -228,8 +230,8 @@ pub async fn webserver(args: ArgMatches<'static>) -> std::io::Result<()> {
 
     let server = HttpServer::new(move || {
         let mut app = App::new()
-            .data(config.clone())
-            .data(service.clone())
+            .app_data(Data::new(config.clone()))
+            .app_data(Data::new(service.clone()))
             .wrap(middleware::Logger::new("%r %s %b %Dms %a"))
             .wrap(Compress::default())
             .wrap(
