@@ -4,6 +4,7 @@
 //
 
 use gdal::spatial_ref::{CoordTransform, SpatialRef};
+use gdal::vector::LayerAccess;
 use gdal::vector::{FieldValue, Geometry};
 use gdal::Dataset;
 use gdal_sys;
@@ -195,18 +196,18 @@ pub mod OGRwkbGeometryType {
     pub const wkbGeometryCollection25D: Type = 2147483655;
 }
 
-trait ToGeo {
-    fn to_geo(&self, srid: Option<i32>) -> GeometryType;
+trait ToGeoM {
+    fn to_geom(&self, srid: Option<i32>) -> GeometryType;
 }
 
-impl ToGeo for Geometry {
+impl ToGeoM for Geometry {
     /// Convert OGR geomtry to t-rex EWKB geometry type (XY only)
-    fn to_geo(&self, srid: Option<i32>) -> GeometryType {
+    fn to_geom(&self, srid: Option<i32>) -> GeometryType {
         let geometry_type = self.geometry_type();
 
         let ring = |n: usize| {
             let ring = unsafe { self.get_unowned_geometry(n) };
-            return match ring.to_geo(srid) {
+            return match ring.to_geom(srid) {
                 GeometryType::LineString(r) => r,
                 _ => panic!("Expected to get a LineString"),
             };
@@ -231,7 +232,7 @@ impl ToGeo for Geometry {
                 let point_count = self.geometry_count();
                 let coords = (0..point_count)
                     .map(
-                        |n| match unsafe { self.get_unowned_geometry(n) }.to_geo(srid) {
+                        |n| match unsafe { self.get_unowned_geometry(n) }.to_geom(srid) {
                             GeometryType::Point(p) => p,
                             _ => panic!("Expected to get a Point"),
                         },
@@ -267,7 +268,7 @@ impl ToGeo for Geometry {
                 let string_count = self.geometry_count();
                 let strings = (0..string_count)
                     .map(
-                        |n| match unsafe { self.get_unowned_geometry(n) }.to_geo(srid) {
+                        |n| match unsafe { self.get_unowned_geometry(n) }.to_geom(srid) {
                             GeometryType::LineString(s) => s,
                             _ => panic!("Expected to get a LineString"),
                         },
@@ -296,7 +297,7 @@ impl ToGeo for Geometry {
                 let string_count = self.geometry_count();
                 let strings = (0..string_count)
                     .map(
-                        |n| match unsafe { self.get_unowned_geometry(n) }.to_geo(srid) {
+                        |n| match unsafe { self.get_unowned_geometry(n) }.to_geom(srid) {
                             GeometryType::Polygon(s) => s,
                             _ => panic!("Expected to get a Polygon"),
                         },
@@ -432,6 +433,6 @@ impl<'a> Feature for VectorFeature<'a> {
         if let Some(ref transform) = self.transform {
             ogrgeom.transform_inplace(transform).unwrap();
         };
-        Ok(ogrgeom.to_geo(Some(self.grid_srid)))
+        Ok(ogrgeom.to_geom(Some(self.grid_srid)))
     }
 }

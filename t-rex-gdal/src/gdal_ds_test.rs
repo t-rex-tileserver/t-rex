@@ -4,6 +4,7 @@
 //
 
 use crate::gdal_ds::GdalDatasource;
+use gdal::vector::LayerAccess;
 use gdal::Dataset;
 use std::path::Path;
 use t_rex_core::core::feature::FeatureAttrValType;

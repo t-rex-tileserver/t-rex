@@ -13,8 +13,8 @@ workspace = ".."
 doctest = false
 
 [dependencies]
-gdal = "0.12"
-gdal-sys = "0.6"
+gdal = "0.14"
+gdal-sys = "0.8"
 log = "0.4"
 tile-grid = { path = "../tile-grid" }
 t-rex-core = { path = "../t-rex-core" }
