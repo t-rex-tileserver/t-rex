@@ -4,9 +4,9 @@
 //
 
 use gdal::spatial_ref::{CoordTransform, SpatialRef};
+use gdal::vector::LayerAccess;
 use gdal::vector::{FieldValue, Geometry};
 use gdal::Dataset;
-use gdal::vector::LayerAccess;
 use gdal_sys;
 use std::path::Path;
 use t_rex_core::core::feature::{Feature, FeatureAttr, FeatureAttrValType};
