@@ -6,6 +6,7 @@
 use crate::gdal_fields::*;
 use gdal::spatial_ref::{CoordTransform, SpatialRef};
 use gdal::vector::Geometry;
+use gdal::vector::LayerAccess;
 use gdal::Dataset;
 use std::collections::BTreeMap;
 use std::path::Path;
