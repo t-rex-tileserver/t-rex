@@ -211,7 +211,7 @@ jobs:
           # refs/tags/v0.14.3-beta1 -> 0.14.3.beta1
           echo ::set-output name=deb::${VERSION/-/.}
       - name: Build and publish
-        uses: elgohr/Publish-Docker-Github-Action@master
+        uses: elgohr/Publish-Docker-Github-Action@v5
         env:
           DEB_URL: https://github.com/t-rex-tileserver/t-rex/releases/download/v${{ steps.version.outputs.tag }}/t-rex_${{ steps.version.outputs.deb }}-1.focal_amd64.deb
         with:
