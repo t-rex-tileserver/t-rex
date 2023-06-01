@@ -82,7 +82,6 @@ jobs:
       #   run: cargo test ${{ matrix.features }} --all --no-fail-fast
       # Builds also t-rex-gdal, so we test each workspace
       - run: cargo test --no-default-features --no-fail-fast
-      - run: cd tile-grid && cargo test --no-default-features --no-fail-fast
       - run: cd t-rex-core && cargo test --no-default-features --no-fail-fast
       # - run: cd t-rex-service && cargo test --no-default-features --no-fail-fast
       # - run: cd t-rex-webserver && cargo test --no-default-features --no-fail-fast
