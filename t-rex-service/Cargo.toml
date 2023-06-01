@@ -24,7 +24,7 @@ clap = "2.33"
 pbr = "1.0"
 tokio = { version = "1.4.0", features = ["full"] }
 futures-util = "0.3.8"
-tile-grid = { path = "../tile-grid" }
+tile-grid = "0.3.0"
 t-rex-core = { path = "../t-rex-core" }
 t-rex-gdal = { path = "../t-rex-gdal", optional = true }
 

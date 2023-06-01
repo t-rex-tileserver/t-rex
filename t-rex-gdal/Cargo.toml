@@ -16,5 +16,5 @@ doctest = false
 gdal = "0.14"
 gdal-sys = "0.8"
 log = "0.4"
-tile-grid = { path = "../tile-grid" }
+tile-grid = "0.3.0"
 t-rex-core = { path = "../t-rex-core" }
