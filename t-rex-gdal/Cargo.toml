@@ -14,7 +14,7 @@ doctest = false
 
 [dependencies]
 gdal = "0.14"
-gdal-sys = "0.8"
+gdal-sys = { version = "0.8", features = ["bindgen"] }
 log = "0.4"
 tile-grid = "0.3.0"
 t-rex-core = { path = "../t-rex-core" }
