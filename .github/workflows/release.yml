@@ -53,11 +53,11 @@ jobs:
          # - variant: focal
          #   container: null
          #   sudo: sudo
+         - variant: bookworm
+           container: rust:bookworm
+           sudo: null
          - variant: bullseye
            container: rust:bullseye
-           sudo: null
-         - variant: buster
-           container: rust:buster
            sudo: null
     steps:
       - name: Checkout repository

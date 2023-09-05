@@ -46,19 +46,15 @@ assets = [
     ["README.md", "usr/share/doc/t-rex/README", "644"],
 ]
 #depends = "$auto"
-depends = "libssl1.1, libgdal26"
-revision = "1~focal"
-
-[package.metadata.deb.variants.focal]
-# default: is Ubuntu Focal Fossa 20.04 (LTS) 
-
-[package.metadata.deb.variants.jammy]
 depends = "libssl3, libgdal30"
 revision = "1~jammy"
 
-[package.metadata.deb.variants.buster]
-depends = "libssl1.1, libgdal20"
-revision = "1~buster"
+[package.metadata.deb.variants.jammy]
+# default: is Ubuntu Jammy Jellyfish 22.04 (LTS) 
+
+[package.metadata.deb.variants.bookworm]
+depends = "libssl3, libgdal32"
+revision = "1~bookworm"
 
 [package.metadata.deb.variants.bullseye]
 depends = "libssl1.1, libgdal28"
