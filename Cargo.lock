@@ -2867,7 +2867,7 @@ dependencies = [
 
 [[package]]
 name = "t-rex"
-version = "0.15.0-alpha2"
+version = "0.15.0-alpha3"
 dependencies = [
  "clap",
  "dotenv",
