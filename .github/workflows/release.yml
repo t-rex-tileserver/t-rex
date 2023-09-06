@@ -56,9 +56,9 @@ jobs:
          - variant: bookworm
            container: rust:bookworm
            sudo: null
-         - variant: bullseye
-           container: rust:bullseye
-           sudo: null
+         # - variant: bullseye
+         #   container: rust:bullseye
+         #   sudo: null
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
