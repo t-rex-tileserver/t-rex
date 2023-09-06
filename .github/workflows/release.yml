@@ -87,48 +87,48 @@ jobs:
           path: target/debian/*.deb
           retention-days: 1
 
-  rpm:
-    runs-on: ubuntu-latest
-    container: ${{ matrix.container }}
-    strategy:
-      matrix:
-        container: ['centos:8']
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+  # rpm:
+  #   runs-on: ubuntu-latest
+  #   container: ${{ matrix.container }}
+  #   strategy:
+  #     matrix:
+  #       container: ['centos:8']
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v3
 
-      - name: Install toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+  #     - name: Install toolchain
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         profile: minimal
+  #         toolchain: stable
+  #         override: true
 
-      - name: Install cargo-rpm
-        run: |
-          yum install gcc rpm-build -y
-          cargo install cargo-rpm
+  #     - name: Install cargo-rpm
+  #       run: |
+  #         yum install gcc rpm-build -y
+  #         cargo install cargo-rpm
 
-      - name: Install build-dependencies
-        run: |
-          yum install openssl-devel -y
-          # yum install epel-release -y
-          # yum install --enablerepo=powertools gdal-devel -y
-          # RH UBI image registry.access.redhat.com/ubi8/ubi
-          # rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-          # yum install --enablerepo=ubi-8-codeready-builder gdal-devel
+  #     - name: Install build-dependencies
+  #       run: |
+  #         yum install openssl-devel -y
+  #         # yum install epel-release -y
+  #         # yum install --enablerepo=powertools gdal-devel -y
+  #         # RH UBI image registry.access.redhat.com/ubi8/ubi
+  #         # rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+  #         # yum install --enablerepo=ubi-8-codeready-builder gdal-devel
 
-      - name: Build & package
-        run: |
-          ln -s packaging/rpm .rpm
-          cargo rpm build --output target/rpm/
+  #     - name: Build & package
+  #       run: |
+  #         ln -s packaging/rpm .rpm
+  #         cargo rpm build --output target/rpm/
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.run_id }}
-          path: target/rpm/*.rpm
-          retention-days: 1
+  #     - name: Upload artifact
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: ${{ github.run_id }}
+  #         path: target/rpm/*.rpm
+  #         retention-days: 1
 
   msi:
     name: Build MSI
