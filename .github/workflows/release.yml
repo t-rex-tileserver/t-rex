@@ -181,7 +181,7 @@ jobs:
           retention-days: 1
 
   release:
-    needs: [tgz, deb, rpm, msi]
+    needs: [tgz, deb, msi]
     runs-on: ubuntu-latest
     steps:
       - name: Retrieve saved artefacts
