@@ -349,7 +349,7 @@ pub(crate) fn geom_spatialref<'d>(
             None
         }
     } else {
-        ogr_layer.spatial_ref().ok()
+        ogr_layer.spatial_ref()
     }
 }
 
@@ -427,7 +427,7 @@ impl<'a> Feature for VectorFeature<'a> {
         let ogrgeom = if let Some(ref field) = self.layer.geometry_field {
             self.feature.geometry_by_name(field).unwrap()
         } else {
-            self.feature.geometry()
+            self.feature.geometry().unwrap()
         };
         let mut ogrgeom = ogrgeom.clone();
         if let Some(ref transform) = self.transform {

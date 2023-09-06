@@ -1,5 +1,9 @@
 ## 0.15.0 (UNRELEASED)
 
+* Update to actix-web 4.3
+* Update to gdal-rs 0.15
+* Extract tile-grid into separate repo
+
 ## 0.14.3 (2022-01-29)
 
 #### Features
