@@ -275,8 +275,19 @@ impl MvtService {
     // -> {tileset}/metadata.json
     pub fn get_mbtiles_metadata(&self, tileset: &str, grid: &Grid) -> JsonResult {
         let mut metadata = self.get_tilejson_metadata(tileset, grid)?;
-        metadata["bounds"] = json!(metadata["bounds"].to_string());
-        metadata["center"] = json!(metadata["center"].to_string());
+        metadata["bounds"] = format!(
+            "{},{},{},{}",
+            metadata["bounds"][0],
+            metadata["bounds"][1],
+            metadata["bounds"][2],
+            metadata["bounds"][3]
+        )
+        .into();
+        metadata["center"] = format!(
+            "{},{},{}",
+            metadata["center"][0], metadata["center"][1], metadata["center"][2]
+        )
+        .into();
         let layers = self.get_tilejson_layers(tileset)?;
         let vector_layers = self.get_tilejson_vector_layers(tileset)?;
         let metadata_vector_layers = json!({
