@@ -156,8 +156,8 @@ impl<'a> Tile<'a> {
 
     pub fn point(&self, point: &geom::Point) -> screen::Point {
         let mut screen_geom = screen::Point {
-            x: ((point.x - self.extent.minx) / self.pixel_size_x) as i32,
-            y: ((point.y - self.extent.miny) / self.pixel_size_y) as i32,
+            x: ((point.x - self.extent.minx) / self.pixel_size_x).floor() as i32,
+            y: ((point.y - self.extent.miny) / self.pixel_size_y).floor() as i32,
         };
         if self.reverse_y {
             screen_geom.y = self.tile_size.saturating_sub(screen_geom.y)
