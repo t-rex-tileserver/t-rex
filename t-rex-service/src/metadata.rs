@@ -484,8 +484,8 @@ fn test_mbtiles_metadata() {
     let expected = r#"{
   "attribution": "",
   "basename": "osm",
-  "bounds": "[-180.0,-90.0,180.0,90.0]",
-  "center": "[0.0,0.0,2]",
+  "bounds": "-180.0,-90.0,180.0,90.0",
+  "center": "0.0,0.0,2",
   "description": "osm",
   "format": "pbf",
   "id": "osm",
@@ -505,8 +505,8 @@ fn test_mbtiles_metadata() {
     let expected = r#"{
   "attribution": "",
   "basename": "osm",
-  "bounds": "[-180.0,-90.0,180.0,90.0]",
-  "center": "[0.0,0.0,2]",
+  "bounds": "-180.0,-90.0,180.0,90.0",
+  "center": "0.0,0.0,2",
   "description": "osm",
   "format": "pbf",
   "id": "osm",
