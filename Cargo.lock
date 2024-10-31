@@ -2910,7 +2910,7 @@ dependencies = [
  "t-rex-service",
  "t-rex-webserver",
  "tile-grid",
- "time 0.1.45",
+ "time 0.3.25",
 ]
 
 [[package]]
