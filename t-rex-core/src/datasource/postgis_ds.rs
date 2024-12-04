@@ -446,9 +446,7 @@ impl PostgisDatasource {
             "SELECT {} FROM {}",
             select_list,
             layer.table_name.as_ref().expect("table_name undefined")
-        )
-        // Remove quotes from column names for better readability
-        .replace('"', "");
+        );
         query
     }
     pub fn build_query(
